@@ -143,17 +143,23 @@ valija doctor
 
 ---
 
-## 10. Repository structure
+## 10. Repository structure — module-first (package by bounded context)
+
+Each bounded context is a top-level folder owning its full clean-architecture stack:
 
 ```
 src/
-├── domain/          # entities, values, ports, errors — imports nothing internal
-├── application/     # use cases — imports domain
-├── infrastructure/  # db, crypto, keychain — imports inward
-└── interfaces/      # cli, mcp — imports inward
+├── shared/     domain/(Result, DomainError)  application/(Clock)  infra/(sqlite, migrations, paths)
+├── vault/      domain/(errors)  application/(usecases + ports)  infra/(argon2, keyring, header, store)
+├── context/    domain/(entities, values, errors)  application/(usecases + ports)  infra/(repos, session-factory)
+└── delivery/   container.ts + cli/ + mcp/   (composition root + entry points)
 ```
 
-Use cases receive ports via plain constructor injection — no DI framework.
+Within a module: `domain/` (entities, values, module errors — no I/O), `application/` (use cases + the ports they need), `infra/` (adapters implementing those ports). Technical ports (crypto, keychain, store, repositories) live in `application/`, following Hexagonal; only the branded domain types and invariants live in `domain/`.
+
+**Dependency rule:** `shared ←` everyone · `vault → shared` · `context → shared, vault` · `delivery →` all. `context` reaches `vault` only through the `VaultSessionFactory` bridge (a locked vault refuses a session, which is why the content context is downstream of the vault context).
+
+Tests are co-located with their subject (`foo.ts` + `foo.test.ts`). Behavior specs live in [`specs/`](../specs/), one file per module. Use cases receive ports via plain constructor injection — no DI framework.
 
 ---
 

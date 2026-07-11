@@ -1,0 +1,29 @@
+# Spec: delivery — CLI, MCP server, composition root
+
+`src/delivery/` sits at the top of the dependency graph: it wires `vault` + `context` + `shared` into runnable entry points. It is not a bounded context.
+
+## container.ts
+
+`buildContainer()` is the single composition root: constructs the infra adapters (`Argon2VaultCrypto`, `OsKeychain`, `FileVaultStore`, `SqliteVaultSessionFactory`) and injects them into every use case. Both entry points share one container.
+
+## cli/ — `valija <command>`
+
+| Command | Behavior |
+|---|---|
+| `init` | Prompt passphrase twice (hidden on a TTY); print recovery kit once; vault starts unlocked. |
+| `unlock [--recovery-key <hex>]` / `lock` / `status` | Session control via the keychain. |
+| `projects` / `show <p> [--type]` / `search <q> [-p]` | Read views. |
+| `export <p> [--json] [-o file]` | Context pack to stdout/file — the escape hatch for non-MCP tools. |
+| `install <claude-code\|claude-desktop\|cursor>` | Merge the MCP entry into the client config, backing up first; refuses to touch non-object/invalid JSON; prints manual fallback. |
+| `mcp` | Run the stdio server (used by tools, not humans). |
+| `doctor` | Check node ≥22, sqlcipher load, keychain r/w, vault state, client configs. Non-zero exit on a fatal check. |
+
+Errors print `error [CODE]: message` and exit 1.
+
+## mcp/server.ts — server name `valija`, stdio
+
+Five tools — `save_context`, `save_handoff` (forces `handoff` type), `get_context`, `search_context`, `list_projects` — plus prompts `/save-context` and `/load-context`. Every input is zod-validated at the boundary. On a locked vault, tools return `isError` with the uniform message: *Vault is locked. Ask the user to run "valija unlock" in a terminal.* The MCP client's declared name is captured into each item's `source`.
+
+The tool descriptions are the product's real prompt engineering — see [../docs/SPEC.md](../docs/SPEC.md) §7.
+
+Proof: `src/delivery/mcp/server.test.ts` (real MCP client over in-memory transport).
