@@ -1,4 +1,4 @@
-import { type Interface, createInterface } from "node:readline";
+import { createInterface, type Interface } from "node:readline";
 
 const CTRL_C = String.fromCharCode(0x03);
 const BACKSPACE = String.fromCharCode(0x08);

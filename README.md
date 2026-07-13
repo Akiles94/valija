@@ -8,17 +8,32 @@ The name comes from *valija diplomática* — a sealed pouch that crosses border
 
 ## Status
 
-🚧 **Under construction** — pre-0.1.0. Do not use for anything you can't afford to lose yet.
+**0.1.0** — young but working. The vault format (schema v1) will be migrated forward, not broken.
 
-## How it will work
+## Quickstart (5 minutes)
 
 ```
+npm install -g valija
 valija init                 # create your encrypted vault (passphrase + recovery kit)
-valija unlock               # unlock for this session (key goes to the OS keychain)
-valija install claude-code  # wire the MCP server into your AI tool
+valija install claude-code  # wire the MCP server in (also: claude-desktop, cursor)
 ```
 
-Then, inside any connected AI tool: *"save context: we decided X, next step is Y"* — and tomorrow, in a different tool: *"load context for my-project"*.
+Restart your AI tool. Then, inside it: *"save context: we decided X, next step is Y"* — and tomorrow, in a different tool: *"load context for my-project"*.
+
+Day-to-day:
+
+```
+valija unlock | lock        # session control — MCP tools only work while unlocked
+valija status               # where the vault is, locked or not
+valija projects             # what's inside
+valija search "auth"        # full-text search from the terminal
+valija export my-project    # print the context pack (paste it into any non-MCP tool)
+valija doctor               # checks node, keychain, vault, client configs
+```
+
+### The MCP surface (what your AI tools see)
+
+Five tools: `save_context`, `save_handoff`, `get_context`, `search_context`, `list_projects` — plus `/save-context` and `/load-context` prompts in clients that support them.
 
 ## Security model (short version)
 
