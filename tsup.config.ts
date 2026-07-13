@@ -1,7 +1,7 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: { program: "src/interfaces/cli/program.ts" },
+  entry: { program: "src/delivery/cli/program.ts" },
   format: ["esm"],
   target: "node22",
   platform: "node",
