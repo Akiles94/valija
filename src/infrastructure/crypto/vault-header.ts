@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { z } from "zod";
 import { type DomainError, domainErr, ok, type Result } from "../../domain/errors.js";
-import type { KdfParams } from "../../domain/ports/crypto.js";
+import type { VaultHeaderData } from "../../domain/ports/vault-store.js";
 
 const headerSchema = z.object({
   vaultId: z.string().min(1),
@@ -16,13 +16,7 @@ const headerSchema = z.object({
   createdAt: z.string(),
 });
 
-export interface VaultHeader {
-  vaultId: string;
-  schemaVersion: 1;
-  kdf: KdfParams;
-  salt: Uint8Array;
-  createdAt: string;
-}
+export type VaultHeader = VaultHeaderData;
 
 export function writeVaultHeader(path: string, header: VaultHeader): void {
   const json = {

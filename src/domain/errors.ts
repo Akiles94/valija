@@ -16,6 +16,7 @@ export type DomainErrorCode =
   | "VAULT_ALREADY_EXISTS"
   | "VAULT_LOCKED"
   | "WRONG_PASSPHRASE"
+  | "WEAK_PASSPHRASE"
   | "KEYCHAIN_ERROR"
   | "STORAGE_ERROR";
 
