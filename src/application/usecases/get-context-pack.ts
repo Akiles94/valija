@@ -11,6 +11,13 @@ export const estimateTokens = (text: string): number => Math.ceil(text.length / 
 
 const SECTION_ORDER = ["decision", "preference", "progress", "fact"] as const;
 
+const SECTION_LABELS: Record<(typeof SECTION_ORDER)[number], string> = {
+  decision: "Decisions",
+  preference: "Preferences",
+  progress: "Progress",
+  fact: "Facts",
+};
+
 export interface GetContextPackInput {
   project: string;
   budgetTokens?: number;
@@ -94,9 +101,7 @@ export class GetContextPack {
         let sectionOpened = false;
         for (const item of items) {
           const rendered = renderItem(item);
-          const sectionHeader = sectionOpened
-            ? ""
-            : `\n## ${type[0]?.toUpperCase()}${type.slice(1)}s\n`;
+          const sectionHeader = sectionOpened ? "" : `\n## ${SECTION_LABELS[type]}\n`;
           const cost = estimateTokens(sectionHeader + rendered);
           if (used + cost > budget) break;
           if (!sectionOpened) {
