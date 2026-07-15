@@ -1,17 +1,16 @@
 import { ulid } from "ulid";
-import { ExportPack } from "../context/application/export-pack.js";
-import { GetContextPack } from "../context/application/get-context-pack.js";
-import { ListProjects } from "../context/application/list-projects.js";
-import { SaveContext } from "../context/application/save-context.js";
-import { SearchContext } from "../context/application/search-context.js";
-import { ShowProject } from "../context/application/show-project.js";
-import { SqliteVaultSessionFactory } from "../context/infra/session-factory.js";
+import { GetContextPack } from "../context/application/use-cases/get-context-pack.use-case.js";
+import { ListProjects } from "../context/application/use-cases/list-projects.use-case.js";
+import { SaveContext } from "../context/application/use-cases/save-context.use-case.js";
+import { SearchContext } from "../context/application/use-cases/search-context.use-case.js";
+import { ShowProject } from "../context/application/use-cases/show-project.use-case.js";
+import { SqliteVaultSessions } from "../context/infra/vault-sessions.js";
 import type { Clock, IdGenerator } from "../shared/application/ports/clock.js";
 import { resolveVaultPaths, type VaultPaths } from "../shared/infra/vault-paths.js";
-import { CreateVault } from "../vault/application/create-vault.js";
-import { LockVault } from "../vault/application/lock-vault.js";
-import { UnlockVault } from "../vault/application/unlock-vault.js";
-import { VaultStatus } from "../vault/application/vault-status.js";
+import { CreateVault } from "../vault/application/use-cases/create-vault.use-case.js";
+import { LockVault } from "../vault/application/use-cases/lock-vault.use-case.js";
+import { UnlockVault } from "../vault/application/use-cases/unlock-vault.use-case.js";
+import { VaultStatus } from "../vault/application/use-cases/vault-status.use-case.js";
 import { Argon2VaultCrypto } from "../vault/infra/argon2.js";
 import { FileVaultStore } from "../vault/infra/file-vault-store.js";
 import { OsKeychain } from "../vault/infra/keyring.js";
@@ -29,7 +28,6 @@ export interface Container {
   listProjects: ListProjects;
   searchContext: SearchContext;
   getContextPack: GetContextPack;
-  exportPack: ExportPack;
   showProject: ShowProject;
 }
 
@@ -38,8 +36,7 @@ export function buildContainer(): Container {
   const store = new FileVaultStore(paths);
   const crypto = new Argon2VaultCrypto();
   const keychain = new OsKeychain();
-  const sessions = new SqliteVaultSessionFactory(paths, keychain);
-  const getContextPack = new GetContextPack(sessions, systemClock);
+  const sessions = new SqliteVaultSessions(paths, keychain);
   return {
     paths,
     createVault: new CreateVault(store, crypto, keychain, systemClock, ulidIds),
@@ -49,8 +46,7 @@ export function buildContainer(): Container {
     saveContext: new SaveContext(sessions, systemClock, ulidIds),
     listProjects: new ListProjects(sessions),
     searchContext: new SearchContext(sessions),
-    getContextPack,
-    exportPack: new ExportPack(sessions, getContextPack),
+    getContextPack: new GetContextPack(sessions, systemClock),
     showProject: new ShowProject(sessions),
   };
 }

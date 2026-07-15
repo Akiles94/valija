@@ -4,6 +4,7 @@ import { z } from "zod";
 import { ITEM_TYPES } from "../../context/domain/values/item-type.js";
 import type { DomainError } from "../../shared/domain/result.js";
 import type { Container } from "../container.js";
+import { renderContextPackMarkdown } from "../context-pack-markdown.js";
 import { VERSION } from "../version.js";
 
 const ok = (text: string) => ({ content: [{ type: "text" as const, text }] });
@@ -111,7 +112,7 @@ export function buildMcpServer(c: Container): McpServer {
         ...(budget === undefined ? {} : { budgetTokens: budget }),
       });
       if (!r.ok) return err(r.error);
-      return ok(r.value.markdown);
+      return ok(renderContextPackMarkdown(r.value));
     },
   );
 

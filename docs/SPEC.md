@@ -149,15 +149,17 @@ Each bounded context is a top-level folder owning its full clean-architecture st
 
 ```
 src/
-├── shared/     domain/(Result, DomainError)  application/(Clock)  infra/(sqlite, migrations, paths)
-├── vault/      domain/(errors)  application/(usecases + ports)  infra/(argon2, keyring, header, store)
-├── context/    domain/(entities, values, errors)  application/(usecases + ports)  infra/(repos, session-factory)
-└── delivery/   container.ts + cli/ + mcp/   (composition root + entry points)
+├── shared/     domain/(Result, DomainError)  application/(Clock, UseCase)  infra/(sqlite, migrations, paths)
+├── vault/      domain/(errors, values)  application/(use-cases + ports)  infra/(argon2, keyring, header, store)
+├── context/    domain/(entities, values, services, errors)  application/(use-cases + ports + dto)  infra/(repos, vault-sessions)
+└── delivery/   container.ts + context-pack-markdown.ts + cli/ + mcp/   (composition root + entry points)
 ```
 
-Within a module: `domain/` (entities, values, module errors — no I/O), `application/` (use cases + the ports they need), `infra/` (adapters implementing those ports). Technical ports (crypto, keychain, store, repositories) live in `application/`, following Hexagonal; only the branded domain types and invariants live in `domain/`.
+Within a module: `domain/` (entities, values, services, module errors — no I/O), `application/` (use cases, the ports they need, and the DTOs they return), `infra/` (adapters implementing those ports). Technical ports (crypto, keychain, store, repositories) live in `application/`, following Hexagonal; only the branded domain types and invariants live in `domain/`.
 
-**Dependency rule:** `shared ←` everyone · `vault → shared` · `context → shared, vault` · `delivery →` all. `context` reaches `vault` only through the `VaultSessionFactory` bridge (a locked vault refuses a session, which is why the content context is downstream of the vault context).
+Use cases implement `UseCase<In, Out>` — a contract, not a base class. Cross-cutting plumbing is composed in through the port that owns it (`VaultSessions.withSession`), never inherited. Logic that spans entities lives in `domain/services/`, so no use case ever calls another. Rendering (markdown, JSON, tables) belongs to `delivery/`: the domain decides *what* is in a context pack and in what order, delivery decides how it *reads*.
+
+**Dependency rule:** `shared ←` everyone · `vault → shared` · `context → shared, vault` · `delivery →` all. `context` reaches `vault` only through the `VaultSessions` bridge (a locked vault refuses a session, which is why the content context is downstream of the vault context).
 
 Tests are co-located with their subject (`foo.ts` + `foo.test.ts`). Behavior specs live in [`specs/`](../specs/), one file per module. Use cases receive ports via plain constructor injection — no DI framework.
 

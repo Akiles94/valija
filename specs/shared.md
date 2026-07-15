@@ -27,4 +27,4 @@
 
 - `resolveVaultPaths(override?)` → `{ root, header, db }`. Root precedence: explicit override → `VALIJA_HOME` env → `~/.valija`.
 
-Proof: `src/shared/infra/db.test.ts`.
+Proof: `src/shared/infra/sqlite.test.ts`, `src/shared/infra/migrations.test.ts`.

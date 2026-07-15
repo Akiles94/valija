@@ -25,4 +25,4 @@ src/<module>/application/    use cases + ports (interfaces)
 src/<module>/infra/          adapters implementing the ports
 ```
 
-Dependencies point one way only: **`shared ←` everyone · `vault → shared` · `context → shared, vault` · `delivery →` all**. `context` depends on `vault` solely through the `VaultSessionFactory` bridge (a locked vault refuses a session). The product-level spec (scope, decisions, security model) lives in [../docs/SPEC.md](../docs/SPEC.md).
+Dependencies point one way only: **`shared ←` everyone · `vault → shared` · `context → shared, vault` · `delivery →` all**. `context` depends on `vault` solely through the `VaultSessions` bridge (a locked vault refuses a session). The product-level spec (scope, decisions, security model) lives in [../docs/SPEC.md](../docs/SPEC.md).

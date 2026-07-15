@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { MAX_CONTENT_BYTES, parseContent } from "./content.js";
 import { ITEM_TYPES, parseItemType } from "./item-type.js";
 import { parseProjectName } from "./project-name.js";
 import { MAX_TAGS, parseTag, parseTags } from "./tag.js";
@@ -37,6 +38,29 @@ describe("ItemType", () => {
     const r = parseItemType("note");
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe("INVALID_ITEM_TYPE");
+  });
+});
+
+describe("Content", () => {
+  it("trims and accepts normal content", () => {
+    const r = parseContent("  we chose SQLCipher  ");
+    expect(r.ok && r.value).toBe("we chose SQLCipher");
+  });
+
+  it("rejects empty content", () => {
+    const r = parseContent("   ");
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe("CONTENT_EMPTY");
+  });
+
+  it("rejects content over 32 KB (measured in bytes, not chars)", () => {
+    const r = parseContent("ñ".repeat(MAX_CONTENT_BYTES / 2 + 1));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe("CONTENT_TOO_LARGE");
+  });
+
+  it("accepts content at exactly the limit", () => {
+    expect(parseContent("a".repeat(MAX_CONTENT_BYTES)).ok).toBe(true);
   });
 });
 

@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { SqliteVaultSessionFactory } from "../context/infra/session-factory.js";
+import { SqliteVaultSessions } from "../context/infra/vault-sessions.js";
 import type { Clock, IdGenerator } from "../shared/application/ports/clock.js";
 import { resolveVaultPaths, type VaultPaths } from "../shared/infra/vault-paths.js";
 import type { KeychainPort } from "../vault/application/ports/keychain.js";
@@ -45,7 +45,7 @@ export interface TestVault {
   paths: VaultPaths;
   store: FileVaultStore;
   keychain: FakeKeychain;
-  factory: SqliteVaultSessionFactory;
+  sessions: SqliteVaultSessions;
   keyHex: string;
   vaultId: string;
 }
@@ -72,7 +72,7 @@ export function makeUnlockedVault(): TestVault {
     paths,
     store,
     keychain,
-    factory: new SqliteVaultSessionFactory(paths, keychain),
+    sessions: new SqliteVaultSessions(paths, keychain),
     keyHex,
     vaultId,
   };

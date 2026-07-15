@@ -2,17 +2,17 @@ import { rmSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { ExportPack } from "../../context/application/export-pack.js";
-import { GetContextPack } from "../../context/application/get-context-pack.js";
-import { ListProjects } from "../../context/application/list-projects.js";
-import { SaveContext } from "../../context/application/save-context.js";
-import { SearchContext } from "../../context/application/search-context.js";
-import { ShowProject } from "../../context/application/show-project.js";
+import { GetContextPack } from "../../context/application/use-cases/get-context-pack.use-case.js";
+import { ListProjects } from "../../context/application/use-cases/list-projects.use-case.js";
+import { SaveContext } from "../../context/application/use-cases/save-context.use-case.js";
+import { SearchContext } from "../../context/application/use-cases/search-context.use-case.js";
+import { ShowProject } from "../../context/application/use-cases/show-project.use-case.js";
+import { ok } from "../../shared/domain/result.js";
 import { FixedClock, makeUnlockedVault, SeqIds } from "../../testing/test-vault.js";
-import { CreateVault } from "../../vault/application/create-vault.js";
-import { LockVault } from "../../vault/application/lock-vault.js";
-import { UnlockVault } from "../../vault/application/unlock-vault.js";
-import { VaultStatus } from "../../vault/application/vault-status.js";
+import { CreateVault } from "../../vault/application/use-cases/create-vault.use-case.js";
+import { LockVault } from "../../vault/application/use-cases/lock-vault.use-case.js";
+import { UnlockVault } from "../../vault/application/use-cases/unlock-vault.use-case.js";
+import { VaultStatus } from "../../vault/application/use-cases/vault-status.use-case.js";
 import { Argon2VaultCrypto } from "../../vault/infra/argon2.js";
 import type { Container } from "../container.js";
 import { buildMcpServer } from "./server.js";
@@ -21,7 +21,6 @@ const vault = makeUnlockedVault();
 const clock = new FixedClock();
 const ids = new SeqIds();
 const crypto = new Argon2VaultCrypto();
-const getContextPack = new GetContextPack(vault.factory, clock);
 
 const container: Container = {
   paths: vault.paths,
@@ -29,12 +28,11 @@ const container: Container = {
   unlockVault: new UnlockVault(vault.store, crypto, vault.keychain),
   lockVault: new LockVault(vault.store, vault.keychain),
   vaultStatus: new VaultStatus(vault.store, vault.keychain),
-  saveContext: new SaveContext(vault.factory, clock, ids),
-  listProjects: new ListProjects(vault.factory),
-  searchContext: new SearchContext(vault.factory),
-  getContextPack,
-  exportPack: new ExportPack(vault.factory, getContextPack),
-  showProject: new ShowProject(vault.factory),
+  saveContext: new SaveContext(vault.sessions, clock, ids),
+  listProjects: new ListProjects(vault.sessions),
+  searchContext: new SearchContext(vault.sessions),
+  getContextPack: new GetContextPack(vault.sessions, clock),
+  showProject: new ShowProject(vault.sessions),
 };
 
 const client = new Client({ name: "vitest-client", version: "1.0.0" });
@@ -83,17 +81,14 @@ describe("valija MCP server (real client over in-memory transport)", () => {
     });
     expect(textOf(result)).toContain('Saved progress to project "mcp-e2e"');
 
-    const shown = container.showProject.execute("mcp-e2e");
+    const shown = container.showProject.execute({ project: "mcp-e2e" });
     expect(shown.ok).toBe(true);
     // source flows from the client's declared name
-    const items = vault.factory.open();
-    if (items.ok) {
-      const raw = items.value.items.findByProject(
-        (items.value.projects.findByName("mcp-e2e" as never) as { id: string }).id,
-      );
-      expect(raw[0]?.source).toBe("vitest-client");
-      items.value.close();
-    }
+    const raw = vault.sessions.withSession((session) => {
+      const project = session.projects.findByName("mcp-e2e" as never) as { id: string };
+      return ok(session.items.findByProject(project.id));
+    });
+    expect(raw.ok && raw.value[0]?.source).toBe("vitest-client");
   });
 
   it("save_handoff forces the handoff type", async () => {
@@ -101,7 +96,7 @@ describe("valija MCP server (real client over in-memory transport)", () => {
       name: "save_handoff",
       arguments: { project: "mcp-e2e", content: "goal: ship. next: publish to npm." },
     });
-    const shown = container.showProject.execute("mcp-e2e", "handoff");
+    const shown = container.showProject.execute({ project: "mcp-e2e", type: "handoff" });
     expect(shown.ok && shown.value).toHaveLength(1);
   });
 

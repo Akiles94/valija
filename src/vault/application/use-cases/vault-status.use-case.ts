@@ -1,6 +1,7 @@
-import { type DomainError, ok, type Result } from "../../shared/domain/result.js";
-import type { KeychainPort } from "./ports/keychain.js";
-import type { VaultStore } from "./ports/vault-store.js";
+import type { UseCase } from "../../../shared/application/use-case.js";
+import { type DomainError, ok, type Result } from "../../../shared/domain/result.js";
+import type { KeychainPort } from "../ports/keychain.js";
+import type { VaultStore } from "../ports/vault-store.js";
 
 export interface VaultStatusOutput {
   initialized: boolean;
@@ -9,7 +10,7 @@ export interface VaultStatusOutput {
   dbPath: string;
 }
 
-export class VaultStatus {
+export class VaultStatus implements UseCase<void, VaultStatusOutput> {
   constructor(
     private readonly store: VaultStore,
     private readonly keychain: KeychainPort,

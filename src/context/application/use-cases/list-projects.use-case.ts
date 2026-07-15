@@ -1,5 +1,6 @@
-import { type DomainError, ok, type Result } from "../../shared/domain/result.js";
-import type { VaultSessionFactory } from "./ports/vault-session.js";
+import type { UseCase } from "../../../shared/application/use-case.js";
+import { type DomainError, ok, type Result } from "../../../shared/domain/result.js";
+import type { VaultSessions } from "../ports/vault-session.js";
 
 export interface ProjectListEntry {
   name: string;
@@ -8,14 +9,12 @@ export interface ProjectListEntry {
   lastActivityAt: string | null;
 }
 
-export class ListProjects {
-  constructor(private readonly sessions: VaultSessionFactory) {}
+export class ListProjects implements UseCase<void, ProjectListEntry[]> {
+  constructor(private readonly sessions: VaultSessions) {}
 
   execute(): Result<ProjectListEntry[], DomainError> {
-    const session = this.sessions.open();
-    if (!session.ok) return session;
-    try {
-      const entries = session.value.projects.list().map((summary) => ({
+    return this.sessions.withSession((session) => {
+      const entries = session.projects.list().map((summary) => ({
         name: summary.project.name as string,
         ...(summary.project.description === undefined
           ? {}
@@ -24,8 +23,6 @@ export class ListProjects {
         lastActivityAt: summary.lastActivityAt?.toISOString() ?? null,
       }));
       return ok(entries);
-    } finally {
-      session.value.close();
-    }
+    });
   }
 }

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { OsKeychain } from "../../vault/infra/keyring.js";
 import type { Container } from "../container.js";
-import { CLIENTS, clientConfigPath } from "./installer.js";
+import { CLIENTS, type ClientId, clientConfigPath } from "./installer.js";
 
 interface Check {
   name: string;
@@ -10,68 +10,78 @@ interface Check {
   fatal?: boolean;
 }
 
-export async function doctorCommand(c: Container): Promise<void> {
-  const checks: Check[] = [];
-
+function checkNode(): Check {
   const [major] = process.versions.node.split(".").map(Number);
-  checks.push({
+  return {
     name: "node",
     ok: (major ?? 0) >= 22,
     detail: `v${process.versions.node} (need >=22)`,
     fatal: true,
-  });
+  };
+}
 
+async function checkSqlcipher(): Promise<Check> {
   try {
     const { default: Db } = await import("better-sqlite3-multiple-ciphers");
     const db = new Db(":memory:");
     db.pragma("cipher='sqlcipher'");
     db.close();
-    checks.push({ name: "sqlcipher", ok: true, detail: "native module loads" });
+    return { name: "sqlcipher", ok: true, detail: "native module loads" };
   } catch (e) {
-    checks.push({ name: "sqlcipher", ok: false, detail: (e as Error).message, fatal: true });
+    return { name: "sqlcipher", ok: false, detail: (e as Error).message, fatal: true };
   }
+}
 
+function checkKeychain(): Check {
   try {
     const keychain = new OsKeychain();
     keychain.setKey("doctor-probe", "test");
     const roundtrip = keychain.getKey("doctor-probe") === "test";
     keychain.deleteKey("doctor-probe");
-    checks.push({ name: "keychain", ok: roundtrip, detail: "OS keychain read/write" });
+    return { name: "keychain", ok: roundtrip, detail: "OS keychain read/write" };
   } catch (e) {
-    checks.push({ name: "keychain", ok: false, detail: (e as Error).message });
+    return { name: "keychain", ok: false, detail: (e as Error).message };
   }
+}
 
+function checkVault(c: Container): Check {
   const status = c.vaultStatus.execute();
-  if (status.ok) {
-    checks.push({
-      name: "vault",
-      ok: status.value.initialized,
-      detail: status.value.initialized
-        ? `${status.value.unlocked ? "unlocked" : "locked"} at ${status.value.dbPath}`
-        : 'not initialized — run "valija init"',
-    });
-  } else {
-    checks.push({ name: "vault", ok: false, detail: status.error.message });
-  }
+  if (!status.ok) return { name: "vault", ok: false, detail: status.error.message };
+  return {
+    name: "vault",
+    ok: status.value.initialized,
+    detail: status.value.initialized
+      ? `${status.value.unlocked ? "unlocked" : "locked"} at ${status.value.dbPath}`
+      : 'not initialized — run "valija init"',
+  };
+}
 
-  for (const client of CLIENTS) {
-    const path = clientConfigPath(client);
-    let detail = "config not found";
-    let installed = false;
-    if (existsSync(path)) {
-      detail = "config found, valija not installed";
-      try {
-        const parsed = JSON.parse(readFileSync(path, "utf8")) as {
-          mcpServers?: Record<string, unknown>;
-        };
-        installed = parsed.mcpServers?.valija !== undefined;
-        if (installed) detail = "valija installed";
-      } catch {
-        detail = "config exists but is not valid JSON";
-      }
-    }
-    checks.push({ name: client, ok: installed, detail });
+function checkClient(client: ClientId): Check {
+  const path = clientConfigPath(client);
+  if (!existsSync(path)) return { name: client, ok: false, detail: "config not found" };
+  try {
+    const parsed = JSON.parse(readFileSync(path, "utf8")) as {
+      mcpServers?: Record<string, unknown>;
+    };
+    const installed = parsed.mcpServers?.valija !== undefined;
+    return {
+      name: client,
+      ok: installed,
+      detail: installed ? "valija installed" : "config found, valija not installed",
+    };
+  } catch {
+    return { name: client, ok: false, detail: "config exists but is not valid JSON" };
   }
+}
+
+export async function doctorCommand(c: Container): Promise<void> {
+  const checks: Check[] = [
+    checkNode(),
+    await checkSqlcipher(),
+    checkKeychain(),
+    checkVault(c),
+    ...CLIENTS.map(checkClient),
+  ];
 
   let fatal = false;
   for (const check of checks) {
