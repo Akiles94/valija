@@ -4,7 +4,11 @@
 
 ## container.ts
 
-`buildContainer()` is the single composition root: constructs the infra adapters (`Argon2VaultCrypto`, `OsKeychain`, `FileVaultStore`, `SqliteVaultSessionFactory`) and injects them into every use case. Both entry points share one container.
+`buildContainer()` is the single composition root: constructs the infra adapters (`Argon2VaultCrypto`, `OsKeychain`, `FileVaultStore`, `SqliteVaultSessions`) and injects them into every use case. Both entry points share one container.
+
+## context-pack-markdown.ts
+
+`renderContextPackMarkdown(pack)` turns an assembled `ContextPack` into markdown: the `# Context pack:` header, one `##` per section, and `### type · date · #tags` per item. **Formatting lives here, not in the domain** — the domain orders sections, delivery names and renders them. Shared by `cli/` (`export`) and `mcp/` (`get_context`).
 
 ## cli/ — `valija <command>`
 
@@ -13,7 +17,7 @@
 | `init` | Prompt passphrase twice (hidden on a TTY); print recovery kit once; vault starts unlocked. |
 | `unlock [--recovery-key <hex>]` / `lock` / `status` | Session control via the keychain. |
 | `projects` / `show <p> [--type]` / `search <q> [-p]` | Read views. |
-| `export <p> [--json] [-o file]` | Context pack to stdout/file — the escape hatch for non-MCP tools. |
+| `export <p> [--json] [-o file]` | Context pack to stdout/file — the escape hatch for non-MCP tools. md = `GetContextPack` with an infinite budget, rendered; json = `ShowProject` serialized as `{ project, items }`. |
 | `install <claude-code\|claude-desktop\|cursor>` | Merge the MCP entry into the client config, backing up first; refuses to touch non-object/invalid JSON; prints manual fallback. |
 | `mcp` | Run the stdio server (used by tools, not humans). |
 | `doctor` | Check node ≥22, sqlcipher load, keychain r/w, vault state, client configs. Non-zero exit on a fatal check. |
@@ -26,4 +30,4 @@ Five tools — `save_context`, `save_handoff` (forces `handoff` type), `get_cont
 
 The tool descriptions are the product's real prompt engineering — see [../docs/SPEC.md](../docs/SPEC.md) §7.
 
-Proof: `src/delivery/mcp/server.test.ts` (real MCP client over in-memory transport).
+Proof: `src/delivery/mcp/server.test.ts` (real MCP client over in-memory transport), `src/delivery/context-pack-markdown.test.ts`.

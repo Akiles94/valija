@@ -14,7 +14,7 @@ Security subdomain. Ubiquitous language: **vault, passphrase, key, salt, recover
 
 ## application use cases
 
-**CreateVault(passphrase)** — header exists → `VAULT_ALREADY_EXISTS`; under 8 chars → `WEAK_PASSPHRASE`; else generate ULID vault id + 16-byte salt, derive key, write header, create+migrate the DB, and **store the key in the keychain (a new vault starts unlocked)**. Returns `{ vaultId, keyHex, createdAt }` — the caller renders the recovery kit; the key is never persisted outside the keychain.
+**CreateVault(passphrase)** — header exists → `VAULT_ALREADY_EXISTS`; under 8 chars → `WEAK_PASSPHRASE` (enforced by the `Passphrase` value object, never trimmed); else generate ULID vault id + 16-byte salt, derive key, write header, create+migrate the DB, and **store the key in the keychain (a new vault starts unlocked)**. Returns `{ vaultId, keyHex, createdAt }` — the caller renders the recovery kit; the key is never persisted outside the keychain.
 
 **UnlockVault({ passphrase | recoveryKeyHex })** — recovery key must be 64 hex chars (lowercased); passphrase path derives with the header's stored salt + params. Key is verified by opening the DB; failure → `WRONG_PASSPHRASE`. Success stores the key.
 
@@ -30,4 +30,4 @@ Security subdomain. Ubiquitous language: **vault, passphrase, key, salt, recover
 - `keyring.ts` — `OsKeychain` via `@napi-rs/keyring`, service `valija`, account = vault id. Missing reads null; deleting a missing entry returns false; no throws.
 - `file-vault-store.ts` — `FileVaultStore` implements `VaultStore` over the shared SQLite engine.
 
-Proof: `src/vault/infra/crypto.test.ts`, `src/vault/application/vault-lifecycle.test.ts` (real Argon2id).
+Proof: `src/vault/domain/values/{key-hex,passphrase}.test.ts`, `src/vault/infra/{argon2,vault-header,recovery-kit}.test.ts` (real Argon2id), and one `*.use-case.test.ts` per use case under `src/vault/application/use-cases/`.

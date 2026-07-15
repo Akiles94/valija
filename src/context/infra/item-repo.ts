@@ -5,6 +5,7 @@ import type {
   SearchResult,
 } from "../application/ports/repositories.js";
 import type { ContextItem } from "../domain/entities/context-item.js";
+import type { Content } from "../domain/values/content.js";
 import type { ItemType } from "../domain/values/item-type.js";
 import type { ProjectName } from "../domain/values/project-name.js";
 import type { Tag } from "../domain/values/tag.js";
@@ -26,7 +27,7 @@ const toItem = (row: ItemRow): ContextItem => ({
   id: row.id,
   projectId: row.project_id,
   type: row.type as ItemType,
-  content: row.content,
+  content: row.content as Content,
   tags: JSON.parse(row.tags) as Tag[],
   pinned: row.pinned === 1,
   ...(row.source === null ? {} : { source: row.source }),

@@ -7,13 +7,14 @@ import { migrate } from "../../shared/infra/migrations.js";
 import { openVaultDb } from "../../shared/infra/sqlite.js";
 import type { ContextItem } from "../domain/entities/context-item.js";
 import type { Project } from "../domain/entities/project.js";
+import type { Content } from "../domain/values/content.js";
 import type { ItemType } from "../domain/values/item-type.js";
 import type { ProjectName } from "../domain/values/project-name.js";
 import type { Tag } from "../domain/values/tag.js";
 import { SqliteContextItemRepository } from "./item-repo.js";
 import { SqliteProjectRepository } from "./project-repo.js";
 
-const tmp = mkdtempSync(join(tmpdir(), "valija-repo-"));
+const tmp = mkdtempSync(join(tmpdir(), "valija-itemrepo-"));
 const db = openVaultDb(join(tmp, "vault.db"), randomBytes(32).toString("hex"));
 const projects = new SqliteProjectRepository(db);
 const items = new SqliteContextItemRepository(db);
@@ -42,7 +43,7 @@ const item = (
     id: `01ITEM${String(seq).padStart(4, "0")}`,
     projectId,
     type: (overrides.type ?? "decision") as ItemType,
-    content,
+    content: content as Content,
     tags: overrides.tags ?? [],
     pinned: overrides.pinned ?? false,
     archived: overrides.archived ?? false,
@@ -50,33 +51,6 @@ const item = (
     updatedAt: overrides.createdAt ?? new Date(Date.UTC(2026, 6, 1, 10, 0, seq)),
   };
 };
-
-describe("SqliteProjectRepository", () => {
-  it("saves and finds by name", () => {
-    const p = project("vault-app");
-    projects.save(p);
-    const found = projects.findByName("vault-app" as ProjectName);
-    expect(found?.id).toBe(p.id);
-    expect(projects.findByName("nope" as ProjectName)).toBeNull();
-  });
-
-  it("upserts on same id", () => {
-    const p = project("upsertable");
-    projects.save(p);
-    projects.save({ ...p, description: "now with description" });
-    expect(projects.findByName(p.name)?.description).toBe("now with description");
-  });
-
-  it("lists with item counts excluding archived", () => {
-    const p = project("counted");
-    projects.save(p);
-    items.save(item(p.id, "alpha decision"));
-    items.save(item(p.id, "beta archived", { archived: true }));
-    const summary = projects.list().find((s) => s.project.name === "counted");
-    expect(summary?.itemCount).toBe(1);
-    expect(summary?.lastActivityAt).toBeInstanceOf(Date);
-  });
-});
 
 describe("SqliteContextItemRepository", () => {
   it("findByProject filters by type, pinned, and excludes archived by default", () => {

@@ -1,8 +1,9 @@
-import { type DomainError, ok, type Result } from "../../shared/domain/result.js";
-import type { KeychainPort } from "./ports/keychain.js";
-import type { VaultStore } from "./ports/vault-store.js";
+import type { UseCase } from "../../../shared/application/use-case.js";
+import { type DomainError, ok, type Result } from "../../../shared/domain/result.js";
+import type { KeychainPort } from "../ports/keychain.js";
+import type { VaultStore } from "../ports/vault-store.js";
 
-export class LockVault {
+export class LockVault implements UseCase<void, { wasUnlocked: boolean }> {
   constructor(
     private readonly store: VaultStore,
     private readonly keychain: KeychainPort,

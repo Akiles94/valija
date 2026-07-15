@@ -33,30 +33,41 @@ export interface InstallResult {
   backupPath: string | null;
 }
 
-/** Merge the valija MCP entry into the client config, backing up the original file first. */
-export function installIntoClient(client: ClientId): InstallResult {
-  const configPath = clientConfigPath(client);
-  let existing: Record<string, unknown> = {};
-  let backupPath: string | null = null;
-
-  if (existsSync(configPath)) {
-    const raw = readFileSync(configPath, "utf8");
-    const parsed: unknown = JSON.parse(raw); // malformed JSON -> throw, never overwrite
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      throw new Error(`${configPath} does not contain a JSON object; not touching it.`);
-    }
-    existing = parsed as Record<string, unknown>;
-    backupPath = `${configPath}.backup-${Date.now()}`;
-    copyFileSync(configPath, backupPath);
-  } else {
-    mkdirSync(dirname(configPath), { recursive: true });
+/** Read the client config as an object; malformed or non-object content aborts — never overwrite it. */
+function readExistingConfig(configPath: string): Record<string, unknown> {
+  if (!existsSync(configPath)) return {};
+  const parsed: unknown = JSON.parse(readFileSync(configPath, "utf8"));
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error(`${configPath} does not contain a JSON object; not touching it.`);
   }
+  return parsed as Record<string, unknown>;
+}
 
+/** Copy the current config aside before modifying it; ensure the directory for fresh installs. */
+function backupExisting(configPath: string): string | null {
+  if (!existsSync(configPath)) {
+    mkdirSync(dirname(configPath), { recursive: true });
+    return null;
+  }
+  const backupPath = `${configPath}.backup-${Date.now()}`;
+  copyFileSync(configPath, backupPath);
+  return backupPath;
+}
+
+/** Merge the valija server into mcpServers, preserving everything else in the config. */
+function mergeValijaEntry(existing: Record<string, unknown>): Record<string, unknown> {
   const servers =
     typeof existing.mcpServers === "object" && existing.mcpServers !== null
       ? (existing.mcpServers as Record<string, unknown>)
       : {};
-  const merged = { ...existing, mcpServers: { ...servers, valija: MCP_ENTRY } };
+  return { ...existing, mcpServers: { ...servers, valija: MCP_ENTRY } };
+}
+
+export function installIntoClient(client: ClientId): InstallResult {
+  const configPath = clientConfigPath(client);
+  const existing = readExistingConfig(configPath);
+  const backupPath = backupExisting(configPath);
+  const merged = mergeValijaEntry(existing);
   writeFileSync(configPath, `${JSON.stringify(merged, null, 2)}\n`, "utf8");
   return { configPath, backupPath };
 }

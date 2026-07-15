@@ -1,11 +1,6 @@
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { KdfParams } from "../application/ports/crypto.js";
 import { Argon2VaultCrypto, fromHex, KEY_LENGTH, SALT_LENGTH, toHex } from "./argon2.js";
-import { renderRecoveryKit } from "./recovery-kit.js";
-import { readVaultHeader, type VaultHeader, writeVaultHeader } from "./vault-header.js";
 
 // Small params so tests stay fast; determinism is independent of cost.
 const TEST_PARAMS: KdfParams = {
@@ -16,8 +11,6 @@ const TEST_PARAMS: KdfParams = {
 };
 
 const crypto = new Argon2VaultCrypto();
-const tmp = mkdtempSync(join(tmpdir(), "valija-crypto-"));
-afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 describe("Argon2VaultCrypto", () => {
   it("derives a deterministic 32-byte key for same passphrase and salt", async () => {
@@ -48,40 +41,5 @@ describe("Argon2VaultCrypto", () => {
   it("hex round-trips", () => {
     const salt = crypto.generateSalt();
     expect(toHex(fromHex(toHex(salt)))).toBe(toHex(salt));
-  });
-});
-
-describe("VaultHeader", () => {
-  it("round-trips write and read", () => {
-    const path = join(tmp, "vault.json");
-    const header: VaultHeader = {
-      vaultId: "01TESTVAULTID",
-      schemaVersion: 1,
-      kdf: TEST_PARAMS,
-      salt: crypto.generateSalt(),
-      createdAt: new Date().toISOString(),
-    };
-    writeVaultHeader(path, header);
-    const read = readVaultHeader(path);
-    expect(read.ok).toBe(true);
-    if (read.ok) {
-      expect(read.value.vaultId).toBe(header.vaultId);
-      expect(read.value.kdf).toEqual(header.kdf);
-      expect(toHex(read.value.salt)).toBe(toHex(header.salt));
-    }
-  });
-
-  it("returns VAULT_NOT_FOUND for a missing file", () => {
-    const r = readVaultHeader(join(tmp, "nope.json"));
-    expect(!r.ok && r.error.code).toBe("VAULT_NOT_FOUND");
-  });
-});
-
-describe("Recovery kit", () => {
-  it("contains the key, the vault id, and the warning", () => {
-    const kit = renderRecoveryKit("01VAULT", "ab".repeat(32), "2026-07-11");
-    expect(kit).toContain("ab".repeat(32));
-    expect(kit).toContain("01VAULT");
-    expect(kit).toContain("Forever");
   });
 });
