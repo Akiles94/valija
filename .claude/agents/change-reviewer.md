@@ -37,7 +37,7 @@ log, wc, running the test suite):
      written to disk, key derivation or keychain use altered, SQLCipher not keyed,
      MCP tools exposing more than intended.
    - Tests missing for new behavior, or the suite not passing.
-   - The TBR ritual steps not evidenced (per the project's TBR convention doc).
+   - The advance ritual not evidenced per `CLAUDE.md` (the refined.md → approved plan.md → review.md trail; the plan must carry an `Approved:` line).
    - Compliance with the repo's naming conventions, clean architecture principles. If any names are inconsistent, propose alternatives that align with the conventions and principles.
 5. Separate real defects from nitpicks. Do not invent problems to look thorough, and
    do not wave through a real one to be agreeable.

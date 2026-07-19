@@ -9,7 +9,18 @@
 set -euo pipefail
 
 INPUT=$(cat)
-COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty')
+
+# Extract tool_input.command. Prefer `node` (always present in this Node project);
+# fall back to `jq`. If neither exists, fail CLOSED so the gate can't silently
+# fail open. (jq is not installed on this machine.)
+if command -v node >/dev/null 2>&1; then
+  COMMAND=$(printf '%s' "$INPUT" | node -e 'try{const j=JSON.parse(require("fs").readFileSync(0,"utf8"));process.stdout.write((j.tool_input&&j.tool_input.command)||"")}catch{}')
+elif command -v jq >/dev/null 2>&1; then
+  COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty')
+else
+  echo "Blocked: guard-git-ops.sh needs node or jq to parse the tool payload, but neither is on PATH." >&2
+  exit 2
+fi
 
 # Only gate the irreversible-to-main operations.
 if ! printf '%s' "$COMMAND" | grep -qiE '\bgit[[:space:]]+(push|merge)\b'; then

@@ -34,8 +34,9 @@ When the verdict is PASS:
    - do not embellish; describe only what the diff actually does
 3. Stage and commit on the current feature branch.
 4. Push the branch.
-5. Merge into main per the project's merge convention (fast-forward or no-ff as the
-   repo dictates — check existing history rather than assuming).
+5. Merge into main with `--no-ff` (permanent project rule: every advance gets its
+   own merge commit on main, even if the branch would fast-forward cleanly).
+6. Create a report of the advance, what was done, what is lacking and a summary of the review, and write it to `advances/<ADVANCE>/report.md`. Do not write anywhere else.
 
 Show the exact commands before the push and merge steps so they can be eyeballed.
 End by reporting the commit hash, the branch, and confirmation of the merge.
