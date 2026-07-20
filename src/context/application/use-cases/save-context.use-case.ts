@@ -61,7 +61,7 @@ export class SaveContext implements UseCase<SaveContextInput, SaveContextOutput>
       return ok({
         itemId: item.id,
         project: validated.value.name as string,
-        type: item.type,
+        type: validated.value.type,
         projectCreated: created,
       });
     });

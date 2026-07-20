@@ -10,11 +10,11 @@ const tmp = mkdtempSync(join(tmpdir(), "valija-migrations-"));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 describe("Migrations", () => {
-  it("applies schema v1 and is idempotent", () => {
+  it("applies the latest schema and is idempotent", () => {
     const db = openVaultDb(join(tmp, "idempotent.db"), randomBytes(32).toString("hex"));
     migrate(db);
     migrate(db);
-    expect(schemaVersion(db)).toBe(1);
+    expect(schemaVersion(db)).toBe(2);
     db.close();
   });
 

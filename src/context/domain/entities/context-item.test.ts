@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Content } from "../values/content.js";
 import type { Tag } from "../values/tag.js";
-import { createContextItem } from "./context-item.js";
+import { createContextItem, createImportedContextItem, importedItemId } from "./context-item.js";
 
 const now = new Date("2026-07-11T12:00:00Z");
 
@@ -38,5 +38,53 @@ describe("createContextItem", () => {
   it("omits source entirely when there is none", () => {
     expect("source" in createContextItem(base)).toBe(false);
     expect(createContextItem({ ...base, source: "claude-code" }).source).toBe("claude-code");
+  });
+});
+
+describe("importedItemId", () => {
+  it("is deterministic for the same source, conversation, and chunk", () => {
+    expect(importedItemId("chatgpt", "conv-1", 0)).toBe(importedItemId("chatgpt", "conv-1", 0));
+  });
+
+  it("differs across source, conversation, or chunk", () => {
+    const id = importedItemId("chatgpt", "conv-1", 0);
+    expect(importedItemId("claude", "conv-1", 0)).not.toBe(id);
+    expect(importedItemId("chatgpt", "conv-2", 0)).not.toBe(id);
+    expect(importedItemId("chatgpt", "conv-1", 1)).not.toBe(id);
+  });
+
+  it("is an imp- prefixed hex id", () => {
+    expect(importedItemId("chatgpt", "c", 0)).toMatch(/^imp-[0-9a-f]{32}$/);
+  });
+});
+
+describe("createImportedContextItem", () => {
+  const importedBase = {
+    projectId: "01PROJ0001",
+    source: "chatgpt",
+    conversationId: "conv-1",
+    chunkIndex: 0,
+    content: "**User:** hi" as Content,
+    tags: ["imported", "chatgpt"] as Tag[],
+    createdAt: new Date("2024-03-15T00:00:00Z"),
+    now: new Date("2026-07-17T12:00:00Z"),
+  };
+
+  it("keeps the historical createdAt but stamps updatedAt at import time", () => {
+    const item = createImportedContextItem(importedBase);
+    expect(item.createdAt).toEqual(new Date("2024-03-15T00:00:00Z"));
+    expect(item.updatedAt).toEqual(new Date("2026-07-17T12:00:00Z"));
+  });
+
+  it("is imported, never pinned, unarchived, with a '<source>-import' source", () => {
+    const item = createImportedContextItem(importedBase);
+    expect(item.type).toBe("imported");
+    expect(item.pinned).toBe(false);
+    expect(item.archived).toBe(false);
+    expect(item.source).toBe("chatgpt-import");
+  });
+
+  it("derives its id deterministically from source/conversation/chunk", () => {
+    expect(createImportedContextItem(importedBase).id).toBe(importedItemId("chatgpt", "conv-1", 0));
   });
 });
