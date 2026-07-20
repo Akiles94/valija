@@ -42,19 +42,22 @@ describe("createContextItem", () => {
 });
 
 describe("importedItemId", () => {
-  it("is deterministic for the same source, conversation, and chunk", () => {
-    expect(importedItemId("chatgpt", "conv-1", 0)).toBe(importedItemId("chatgpt", "conv-1", 0));
+  it("is deterministic for the same project, source, conversation, and chunk", () => {
+    expect(importedItemId("p1", "chatgpt", "conv-1", 0)).toBe(
+      importedItemId("p1", "chatgpt", "conv-1", 0),
+    );
   });
 
-  it("differs across source, conversation, or chunk", () => {
-    const id = importedItemId("chatgpt", "conv-1", 0);
-    expect(importedItemId("claude", "conv-1", 0)).not.toBe(id);
-    expect(importedItemId("chatgpt", "conv-2", 0)).not.toBe(id);
-    expect(importedItemId("chatgpt", "conv-1", 1)).not.toBe(id);
+  it("differs across project, source, conversation, or chunk", () => {
+    const id = importedItemId("p1", "chatgpt", "conv-1", 0);
+    expect(importedItemId("p2", "chatgpt", "conv-1", 0)).not.toBe(id); // same conversation, other project
+    expect(importedItemId("p1", "claude", "conv-1", 0)).not.toBe(id);
+    expect(importedItemId("p1", "chatgpt", "conv-2", 0)).not.toBe(id);
+    expect(importedItemId("p1", "chatgpt", "conv-1", 1)).not.toBe(id);
   });
 
   it("is an imp- prefixed hex id", () => {
-    expect(importedItemId("chatgpt", "c", 0)).toMatch(/^imp-[0-9a-f]{32}$/);
+    expect(importedItemId("p1", "chatgpt", "c", 0)).toMatch(/^imp-[0-9a-f]{32}$/);
   });
 });
 
@@ -84,7 +87,9 @@ describe("createImportedContextItem", () => {
     expect(item.source).toBe("chatgpt-import");
   });
 
-  it("derives its id deterministically from source/conversation/chunk", () => {
-    expect(createImportedContextItem(importedBase).id).toBe(importedItemId("chatgpt", "conv-1", 0));
+  it("derives its id deterministically from project/source/conversation/chunk", () => {
+    expect(createImportedContextItem(importedBase).id).toBe(
+      importedItemId("01PROJ0001", "chatgpt", "conv-1", 0),
+    );
   });
 });
