@@ -47,7 +47,7 @@ program
   .command("show")
   .description("Print the items of a project.")
   .argument("<project>", "project slug")
-  .option("--type <type>", "filter by type (decision|progress|preference|fact|handoff)")
+  .option("--type <type>", "filter by type (decision|progress|preference|fact|handoff|imported)")
   .action((project: string, options: { type?: string }) =>
     showCommand(container, project, options),
   );

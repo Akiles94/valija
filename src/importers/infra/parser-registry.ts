@@ -1,5 +1,5 @@
-import type { ParserRegistry } from "../application/ports/parser-registry.js";
 import type { ConversationParser } from "../application/ports/parser.js";
+import type { ParserRegistry } from "../application/ports/parser-registry.js";
 import type { ImportSource } from "../domain/values/import-source.js";
 import { ChatgptParser } from "./parsers/chatgpt-parser.js";
 import { ClaudeParser } from "./parsers/claude-parser.js";

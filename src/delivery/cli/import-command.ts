@@ -21,14 +21,14 @@ interface ImportOptions {
 }
 
 export function importCommand(c: Container, file: string, options: ImportOptions): void {
-  // -p is required for a real import or a dry-run (both report against a target); --list may omit it.
-  const wantsSelection =
+  // A selection flag means a real import or dry-run preview, which report against a target,
+  // so -p is required. With no selection the command just lists (a bare --dry-run lists too).
+  const hasSelection =
     options.all === true ||
     options.pick !== undefined ||
     options.query !== undefined ||
-    options.since !== undefined ||
-    options.dryRun === true;
-  if (wantsSelection && options.project === undefined) {
+    options.since !== undefined;
+  if (hasSelection && options.project === undefined) {
     console.error("error: -p <project> is required to import. Run with --list first to preview.");
     process.exit(1);
   }
