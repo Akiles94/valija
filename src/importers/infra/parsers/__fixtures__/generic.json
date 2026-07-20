@@ -1,0 +1,14 @@
+{
+  "valija_import_version": 1,
+  "conversations": [
+    {
+      "id": "generic-conv-1",
+      "title": "Generic chat",
+      "createdAt": "2024-05-01T09:00:00Z",
+      "messages": [
+        { "role": "user", "content": "Hello there." },
+        { "role": "assistant", "content": "Hi! How can I help?" }
+      ]
+    }
+  ]
+}
