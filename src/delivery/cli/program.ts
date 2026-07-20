@@ -5,6 +5,7 @@ import { runMcpServer } from "../mcp/server.js";
 import { VERSION } from "../version.js";
 import { exportCommand, projectsCommand, searchCommand, showCommand } from "./content-commands.js";
 import { doctorCommand } from "./doctor.js";
+import { importCommand } from "./import-command.js";
 import { CLIENTS, type ClientId, installIntoClient, manualInstructions } from "./installer.js";
 import { initCommand, lockCommand, statusCommand, unlockCommand } from "./vault-commands.js";
 
@@ -68,6 +69,22 @@ program
   .option("-o, --output <file>", "write to a file instead of stdout")
   .action((project: string, options: { json?: boolean; output?: string }) =>
     exportCommand(container, project, options),
+  );
+
+program
+  .command("import")
+  .description("Import chatbot history (ChatGPT/Claude/generic export) into the vault.")
+  .argument("<file>", "path to an export file (.json or .zip)")
+  .option("-p, --project <project>", "target project (required to import; created if new)")
+  .option("--from <source>", "chatgpt | claude | generic (auto-detected if omitted)")
+  .option("--list", "list conversations and exit (the default when no selection is given)")
+  .option("--pick <spec>", "1-based indices/ranges into the list, e.g. 1,3-5")
+  .option("--query <text>", "select conversations whose title contains this text")
+  .option("--since <date>", "select conversations on or after YYYY-MM-DD")
+  .option("--all", "import every conversation")
+  .option("--dry-run", "report what would be imported; write nothing")
+  .action((file: string, options: Parameters<typeof importCommand>[2]) =>
+    importCommand(container, file, options),
   );
 
 program

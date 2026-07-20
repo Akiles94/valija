@@ -9,14 +9,14 @@ Content subdomain. Ubiquitous language: **project, context item, type, tag, pinn
 ## domain/values (parse-don't-validate; branded types)
 
 - **ProjectName** — `[a-z0-9][a-z0-9-]{0,63}`, trimmed + lowercased. Violation → `INVALID_PROJECT_NAME`.
-- **ItemType** — one of `decision | progress | preference | fact | handoff`. Else → `INVALID_ITEM_TYPE`.
+- **ItemType** — one of `decision | progress | preference | fact | handoff`. Else → `INVALID_ITEM_TYPE`. **StorableItemType** adds `imported` (the six types that may be *stored*); `parseStorableItemType` accepts it, `parseItemType` does not. The split keeps `imported` off the save/MCP surface (`ITEM_TYPES` is the MCP enum) while letting storage and reads carry it.
 - **Tag** — 1–32 chars of `[a-z0-9-]`, trimmed + lowercased. Max 10 (`TOO_MANY_TAGS`), duplicates dropped.
 - **Content** — trimmed; empty → `CONTENT_EMPTY`; over **32 KB in UTF-8 bytes** → `CONTENT_TOO_LARGE`; exactly 32 KB accepted.
 
 ## domain/entities
 
 - **Project**: id, name, description?, timestamps.
-- **ContextItem**: id, projectId, type, content, tags, pinned, source?, archived, timestamps. Minted only via `createContextItem`, which is total: every field arrives as a parsed value object, starts `archived: false`, and stamps both timestamps from one instant. Rehydration from storage is the repository's job.
+- **ContextItem**: id, projectId, type (`StorableItemType`), content, tags, pinned, source?, archived, timestamps. Minted via `createContextItem` (the five saveable types) or `createImportedContextItem` — both total. The imported factory fixes `type: imported`, is never pinned, keeps the **original conversation date** as `createdAt` while stamping `updatedAt` at the import instant, sets `source: "<src>-import"`, and derives a **deterministic id** (`importedItemId(projectId, source, conversationId, chunkIndex)`), so re-importing the same export into the same project upserts instead of duplicating, while the same conversation imported into a different project stays distinct.
 
 ## domain/services
 
@@ -41,7 +41,11 @@ Each implements `UseCase<In, Out>` (or `AsyncUseCase`) from `shared/application/
 
 **SearchContext** — unknown project scope → `PROJECT_NOT_FOUND`; limit clamped [1,100] default 20; empty/whitespace query → empty (terms quoted, never an FTS syntax error).
 
-**ListProjects / ShowProject** — list with counts (archived excluded); show newest-first with optional type filter. Both return `ContextItemView[]`.
+**ListProjects / ShowProject** — list with counts (archived excluded); show newest-first with optional type filter (`ShowProject` accepts `imported` via `parseStorableItemType`, so `show <p> --type imported` works). Both return `ContextItemView[]`.
+
+**ImportItems** — the batch write path used by the importers module. Parses the project name **before** opening a session, find-or-creates the project, then in **one session** re-validates each chunk's tags and content (defense in depth), mints an imported item via `createImportedContextItem`, and upserts it. A single bad chunk is collected into `failures` (never aborts the batch). Returns `{ projectCreated, imported, failed, failures }`. This keeps `context` the sole guardian of `ContextItem` and the `imported` type — importers hand it drafts, nothing more.
+
+**Imported items and the pack:** `assembleContextPack` only ever includes pinned items, the latest handoff, and the four section types. Imported items are never pinned and are none of those types, so they are **automatically excluded** from every pack — searchable via FTS, but never auto-loaded through `get_context`.
 
 There is no ExportPack use case: exporting is a rendering choice over these two, made in `delivery`.
 

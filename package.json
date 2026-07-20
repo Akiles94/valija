@@ -1,6 +1,6 @@
 {
   "name": "valija",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Open source, end-to-end encrypted context vault for developers who use several AI tools. Local MCP server + CLI.",
   "type": "module",
   "license": "Apache-2.0",

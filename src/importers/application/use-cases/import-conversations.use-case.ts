@@ -48,6 +48,8 @@ export interface ImportConversationsOutput {
   project?: string;
   listing?: ListingRow[];
   imported: number;
+  /** Conversations that contributed at least one item. */
+  conversations: number;
   skipped: number;
   failed: number;
   failures: ImportFailure[];
@@ -105,10 +107,14 @@ export class ImportConversations
     });
     if (!selected.ok) return selected;
 
-    const { items, skipped } = this.buildItems(selected.value, source);
+    const { items, skipped, contributed } = this.buildItems(selected.value, source);
     if (mode === "dry-run") {
       return ok(
-        this.summary(mode, source, input, parseFailures, { imported: items.length, skipped }),
+        this.summary(mode, source, input, parseFailures, {
+          imported: items.length,
+          conversations: contributed,
+          skipped,
+        }),
       );
     }
 
@@ -121,6 +127,7 @@ export class ImportConversations
     return ok(
       this.summary(mode, source, input, [...parseFailures, ...importFailures], {
         imported: written.value.imported,
+        conversations: contributed,
         skipped,
       }),
     );
@@ -171,16 +178,18 @@ export class ImportConversations
   private buildItems(
     conversations: readonly Conversation[],
     source: ImportSource,
-  ): { items: ImportedItemInput[]; skipped: number } {
+  ): { items: ImportedItemInput[]; skipped: number; contributed: number } {
     const now = this.clock.now();
     const items: ImportedItemInput[] = [];
     let skipped = 0;
+    let contributed = 0;
     for (const conversation of conversations) {
       const chunks = renderConversationChunks(conversation, source);
       if (chunks.length === 0) {
         skipped += 1;
         continue;
       }
+      contributed += 1;
       // A conversation with no derivable date carries the epoch sentinel; stamp the import instant instead.
       const createdAt = conversation.createdAt.getTime() === 0 ? now : conversation.createdAt;
       chunks.forEach((content, chunkIndex) => {
@@ -194,7 +203,7 @@ export class ImportConversations
         });
       });
     }
-    return { items, skipped };
+    return { items, skipped, contributed };
   }
 
   private summary(
@@ -202,7 +211,7 @@ export class ImportConversations
     source: ImportSource,
     input: ImportConversationsInput,
     failures: ImportFailure[],
-    counts: { imported?: number; skipped?: number; listing?: ListingRow[] },
+    counts: { imported?: number; conversations?: number; skipped?: number; listing?: ListingRow[] },
   ): ImportConversationsOutput {
     return {
       mode,
@@ -210,6 +219,7 @@ export class ImportConversations
       ...(input.projectName === undefined ? {} : { project: input.projectName }),
       ...(counts.listing === undefined ? {} : { listing: counts.listing }),
       imported: counts.imported ?? 0,
+      conversations: counts.conversations ?? 0,
       skipped: counts.skipped ?? 0,
       failed: failures.length,
       failures,
