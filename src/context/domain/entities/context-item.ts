@@ -1,11 +1,12 @@
+import { createHash } from "node:crypto";
 import type { Content } from "../values/content.js";
-import type { ItemType } from "../values/item-type.js";
+import type { ItemType, StorableItemType } from "../values/item-type.js";
 import type { Tag } from "../values/tag.js";
 
 export interface ContextItem {
   readonly id: string;
   readonly projectId: string;
-  readonly type: ItemType;
+  readonly type: StorableItemType;
   readonly content: Content;
   readonly tags: readonly Tag[];
   readonly pinned: boolean;
@@ -42,6 +43,58 @@ export function createContextItem(input: NewContextItem): ContextItem {
     ...(input.source === undefined ? {} : { source: input.source }),
     archived: false,
     createdAt: input.now,
+    updatedAt: input.now,
+  };
+}
+
+export interface NewImportedContextItem {
+  readonly projectId: string;
+  /** The import source, e.g. "chatgpt" — kept as a plain string so the entity owes nothing to the importers module. */
+  readonly source: string;
+  readonly conversationId: string;
+  readonly chunkIndex: number;
+  readonly content: Content;
+  readonly tags: readonly Tag[];
+  /** The original conversation date — chronology is preserved. */
+  readonly createdAt: Date;
+  /** The import instant — so the project surfaces as freshly active. */
+  readonly now: Date;
+}
+
+/**
+ * A deterministic id for an imported chunk: the same (source, conversation,
+ * chunk) always maps to the same id, so re-importing the same export upserts
+ * instead of duplicating. Not a ULID — that is fine, ordering everywhere is by
+ * created_at, never by id. Hashing is a pure computation, so it belongs here.
+ */
+export function importedItemId(
+  projectId: string,
+  source: string,
+  conversationId: string,
+  chunkIndex: number,
+): string {
+  const digest = createHash("sha256")
+    .update(`${projectId} ${source} ${conversationId} ${chunkIndex}`)
+    .digest("hex");
+  return `imp-${digest.slice(0, 32)}`;
+}
+
+/**
+ * Mint an imported item. Total, like createContextItem, but it stamps the
+ * historical createdAt separately from the import instant (updatedAt), fixes the
+ * type to `imported`, is never pinned, and derives its id deterministically.
+ */
+export function createImportedContextItem(input: NewImportedContextItem): ContextItem {
+  return {
+    id: importedItemId(input.projectId, input.source, input.conversationId, input.chunkIndex),
+    projectId: input.projectId,
+    type: "imported",
+    content: input.content,
+    tags: input.tags,
+    pinned: false,
+    source: `${input.source}-import`,
+    archived: false,
+    createdAt: input.createdAt,
     updatedAt: input.now,
   };
 }

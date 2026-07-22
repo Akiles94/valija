@@ -1,0 +1,33 @@
+[
+  {
+    "id": "chatgpt-conv-1",
+    "title": "Postgres indexing",
+    "create_time": 1710500000,
+    "current_node": "b",
+    "mapping": {
+      "root": { "id": "root", "message": null, "parent": null, "children": ["a"] },
+      "a": {
+        "id": "a",
+        "message": {
+          "id": "a",
+          "author": { "role": "user" },
+          "content": { "content_type": "text", "parts": ["How do I index a jsonb column?"] },
+          "create_time": 1710500001
+        },
+        "parent": "root",
+        "children": ["b"]
+      },
+      "b": {
+        "id": "b",
+        "message": {
+          "id": "b",
+          "author": { "role": "assistant" },
+          "content": { "content_type": "text", "parts": ["Use a GIN index on the column."] },
+          "create_time": 1710500002
+        },
+        "parent": "a",
+        "children": []
+      }
+    }
+  }
+]

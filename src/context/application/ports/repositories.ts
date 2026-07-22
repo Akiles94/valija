@@ -1,6 +1,6 @@
 import type { ContextItem } from "../../domain/entities/context-item.js";
 import type { Project, ProjectSummary } from "../../domain/entities/project.js";
-import type { ItemType } from "../../domain/values/item-type.js";
+import type { StorableItemType } from "../../domain/values/item-type.js";
 import type { ProjectName } from "../../domain/values/project-name.js";
 
 export interface ProjectRepository {
@@ -10,7 +10,7 @@ export interface ProjectRepository {
 }
 
 export interface FindByProjectFilters {
-  type?: ItemType;
+  type?: StorableItemType;
   pinned?: boolean;
   limit?: number;
   includeArchived?: boolean;

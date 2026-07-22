@@ -37,10 +37,16 @@ log, wc, running the test suite):
      written to disk, key derivation or keychain use altered, SQLCipher not keyed,
      MCP tools exposing more than intended.
    - Tests missing for new behavior, or the suite not passing.
-   - The TBR ritual steps not evidenced (per the project's TBR convention doc).
+   - The advance ritual not evidenced per `CLAUDE.md` (the refined.md → approved plan.md → review.md trail; the plan must carry an `Approved:` line).
    - Compliance with the repo's naming conventions, clean architecture principles. If any names are inconsistent, propose alternatives that align with the conventions and principles.
 5. Separate real defects from nitpicks. Do not invent problems to look thorough, and
    do not wave through a real one to be agreeable.
+6. Ensure that the code is consistent with the codebase's style and patterns. If there are inconsistencies, propose changes to align with the existing codebase.
+7. The code should be the most easy to read as possible. If there are readability issues, propose changes to improve clarity and maintainability.
+8. The code should be the most efficient and performant as possible. If there are performance issues, propose changes to improve efficiency.
+9. The code should be the most secure as possible. If there are security issues, propose changes to improve security.
+10. The code should be the most robust and error-resistant as possible. If there are potential failure points, propose changes to improve reliability.
+11. The code should be the most maintainable and extensible as possible. If there are maintainability or extensibility issues, propose changes to improve future development.
 
 Write `advances/<ADVANCE>/review.md`. The FIRST line must be exactly one of:
 

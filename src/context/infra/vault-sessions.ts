@@ -66,7 +66,7 @@ export class SqliteVaultSessions implements VaultSessions {
   private openRepositories(vaultId: string, keyHex: string): Result<VaultSession, DomainError> {
     try {
       const db = openVaultDb(this.paths.db, keyHex);
-      migrate(db);
+      migrate(db, this.paths.db);
       return ok({
         projects: new SqliteProjectRepository(db),
         items: new SqliteContextItemRepository(db),

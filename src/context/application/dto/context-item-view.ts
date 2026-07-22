@@ -1,5 +1,5 @@
 import type { ContextItem } from "../../domain/entities/context-item.js";
-import type { ItemType } from "../../domain/values/item-type.js";
+import type { StorableItemType } from "../../domain/values/item-type.js";
 import type { ProjectName } from "../../domain/values/project-name.js";
 
 /**
@@ -10,7 +10,7 @@ import type { ProjectName } from "../../domain/values/project-name.js";
 export interface ContextItemView {
   id: string;
   project: string;
-  type: ItemType;
+  type: StorableItemType;
   content: string;
   tags: string[];
   pinned: boolean;

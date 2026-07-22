@@ -159,9 +159,25 @@ Within a module: `domain/` (entities, values, services, module errors — no I/O
 
 Use cases implement `UseCase<In, Out>` — a contract, not a base class. Cross-cutting plumbing is composed in through the port that owns it (`VaultSessions.withSession`), never inherited. Logic that spans entities lives in `domain/services/`, so no use case ever calls another. Rendering (markdown, JSON, tables) belongs to `delivery/`: the domain decides *what* is in a context pack and in what order, delivery decides how it *reads*.
 
-**Dependency rule:** `shared ←` everyone · `vault → shared` · `context → shared, vault` · `delivery →` all. `context` reaches `vault` only through the `VaultSessions` bridge (a locked vault refuses a session, which is why the content context is downstream of the vault context).
+**Dependency rule:** `shared ←` everyone · `vault → shared` · `context → shared, vault` · `importers → shared, context` · `delivery →` all. `context` reaches `vault` only through the `VaultSessions` bridge (a locked vault refuses a session, which is why the content context is downstream of the vault context); `importers` writes items only through context's `ImportItems` use case and never touches `vault`.
 
 Tests are co-located with their subject (`foo.ts` + `foo.test.ts`). Behavior specs live in [`specs/`](../specs/), one file per module. Use cases receive ports via plain constructor injection — no DI framework.
+
+---
+
+## 10a. M2 — Importers (v0.2.0)
+
+Every vault starts empty — the biggest adoption gap. M2 lets users load existing chatbot history so a fresh install is useful on day one.
+
+**Shipped:**
+- New `src/importers/` module (`importers → shared, context`), writing through context's `ImportItems` batch use case; it never touches `vault`.
+- Parsers for **ChatGPT** and **Claude** official exports, plus a **generic JSON** format (versioned envelope) as the universal door for any other provider. `.zip` accepted, inflated in memory via `fflate` (the only new dependency) with a decompression-bomb cap.
+- New storable item type `imported`: searchable via FTS (`search_context`, `valija show --type imported`) but **excluded from context packs** and **never creatable from an MCP tool** (`ITEM_TYPES` stays the five saveable types; storage uses the wider `STORABLE_ITEM_TYPES`). Original conversation dates preserved; deterministic ids make re-import idempotent.
+- `valija import [file] -p <project>` with list-first safety, `--pick/--query/--since/--all`, `--from`, and `--dry-run`.
+- Schema migration 002 (extend the type CHECK): transactional table rebuild + FTS reindex, with a ciphertext backup on first upgrade of a populated vault.
+- Documented the **MCP distillation path**: any connected AI can turn an arbitrary export into real, pack-eligible context via `save_context`.
+
+**Deferred (0.2.x+):** Gemini / Google Takeout parser (messy format), Claude Code session import, a live watcher/daemon. No new MCP tool or argument — import is CLI-only. Also deferred: **conversation reassembly by name** — imported chunks carry a title/date/part-n-of-m header in their body, but there is no lookup that returns one imported conversation's chunks, in order, as a single reassembled document; today that requires manually searching/browsing and ordering by the part header.
 
 ---
 

@@ -3,10 +3,14 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { GetContextPack } from "../../context/application/use-cases/get-context-pack.use-case.js";
+import { ImportItems } from "../../context/application/use-cases/import-items.use-case.js";
 import { ListProjects } from "../../context/application/use-cases/list-projects.use-case.js";
 import { SaveContext } from "../../context/application/use-cases/save-context.use-case.js";
 import { SearchContext } from "../../context/application/use-cases/search-context.use-case.js";
 import { ShowProject } from "../../context/application/use-cases/show-project.use-case.js";
+import { ImportConversations } from "../../importers/application/use-cases/import-conversations.use-case.js";
+import { FileExportReader } from "../../importers/infra/file-export-reader.js";
+import { parserRegistry } from "../../importers/infra/parser-registry.js";
 import { ok } from "../../shared/domain/result.js";
 import { FixedClock, makeUnlockedVault, SeqIds } from "../../testing/test-vault.js";
 import { CreateVault } from "../../vault/application/use-cases/create-vault.use-case.js";
@@ -33,6 +37,12 @@ const container: Container = {
   searchContext: new SearchContext(vault.sessions),
   getContextPack: new GetContextPack(vault.sessions, clock),
   showProject: new ShowProject(vault.sessions),
+  importConversations: new ImportConversations(
+    new FileExportReader(),
+    parserRegistry,
+    new ImportItems(vault.sessions, clock, ids),
+    clock,
+  ),
 };
 
 const client = new Client({ name: "vitest-client", version: "1.0.0" });
@@ -125,6 +135,14 @@ describe("valija MCP server (real client over in-memory transport)", () => {
     const result = await client.callTool({
       name: "save_context",
       arguments: { project: "mcp-e2e", content: "x", type: "not-a-type" },
+    });
+    expect(result.isError).toBe(true);
+  });
+
+  it("save_context rejects the imported type (importer-only, never MCP-saveable)", async () => {
+    const result = await client.callTool({
+      name: "save_context",
+      arguments: { project: "mcp-e2e", content: "x", type: "imported" },
     });
     expect(result.isError).toBe(true);
   });

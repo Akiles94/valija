@@ -1,10 +1,14 @@
 import { ulid } from "ulid";
 import { GetContextPack } from "../context/application/use-cases/get-context-pack.use-case.js";
+import { ImportItems } from "../context/application/use-cases/import-items.use-case.js";
 import { ListProjects } from "../context/application/use-cases/list-projects.use-case.js";
 import { SaveContext } from "../context/application/use-cases/save-context.use-case.js";
 import { SearchContext } from "../context/application/use-cases/search-context.use-case.js";
 import { ShowProject } from "../context/application/use-cases/show-project.use-case.js";
 import { SqliteVaultSessions } from "../context/infra/vault-sessions.js";
+import { ImportConversations } from "../importers/application/use-cases/import-conversations.use-case.js";
+import { FileExportReader } from "../importers/infra/file-export-reader.js";
+import { parserRegistry } from "../importers/infra/parser-registry.js";
 import type { Clock, IdGenerator } from "../shared/application/ports/clock.js";
 import { resolveVaultPaths, type VaultPaths } from "../shared/infra/vault-paths.js";
 import { CreateVault } from "../vault/application/use-cases/create-vault.use-case.js";
@@ -29,6 +33,7 @@ export interface Container {
   searchContext: SearchContext;
   getContextPack: GetContextPack;
   showProject: ShowProject;
+  importConversations: ImportConversations;
 }
 
 export function buildContainer(): Container {
@@ -37,6 +42,7 @@ export function buildContainer(): Container {
   const crypto = new Argon2VaultCrypto();
   const keychain = new OsKeychain();
   const sessions = new SqliteVaultSessions(paths, keychain);
+  const importItems = new ImportItems(sessions, systemClock, ulidIds);
   return {
     paths,
     createVault: new CreateVault(store, crypto, keychain, systemClock, ulidIds),
@@ -48,5 +54,11 @@ export function buildContainer(): Container {
     searchContext: new SearchContext(sessions),
     getContextPack: new GetContextPack(sessions, systemClock),
     showProject: new ShowProject(sessions),
+    importConversations: new ImportConversations(
+      new FileExportReader(),
+      parserRegistry,
+      importItems,
+      systemClock,
+    ),
   };
 }

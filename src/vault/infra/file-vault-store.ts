@@ -26,7 +26,7 @@ export class FileVaultStore implements VaultStore {
   initializeDb(keyHex: string): Result<void, DomainError> {
     try {
       const db = openVaultDb(this.paths.db, keyHex);
-      migrate(db);
+      migrate(db, this.paths.db);
       db.close();
       return ok(undefined);
     } catch (error) {

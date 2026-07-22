@@ -2,6 +2,22 @@
 
 All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog.com), versioning: SemVer.
 
+## [0.2.0] — 2026-07-17
+
+Importers — load your existing chatbot history into the vault so a fresh install is no longer empty.
+
+### Added
+
+- `valija import <file> -p <project>` — import ChatGPT and Claude official exports (`.json` or `.zip`), plus a generic JSON format for any other provider. Auto-detects the source (or `--from chatgpt|claude|generic`).
+- **List-first safety:** with no selection flag the command lists conversations and writes nothing. Select with `--pick 1,3-5`, `--query <text>`, `--since <YYYY-MM-DD>`, or `--all`; `--dry-run` previews without writing.
+- New `imported` item type: imported conversations are chunked into markdown items, **searchable** via `search_context` / `valija search` and `valija show <p> --type imported`, but **excluded from context packs** (`get_context`) and never creatable from an MCP tool. Original conversation dates are preserved; re-importing the same file does not duplicate.
+- Schema migration 002 (context_items type constraint) — runs automatically, transactional, with a ciphertext backup on first upgrade of an existing vault.
+
+### Notes
+
+- `.zip` exports are inflated entirely in memory (no extraction to disk), with a decompression-bomb cap.
+- Imported transcripts are stored verbatim and are not sanitized; their blast radius is bounded by exclusion from context packs. New dependency: `fflate`.
+
 ## [0.1.0] — 2026-07-11
 
 First release.

@@ -13,6 +13,7 @@ valija follows **spec-driven development**: every module's observable behavior i
 | [shared.md](shared.md) | `src/shared/` | Result/DomainError, Clock, SQLite engine, migrations, paths |
 | [vault.md](vault.md) | `src/vault/` | passphrase, key, keychain, header, recovery kit, lock/unlock |
 | [context.md](context.md) | `src/context/` | project, item, tag, the context-pack algorithm, search |
+| [importers.md](importers.md) | `src/importers/` | conversation IR, parsers, chunking, `valija import` |
 | [delivery.md](delivery.md) | `src/delivery/` | CLI commands, MCP tools/prompts, composition root |
 
 ## Module layout & dependency rule
@@ -25,4 +26,4 @@ src/<module>/application/    use cases + ports (interfaces)
 src/<module>/infra/          adapters implementing the ports
 ```
 
-Dependencies point one way only: **`shared ←` everyone · `vault → shared` · `context → shared, vault` · `delivery →` all**. `context` depends on `vault` solely through the `VaultSessions` bridge (a locked vault refuses a session). The product-level spec (scope, decisions, security model) lives in [../docs/SPEC.md](../docs/SPEC.md).
+Dependencies point one way only: **`shared ←` everyone · `vault → shared` · `context → shared, vault` · `importers → shared, context` · `delivery →` all**. `context` depends on `vault` solely through the `VaultSessions` bridge (a locked vault refuses a session); `importers` writes items solely through context's `ImportItems` use case and never touches `vault`. The product-level spec (scope, decisions, security model) lives in [../docs/SPEC.md](../docs/SPEC.md).
