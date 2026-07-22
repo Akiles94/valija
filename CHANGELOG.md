@@ -2,7 +2,7 @@
 
 All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog.com), versioning: SemVer.
 
-## [0.2.0] — 2026-07-17
+## [0.2.0] — 2026-07-22
 
 Importers — load your existing chatbot history into the vault so a fresh install is no longer empty.
 
