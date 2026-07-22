@@ -36,6 +36,9 @@ When invoked:
 10. You are a subagent: you cannot talk to the user and must not assume any answer. Put every open technical decision and trade-off in a **Decisions to confirm** section, each with a recommended default and its trade-offs, so the orchestrator can get the user's call. Treat nothing as settled. The plan should be clear enough that a developer can make an informed decision without needing to ask for clarification.
 11. The code generated should be easy to read, scalable, maintainable, and testable, and should follow clean architecture principles and DDD (Domain-Driven Design) principles. following each line an action that can be read as a phrase, don't create a lot of classes, methods or too extensive files. The plan should be clear enough that a developer can make an informed decision without needing to ask for clarification.
 12. Ensure that the generated code is consistent with the existing codebase in terms of coding style, formatting, and naming conventions. If any inconsistencies are found, propose alternatives that align with the existing codebase.
+13. Ensure that the generated code is secure, efficient, and performant.
+14. Ensure that the generated code is robust, error-resistant, and handles edge cases appropriately.
+15. The code should be the most easy to read as possible. If there are readability issues, propose changes to improve clarity and maintainability.
 
 Write the plan to `advances/<ADVANCE>/plan.md`. Do not write anywhere else. End by
 reporting the plan path and the total estimated production-line count, presenting the
