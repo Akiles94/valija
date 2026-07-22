@@ -177,7 +177,7 @@ Every vault starts empty — the biggest adoption gap. M2 lets users load existi
 - Schema migration 002 (extend the type CHECK): transactional table rebuild + FTS reindex, with a ciphertext backup on first upgrade of a populated vault.
 - Documented the **MCP distillation path**: any connected AI can turn an arbitrary export into real, pack-eligible context via `save_context`.
 
-**Deferred (0.2.x+):** Gemini / Google Takeout parser (messy format), Claude Code session import, a live watcher/daemon. No new MCP tool or argument — import is CLI-only.
+**Deferred (0.2.x+):** Gemini / Google Takeout parser (messy format), Claude Code session import, a live watcher/daemon. No new MCP tool or argument — import is CLI-only. Also deferred: **conversation reassembly by name** — imported chunks carry a title/date/part-n-of-m header in their body, but there is no lookup that returns one imported conversation's chunks, in order, as a single reassembled document; today that requires manually searching/browsing and ordering by the part header.
 
 ---
 
