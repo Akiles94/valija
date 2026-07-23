@@ -8,7 +8,10 @@ export type VaultErrorCode =
   | "WRONG_PASSPHRASE"
   | "WEAK_PASSPHRASE"
   | "KEYCHAIN_ERROR"
-  | "STORAGE_ERROR";
+  | "STORAGE_ERROR"
+  | "INVALID_DEVICE_ID"
+  | "INVALID_GENERATION"
+  | "INVALID_WRITE_STAMP";
 
 export const vaultErr = (code: VaultErrorCode, message: string): Result<never, DomainError> =>
   err(new DomainError(code, message));
