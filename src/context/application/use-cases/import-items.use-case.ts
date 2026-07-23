@@ -53,17 +53,19 @@ export class ImportItems implements UseCase<ImportItemsInput, ImportItemsOutput>
     const name = parseProjectName(input.projectName);
     if (!name.ok) return name;
 
-    return this.sessions.withSession((session) => {
-      const { project, created } = this.findOrCreateProject(session, name.value);
-      const failures: ImportItemFailure[] = [];
-      let imported = 0;
-      for (const draft of input.items) {
-        const saved = this.saveDraft(session, project.id, draft);
-        if (saved.ok) imported += 1;
-        else failures.push({ conversationId: draft.conversationId, reason: saved.error.message });
-      }
-      return ok({ projectCreated: created, imported, failed: failures.length, failures });
-    });
+    return this.sessions.withSession((session) =>
+      session.write(() => {
+        const { project, created } = this.findOrCreateProject(session, name.value);
+        const failures: ImportItemFailure[] = [];
+        let imported = 0;
+        for (const draft of input.items) {
+          const saved = this.saveDraft(session, project.id, draft);
+          if (saved.ok) imported += 1;
+          else failures.push({ conversationId: draft.conversationId, reason: saved.error.message });
+        }
+        return ok({ projectCreated: created, imported, failed: failures.length, failures });
+      }),
+    );
   }
 
   /** Re-validate tags and content at the vault boundary — defense in depth, even though the renderer aims well under the limit. */

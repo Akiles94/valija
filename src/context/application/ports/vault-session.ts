@@ -9,6 +9,13 @@ import type { ContextItemRepository, ProjectRepository } from "./repositories.js
 export interface VaultSession {
   readonly projects: ProjectRepository;
   readonly items: ContextItemRepository;
+  /**
+   * Run a mutation and, only if it succeeds, atomically stamp the vault's
+   * lineage (bump the generation, mint a fresh write stamp) as part of the
+   * same commit. Read-only use cases never call this — they use `projects`/
+   * `items` directly and never advance the lineage.
+   */
+  write<T>(mutate: () => Result<T, DomainError>): Result<T, DomainError>;
   close(): void;
 }
 

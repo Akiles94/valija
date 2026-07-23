@@ -10,12 +10,14 @@ import { ImportConversations } from "../importers/application/use-cases/import-c
 import { FileExportReader } from "../importers/infra/file-export-reader.js";
 import { parserRegistry } from "../importers/infra/parser-registry.js";
 import type { Clock, IdGenerator } from "../shared/application/ports/clock.js";
+import { resolveStatePaths } from "../shared/infra/state-paths.js";
 import { resolveVaultPaths, type VaultPaths } from "../shared/infra/vault-paths.js";
 import { CreateVault } from "../vault/application/use-cases/create-vault.use-case.js";
 import { LockVault } from "../vault/application/use-cases/lock-vault.use-case.js";
 import { UnlockVault } from "../vault/application/use-cases/unlock-vault.use-case.js";
 import { VaultStatus } from "../vault/application/use-cases/vault-status.use-case.js";
 import { Argon2VaultCrypto } from "../vault/infra/argon2.js";
+import { FileDeviceIdentity } from "../vault/infra/file-device-identity.js";
 import { FileVaultStore } from "../vault/infra/file-vault-store.js";
 import { OsKeychain } from "../vault/infra/keyring.js";
 
@@ -41,7 +43,8 @@ export function buildContainer(): Container {
   const store = new FileVaultStore(paths);
   const crypto = new Argon2VaultCrypto();
   const keychain = new OsKeychain();
-  const sessions = new SqliteVaultSessions(paths, keychain);
+  const deviceIdentity = new FileDeviceIdentity(resolveStatePaths(), ulidIds);
+  const sessions = new SqliteVaultSessions(paths, keychain, deviceIdentity, ulidIds, systemClock);
   const importItems = new ImportItems(sessions, systemClock, ulidIds);
   return {
     paths,

@@ -5,7 +5,10 @@ import { join } from "node:path";
 import { SqliteVaultSessions } from "../context/infra/vault-sessions.js";
 import type { Clock, IdGenerator } from "../shared/application/ports/clock.js";
 import { resolveVaultPaths, type VaultPaths } from "../shared/infra/vault-paths.js";
+import type { DeviceIdentity } from "../vault/application/ports/device-identity.js";
 import type { KeychainPort } from "../vault/application/ports/keychain.js";
+import type { LineageSeen } from "../vault/domain/services/vault-lineage.js";
+import { createDeviceId, type DeviceId } from "../vault/domain/values/device-id.js";
 import { FileVaultStore } from "../vault/infra/file-vault-store.js";
 
 export class FakeKeychain implements KeychainPort {
@@ -41,6 +44,32 @@ export class SeqIds implements IdGenerator {
   }
 }
 
+/** In-memory DeviceIdentity — device-local state kept in a Map instead of a file. */
+export class FakeDeviceIdentity implements DeviceIdentity {
+  private id: DeviceId | null = null;
+  private readonly seen = new Map<string, LineageSeen>();
+  private readonly activity = new Map<string, Date>();
+
+  constructor(private readonly idGen: IdGenerator) {}
+
+  deviceId(): DeviceId {
+    if (this.id === null) this.id = createDeviceId(this.idGen);
+    return this.id;
+  }
+  lastSeen(vaultId: string): LineageSeen | null {
+    return this.seen.get(vaultId) ?? null;
+  }
+  recordSeen(vaultId: string, seen: LineageSeen): void {
+    this.seen.set(vaultId, seen);
+  }
+  lastActivityAt(vaultId: string): Date | null {
+    return this.activity.get(vaultId) ?? null;
+  }
+  recordActivity(vaultId: string, at: Date): void {
+    this.activity.set(vaultId, at);
+  }
+}
+
 export interface TestVault {
   paths: VaultPaths;
   store: FileVaultStore;
@@ -48,6 +77,9 @@ export interface TestVault {
   sessions: SqliteVaultSessions;
   keyHex: string;
   vaultId: string;
+  deviceIdentity: FakeDeviceIdentity;
+  idGen: IdGenerator;
+  clock: Clock;
 }
 
 /** An initialized, unlocked vault on a temp dir — no Argon2, fast. */
@@ -68,12 +100,18 @@ export function makeUnlockedVault(): TestVault {
   const init = store.initializeDb(keyHex);
   if (!init.ok) throw new Error(init.error.message);
   keychain.setKey(vaultId, keyHex);
+  const idGen = new SeqIds();
+  const clock = new FixedClock();
+  const deviceIdentity = new FakeDeviceIdentity(idGen);
   return {
     paths,
     store,
     keychain,
-    sessions: new SqliteVaultSessions(paths, keychain),
+    sessions: new SqliteVaultSessions(paths, keychain, deviceIdentity, idGen, clock),
     keyHex,
     vaultId,
+    deviceIdentity,
+    idGen,
+    clock,
   };
 }
