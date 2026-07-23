@@ -11,7 +11,8 @@ export type VaultErrorCode =
   | "STORAGE_ERROR"
   | "INVALID_DEVICE_ID"
   | "INVALID_GENERATION"
-  | "INVALID_WRITE_STAMP";
+  | "INVALID_WRITE_STAMP"
+  | "VAULT_FORK_DETECTED";
 
 export const vaultErr = (code: VaultErrorCode, message: string): Result<never, DomainError> =>
   err(new DomainError(code, message));

@@ -86,7 +86,9 @@ export interface TestVault {
 export function makeUnlockedVault(): TestVault {
   const root = mkdtempSync(join(tmpdir(), "valija-app-"));
   const paths = resolveVaultPaths(root);
-  const store = new FileVaultStore(paths);
+  const idGen = new SeqIds();
+  const clock = new FixedClock();
+  const store = new FileVaultStore(paths, idGen, clock);
   const keychain = new FakeKeychain();
   const keyHex = randomBytes(32).toString("hex");
   const vaultId = "01TESTVAULT";
@@ -100,8 +102,6 @@ export function makeUnlockedVault(): TestVault {
   const init = store.initializeDb(keyHex);
   if (!init.ok) throw new Error(init.error.message);
   keychain.setKey(vaultId, keyHex);
-  const idGen = new SeqIds();
-  const clock = new FixedClock();
   const deviceIdentity = new FakeDeviceIdentity(idGen);
   return {
     paths,

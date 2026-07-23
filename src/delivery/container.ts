@@ -40,7 +40,7 @@ export interface Container {
 
 export function buildContainer(): Container {
   const paths = resolveVaultPaths();
-  const store = new FileVaultStore(paths);
+  const store = new FileVaultStore(paths, ulidIds, systemClock);
   const crypto = new Argon2VaultCrypto();
   const keychain = new OsKeychain();
   const deviceIdentity = new FileDeviceIdentity(resolveStatePaths(), ulidIds);
@@ -49,7 +49,7 @@ export function buildContainer(): Container {
   return {
     paths,
     createVault: new CreateVault(store, crypto, keychain, systemClock, ulidIds),
-    unlockVault: new UnlockVault(store, crypto, keychain),
+    unlockVault: new UnlockVault(store, crypto, keychain, deviceIdentity, systemClock),
     lockVault: new LockVault(store, keychain),
     vaultStatus: new VaultStatus(store, keychain),
     saveContext: new SaveContext(sessions, systemClock, ulidIds),

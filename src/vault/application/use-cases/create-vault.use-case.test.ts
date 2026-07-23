@@ -12,7 +12,7 @@ const tmp = mkdtempSync(join(tmpdir(), "valija-create-"));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 const paths = resolveVaultPaths(join(tmp, "vault-home"));
-const store = new FileVaultStore(paths);
+const store = new FileVaultStore(paths, new SeqIds(), new FixedClock());
 const keychain = new FakeKeychain();
 const createVault = new CreateVault(
   store,

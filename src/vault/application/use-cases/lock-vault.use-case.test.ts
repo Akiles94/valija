@@ -1,7 +1,12 @@
 import { rmSync } from "node:fs";
 import { afterAll, describe, expect, it } from "vitest";
 import { resolveVaultPaths } from "../../../shared/infra/vault-paths.js";
-import { FakeKeychain, makeUnlockedVault } from "../../../testing/test-vault.js";
+import {
+  FakeKeychain,
+  FixedClock,
+  makeUnlockedVault,
+  SeqIds,
+} from "../../../testing/test-vault.js";
 import { FileVaultStore } from "../../infra/file-vault-store.js";
 import { LockVault } from "./lock-vault.use-case.js";
 
@@ -10,7 +15,11 @@ afterAll(() => rmSync(vault.paths.root, { recursive: true, force: true }));
 
 describe("LockVault", () => {
   it("errors when no vault exists", () => {
-    const emptyStore = new FileVaultStore(resolveVaultPaths(`${vault.paths.root}-nope`));
+    const emptyStore = new FileVaultStore(
+      resolveVaultPaths(`${vault.paths.root}-nope`),
+      new SeqIds(),
+      new FixedClock(),
+    );
     const r = new LockVault(emptyStore, new FakeKeychain()).execute();
     expect(!r.ok && r.error.code).toBe("VAULT_NOT_FOUND");
   });
