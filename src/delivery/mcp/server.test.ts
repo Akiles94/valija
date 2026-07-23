@@ -18,6 +18,7 @@ import { LockVault } from "../../vault/application/use-cases/lock-vault.use-case
 import { UnlockVault } from "../../vault/application/use-cases/unlock-vault.use-case.js";
 import { VaultStatus } from "../../vault/application/use-cases/vault-status.use-case.js";
 import { Argon2VaultCrypto } from "../../vault/infra/argon2.js";
+import { FileVaultFolder } from "../../vault/infra/file-vault-folder.js";
 import type { Container } from "../container.js";
 import { buildMcpServer } from "./server.js";
 
@@ -30,7 +31,7 @@ const container: Container = {
   paths: vault.paths,
   createVault: new CreateVault(vault.store, crypto, vault.keychain, clock, ids),
   unlockVault: new UnlockVault(vault.store, crypto, vault.keychain, vault.deviceIdentity, clock),
-  lockVault: new LockVault(vault.store, vault.keychain),
+  lockVault: new LockVault(vault.store, vault.keychain, new FileVaultFolder(vault.paths)),
   vaultStatus: new VaultStatus(vault.store, vault.keychain),
   saveContext: new SaveContext(vault.sessions, clock, ids),
   listProjects: new ListProjects(vault.sessions),
