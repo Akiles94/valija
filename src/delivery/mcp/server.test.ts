@@ -171,6 +171,33 @@ describe("valija MCP server (real client over in-memory transport)", () => {
     vault.keychain.setKey(vault.vaultId, vault.keyHex);
   });
 
+  it("never exposes sync/lineage/device/session metadata through any tool response", async () => {
+    // By this point save_context/save_handoff have bumped the vault's lineage
+    // several times, and VaultStatus/doctor now report generation, writer,
+    // and auto-lock state — none of which should ever reach a context-facing
+    // tool response or context pack (Decision D-B/D-I, "MCP surface untouched").
+    const pack = await client.callTool({ name: "get_context", arguments: { project: "mcp-e2e" } });
+    const search = await client.callTool({
+      name: "search_context",
+      arguments: { query: "validated" },
+    });
+    const list = await client.callTool({ name: "list_projects", arguments: {} });
+    const combined = [textOf(pack), textOf(search), textOf(list)].join("\n");
+
+    // Not checking generic "last activity" here: list_projects already legitimately
+    // reports a project's own last-content-update date (pre-existing, unrelated to
+    // M3's device-local idle tracking) — that's product data, not sync metadata.
+    for (const pattern of [
+      /generation/i,
+      /lineage/i,
+      /write.?stamp/i,
+      /device.?id/i,
+      /auto.?lock/i,
+    ]) {
+      expect(combined).not.toMatch(pattern);
+    }
+  });
+
   it("prompts render with the project argument", async () => {
     const prompt = await client.getPrompt({
       name: "load-context",

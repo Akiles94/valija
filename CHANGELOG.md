@@ -2,6 +2,25 @@
 
 All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog.com), versioning: SemVer.
 
+## [Unreleased]
+
+Bring-your-own-cloud vault sync — keep your vault in a folder your own sync client (Dropbox, iCloud Drive, OneDrive, Syncthing, …) already replicates, and use it safely across devices. See [docs/sync.md](docs/sync.md).
+
+### Added
+
+- Vault journaling switched from WAL to a rollback journal (`DELETE`): at rest, after every command, the vault is a single self-consistent `vault.db` — no `-wal`/`-shm` sidecar a sync client could upload out of step.
+- Fork detection: each write stamps the vault's lineage (generation + a random write stamp, inside the encrypted db); `valija unlock` adopts a clean handoff from another device silently, and reports `VAULT_FORK_DETECTED` — without deleting or overwriting anything — if two devices wrote independently from the same starting point.
+- `valija lock` now confirms the vault is safely at rest as a single file and reports the current generation and who wrote it last.
+- Idle auto-lock: an unlocked vault re-locks itself after 15 minutes of inactivity by default (`VALIJA_AUTOLOCK_MINUTES` to change or `0`/`off` to disable). Lazy, no background process.
+- `valija status` / `valija doctor` report journal mode, sync-folder recognition, a warning on a vendor "conflicted copy" file, lineage generation/last-writer, and auto-lock state.
+- Schema migration 003 (lineage baseline) — runs automatically, with a ciphertext backup on first upgrade of an existing vault.
+
+### Notes
+
+- No new MCP tool, argument, or prompt. Sync/lineage/device/session data never reaches a context pack or an MCP tool response — it is CLI-only plumbing (`status`/`lock`/`unlock`/`doctor`).
+- Device identity and activity timestamps are device-local (`VALIJA_STATE_HOME`, default `~/.valija-state`) and never sync — separate from `VALIJA_HOME` by design.
+- No valija-hosted sync service. No automatic conflict merge, ever, by design.
+
 ## [0.2.0] — 2026-07-22
 
 Importers — load your existing chatbot history into the vault so a fresh install is no longer empty.

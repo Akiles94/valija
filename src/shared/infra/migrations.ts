@@ -2,6 +2,7 @@ import { copyFileSync, rmSync } from "node:fs";
 import type { Database } from "better-sqlite3-multiple-ciphers";
 import { MIGRATION_001 } from "./migrations/001-init.js";
 import { MIGRATION_002 } from "./migrations/002-imported-type.js";
+import { MIGRATION_003 } from "./migrations/003-lineage.js";
 
 interface Migration {
   version: number;
@@ -13,6 +14,7 @@ interface Migration {
 const MIGRATIONS: readonly Migration[] = [
   { version: 1, sql: MIGRATION_001 },
   { version: 2, sql: MIGRATION_002, backup: true },
+  { version: 3, sql: MIGRATION_003, backup: true },
 ];
 
 /**
