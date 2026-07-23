@@ -1,4 +1,12 @@
+Approved: Oscar 2026-07-23
+
 # M3 — Bring-your-own-cloud vault sync · Implementation Plan
+
+**Status:** Approved at Gate P. D-1 through D-6 confirmed as the recommended defaults,
+including the file-placement fix (`SessionGuard` in `vault/application/policies/`).
+Condition: before review/ship, the main agent presents a reviewer's guide (file-by-file
+order + plain-language, non-code comments on what changed and why) so Oscar can do his own
+pass efficiently.
 
 **Spec:** `advances/M3/refined.md` (Approved at Gate R — Oscar 2026-07-23; D-A..D-E, D-G..D-I
 as recommended defaults, **D-F Option A**).
