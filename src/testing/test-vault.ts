@@ -5,9 +5,11 @@ import { join } from "node:path";
 import { SqliteVaultSessions } from "../context/infra/vault-sessions.js";
 import type { Clock, IdGenerator } from "../shared/application/ports/clock.js";
 import { resolveVaultPaths, type VaultPaths } from "../shared/infra/vault-paths.js";
+import { SessionGuard } from "../vault/application/policies/session-guard.js";
 import type { DeviceIdentity } from "../vault/application/ports/device-identity.js";
 import type { KeychainPort } from "../vault/application/ports/keychain.js";
 import type { LineageSeen } from "../vault/domain/services/vault-lineage.js";
+import { parseAutoLockTtl } from "../vault/domain/values/auto-lock-ttl.js";
 import { createDeviceId, type DeviceId } from "../vault/domain/values/device-id.js";
 import { FileVaultStore } from "../vault/infra/file-vault-store.js";
 
@@ -78,6 +80,7 @@ export interface TestVault {
   keyHex: string;
   vaultId: string;
   deviceIdentity: FakeDeviceIdentity;
+  guard: SessionGuard;
   idGen: IdGenerator;
   clock: Clock;
 }
@@ -103,14 +106,16 @@ export function makeUnlockedVault(): TestVault {
   if (!init.ok) throw new Error(init.error.message);
   keychain.setKey(vaultId, keyHex);
   const deviceIdentity = new FakeDeviceIdentity(idGen);
+  const guard = new SessionGuard(deviceIdentity, keychain, clock, parseAutoLockTtl(undefined));
   return {
     paths,
     store,
     keychain,
-    sessions: new SqliteVaultSessions(paths, keychain, deviceIdentity, idGen, clock),
+    sessions: new SqliteVaultSessions(paths, keychain, deviceIdentity, guard, idGen, clock),
     keyHex,
     vaultId,
     deviceIdentity,
+    guard,
     idGen,
     clock,
   };

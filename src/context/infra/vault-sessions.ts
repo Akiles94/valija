@@ -4,9 +4,10 @@ import { type DomainError, ok, type Result } from "../../shared/domain/result.js
 import { migrate } from "../../shared/infra/migrations.js";
 import { isWrongKeyError, openVaultDb } from "../../shared/infra/sqlite.js";
 import type { VaultPaths } from "../../shared/infra/vault-paths.js";
+import type { SessionGuard } from "../../vault/application/policies/session-guard.js";
 import type { DeviceIdentity } from "../../vault/application/ports/device-identity.js";
 import type { KeychainPort } from "../../vault/application/ports/keychain.js";
-import { vaultErr } from "../../vault/domain/errors.js";
+import { LOCKED_MESSAGE, vaultErr } from "../../vault/domain/errors.js";
 import type { LineageStamp } from "../../vault/domain/services/vault-lineage.js";
 import type { DeviceId } from "../../vault/domain/values/device-id.js";
 import { SqliteLineageStore } from "../../vault/infra/sqlite-lineage-store.js";
@@ -14,8 +15,6 @@ import { readVaultHeader } from "../../vault/infra/vault-header.js";
 import type { VaultSession, VaultSessions } from "../application/ports/vault-session.js";
 import { SqliteContextItemRepository } from "./item-repo.js";
 import { SqliteProjectRepository } from "./project-repo.js";
-
-const LOCKED_MESSAGE = 'Vault is locked. Ask the user to run "valija unlock" in a terminal.';
 
 /**
  * Open a session, run the action, and always close the session — even when the
@@ -52,6 +51,7 @@ export class SqliteVaultSessions implements VaultSessions {
     private readonly paths: VaultPaths,
     private readonly keychain: KeychainPort,
     private readonly deviceIdentity: DeviceIdentity,
+    private readonly guard: SessionGuard,
     private readonly idGen: IdGenerator,
     private readonly clock: Clock,
   ) {}
@@ -68,6 +68,9 @@ export class SqliteVaultSessions implements VaultSessions {
 
     const keyHex = this.requireKey(header.value.vaultId);
     if (!keyHex.ok) return keyHex;
+
+    const guarded = this.guard.guard(header.value.vaultId);
+    if (!guarded.ok) return guarded;
 
     return this.openRepositories(header.value.vaultId, keyHex.value);
   }
