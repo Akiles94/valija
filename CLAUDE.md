@@ -57,3 +57,12 @@ signal that lifts the implementation gate, so treat it as Oscar's, not yours.
   (`SqliteXRepository`, `FileX`, `OsX`), `XUseCase` classes implementing `UseCase`.
 - Small, readable units — each line reads as an action; avoid class/method sprawl and
   oversized files. Tests per layer. Docs ship in the same commit as the code.
+- No bare files at a layer's root. Every file inside a module's `domain/application/infra`
+  lives in a subfolder that names its kind (`values/`, `services/`, `entities/`, `ports/`,
+  `use-cases/`, `dto/`, `policies/`, …), so opening a folder tells you what's in it without
+  reading the file. The only standing exceptions are the single, well-known per-module files
+  already named above (`errors.ts`) and per-repo contracts (`shared/domain/result.ts`,
+  `shared/application/use-case.ts`), plus tech-named `infra/` adapters (self-describing by
+  name, e.g. `SqliteXRepository`, `FileX`). A new *kind* of thing — e.g. an application-layer
+  policy that is neither a port nor a `UseCase` — gets its own new subfolder, never a loose
+  file dropped next to the existing ones.

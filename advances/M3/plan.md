@@ -167,8 +167,10 @@ Follow the `parseX` / `createX` + branded-type convention (`project-name.ts`, `p
 24. **New `src/vault/domain/values/auto-lock-ttl.ts`** — `parseAutoLockTtl(raw?: string): number | null`
     (`undefined`/empty → 15; `"0"`/`"off"` case-insensitive → `null` = disabled; positive int →
     that; otherwise fall back to 15) and `isIdleExpired(lastActivity: Date, now: Date, ttlMinutes: number): boolean`.
-25. **New `src/vault/application/session-guard.ts`** — `SessionGuard` (a small application
-    policy service, not a `UseCase`): constructor `(deviceIdentity, keychain, clock, ttlMinutes: number | null)`.
+25. **New `src/vault/application/policies/session-guard.ts`** — `SessionGuard` (a small
+    application policy service, not a `UseCase`) gets its own `policies/` subfolder rather
+    than sitting bare next to `ports/`/`use-cases/`, so the folder alone tells you what kind
+    of thing it is. Constructor `(deviceIdentity, keychain, clock, ttlMinutes: number | null)`.
     `guard(vaultId): Result<void, DomainError>`:
     - TTL `null` → refresh activity, `ok`.
     - `lastActivityAt` non-null and `isIdleExpired(...)` → `keychain.deleteKey(vaultId)` and
@@ -273,7 +275,8 @@ Follow the `parseX` / `createX` + branded-type convention (`project-name.ts`, `p
       and migration 003.
     - `specs/vault.md`: add `VAULT_FORK_DETECTED`; the `VaultLineage` service +
       `DeviceId`/`Generation`/`WriteStamp` values; `LineageStore`/`DeviceIdentity`/`VaultFolder`
-      ports + adapters; `SessionGuard`; extended `LockVault`/`UnlockVault`/`VaultStatus`;
+      ports + adapters; `SessionGuard` (in `application/policies/`); extended
+      `LockVault`/`UnlockVault`/`VaultStatus`;
       `readLineage` on `VaultStore`.
     - `specs/delivery.md`: `lock`/`unlock`/`status`/`doctor` changes, `VALIJA_AUTOLOCK_MINUTES`,
       `VALIJA_STATE_HOME`, and the (deferred/optional) `--cloud` note.
@@ -419,9 +422,14 @@ Follow the `parseX` / `createX` + branded-type convention (`project-name.ts`, `p
 - Adapters are tech-named per convention: `SqliteLineageStore`, `FileDeviceIdentity`,
   `FileVaultFolder` (cf. `SqliteContextItemRepository`, `FileVaultStore`, `OsKeychain`).
 - `VaultLineage` is a pure domain service (functions), mirroring `context-pack.ts`; ports
-  (`LineageStore`, `DeviceIdentity`, `VaultFolder`) live in `vault/application`, adapters in
-  `vault/infra`, keeping `better-sqlite3` types out of the ports. `SessionGuard` is an
-  application policy, not a `UseCase` (it gates sessions, mirroring the refined D-F guidance).
+  (`LineageStore`, `DeviceIdentity`, `VaultFolder`) live in `vault/application/ports`, adapters
+  in `vault/infra`, keeping `better-sqlite3` types out of the ports. `SessionGuard` is an
+  application policy, not a `UseCase` (it gates sessions, mirroring the refined D-F guidance);
+  it lives in a new `vault/application/policies/` subfolder rather than bare at the
+  `application/` root, so — like every other layer folder in this repo — opening the folder
+  tells you what kind of thing is inside without reading the file. No other new or changed
+  file in this plan is in the same situation (all others slot into an existing typed
+  subfolder, an established single-file convention, or a tech-named `infra/` adapter).
 - The error constructor `vaultErr` gains `VAULT_FORK_DETECTED`, staying inside the vault code
   vocabulary. The dependency rule holds: `shared` gains only `state-paths.ts` (no internal
   imports); `context` reaches `vault` only through the `VaultSessions` bridge (the `write`
@@ -488,7 +496,8 @@ src/
 │   │   └── services/
 │   │       ├── vault-lineage.ts              (new: classifyLineage) + vault-lineage.test.ts
 │   ├── application/
-│   │   ├── session-guard.ts                  (new: idle auto-lock) + session-guard.test.ts
+│   │   ├── policies/
+│   │   │   └── session-guard.ts              (new: idle auto-lock) + session-guard.test.ts
 │   │   ├── ports/
 │   │   │   ├── crypto.ts | keychain.ts        (unchanged)
 │   │   │   ├── vault-store.ts                (changed: + readLineage)

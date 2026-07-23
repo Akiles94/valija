@@ -38,7 +38,13 @@ log, wc, running the test suite):
      MCP tools exposing more than intended.
    - Tests missing for new behavior, or the suite not passing.
    - The advance ritual not evidenced per `CLAUDE.md` (the refined.md → approved plan.md → review.md trail; the plan must carry an `Approved:` line).
-   - Compliance with the repo's naming conventions, clean architecture principles. If any names are inconsistent, propose alternatives that align with the conventions and principles.
+   - Compliance with the repo's naming conventions, clean architecture principles, and file
+     *placement* — no bare files at a `domain/application/infra` layer root outside the
+     established single-file exceptions (`errors.ts`, `shared/domain/result.ts`,
+     `shared/application/use-case.ts`) and tech-named `infra/` adapters; a new kind of
+     application/domain object gets its own named subfolder (per `CLAUDE.md`'s Conventions).
+     If any names or placements are inconsistent, propose alternatives that align with the
+     conventions and principles.
 5. Separate real defects from nitpicks. Do not invent problems to look thorough, and
    do not wave through a real one to be agreeable.
 6. Ensure that the code is consistent with the codebase's style and patterns. If there are inconsistencies, propose changes to align with the existing codebase.
