@@ -2,6 +2,7 @@ import type { UseCase } from "../../../shared/application/use-case.js";
 import { type DomainError, ok, type Result } from "../../../shared/domain/result.js";
 import type { DeviceId } from "../../domain/values/device-id.js";
 import type { Generation } from "../../domain/values/generation.js";
+import type { DeviceIdentity } from "../ports/device-identity.js";
 import type { KeychainPort } from "../ports/keychain.js";
 import type { VaultFolder } from "../ports/vault-folder.js";
 import type { VaultStore } from "../ports/vault-store.js";
@@ -11,6 +12,7 @@ export interface LockOutput {
   /** The vault's lineage as of locking, when it could be read (unlocked and already written to). */
   generation?: Generation;
   writer?: DeviceId;
+  writerIsThisDevice?: boolean;
   /** Non-empty means the vault is NOT safely at rest — a crash or an unexpected journal mode. */
   sidecars: string[];
 }
@@ -20,6 +22,7 @@ export class LockVault implements UseCase<void, LockOutput> {
     private readonly store: VaultStore,
     private readonly keychain: KeychainPort,
     private readonly folder: VaultFolder,
+    private readonly deviceIdentity: DeviceIdentity,
   ) {}
 
   execute(): Result<LockOutput, DomainError> {
@@ -40,13 +43,21 @@ export class LockVault implements UseCase<void, LockOutput> {
    * or a vault that has never been written to simply omits these fields —
    * it never blocks the lock itself.
    */
-  private currentLineage(vaultId: string): { generation?: Generation; writer?: DeviceId } {
+  private currentLineage(vaultId: string): {
+    generation?: Generation;
+    writer?: DeviceId;
+    writerIsThisDevice?: boolean;
+  } {
     const keyHex = this.keychain.getKey(vaultId);
     if (keyHex === null) return {};
 
     const lineage = this.store.readLineage(keyHex);
     if (!lineage.ok || lineage.value === null) return {};
 
-    return { generation: lineage.value.generation, writer: lineage.value.writer };
+    return {
+      generation: lineage.value.generation,
+      writer: lineage.value.writer,
+      writerIsThisDevice: lineage.value.writer === this.deviceIdentity.deviceId(),
+    };
   }
 }

@@ -39,12 +39,36 @@ export async function unlockCommand(
   if (!result.ok) fail(result.error);
   console.log("Vault unlocked. MCP tools can now read and write context.");
   console.log('Lock it again with "valija lock".');
+  if (result.value.fork !== undefined) {
+    const { notice } = result.value.fork;
+    console.error(`\nerror [${notice.code}]: ${notice.message}`);
+    console.error(`Vault folder: ${c.paths.root}`);
+  }
 }
 
 export function lockCommand(c: Container): void {
   const result = c.lockVault.execute();
   if (!result.ok) fail(result.error);
-  console.log(result.value.wasUnlocked ? "Vault locked." : "Vault was already locked.");
+  const v = result.value;
+  if (!v.wasUnlocked) {
+    console.log("Vault was already locked.");
+    return;
+  }
+
+  const generationText =
+    v.generation !== undefined ? `generation ${v.generation}` : "generation unknown";
+  const writerText =
+    v.writer === undefined
+      ? ""
+      : `, last written by ${v.writerIsThisDevice ? "this device" : "another device"}`;
+  console.log(
+    `Vault locked. On-disk state: single file (vault.db), ${generationText}${writerText}.`,
+  );
+  if (v.sidecars.length > 0) {
+    console.log(`Warning: stray files present, not safely at rest: ${v.sidecars.join(", ")}`);
+  } else {
+    console.log("Safe to let your sync client finish before opening valija elsewhere.");
+  }
 }
 
 export function statusCommand(c: Container): void {
@@ -58,4 +82,23 @@ export function statusCommand(c: Container): void {
   console.log(`vault:    ${s.dbPath}`);
   console.log(`vault id: ${s.vaultId}`);
   console.log(`state:    ${s.unlocked ? "UNLOCKED" : "LOCKED"}`);
+  console.log(
+    `journal:  ${s.journalMode}${s.sidecars.length > 0 ? ` (stray: ${s.sidecars.join(", ")})` : " (single file at rest)"}`,
+  );
+  if (s.generation !== undefined) {
+    console.log(
+      `lineage:  generation ${s.generation}, last written by ${s.lastWriterIsThisDevice ? "this device" : "another device"}`,
+    );
+  }
+  const ttl = s.autoLock.ttlMinutes;
+  if (ttl === null) {
+    console.log("auto-lock: disabled");
+  } else if (s.autoLock.idleForMinutes !== undefined) {
+    const idle = s.autoLock.idleForMinutes.toFixed(1);
+    console.log(
+      `auto-lock: ${ttl}m TTL, idle for ${idle}m${s.autoLock.expired ? " (expired)" : ""}`,
+    );
+  } else {
+    console.log(`auto-lock: ${ttl}m TTL`);
+  }
 }

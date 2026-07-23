@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import { FileVaultFolder } from "../../vault/infra/file-vault-folder.js";
 import { OsKeychain } from "../../vault/infra/keyring.js";
 import type { Container } from "../container.js";
 import { CLIENTS, type ClientId, clientConfigPath } from "./installer.js";
@@ -56,6 +57,67 @@ function checkVault(c: Container): Check {
   };
 }
 
+function checkJournal(c: Container): Check {
+  const status = c.vaultStatus.execute();
+  if (!status.ok) return { name: "journal", ok: false, detail: status.error.message };
+  const s = status.value;
+  return {
+    name: "journal",
+    ok: s.sidecars.length === 0,
+    detail:
+      s.sidecars.length === 0
+        ? `${s.journalMode} — single file at rest`
+        : `stray sidecar files present (crash or unexpected mode): ${s.sidecars.join(", ")}`,
+  };
+}
+
+function checkSyncFolder(c: Container): Check {
+  const inspection = new FileVaultFolder(c.paths).inspect();
+  if (inspection.conflictedCopies.length > 0) {
+    return {
+      name: "sync",
+      ok: false,
+      detail: `conflicted-copy file(s) found — a fork may have occurred: ${inspection.conflictedCopies.join(", ")}. Unlock to see the fork warning.`,
+    };
+  }
+  if (inspection.looksLikeCloud) {
+    return {
+      name: "sync",
+      ok: true,
+      detail:
+        "vault folder looks like a cloud-sync folder — lock, let it sync, then unlock elsewhere",
+    };
+  }
+  return { name: "sync", ok: true, detail: "no cloud-sync folder detected" };
+}
+
+function checkLineage(c: Container): Check {
+  const status = c.vaultStatus.execute();
+  if (!status.ok) return { name: "lineage", ok: false, detail: status.error.message };
+  const s = status.value;
+  return {
+    name: "lineage",
+    ok: true,
+    detail:
+      s.generation === undefined
+        ? "unlock to see generation / last-writer"
+        : `generation ${s.generation}, last written by ${s.lastWriterIsThisDevice ? "this device" : "another device"}`,
+  };
+}
+
+function checkAutoLock(c: Container): Check {
+  const status = c.vaultStatus.execute();
+  if (!status.ok) return { name: "auto-lock", ok: false, detail: status.error.message };
+  const a = status.value.autoLock;
+  if (a.ttlMinutes === null) return { name: "auto-lock", ok: true, detail: "disabled" };
+  const idle = a.idleForMinutes !== undefined ? `, idle ${a.idleForMinutes.toFixed(1)}m` : "";
+  return {
+    name: "auto-lock",
+    ok: true,
+    detail: `${a.ttlMinutes}m TTL${idle}${a.expired ? " (expired)" : ""}`,
+  };
+}
+
 function checkClient(client: ClientId): Check {
   const path = clientConfigPath(client);
   if (!existsSync(path)) return { name: client, ok: false, detail: "config not found" };
@@ -80,6 +142,10 @@ export async function doctorCommand(c: Container): Promise<void> {
     await checkSqlcipher(),
     checkKeychain(),
     checkVault(c),
+    checkJournal(c),
+    checkSyncFolder(c),
+    checkLineage(c),
+    checkAutoLock(c),
     ...CLIENTS.map(checkClient),
   ];
 

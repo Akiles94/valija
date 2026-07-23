@@ -25,12 +25,13 @@ describe("LockVault", () => {
       emptyStore,
       new FakeKeychain(),
       new FileVaultFolder(emptyPaths),
+      vault.deviceIdentity,
     ).execute();
     expect(!r.ok && r.error.code).toBe("VAULT_NOT_FOUND");
   });
 
   it("locks an unlocked vault, then reports already-locked", () => {
-    const lockVault = new LockVault(vault.store, vault.keychain, folder);
+    const lockVault = new LockVault(vault.store, vault.keychain, folder, vault.deviceIdentity);
     const first = lockVault.execute();
     expect(first.ok && first.value.wasUnlocked).toBe(true);
     expect(first.ok && first.value.sidecars).toEqual([]);
@@ -48,11 +49,12 @@ describe("LockVault", () => {
     );
     db.close();
 
-    const r = new LockVault(vault.store, vault.keychain, folder).execute();
+    const r = new LockVault(vault.store, vault.keychain, folder, vault.deviceIdentity).execute();
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.generation).toBe(stamp.generation);
     expect(r.value.writer).toBe(stamp.writer);
+    expect(r.value.writerIsThisDevice).toBe(true);
     vault.keychain.setKey(vault.vaultId, vault.keyHex);
   });
 
@@ -60,7 +62,7 @@ describe("LockVault", () => {
     const walPath = `${vault.paths.db}-wal`;
     writeFileSync(walPath, "");
     try {
-      const r = new LockVault(vault.store, vault.keychain, folder).execute();
+      const r = new LockVault(vault.store, vault.keychain, folder, vault.deviceIdentity).execute();
       expect(r.ok).toBe(true);
       expect(r.ok && r.value.sidecars).toEqual([walPath]);
     } finally {

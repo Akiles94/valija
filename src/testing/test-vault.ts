@@ -82,7 +82,7 @@ export interface TestVault {
   deviceIdentity: FakeDeviceIdentity;
   guard: SessionGuard;
   idGen: IdGenerator;
-  clock: Clock;
+  clock: FixedClock;
 }
 
 /** An initialized, unlocked vault on a temp dir — no Argon2, fast. */
