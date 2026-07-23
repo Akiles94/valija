@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { createDeviceId, parseDeviceId } from "./device-id.js";
 
 describe("device-id", () => {
-  it("accepts a well-formed ULID", () => {
-    const result = parseDeviceId("01ARZ3NDEKTSV4RRFFQ69G5FAV");
-    expect(result.ok).toBe(true);
+  it("accepts any non-empty id, ULID or otherwise (ids are opaque in this codebase)", () => {
+    expect(parseDeviceId("01ARZ3NDEKTSV4RRFFQ69G5FAV").ok).toBe(true);
+    expect(parseDeviceId("01SEQ000001").ok).toBe(true);
   });
 
-  it("rejects a malformed value", () => {
-    const result = parseDeviceId("not-a-ulid");
+  it("rejects an empty or blank value", () => {
+    const result = parseDeviceId("   ");
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe("INVALID_DEVICE_ID");
   });
