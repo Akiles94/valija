@@ -1,8 +1,21 @@
 # M3 — Bring-your-own-cloud vault sync · Refined Spec
 
-**Status:** Draft for Gate R (not approved) · **Milestone:** post-0.2.0 (targets 0.3.0)
+**Status:** Approved at Gate R — Oscar 2026-07-23 · **Milestone:** post-0.2.0 (targets 0.3.0)
 **Legend:** each open decision lists options and a recommended **Default** with a reason.
-Nothing here is settled; every `D-x` needs Oscar's confirmation at Gate R.
+
+## Decisions confirmed at Gate R (Oscar, 2026-07-23)
+
+All defaults below are confirmed as written, with one exception:
+
+- D-A through D-E, D-G, D-H, D-I: **confirmed as the recommended Default** in each section.
+- **D-F: Option A** — the lineage stamp + fork-detection policy is owned by `vault`
+  (`VaultLineage` domain service, `DeviceId`/`Generation`/`WriteStamp` values in
+  `vault/domain`, a narrow `lineage-store` port in `vault/application`), with a small new
+  seam so `context`'s write path (`src/context/infra/item-repo.ts`) can bump the stamp on
+  commit without crossing the `context → vault` one-directional bridge
+  (`VaultSessions.withSession`). Rejected Option B (a shared `meta`-backed adapter both
+  modules call directly) as blurring the security-module boundary the project has kept
+  deliberate elsewhere.
 
 ---
 
