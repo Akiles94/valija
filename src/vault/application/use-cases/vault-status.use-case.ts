@@ -62,14 +62,20 @@ export class VaultStatus implements UseCase<void, VaultStatusOutput> {
     const autoLock = this.autoLockStatus(vaultId);
 
     const keyHex = this.keychain.getKey(vaultId);
-    const unlocked = keyHex !== null && this.store.verifyKey(keyHex).ok;
-    if (!unlocked || keyHex === null) {
+    if (keyHex === null) {
       return ok({ ...base, initialized: true, unlocked: false, vaultId, autoLock });
     }
 
+    // One open both verifies the key and reads the lineage: readLineage returns
+    // WRONG_PASSPHRASE on a stale key, so `unlocked` follows from its result —
+    // a separate verifyKey would only open the db a second time for nothing.
     const lineage = this.store.readLineage(keyHex);
+    if (!lineage.ok) {
+      return ok({ ...base, initialized: true, unlocked: false, vaultId, autoLock });
+    }
+
     const lineageFields =
-      lineage.ok && lineage.value !== null
+      lineage.value !== null
         ? {
             generation: lineage.value.generation,
             lastWriter: lineage.value.writer,

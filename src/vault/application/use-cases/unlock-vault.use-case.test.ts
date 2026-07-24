@@ -33,7 +33,14 @@ let realKeyHex = "";
 let vaultId = "";
 
 beforeAll(async () => {
-  const created = await new CreateVault(store, crypto, keychain, clock, idGen).execute(PASSPHRASE);
+  const created = await new CreateVault(
+    store,
+    crypto,
+    keychain,
+    deviceIdentity,
+    clock,
+    idGen,
+  ).execute(PASSPHRASE);
   if (!created.ok) throw new Error(created.error.message);
   realKeyHex = created.value.keyHex;
   vaultId = created.value.vaultId;

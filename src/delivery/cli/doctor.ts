@@ -1,8 +1,14 @@
 import { existsSync, readFileSync } from "node:fs";
+import type { DomainError, Result } from "../../shared/domain/result.js";
+import type { VaultFolderInspection } from "../../vault/application/ports/vault-folder.js";
+import type { VaultStatusOutput } from "../../vault/application/use-cases/vault-status.use-case.js";
 import { FileVaultFolder } from "../../vault/infra/file-vault-folder.js";
 import { OsKeychain } from "../../vault/infra/keyring.js";
 import type { Container } from "../container.js";
 import { CLIENTS, type ClientId, clientConfigPath } from "./installer.js";
+import { writerLabel } from "./render.js";
+
+type StatusResult = Result<VaultStatusOutput, DomainError>;
 
 interface Check {
   name: string;
@@ -45,8 +51,7 @@ function checkKeychain(): Check {
   }
 }
 
-function checkVault(c: Container): Check {
-  const status = c.vaultStatus.execute();
+function checkVault(status: StatusResult): Check {
   if (!status.ok) return { name: "vault", ok: false, detail: status.error.message };
   return {
     name: "vault",
@@ -57,8 +62,7 @@ function checkVault(c: Container): Check {
   };
 }
 
-function checkJournal(c: Container): Check {
-  const status = c.vaultStatus.execute();
+function checkJournal(status: StatusResult): Check {
   if (!status.ok) return { name: "journal", ok: false, detail: status.error.message };
   const s = status.value;
   return {
@@ -71,15 +75,19 @@ function checkJournal(c: Container): Check {
   };
 }
 
-function checkSyncFolder(c: Container): Check {
-  const inspection = new FileVaultFolder(c.paths).inspect();
+function checkSyncFolder(inspection: VaultFolderInspection): Check {
+  const problems: string[] = [];
   if (inspection.conflictedCopies.length > 0) {
-    return {
-      name: "sync",
-      ok: false,
-      detail: `conflicted-copy file(s) found — a fork may have occurred: ${inspection.conflictedCopies.join(", ")}. Unlock to see the fork warning.`,
-    };
+    problems.push(
+      `conflicted-copy file(s) — a fork may have occurred: ${inspection.conflictedCopies.join(", ")} (unlock to see the fork warning)`,
+    );
   }
+  if (inspection.staleBackups.length > 0) {
+    problems.push(
+      `leftover upgrade backup(s): ${inspection.staleBackups.join(", ")} — a prior upgrade did not finish cleanly; delete once you've confirmed the vault opens`,
+    );
+  }
+  if (problems.length > 0) return { name: "sync", ok: false, detail: problems.join("; ") };
   if (inspection.looksLikeCloud) {
     return {
       name: "sync",
@@ -91,8 +99,7 @@ function checkSyncFolder(c: Container): Check {
   return { name: "sync", ok: true, detail: "no cloud-sync folder detected" };
 }
 
-function checkLineage(c: Container): Check {
-  const status = c.vaultStatus.execute();
+function checkLineage(status: StatusResult): Check {
   if (!status.ok) return { name: "lineage", ok: false, detail: status.error.message };
   const s = status.value;
   return {
@@ -101,12 +108,11 @@ function checkLineage(c: Container): Check {
     detail:
       s.generation === undefined
         ? "unlock to see generation / last-writer"
-        : `generation ${s.generation}, last written by ${s.lastWriterIsThisDevice ? "this device" : "another device"}`,
+        : `generation ${s.generation}, last written by ${writerLabel(s.lastWriter, s.lastWriterIsThisDevice)}`,
   };
 }
 
-function checkAutoLock(c: Container): Check {
-  const status = c.vaultStatus.execute();
+function checkAutoLock(status: StatusResult): Check {
   if (!status.ok) return { name: "auto-lock", ok: false, detail: status.error.message };
   const a = status.value.autoLock;
   if (a.ttlMinutes === null) return { name: "auto-lock", ok: true, detail: "disabled" };
@@ -137,15 +143,19 @@ function checkClient(client: ClientId): Check {
 }
 
 export async function doctorCommand(c: Container): Promise<void> {
+  // Compute the vault status once — each call opens the SQLCipher db (twice) and
+  // reads the keychain, so recomputing it per check would multiply that needlessly.
+  const status = c.vaultStatus.execute();
+  const inspection = new FileVaultFolder(c.paths).inspect();
   const checks: Check[] = [
     checkNode(),
     await checkSqlcipher(),
     checkKeychain(),
-    checkVault(c),
-    checkJournal(c),
-    checkSyncFolder(c),
-    checkLineage(c),
-    checkAutoLock(c),
+    checkVault(status),
+    checkJournal(status),
+    checkSyncFolder(inspection),
+    checkLineage(status),
+    checkAutoLock(status),
     ...CLIENTS.map(checkClient),
   ];
 

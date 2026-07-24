@@ -29,7 +29,14 @@ const crypto = new Argon2VaultCrypto();
 
 const container: Container = {
   paths: vault.paths,
-  createVault: new CreateVault(vault.store, crypto, vault.keychain, clock, ids),
+  createVault: new CreateVault(
+    vault.store,
+    crypto,
+    vault.keychain,
+    vault.deviceIdentity,
+    clock,
+    ids,
+  ),
   unlockVault: new UnlockVault(vault.store, crypto, vault.keychain, vault.deviceIdentity, clock),
   lockVault: new LockVault(
     vault.store,

@@ -31,9 +31,14 @@ valija lock
 self-consistent file (no `-wal`/`-shm`/`-journal` sidecars) and prints a confirmation:
 
 ```
-Vault locked. On-disk state: single file (vault.db), generation 42, last written by this device.
+Vault locked. On-disk state: single file (vault.db), generation 42, last written by this device (01J8F2WX9A…).
 Safe to let your sync client finish before opening valija elsewhere.
 ```
+
+The short id after `this device` / `another device` is a prefix of the writing device's id — it's
+what lets you tell a normal two-device handoff from a genuine three-way fork. If instead there are
+stray sidecar files, `lock` says so plainly ("NOT safely at rest") rather than claiming a single
+file — so the reassuring line only ever appears when it's actually true.
 
 Wait for your sync client to show "up to date" — valija isn't involved in this step and
 doesn't watch for it.
@@ -78,6 +83,22 @@ disk untouched. To resolve it:
    temporary copy of it) and re-save that context by hand.
 4. `valija doctor` flags a conflicted-copy file if one is still sitting in the vault folder,
    so you don't lose track of it.
+
+> **OneDrive users:** OneDrive doesn't append "conflicted copy" — it renames the losing file to
+> `vault-<HOSTNAME>.db`. That's indistinguishable from an ordinary file, so `doctor` can't flag it
+> automatically. If you're on OneDrive and `unlock` reports a fork, look for a `vault-<hostname>.db`
+> sitting next to `vault.db` yourself. Dropbox, iCloud Drive, and Syncthing conflict names *are*
+> detected.
+
+## After a valija upgrade
+
+The first command you run against a vault created by an older valija migrates its database in place.
+Before touching your data it writes a one-time encrypted backup beside it — `vault.db.pre-003.bak` —
+and deletes it automatically once the upgrade succeeds. If you ever see a `vault.db.pre-NNN.bak`
+still sitting in the folder, the upgrade didn't finish cleanly: your current `vault.db` opened fine
+(that's how you got here), so once you've confirmed your data is intact you can delete the `.bak`.
+`valija doctor` points out a lingering one. If your vault is in a synced folder, delete it on one
+device and let that deletion sync, like any other change.
 
 ## Idle auto-lock
 

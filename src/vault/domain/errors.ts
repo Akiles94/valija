@@ -14,8 +14,12 @@ export type VaultErrorCode =
   | "INVALID_WRITE_STAMP"
   | "VAULT_FORK_DETECTED";
 
+/** A VAULT DomainError whose code is checked against VaultErrorCode. */
+export const vaultError = (code: VaultErrorCode, message: string): DomainError =>
+  new DomainError(code, message);
+
 export const vaultErr = (code: VaultErrorCode, message: string): Result<never, DomainError> =>
-  err(new DomainError(code, message));
+  err(vaultError(code, message));
 
 /** Shared wording for VAULT_LOCKED, so every caller (session open, auto-lock) says the same thing. */
 export const LOCKED_MESSAGE = 'Vault is locked. Ask the user to run "valija unlock" in a terminal.';

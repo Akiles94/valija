@@ -3,7 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { resolveVaultPaths } from "../../../shared/infra/vault-paths.js";
-import { FakeKeychain, FixedClock, SeqIds } from "../../../testing/test-vault.js";
+import {
+  FakeDeviceIdentity,
+  FakeKeychain,
+  FixedClock,
+  SeqIds,
+} from "../../../testing/test-vault.js";
 import { Argon2VaultCrypto } from "../../infra/argon2.js";
 import { FileVaultStore } from "../../infra/file-vault-store.js";
 import { CreateVault } from "./create-vault.use-case.js";
@@ -14,11 +19,14 @@ afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 const paths = resolveVaultPaths(join(tmp, "vault-home"));
 const store = new FileVaultStore(paths, new SeqIds(), new FixedClock());
 const keychain = new FakeKeychain();
+const clock = new FixedClock();
+const deviceIdentity = new FakeDeviceIdentity(new SeqIds());
 const createVault = new CreateVault(
   store,
   new Argon2VaultCrypto(),
   keychain,
-  new FixedClock(),
+  deviceIdentity,
+  clock,
   new SeqIds(),
 );
 
@@ -37,6 +45,8 @@ describe("CreateVault", () => {
     expect(store.headerExists()).toBe(true);
     expect(keychain.getKey(r.value.vaultId)).toBe(r.value.keyHex);
     expect(store.verifyKey(r.value.keyHex).ok).toBe(true);
+    // The idle clock starts at init (D-I), so an abandoned fresh vault still auto-locks.
+    expect(deviceIdentity.lastActivityAt(r.value.vaultId)).toEqual(clock.now());
   });
 
   it("refuses to create a second vault", async () => {

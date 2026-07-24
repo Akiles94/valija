@@ -1,5 +1,7 @@
+import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import SqliteDatabase from "better-sqlite3-multiple-ciphers";
@@ -12,6 +14,32 @@ import { openVaultDb } from "./sqlite.js";
 const tmp = mkdtempSync(join(tmpdir(), "valija-upgrade-wal-"));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
+const moduleRequire = createRequire(import.meta.url);
+
+/**
+ * A standalone writer: opens the vault in WAL mode with auto-checkpoint OFF,
+ * commits one row (so its frames sit in a live -wal, not folded into the main
+ * db), prints READY, then idles — so the parent can SIGKILL it to leave a
+ * genuine dangling -wal, the shape only a real crash produces. It requires the
+ * native module by absolute path (argv[2]) so resolution doesn't depend on the
+ * child's cwd. `.cjs` so `require` works regardless of the project's module type.
+ */
+const WAL_WRITER_SCRIPT = `
+const Database = require(process.argv[2]);
+const [dbPath, keyHex] = process.argv.slice(3);
+const db = new Database(dbPath);
+db.pragma("cipher='sqlcipher'");
+db.pragma(\`key="x'\${keyHex}'"\`);
+db.prepare("SELECT count(*) FROM sqlite_master").get();
+db.pragma("journal_mode = WAL");
+db.pragma("wal_autocheckpoint = 0");
+db.pragma("synchronous = FULL");
+db.exec("CREATE TABLE IF NOT EXISTS survive (note TEXT NOT NULL)");
+db.prepare("INSERT INTO survive (note) VALUES ('committed-in-wal')").run();
+process.stdout.write("READY");
+setInterval(() => {}, 1000);
+`;
+
 const ROW_SQL =
   "INSERT INTO context_items (id, project_id, type, content, tags, pinned, archived, created_at, updated_at) " +
   "VALUES ('i1', '01P', 'decision', 'we chose sqlcipher for encryption', '[\"db\"]', 0, 0, '2026-01-01', '2026-01-01')";
@@ -23,14 +51,12 @@ const ROW_SQL =
  * pre-applied.
  *
  * Note: SQLite auto-checkpoints (and removes -wal/-shm) when the last
- * connection to a WAL database closes cleanly, and changing journal_mode
- * away from WAL requires being the only connection — so a literal dangling
- * -wal file at the moment of upgrade can only happen via an actual crash
- * (a separate process, killed uncleanly), which isn't reproducible from a
- * single in-process test without real subprocess tricks. What this test can
- * and does prove is the property that actually matters: a vault that was
- * created and used in WAL mode upgrades correctly — journal switches,
- * schema reaches 3, lineage seeds, and no data or search is lost.
+ * connection to a WAL database closes cleanly, so this builder — which closes
+ * normally — proves the ordinary upgrade path: a vault created and used in WAL
+ * mode upgrades correctly (journal switches, schema reaches 3, lineage seeds,
+ * no data or search lost). The harder case — a literal dangling -wal left by a
+ * process killed mid-flight — is covered separately by the crashed-process test
+ * below, which spawns a real writer and SIGKILLs it.
  */
 function buildLegacyWalVault(path: string, keyHex: string, atVersion: 1 | 2): void {
   const db = new SqliteDatabase(path);
@@ -109,4 +135,40 @@ describe("upgrading a pre-M3 populated WAL vault", () => {
 
     db.close();
   });
+
+  it("recovers a vault a crashed process left with a live -wal (folds it, then switches journaling)", async () => {
+    const path = join(tmp, "crashed.db");
+    const key = randomBytes(32).toString("hex");
+    const scriptPath = join(tmp, "wal-writer.cjs");
+    writeFileSync(scriptPath, WAL_WRITER_SCRIPT);
+    const modulePath = moduleRequire.resolve("better-sqlite3-multiple-ciphers");
+
+    const child = spawn(process.execPath, [scriptPath, modulePath, path, key]);
+    // Arm the exit wait immediately, so the SIGKILL exit is captured no matter
+    // how quickly it happens relative to the await below.
+    const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
+    try {
+      await new Promise<void>((resolve) => {
+        child.stdout?.on("data", (chunk: Buffer) => {
+          if (chunk.toString().includes("READY")) resolve();
+        });
+      });
+      // A committed-but-uncheckpointed WAL is genuinely on disk right now.
+      expect(existsSync(`${path}-wal`)).toBe(true);
+      expect(statSync(`${path}-wal`).size).toBeGreaterThan(0);
+    } finally {
+      child.kill("SIGKILL");
+    }
+    await exited;
+
+    // openVaultDb folds the surviving WAL (wal_checkpoint TRUNCATE) then switches to DELETE.
+    const db = openVaultDb(path, key);
+    const row = db.prepare("SELECT note FROM survive").get() as { note: string } | undefined;
+    expect(row?.note).toBe("committed-in-wal");
+    expect(db.pragma("journal_mode", { simple: true })).toBe("delete");
+
+    db.close();
+    expect(existsSync(`${path}-wal`)).toBe(false);
+    expect(existsSync(`${path}-shm`)).toBe(false);
+  }, 15000);
 });

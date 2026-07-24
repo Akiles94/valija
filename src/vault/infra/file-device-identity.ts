@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import type { IdGenerator } from "../../shared/application/ports/clock.js";
 import type { StatePaths } from "../../shared/infra/state-paths.js";
@@ -86,6 +86,12 @@ export class FileDeviceIdentity implements DeviceIdentity {
 
   private writeState(state: StateFile): void {
     mkdirSync(dirname(this.paths.state), { recursive: true });
-    writeFileSync(this.paths.state, JSON.stringify(state, null, 2));
+    // Write-then-rename so a crash or a concurrent reader never sees a half-written
+    // file. A truncated state.json reads back as "{}" (see readState), which would
+    // mint a new device id and silently drop last-seen — making the next divergent
+    // vault look like a clean fast-forward. renameSync is atomic on one filesystem.
+    const tmp = `${this.paths.state}.${process.pid}.tmp`;
+    writeFileSync(tmp, JSON.stringify(state, null, 2), { mode: 0o600 });
+    renameSync(tmp, this.paths.state);
   }
 }

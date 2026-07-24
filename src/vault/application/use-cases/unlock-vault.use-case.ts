@@ -1,7 +1,7 @@
 import type { Clock } from "../../../shared/application/ports/clock.js";
 import type { AsyncUseCase } from "../../../shared/application/use-case.js";
-import { DomainError, ok, type Result } from "../../../shared/domain/result.js";
-import { vaultErr } from "../../domain/errors.js";
+import { type DomainError, ok, type Result } from "../../../shared/domain/result.js";
+import { vaultErr, vaultError } from "../../domain/errors.js";
 import { classifyLineage } from "../../domain/services/vault-lineage.js";
 import type { DeviceId } from "../../domain/values/device-id.js";
 import type { Generation } from "../../domain/values/generation.js";
@@ -70,7 +70,7 @@ export class UnlockVault implements AsyncUseCase<UnlockInput, UnlockOutput> {
         fork: {
           generation: lineage.value.generation,
           writer: lineage.value.writer,
-          notice: new DomainError(
+          notice: vaultError(
             "VAULT_FORK_DETECTED",
             `This vault was changed on another device from the same starting point ` +
               `(generation ${lineage.value.generation}). Your sync client may have kept only one ` +
