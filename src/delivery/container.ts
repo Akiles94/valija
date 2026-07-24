@@ -61,7 +61,7 @@ export function buildContainer(): Container {
   const importItems = new ImportItems(sessions, systemClock, ulidIds);
   return {
     paths,
-    createVault: new CreateVault(store, crypto, keychain, systemClock, ulidIds),
+    createVault: new CreateVault(store, crypto, keychain, deviceIdentity, systemClock, ulidIds),
     unlockVault: new UnlockVault(store, crypto, keychain, deviceIdentity, systemClock),
     lockVault: new LockVault(store, keychain, folder, deviceIdentity),
     vaultStatus: new VaultStatus(store, keychain, deviceIdentity, folder, systemClock, ttlMinutes),

@@ -1,6 +1,6 @@
 import type { Database } from "better-sqlite3-multiple-ciphers";
 import type { Clock, IdGenerator } from "../../shared/application/ports/clock.js";
-import { type DomainError, ok, type Result } from "../../shared/domain/result.js";
+import { type DomainError, err, ok, type Result } from "../../shared/domain/result.js";
 import { migrate } from "../../shared/infra/migrations.js";
 import { isWrongKeyError, openVaultDb } from "../../shared/infra/sqlite.js";
 import type { VaultPaths } from "../../shared/infra/vault-paths.js";
@@ -119,28 +119,22 @@ export class SqliteVaultSessions implements VaultSessions {
     vaultId: string,
     mutate: () => Result<T, DomainError>,
   ): Result<T, DomainError> {
-    let bumped: LineageStamp | null = null;
-    let outcome: Result<T, DomainError>;
+    let committed: { value: T; stamp: LineageStamp };
     try {
-      outcome = db.transaction(() => {
+      committed = db.transaction(() => {
         const result = mutate();
         if (!result.ok) throw new WriteFailedSentinel(result.error);
-        bumped = lineageStore.bump(writer);
-        return result;
+        return { value: result.value, stamp: lineageStore.bump(writer) };
       })();
     } catch (error) {
-      if (error instanceof WriteFailedSentinel) {
-        return { ok: false, error: error.error };
-      }
+      if (error instanceof WriteFailedSentinel) return err(error.error);
       throw error;
     }
-    if (bumped !== null) {
-      const stamp: LineageStamp = bumped;
-      this.deviceIdentity.recordSeen(vaultId, {
-        generation: stamp.generation,
-        writeStamp: stamp.writeStamp,
-      });
-    }
-    return outcome;
+    // Recorded only after the transaction has actually committed.
+    this.deviceIdentity.recordSeen(vaultId, {
+      generation: committed.stamp.generation,
+      writeStamp: committed.stamp.writeStamp,
+    });
+    return ok(committed.value);
   }
 }

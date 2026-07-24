@@ -7,6 +7,14 @@ export type Generation = number & { readonly __brand: "Generation" };
 export const GENERATION_ZERO = 0 as Generation;
 
 export function parseGeneration(raw: string | number): Result<Generation, DomainError> {
+  // A string must be plain decimal digits — Number() would otherwise accept
+  // "", "  ", "0x10" (→16) and "1e3" (→1000) as valid generations.
+  if (typeof raw === "string" && !/^\d+$/.test(raw)) {
+    return vaultErr(
+      "INVALID_GENERATION",
+      `Generation must be a non-negative integer. Got: "${raw}"`,
+    );
+  }
   const value = typeof raw === "string" ? Number(raw) : raw;
   if (!Number.isInteger(value) || value < 0) {
     return vaultErr(

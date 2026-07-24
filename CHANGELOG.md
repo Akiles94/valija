@@ -12,7 +12,7 @@ Bring-your-own-cloud vault sync — keep your vault in a folder your own sync cl
 - Fork detection: each write stamps the vault's lineage (generation + a random write stamp, inside the encrypted db); `valija unlock` adopts a clean handoff from another device silently, and reports `VAULT_FORK_DETECTED` — without deleting or overwriting anything — if two devices wrote independently from the same starting point.
 - `valija lock` now confirms the vault is safely at rest as a single file and reports the current generation and who wrote it last.
 - Idle auto-lock: an unlocked vault re-locks itself after 15 minutes of inactivity by default (`VALIJA_AUTOLOCK_MINUTES` to change or `0`/`off` to disable). Lazy, no background process.
-- `valija status` / `valija doctor` report journal mode, sync-folder recognition, a warning on a vendor "conflicted copy" file, lineage generation/last-writer, and auto-lock state.
+- `valija status` / `valija doctor` report journal mode, sync-folder recognition, a warning on a vendor "conflicted copy" file (Dropbox/iCloud/Syncthing) or a leftover `*.pre-NNN.bak` upgrade backup, lineage generation/last-writer, and auto-lock state.
 - Schema migration 003 (lineage baseline) — runs automatically, with a ciphertext backup on first upgrade of an existing vault.
 
 ### Notes

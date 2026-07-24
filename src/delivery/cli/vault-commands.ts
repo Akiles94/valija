@@ -1,7 +1,7 @@
 import { renderRecoveryKit } from "../../vault/infra/recovery-kit.js";
 import type { Container } from "../container.js";
 import { promptHidden } from "./prompt.js";
-import { fail } from "./render.js";
+import { fail, writerLabel } from "./render.js";
 
 export async function initCommand(c: Container): Promise<void> {
   console.log("Creating your encrypted vault.\n");
@@ -60,14 +60,21 @@ export function lockCommand(c: Container): void {
   const writerText =
     v.writer === undefined
       ? ""
-      : `, last written by ${v.writerIsThisDevice ? "this device" : "another device"}`;
-  console.log(
-    `Vault locked. On-disk state: single file (vault.db), ${generationText}${writerText}.`,
-  );
-  if (v.sidecars.length > 0) {
-    console.log(`Warning: stray files present, not safely at rest: ${v.sidecars.join(", ")}`);
-  } else {
+      : `, last written by ${writerLabel(v.writer, v.writerIsThisDevice)}`;
+
+  // The "single file (vault.db)" reassurance may only be printed once the verify
+  // has actually succeeded (refined §6.5) — i.e. no stray sidecars remain.
+  if (v.sidecars.length === 0) {
+    console.log(
+      `Vault locked. On-disk state: single file (vault.db), ${generationText}${writerText}.`,
+    );
     console.log("Safe to let your sync client finish before opening valija elsewhere.");
+  } else {
+    console.log(`Vault locked (${generationText}${writerText}).`);
+    console.log(
+      `Warning: NOT safely at rest — stray files present: ${v.sidecars.join(", ")}. ` +
+        "Re-run any valija command to let it settle before your sync client uploads.",
+    );
   }
 }
 
@@ -87,7 +94,7 @@ export function statusCommand(c: Container): void {
   );
   if (s.generation !== undefined) {
     console.log(
-      `lineage:  generation ${s.generation}, last written by ${s.lastWriterIsThisDevice ? "this device" : "another device"}`,
+      `lineage:  generation ${s.generation}, last written by ${writerLabel(s.lastWriter, s.lastWriterIsThisDevice)}`,
     );
   }
   const ttl = s.autoLock.ttlMinutes;
