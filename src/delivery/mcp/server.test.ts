@@ -18,6 +18,7 @@ import { LockVault } from "../../vault/application/use-cases/lock-vault.use-case
 import { UnlockVault } from "../../vault/application/use-cases/unlock-vault.use-case.js";
 import { VaultStatus } from "../../vault/application/use-cases/vault-status.use-case.js";
 import { Argon2VaultCrypto } from "../../vault/infra/argon2.js";
+import { FileVaultFolder } from "../../vault/infra/file-vault-folder.js";
 import type { Container } from "../container.js";
 import { buildMcpServer } from "./server.js";
 
@@ -28,10 +29,29 @@ const crypto = new Argon2VaultCrypto();
 
 const container: Container = {
   paths: vault.paths,
-  createVault: new CreateVault(vault.store, crypto, vault.keychain, clock, ids),
-  unlockVault: new UnlockVault(vault.store, crypto, vault.keychain),
-  lockVault: new LockVault(vault.store, vault.keychain),
-  vaultStatus: new VaultStatus(vault.store, vault.keychain),
+  createVault: new CreateVault(
+    vault.store,
+    crypto,
+    vault.keychain,
+    vault.deviceIdentity,
+    clock,
+    ids,
+  ),
+  unlockVault: new UnlockVault(vault.store, crypto, vault.keychain, vault.deviceIdentity, clock),
+  lockVault: new LockVault(
+    vault.store,
+    vault.keychain,
+    new FileVaultFolder(vault.paths),
+    vault.deviceIdentity,
+  ),
+  vaultStatus: new VaultStatus(
+    vault.store,
+    vault.keychain,
+    vault.deviceIdentity,
+    new FileVaultFolder(vault.paths),
+    clock,
+    15,
+  ),
   saveContext: new SaveContext(vault.sessions, clock, ids),
   listProjects: new ListProjects(vault.sessions),
   searchContext: new SearchContext(vault.sessions),
@@ -156,6 +176,33 @@ describe("valija MCP server (real client over in-memory transport)", () => {
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain('Vault is locked. Ask the user to run "valija unlock"');
     vault.keychain.setKey(vault.vaultId, vault.keyHex);
+  });
+
+  it("never exposes sync/lineage/device/session metadata through any tool response", async () => {
+    // By this point save_context/save_handoff have bumped the vault's lineage
+    // several times, and VaultStatus/doctor now report generation, writer,
+    // and auto-lock state — none of which should ever reach a context-facing
+    // tool response or context pack (Decision D-B/D-I, "MCP surface untouched").
+    const pack = await client.callTool({ name: "get_context", arguments: { project: "mcp-e2e" } });
+    const search = await client.callTool({
+      name: "search_context",
+      arguments: { query: "validated" },
+    });
+    const list = await client.callTool({ name: "list_projects", arguments: {} });
+    const combined = [textOf(pack), textOf(search), textOf(list)].join("\n");
+
+    // Not checking generic "last activity" here: list_projects already legitimately
+    // reports a project's own last-content-update date (pre-existing, unrelated to
+    // M3's device-local idle tracking) — that's product data, not sync metadata.
+    for (const pattern of [
+      /generation/i,
+      /lineage/i,
+      /write.?stamp/i,
+      /device.?id/i,
+      /auto.?lock/i,
+    ]) {
+      expect(combined).not.toMatch(pattern);
+    }
   });
 
   it("prompts render with the project argument", async () => {
