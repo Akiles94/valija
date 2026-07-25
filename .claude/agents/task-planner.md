@@ -33,6 +33,14 @@ When invoked:
    see in executing the plan.
 8. At the end show the resulting structure of the repo after the plan is executed, including new files and modules, and any changes to existing ones.
 9. Check that the generated files and methods names are consistent with the naming conventions in the repo. and are compliant with ubiquitous language and DDD (Domain-Driven Design) principles. If any names are inconsistent, propose alternatives that align with the conventions and principles.
+9a. Check file *placement*, not just names, per `CLAUDE.md`'s "no bare files at a layer's
+    root" convention: every new file inside a module's `domain/application/infra` must sit in
+    a subfolder that names its kind (`values/`, `services/`, `ports/`, `use-cases/`, `dto/`,
+    `policies/`, …) unless it matches an established single-file exception (`errors.ts`,
+    `shared/domain/result.ts`, `shared/application/use-case.ts`) or is a tech-named `infra/`
+    adapter. If a slice introduces a new kind of application/domain object that doesn't fit
+    an existing subfolder (e.g. a cross-cutting policy that is neither a port nor a
+    `UseCase`), propose a new, aptly-named subfolder for it rather than placing it loose.
 10. You are a subagent: you cannot talk to the user and must not assume any answer. Put every open technical decision and trade-off in a **Decisions to confirm** section, each with a recommended default and its trade-offs, so the orchestrator can get the user's call. Treat nothing as settled. The plan should be clear enough that a developer can make an informed decision without needing to ask for clarification.
 11. The code generated should be easy to read, scalable, maintainable, and testable, and should follow clean architecture principles and DDD (Domain-Driven Design) principles. following each line an action that can be read as a phrase, don't create a lot of classes, methods or too extensive files. The plan should be clear enough that a developer can make an informed decision without needing to ask for clarification.
 12. Ensure that the generated code is consistent with the existing codebase in terms of coding style, formatting, and naming conventions. If any inconsistencies are found, propose alternatives that align with the existing codebase.

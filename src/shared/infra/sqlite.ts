@@ -20,7 +20,11 @@ export function openVaultDb(dbPath: string, keyHex: string): Database {
     db.pragma(`key="x'${keyHex}'"`);
     // Touching the schema forces key verification: wrong key -> SQLITE_NOTADB.
     db.prepare("SELECT count(*) FROM sqlite_master").get();
-    db.pragma("journal_mode = WAL");
+    // Rollback journal, not WAL: a synced folder only ever sees `vault.db` at rest,
+    // never a `-wal`/`-shm` sidecar a cloud client could upload out of step with it.
+    // TRUNCATE first folds any WAL left by a pre-upgrade (0.2.x) vault before the switch.
+    db.pragma("wal_checkpoint(TRUNCATE)");
+    db.pragma("journal_mode = DELETE");
     db.pragma("foreign_keys = ON");
     return db;
   } catch (error) {

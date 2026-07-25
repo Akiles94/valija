@@ -14,7 +14,7 @@ describe("Migrations", () => {
     const db = openVaultDb(join(tmp, "idempotent.db"), randomBytes(32).toString("hex"));
     migrate(db);
     migrate(db);
-    expect(schemaVersion(db)).toBe(2);
+    expect(schemaVersion(db)).toBe(3);
     db.close();
   });
 

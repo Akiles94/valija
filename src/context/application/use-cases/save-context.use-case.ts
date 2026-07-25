@@ -45,26 +45,28 @@ export class SaveContext implements UseCase<SaveContextInput, SaveContextOutput>
     const validated = this.parseInput(input);
     if (!validated.ok) return validated;
 
-    return this.sessions.withSession((session) => {
-      const { project, created } = this.findOrCreateProject(session, validated.value.name);
-      const item = createContextItem({
-        id: this.idGen.next(),
-        projectId: project.id,
-        type: validated.value.type,
-        content: validated.value.content,
-        tags: validated.value.tags,
-        pinned: validated.value.pinned,
-        ...(validated.value.source === undefined ? {} : { source: validated.value.source }),
-        now: this.clock.now(),
-      });
-      session.items.save(item);
-      return ok({
-        itemId: item.id,
-        project: validated.value.name as string,
-        type: validated.value.type,
-        projectCreated: created,
-      });
-    });
+    return this.sessions.withSession((session) =>
+      session.write(() => {
+        const { project, created } = this.findOrCreateProject(session, validated.value.name);
+        const item = createContextItem({
+          id: this.idGen.next(),
+          projectId: project.id,
+          type: validated.value.type,
+          content: validated.value.content,
+          tags: validated.value.tags,
+          pinned: validated.value.pinned,
+          ...(validated.value.source === undefined ? {} : { source: validated.value.source }),
+          now: this.clock.now(),
+        });
+        session.items.save(item);
+        return ok({
+          itemId: item.id,
+          project: validated.value.name as string,
+          type: validated.value.type,
+          projectCreated: created,
+        });
+      }),
+    );
   }
 
   /** Everything is parsed before a session is opened: bad input never touches the vault. */

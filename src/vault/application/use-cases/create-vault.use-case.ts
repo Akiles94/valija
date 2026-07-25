@@ -5,6 +5,7 @@ import { vaultErr } from "../../domain/errors.js";
 import { bytesToHex } from "../../domain/values/key-hex.js";
 import { type Passphrase, parsePassphrase } from "../../domain/values/passphrase.js";
 import { DEFAULT_KDF_PARAMS, type VaultCrypto } from "../ports/crypto.js";
+import type { DeviceIdentity } from "../ports/device-identity.js";
 import type { KeychainPort } from "../ports/keychain.js";
 import type { VaultHeaderData, VaultStore } from "../ports/vault-store.js";
 
@@ -24,6 +25,7 @@ export class CreateVault implements AsyncUseCase<string, CreateVaultOutput> {
     private readonly store: VaultStore,
     private readonly crypto: VaultCrypto,
     private readonly keychain: KeychainPort,
+    private readonly deviceIdentity: DeviceIdentity,
     private readonly clock: Clock,
     private readonly idGen: IdGenerator,
   ) {}
@@ -40,8 +42,12 @@ export class CreateVault implements AsyncUseCase<string, CreateVaultOutput> {
     const initialized = this.store.initializeDb(vault.keyHex);
     if (!initialized.ok) return initialized;
 
-    // Convenience: a freshly created vault starts unlocked.
+    // Convenience: a freshly created vault starts unlocked. Start the idle
+    // clock now (D-I) so a vault that is created and then abandoned still
+    // auto-locks — otherwise its first activity timestamp would only be set on
+    // the first session open, leaving the fresh-but-unused window uncovered.
     this.keychain.setKey(vault.header.vaultId, vault.keyHex);
+    this.deviceIdentity.recordActivity(vault.header.vaultId, this.clock.now());
     return ok({
       vaultId: vault.header.vaultId,
       keyHex: vault.keyHex,

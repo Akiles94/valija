@@ -74,7 +74,7 @@ describe("migration 002 — imported type", () => {
 
     migrate(db, path);
 
-    expect(schemaVersion(db)).toBe(2);
+    expect(schemaVersion(db)).toBe(3); // 002 + 003 both apply from a fresh migrate() call
     expect(db.prepare(`SELECT ${columns} FROM context_items ORDER BY id`).all()).toEqual(before);
     expect(ftsHits(db, "sqlcipher")).toHaveLength(1); // FTS index survived the rebuild
     db.close();
@@ -103,12 +103,12 @@ describe("migration 002 — imported type", () => {
     db.close();
   });
 
-  it("is a no-op once at v2", () => {
+  it("is a no-op once at the latest schema version", () => {
     const path = join(tmp, "idempotent.db");
     const db = buildV1(path);
     migrate(db, path);
     migrate(db, path);
-    expect(schemaVersion(db)).toBe(2);
+    expect(schemaVersion(db)).toBe(3);
     db.close();
   });
 

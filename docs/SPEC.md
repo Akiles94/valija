@@ -24,11 +24,11 @@ One npm package. One binary surface: `valija`.
 **Out (explicit non-goals for MVP):**
 - Importers (ChatGPT/Claude export files) → M2
 - File watchers (Claude Code sessions) → M2
-- GUI → M3
-- Encrypted backup / restore → M3
+- Bring-your-own-cloud vault sync → M3
+- GUI, encrypted backup / restore → later (bumped from M3 by M3's redefinition, see §10b)
 - Scoped profiles, per-tool visibility → M4
 - Browser extension → M5
-- Multi-device sync, mobile → M6
+- A valija-hosted sync service, mobile client → explicitly rejected / not scheduled (see §10b — M3 ships the lower-risk BYO-cloud slice instead)
 - Auto-capture (model decides what to save) — explicit saves only
 - Embeddings / semantic search / any AI inside the app — FTS only
 - Remote/HTTP MCP transport — local stdio only
@@ -181,6 +181,59 @@ Every vault starts empty — the biggest adoption gap. M2 lets users load existi
 
 ---
 
+## 10b. M3 — Bring-your-own-cloud vault sync (v0.3.0)
+
+A vault was single-machine only. M3 makes a single SQLCipher vault file survive living
+inside a folder a third-party sync client (Dropbox, iCloud Drive, OneDrive, Google Drive,
+Syncthing, …) also watches — lock on device A, let it sync, unlock on device B and continue
+— without a backend, accounts, or any network call. The **rejected** shape is a
+valija-hosted sync service; that stays out of scope, permanently, not just for this
+milestone. This is the lower-risk first slice of what earlier drafts of this roadmap called
+"multi-device sync" — see [docs/sync.md](sync.md) for the user-facing ritual.
+
+**Shipped:**
+- **Single-file-at-rest journaling (D-A):** `openVaultDb` switches from WAL to a rollback
+  journal (`DELETE`), folding any pre-existing WAL first. The vault is one self-consistent
+  `vault.db` at rest after **every** command, not only after an explicit `lock` — a sync
+  client only ever sees one file to upload. `PRAGMA synchronous` stays at its safe default.
+- **Fork detection (D-B):** a lineage stamp (generation counter + random per-write stamp +
+  writer device id) committed atomically with every write, inside the encrypted `meta`
+  table — never in the plaintext header. `VaultLineage.classifyLineage` compares the vault's
+  current stamp against what a device last saw: a clean fast-forward adopts silently; a fork
+  (same-or-lower generation, different stamp — proof two devices wrote independently) is
+  reported as `VAULT_FORK_DETECTED` and **never** auto-merged, auto-deleted, or
+  auto-overwritten.
+- **Device identity (D-C):** a device-local id + per-vault last-seen/last-activity record,
+  stored under `VALIJA_STATE_HOME` (default `~/.valija-state`) — deliberately independent of
+  `VALIJA_HOME` so it never syncs.
+- **`lock` = the "safe to switch devices" signal (D-D):** verifies the single-file-at-rest
+  state, drops the key, and reports the current generation + who wrote it last. No new
+  command.
+- **Idle auto-lock (D-I), resolving §12 open question 3:** a device-local last-activity
+  timestamp checked lazily at the next session open (no daemon); past the configurable TTL
+  (`VALIJA_AUTOLOCK_MINUTES`, default 15 minutes, `0`/`off` disables it) the keychain key is
+  proactively dropped.
+- **`status` / `doctor` (D-E):** journal mode + single-file check, cloud-folder recognition
+  with a lock-before-switch reminder, a loud warning on a vendor "conflicted copy" file,
+  lineage generation/last-writer, and auto-lock TTL/idle state — all advisory, never fatal.
+- **Upgrade path (D-G):** migration 003 seeds the lineage generation baseline (with a
+  ciphertext backup on a populated vault, mirroring M2's migration 002); the journal
+  fold/switch happens unconditionally at open, independent of migration success.
+- No MCP tool, argument, or prompt added or changed. Sync/lineage/session metadata is
+  plumbing for humans (`status`/`lock`/`unlock`/`doctor` output) — it never reaches a context
+  pack or an MCP tool response.
+
+**Deferred / explicitly rejected:** a valija-hosted sync backend, accounts, or device
+pairing (rejected, not deferred); automatic conflict merge; telemetry or any "is my sync
+client done yet?" polling; simultaneous multi-device use (the supported model is strictly
+sequential); a background daemon or OS sleep/shutdown hooks (idle auto-lock is deliberately
+lazy instead); `valija init --cloud <path>` (the plain `VALIJA_HOME` mechanism already
+suffices — deferred, not rejected, as a future convenience). Mobile is unscheduled; see
+`advances/M4/idea.md` for the raw idea and the note on why its milestone number is still
+tentative.
+
+---
+
 ## 11. Build history
 
 Originally planned as 15 reviewed advances (A00–A15) at one per day. On 2026-07-10 the working agreement changed to: **generate the full MVP in one pass, review and refactor afterwards.** Commits still land per advance for reviewable history. The LOC discipline and per-layer tests remain.
@@ -191,7 +244,9 @@ Originally planned as 15 reviewed advances (A00–A15) at one per day. On 2026-0
 
 1. D5 Argon2id parameters (benchmark on modest hardware)
 2. Secret-pattern warning on save: MVP or M2?
-3. `valija unlock` TTL / auto-lock: M2+?
+3. ~~`valija unlock` TTL / auto-lock: M2+?~~ **Resolved by M3, D-I:** a lazy, no-daemon idle
+   auto-lock, default 15 minutes, configurable via `VALIJA_AUTOLOCK_MINUTES` (`0`/`off`
+   disables it). See §10b.
 4. Multi-vault support: which milestone?
 
 ---
