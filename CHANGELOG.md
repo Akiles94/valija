@@ -4,6 +4,8 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-07-25
+
 Bring-your-own-cloud vault sync — keep your vault in a folder your own sync client (Dropbox, iCloud Drive, OneDrive, Syncthing, …) already replicates, and use it safely across devices. See [docs/sync.md](docs/sync.md).
 
 ### Added

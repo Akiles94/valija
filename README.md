@@ -32,6 +32,22 @@ terminal. Your vault starts **unlocked**. Restart your AI tool, then, inside it:
 *"save context: we decided X, next step is Y"* — and tomorrow, in a different tool:
 *"load context for my-project"*.
 
+## Updating
+
+```
+npm install -g valija@latest    # or: npm update -g valija
+```
+
+That's it — there's no separate migration step to run by hand. The next time any `valija` command
+opens your vault, it checks the schema version and upgrades in place automatically if it's behind,
+always taking a ciphertext backup (`vault.db.pre-NNN.bak`) first and removing it only once the
+upgrade succeeds. Your passphrase, recovery kit, and existing projects/context are unaffected.
+
+If you're only using valija on one machine, updating is the whole story — nothing else changes.
+**New in 0.3.0:** if you'd like to start using the same vault on more than one device, see
+[Use it on several devices](#use-it-on-several-devices) below; it's opt-in and requires no change to
+an existing single-machine setup. Check [CHANGELOG.md](CHANGELOG.md) for what's new in each release.
+
 ## Everyday use
 
 Saving and loading happen **inside your AI tool** through the MCP server — you just ask it to save or
