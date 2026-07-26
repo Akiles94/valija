@@ -55,7 +55,7 @@ jobs:
             -DSQLITE_OMIT_PROGRESS_CALLBACK -DSQLITE_OMIT_SHARED_CACHE -DSQLITE_OMIT_TCL_VARIABLE \
             -DSQLITE_SOUNDEX -DSQLITE_THREADSAFE=2 -DSQLITE_TRACE_SIZE_LIMIT=32 \
             -DSQLITE_USER_AUTHENTICATION=0 -DSQLITE_USE_URI=0 \
-            -I"$SRC" -o test_android advances/M4/option2-spike/main.c "$SRC/sqlite3.c"
+            -I"$SRC" -o test_android advances/M4/option2-spike/main.c "$SRC/sqlite3.c" -lm
           file test_android
       - name: Run under qemu-user against the real golden-vault fixture
         run: |
@@ -91,7 +91,7 @@ jobs:
             -I"$SRC" -o test_ios advances/M4/option2-spike/main.c "$SRC/sqlite3.c"
           file test_ios
           cp src/testing/__fixtures__/golden-vault/vault.db /tmp/ios-vault.db
-          ./test_ios /tmp/ios-vault.db
+          DYLD_ROOT_PATH="$SDK" ./test_ios /tmp/ios-vault.db
       - name: Also confirm it compiles (link-only) for the real iOS device target
         run: |
           SRC=node_modules/better-sqlite3-multiple-ciphers/deps/sqlite3
