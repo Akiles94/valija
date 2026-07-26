@@ -95,11 +95,41 @@ func check(_ label: String, fixtureDir: String) {
     }
 }
 
+func printDefaultCipherParams() {
+    var db: OpaquePointer?
+    guard sqlite3_open(":memory:", &db) == SQLITE_OK else {
+        print("RESULT label=defaults raw_key_open=SETUP_ERROR detail=cannot open :memory:")
+        return
+    }
+    defer { sqlite3_close(db) }
+    for name in [
+        "cipher_default_kdf_iter", "cipher_default_page_size", "cipher_default_use_hmac",
+        "cipher_default_plaintext_header_size", "cipher_version",
+    ] {
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "PRAGMA \(name)", -1, &stmt, nil) == SQLITE_OK else {
+            print("DEFAULT \(name) = <prepare failed>")
+            continue
+        }
+        defer { sqlite3_finalize(stmt) }
+        if sqlite3_step(stmt) == SQLITE_ROW {
+            if let text = sqlite3_column_text(stmt, 0) {
+                print("DEFAULT \(name) = \(String(cString: text))")
+            } else {
+                print("DEFAULT \(name) = \(sqlite3_column_int(stmt, 0))")
+            }
+        } else {
+            print("DEFAULT \(name) = <no row>")
+        }
+    }
+}
+
 let arguments = CommandLine.arguments
 guard arguments.count > 2 else {
     fail("setup", "usage: ValijaTierCSpike <golden-vault-dir> <legacy4-fixture-dir>")
     exit(1)
 }
 
+printDefaultCipherParams()
 check("legacy0-golden-vault", fixtureDir: arguments[1])
 check("legacy4-fixture", fixtureDir: arguments[2])
