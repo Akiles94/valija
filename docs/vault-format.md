@@ -441,25 +441,41 @@ compatibility without a human in the loop. Never reuse these values for a real v
 
 ## 13. Verified compatibility
 
-*Filled in by `advances/M4/spike.md` once Tier C (the iOS spike) runs — see that file for the
-step-by-step runbook and the tiered approach (Tier A in-repo, Tier B upstream SQLCipher on any
-machine, Tier C iOS with Xcode).*
+Tier A and Tier B are done — see `advances/M4/spike.md` for the full commands and analysis.
+Tier C (iOS, needs a Mac with Xcode) is the remaining, blocking step.
 
-| Question | Result |
-|---|---|
-| Raw-key open (upstream SQLCipher, any platform — Tier B) | PENDING |
-| Argon2id reference-C vector reproduction (Tier B) | PENDING |
-| Raw-key open on iOS (Tier C) | PENDING |
-| Rendered pack byte-match on iOS (Tier C) | PENDING |
-| Search results byte-match on iOS (Tier C) | PENDING |
-| Write round-trip on iOS — informational, does not block Tier 1 (Tier C, D-G amendment) | PENDING |
+| Question | Tier | Result |
+|---|---|---|
+| Argon2id reference-C vector reproduction | B | **PASS** — exact match, two vectors (default and non-default params) |
+| Raw-key open (upstream SQLCipher, Linux) | B | **FAIL** — see below |
+| Argon2id on-device | C | PENDING |
+| Raw-key open on iOS | C | PENDING |
+| Rendered pack byte-match on iOS | C | PENDING |
+| Search results byte-match on iOS | C | PENDING |
+| Write round-trip on iOS — informational, does not block Tier 1 (D-G amendment) | C | PENDING |
 
-**On pass:** the exact working parameter set is already the one in §5 above — this table
-just confirms it was verified against an independent implementation, not merely read from
-this repository's own source.
-**On fail:** the divergent parameter will be named here, and D-G's documented fallback
-(building the `SQLite3MultipleCiphers` amalgamation for mobile, so both sides run the *same*
-implementation rather than two independently-compatible ones) is triggered.
+**Argon2id is a closed question.** The reference C implementation (the same library both the
+npm `argon2` package and, per D-G, the iOS side are meant to link) reproduces valija's
+derived key exactly. Key derivation carries no remaining risk.
+
+**SQLCipher compatibility is not yet closed, and the news from Tier B is not good.** Upstream
+SQLCipher (Ubuntu's packaged CLI, SQLCipher 4.5.6 community) could not open a vault created
+by `better-sqlite3-multiple-ciphers` (12.11.1) — not with the raw key, not with the raw
+key+salt combined form, not across four `cipher_compatibility` settings, and **not even
+through SQLCipher's own native passphrase path** (ruling out valija's raw-key convention
+specifically as the cause). A self-test confirmed the testing methodology itself is sound —
+upstream SQLCipher round-trips correctly against its *own* output. `PRAGMA cipher` answers
+differently on each side (`AES-256-CBC` vs. `sqlcipher`), consistent with what they are:
+two independently-maintained codebases attempting compatibility, not the same implementation.
+
+**This does not change anything documented above** — §5's parameter table is still exactly
+what `better-sqlite3-multiple-ciphers` produces, verified by this repository's own
+conformance test on every run. What it changes is the *default expectation* for Tier C:
+**D-G's Option 2 (build the `SQLite3MultipleCiphers` amalgamation for mobile, so both sides
+run the literal same implementation) should be weighted higher than Option 1 (an official
+SQLCipher mobile build) succeeding on its own** — Tier C should plan to test both rather than
+assume the official build "just works." See `advances/M4/spike.md` §Tier B for the full
+detail, including the exact commands, so this can be independently re-checked.
 
 ## 14. Change control
 
