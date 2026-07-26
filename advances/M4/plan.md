@@ -1,3 +1,5 @@
+Approved: Oscar 2026-07-26
+
 # M4 — Vault format contract, conformance fixture & compatibility spike · Implementation Plan
 
 **Spec:** `advances/M4/refined.md` (Approved at Gate R — Oscar, 2026-07-26; D-A Option 3,
@@ -473,6 +475,8 @@ on the existing CI matrix (ubuntu/windows/macos × node 22/24). No new runner, n
 ---
 
 ## 6. Decisions to confirm (recommended default + trade-offs)
+
+**All ten confirmed by Oscar, 2026-07-26 — recommended defaults adopted as written, no changes.**
 
 - **D-1 — Branch name.** *Recommend:* `docs/vault-format-M4`. The dominant deliverable is the
   written contract; the test exists to keep it honest. *Trade-off:* a `docs/` prefix on a
