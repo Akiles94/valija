@@ -442,17 +442,21 @@ compatibility without a human in the loop. Never reuse these values for a real v
 ## 13. Verified compatibility
 
 Tier A and Tier B are done — see `advances/M4/spike.md` for the full commands and analysis.
-Tier C (iOS, needs a Mac with Xcode) is the remaining, blocking step.
+Tier C (iOS, needs a Mac with Xcode) is **deferred, not blocking**: no Mac is currently
+available to run it (plan.md Decision D-4's fallback). The runbook is ready to run whenever
+one is — see `advances/M4/spike.md`'s Tier C section for a GitHub Actions macOS-runner
+alternative that avoids needing to own or rent one, pending a decision on the one-off CI-job
+trade-off it implies.
 
 | Question | Tier | Result |
 |---|---|---|
 | Argon2id reference-C vector reproduction | B | **PASS** — exact match, two vectors (default and non-default params) |
 | Raw-key open (upstream SQLCipher, Linux) | B | **FAIL** — see below |
-| Argon2id on-device | C | PENDING |
-| Raw-key open on iOS | C | PENDING |
-| Rendered pack byte-match on iOS | C | PENDING |
-| Search results byte-match on iOS | C | PENDING |
-| Write round-trip on iOS — informational, does not block Tier 1 (D-G amendment) | C | PENDING |
+| Argon2id on-device | C | DEFERRED — no Mac available |
+| Raw-key open on iOS | C | DEFERRED — no Mac available |
+| Rendered pack byte-match on iOS | C | DEFERRED |
+| Search results byte-match on iOS | C | DEFERRED |
+| Write round-trip on iOS — informational, does not block Tier 1 (D-G amendment) | C | DEFERRED |
 
 **Argon2id is a closed question.** The reference C implementation (the same library both the
 npm `argon2` package and, per D-G, the iOS side are meant to link) reproduces valija's

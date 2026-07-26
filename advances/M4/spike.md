@@ -120,9 +120,20 @@ proof that, at least for this exact pairing of versions (`better-sqlite3-multipl
 
 ## Tier C — iOS, needs a Mac with Xcode (Oscar)
 
-**Not run yet.** This tier cannot be executed by an agent in this container — no Xcode, no
-iOS toolchain, and none may be added to this repo (refined §8: *"The spike leaves no mobile
-toolchain, dependency, or CI job in this repo."*).
+**Deferred — no Mac available (plan.md Decision D-4's fallback).** This tier cannot be
+executed by an agent in this container — no Xcode, no iOS toolchain, and none may be added
+to this repo (refined §8: *"The spike leaves no mobile toolchain, dependency, or CI job in
+this repo."*) — and Oscar does not currently have access to a Mac to run it manually either.
+
+Per D-4, this advance ships now with Tiers A and B complete and Tier C explicitly open,
+rather than blocking indefinitely on hardware access. The runbook below stays ready to run
+whenever a Mac becomes available (borrowed, rented by the hour, or a colleague's) — nothing
+about it expires. One option that doesn't require owning or renting a Mac: a GitHub Actions
+`macos-latest` runner (free for public repos) can run Tier C's checks via a `workflow_dispatch`
+job — the workflow file would need to be committed to trigger it, so `refined.md`'s "no CI job
+in this repo" acceptance criterion would need Oscar's explicit sign-off to make a one-off,
+delete-afterward exception, or to accept a small permanent job. Not started; a decision for
+Oscar, not something to build unilaterally.
 
 ### Setup
 
@@ -184,11 +195,11 @@ algorithms, and byte-compare against `expected-pack.md`. Run each query in
 |---|---|---|---|---|
 | 1 | Argon2id reference-C vector reproduction | B | **PASS** | Two vectors, exact match — see B1 |
 | 2 | Raw-key open (upstream SQLCipher, Linux) | B | **FAIL** | Also fails via the native passphrase path — see B2. Not a usage error (self-test passed) |
-| 3 | Argon2id on-device | C | PENDING | Needs a Mac |
-| 4 | Raw-key open on iOS | C | PENDING | Needs a Mac — see B2's note on lowered expectations |
-| 5 | Pack byte-match on iOS | C | PENDING | Blocked on #4 |
-| 6 | Search byte-match on iOS | C | PENDING | Blocked on #4 |
-| 7 | Write round-trip on iOS | C | PENDING | Informational only (D-D deferred) |
+| 3 | Argon2id on-device | C | DEFERRED | No Mac available (D-4 fallback) |
+| 4 | Raw-key open on iOS | C | DEFERRED | No Mac available — see B2's note on lowered expectations |
+| 5 | Pack byte-match on iOS | C | DEFERRED | Blocked on #4 |
+| 6 | Search byte-match on iOS | C | DEFERRED | Blocked on #4 |
+| 7 | Write round-trip on iOS | C | DEFERRED | Informational only (D-D deferred) |
 
 ## What must not happen (confirmed)
 
