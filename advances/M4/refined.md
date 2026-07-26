@@ -1,13 +1,13 @@
 # Mobile companion for valija · Refined Spec
 
-**Status:** Draft — awaiting Gate R. Nothing here is settled.
-**Milestone:** *deliberately unassigned.* This spec lives in `advances/M4/` only because that
-is where `idea.md` was captured. It is **not** a claim that this work is milestone 4:
-`docs/SPEC.md` §2 currently assigns **M4 to "Scoped profiles, per-tool visibility"** and lists
-the mobile client under **"explicitly rejected / not scheduled"**. Which slot (if any) this
-takes is **D-A**, an open decision for Oscar.
-**Legend:** each decision lists options and a recommended **Default** with a reason. Defaults
-are proposals, not resolutions.
+**Status:** Approved at Gate R — Oscar, 2026-07-26. Decisions below are final for this advance.
+**Milestone:** *still deliberately unassigned* (D-A, confirmed). This advance builds only the
+format contract, conformance fixture, and compatibility spike (D-B Option 2) — no app, no
+milestone number. `docs/SPEC.md` §2 still assigns M4 to "Scoped profiles, per-tool
+visibility"; that is untouched by this advance. The real milestone number for a shipping
+mobile app gets decided once the spike's result is in.
+**Legend:** each decision below lists the options that were on the table, followed by a
+**Decided:** line recording Oscar's actual choice. See §6a for the compact summary.
 
 ---
 
@@ -285,6 +285,9 @@ scheduled". §10b says mobile is unscheduled and points at `advances/M4/idea.md`
 - **Whatever is chosen, `docs/SPEC.md` §2's Out line must be edited** — leaving "mobile client →
   explicitly rejected / not scheduled" while an advance builds toward one is the kind of drift
   the specs-are-contracts rule exists to prevent.
+- **Decided: Option 3.** Stay unscheduled; this advance lands only the format contract,
+  conformance fixture, and compatibility spike. The milestone number is chosen later, once the
+  spike's result is in — "let's do the spike before we plan anything" (Oscar).
 
 ### D-B. What this advance actually delivers
 
@@ -306,6 +309,10 @@ scheduled". §10b says mobile is unscheduled and points at `advances/M4/idea.md`
   of the cost of an app, it produces an artifact (`docs/vault-format.md` + conformance test) that
   is valuable even if mobile is never built — it also protects the *desktop* from silently changing
   the pack algorithm — and it defers every decision that depends on facts nobody has yet.
+- **Decided: Option 2, confirmed** — "we better first do the spike before plan anything" (Oscar).
+  The spike's scope also grows by one item: see D-G's amendment — it now checks a write
+  round-trip, not only the read/unlock path, so a future Tier 2 decision (D-D) has early,
+  cheap evidence to work from.
 
 ### D-C. Which tier ships first
 
@@ -326,6 +333,7 @@ on the phone), flagging Tier 1 as "the sane start" without deciding.
 - **Default: Option 1 (Tier 1), and Tier 3 is treated as out of scope permanently until the
   platforms demonstrably change** — not as a roadmap item. Reason: Tier 1 is the only tier whose
   risk is entirely inside this project's control.
+- **Decided: Option 1, confirmed.** Tier 3 stays permanently out of scope as stated.
 
 ### D-D. Does Tier 2 (mobile writes) ship at all?
 
@@ -347,6 +355,12 @@ on the phone), flagging Tier 1 as "the sane start" without deciding.
   in-place through the File Provider or writes to a sandbox copy and pushes it back (the latter is
   a guaranteed fork generator); and how the lock-before-switch ritual is expressed in a UI with no
   terminal.
+- **Decided: Option 2, confirmed, with a permanent addition (ties to D-J).** Deferred, not
+  foreclosed — Oscar wants Tier 2 as a real future step ("mobile should ... after, [allow] save
+  context"), so this stays open rather than "never." But **schema migration never runs on
+  mobile, even after Tier 2 ships** — that is a permanent architectural rule, not a Tier-1-only
+  restriction: a mobile write path saves context, it does not migrate the vault. Migration stays
+  a desktop-only ritual forever. See D-J.
 
 ### D-E. Platform and framework
 
@@ -377,6 +391,18 @@ on the phone), flagging Tier 1 as "the sane start" without deciding.
   acted on.* Reason: the crypto and key-storage surfaces are the ones that must not weaken, and
   native is the only option where they are first-party APIs rather than community bridges. The UI
   savings the cross-platform options offer are real but small relative to that risk.
+- **Decided: Option 4 (Kotlin Multiplatform), not the native default — recorded for later, not
+  acted on under D-B Option 2.** Shared Kotlin core, **iOS first**, Android later. Oscar
+  accepted the trade-off named above (iOS SQLCipher-under-KMP is the least-trodden of the four
+  paths) explicitly, in exchange for one shared core across platforms. Two consequences worth
+  keeping visible: (1) **if/when D-B Option 1 is chosen in a future advance, the compatibility
+  spike (D-G) should target iOS first**, not Android, to match this sequencing; (2) **a desktop
+  GUI is a natural, cheap extension of this same shared core later** (Compose Multiplatform
+  targets JVM desktop the same way it targets Android/iOS) — captured separately as its own raw
+  idea at `advances/GUI/idea.md`, explicitly **not** part of this advance's scope or deliverables.
+  Oscar raised the desktop-GUI idea only as "worth taking into account for after, in the proper
+  milestone" — nothing about it is decided, and no scaffolding for it is being built now (see
+  that file's own "not decided yet" section).
 
 ### D-F. Reuse the TypeScript domain logic, or reimplement?
 
@@ -401,6 +427,11 @@ on the phone), flagging Tier 1 as "the sane start" without deciding.
   contract**, not the code. Sharing 200 lines of pure functions does not justify a JS engine or a
   WASM toolchain inside an encrypted-vault app, and golden fixtures give the same drift protection
   with no runtime coupling — while also protecting the desktop from accidental changes.
+- **Decided: Option 1, confirmed** — with one clarification Oscar asked for explicitly: "~200
+  lines" describes what happens to be shareable *today*, not a scope cap. Reimplement the domain
+  logic properly and completely in Kotlin (matching D-E), verified against the golden fixtures —
+  don't artificially restrict the port to a fixed line count. Still Option 1 in spirit: no
+  embedded JS/WASM runtime, drift caught by fixtures, not by a shared binary.
 
 ### D-G. On-device crypto binding (SQLCipher + Argon2id)
 
@@ -424,6 +455,16 @@ key). Options:
 - **Default: Option 1, with Option 2 as the documented fallback if the conformance vector fails.**
   Reason: prefer the maintained mobile artifact, but keep a guaranteed-compatible escape hatch —
   and decide between them on evidence from the spike, not on expectation.
+- **Decided: Option 1 confirmed, default fallback confirmed, plus a scope addition to the spike
+  itself (Oscar, via D-H discussion): the spike must also attempt a write round-trip, not only
+  read/unlock.** Concretely: after opening the golden vault read-only and confirming the pack
+  matches, attempt an INSERT through the mobile binding against a **throwaway copy** of the
+  fixture, then reopen that copy with `openVaultDb` (desktop) and confirm the row reads back
+  correctly and the file isn't corrupted. This does **not** change D-D — Tier 2 is still deferred,
+  not committed — it only answers "is a mobile-originated write technically survivable at all"
+  early and cheaply, so that decision has real evidence behind it whenever it's revisited. Record
+  pass/fail in the same spike report as the read-path result, called out as a separate line item
+  since a fail here does not block Tier 1 (read-only) at all.
 
 **Argon2id.** No Node runtime on mobile, so the npm `argon2` package is unavailable.
 - **Option 1 — link the reference C library (`phc-winner-argon2`) natively.** This is the *same
@@ -437,6 +478,7 @@ key). Options:
   acceptable on a low-end phone in the app's main process (it should be; memory-constrained app
   extensions are a different matter and are out of scope), and that a vault created with
   non-default params from `vault.json` is honoured rather than assumed.
+- **Decided: Option 1, confirmed.**
 
 ### D-H. How the phone reaches the vault file
 
@@ -464,6 +506,18 @@ There is no `VALIJA_HOME` on iOS/Android. This is the decision most likely to be
   explicit "Refresh from cloud" action and a visible "as of <time>" marker, which is honest UX
   rather than a workaround. If D-D ever turns to writes, this sub-decision must be revisited — a
   snapshot-and-push-back write path is a guaranteed fork generator.
+- **Decided: Option 1 confirmed, plus a product requirement Oscar added: the app should only work
+  against a vault that (a) was already created on desktop and (b) is actively cloud-synced, and
+  must clearly tell the user when that isn't true.** This is a real, worthwhile UX problem, but
+  it is **not solved in this advance** (no app ships under D-B Option 2) and its *mechanism* is
+  explicitly deferred: desktop's `FileVaultFolder.looksLikeCloud` (M3) works by pattern-matching a
+  real filesystem path, but a mobile document picker hands back a security-scoped
+  URL/bookmark — whether that carries enough information to reuse the same heuristic needs
+  research against the actual iOS/Android picker APIs, not an assumption made from this repo.
+  Recorded as a **mandatory acceptance criterion for the future app advance** (added to §8's
+  "if a Tier 1 app is in scope" checklist): *the app must detect, or otherwise make unmistakably
+  clear to the user, when a picked vault is not being actively synced* — the specific mechanism
+  is that advance's problem to solve, hands-on with the platform APIs.
 
 ### D-I. Biometric unlock and the on-device session model
 
@@ -493,6 +547,10 @@ gated); `valija lock` or the idle TTL (`VALIJA_AUTOLOCK_MINUTES`, default 15) re
   device.)* Does the phone get its own configurable TTL, or inherit a fixed 15 minutes?
   *(Default: a simple in-app setting with 15 minutes as the default — there is no env-var
   mechanism on mobile, and the desktop `VALIJA_STATE_HOME` state is deliberately not synced.)*
+- **Decided: Option 2, confirmed** — "biometric unlock if available," i.e. Option 2 with its
+  stated passphrase fallback when biometrics are unavailable or fail. Both sub-decision defaults
+  (recovery key works, never persisted; simple in-app TTL setting, 15-minute default) confirmed
+  alongside it.
 
 ### D-J. Format/version compatibility and read-only discipline
 
@@ -516,6 +574,10 @@ Mobile becomes a second reader of a schema desktop migrates automatically.
 - **Fork/lineage.** A pure reader cannot fork. **Default:** mobile keeps no last-seen record,
   never calls anything equivalent to `recordSeen`, and does not participate in fork detection; it
   may *display* generation/last-writer read-only on a vault-info screen.
+- **Decided: all defaults confirmed, and the "never migrate" rule is elevated from a Tier-1
+  discipline to a permanent one** (ties to D-D): mobile's role is to let a user use their vault
+  read-only first, then eventually save context — never to migrate the schema. "For that they
+  can do it on desktop properly" (Oscar). This holds even if/when Tier 2 ships.
 
 ### D-K. The clipboard and export surface
 
@@ -532,6 +594,15 @@ readable by other apps and, with Universal Clipboard, by other signed-in devices
   snapshots, no plaintext written to any file or cache, and **no analytics or crash-reporting SDK**
   in the app at all. Reason: the copy is a *deliberate* plaintext export and must be treated as
   one — bounded and explained, not silently maximal.
+- **Decided: Option 2 confirmed for the clipboard.** Separately, Oscar asked whether mobile *and
+  desktop* could get lightweight analytics/crash reporting to see user counts and usage patterns.
+  This was discussed directly rather than accepted by default, because it collides with a
+  standing public commitment — "no telemetry, no network calls at runtime" appears in the README
+  and in the CHANGELOG for every release through 0.3.0, and this spec's own §7 security surface #3
+  restates it for mobile. **Resolved: no telemetry pipeline, on either mobile or desktop — rely on
+  proxy signals instead** (npm download counts, GitHub stars/clones, and app-store install counts
+  once a mobile app exists). This is unchanged from the spec's original "no analytics or
+  crash-reporting SDK" default; §7 security surface #3 stands as written, for both platforms.
 
 ### D-L. Where the mobile code lives, and how it is governed
 
@@ -554,6 +625,32 @@ readable by other apps and, with Universal Clipboard, by other signed-in devices
   is recorded so the planner does not improvise it later.
 - **If Option 1 is chosen instead**, extending `guard-implementation.sh` to cover the mobile tree is
   a required part of that plan, not an afterthought.
+- **Decided: Option 2, confirmed.**
+
+---
+
+## 6a. Decisions confirmed at Gate R (Oscar, 2026-07-26)
+
+Compact summary — each line's reasoning and trade-offs are in the matching subsection of §6.
+
+| # | Decision | Confirmed |
+|---|---|---|
+| D-A | Roadmap slot | **Stay unscheduled.** Spike first, milestone number chosen once the result is in. |
+| D-B | What this advance delivers | **Contract + conformance fixture + compatibility spike. No app.** |
+| D-C | Which tier first | **Tier 1 (read-only).** Tier 3 permanently out of scope. |
+| D-D | Does Tier 2 (writes) ever ship | **Deferred, not foreclosed** — a real future step, not "never." |
+| D-E | Platform/framework | **Kotlin Multiplatform, iOS first**, Android later. Recorded, not acted on this advance. |
+| D-F | Reuse TS domain or reimplement | **Reimplement in Kotlin**, fixture-verified — no artificial line-count cap, no embedded runtime. |
+| D-G | On-device crypto binding | **Official SQLCipher builds + reference-C Argon2id.** Spike **also** checks a write round-trip. |
+| D-H | Reaching the vault file | **Document picker + sandbox snapshot, read-only.** Plus: app must detect/communicate an unsynced vault — mechanism deferred to the app advance. |
+| D-I | Biometric session model | **Biometric-gated cached key, if available**, passphrase fallback. |
+| D-J | Version drift / migration | **Never migrate on mobile — permanently**, even after Tier 2 ships. |
+| D-K | Clipboard / telemetry | Clipboard: **expiring, local-only copy.** Telemetry: **none, on mobile or desktop** — proxy signals only. |
+| D-L | Where the code lives | **Separate `valija-mobile` repo** for app code; contract/fixtures stay here. |
+
+**One idea spun out, not decided here:** a desktop GUI (raised while discussing D-E) is captured
+separately at `advances/GUI/idea.md` — explicitly not part of this advance, no milestone, nothing
+built toward it now. It rides on D-E's Kotlin Multiplatform choice for free, later, if it happens.
 
 ---
 
@@ -597,18 +694,19 @@ readable by other apps and, with Universal Clipboard, by other signed-in devices
 ## 8. Acceptance criteria (reviewer checklist)
 
 **Applies under every option**
-- [ ] `refined.md` and every document it touches assign **no milestone number** to mobile work
-      until D-A is answered; the final `docs/SPEC.md` edit matches D-A's chosen option, including
-      the §2 "Out" line that currently reads "mobile client → explicitly rejected / not scheduled".
+- [ ] `refined.md` and every document it touches assign **no milestone number** to mobile work —
+      D-A is decided as "stay unscheduled"; `docs/SPEC.md` §2's Out line stays as-is for this
+      advance (revisited only when a future advance actually schedules an app).
 - [ ] No change to `vault.json`'s schema, to the Argon2id parameters, to the key format, or to the
       SQLCipher configuration used by the desktop client.
 - [ ] The MCP surface is byte-for-byte unchanged: same 5 tools, same arguments, same 2 prompts,
       stdio only.
-- [ ] No network call, no telemetry, no analytics, and no cloud SDK is added to any artifact.
+- [ ] No network call, no telemetry, no analytics, and no cloud SDK is added to any artifact —
+      **on mobile or on desktop** (D-K: confirmed no-telemetry, proxy signals only).
 - [ ] `npm run typecheck && npm run lint && npm run test` pass; any behaviour change in `src/` is
       reflected in the matching `specs/*.md` in the same commit.
 
-**Under the recommended default (D-B Option 2 — contract + conformance + spike)**
+**Under the decided scope (D-B Option 2 — contract + conformance + spike, no app)**
 - [ ] `docs/vault-format.md` exists and specifies, precisely enough to implement against without
       reading `src/`: the exact SQLCipher parameter set and the raw-key convention; the Argon2id
       parameters and where they come from; the `vault.json` schema including the unknown-key
@@ -629,7 +727,12 @@ readable by other apps and, with Universal Clipboard, by other signed-in devices
       mobile build open the golden vault with a raw 32-byte key, and does a native/WASM Argon2id
       reproduce the same 32 bytes from the same passphrase, salt, and parameters? On pass, the exact
       parameter set is recorded in `docs/vault-format.md`; on fail, the divergent parameter is named
-      and D-G's fallback is triggered.
+      and D-G's fallback is triggered. The spike targets **iOS** first, matching D-E's sequencing.
+- [ ] The spike separately reports **pass/fail on a write round-trip** (D-G amendment, Oscar): an
+      INSERT via the mobile SQLCipher binding against a throwaway copy of the fixture, then
+      reopened and read back correctly through `openVaultDb` (desktop). A fail here does not block
+      the read-path result or this advance's other criteria — it is early evidence for a future
+      D-D decision, recorded, not acted on.
 - [ ] The spike leaves no mobile toolchain, dependency, or CI job in this repo.
 
 **Additional criteria if a Tier 1 app is in scope (D-B Option 1)**
@@ -652,24 +755,29 @@ readable by other apps and, with Universal Clipboard, by other signed-in devices
       `valija status` / `doctor` show an unchanged generation and last writer.
 - [ ] `docs/SPEC.md` §9 gains an honest entry describing the phone as a second device holding the
       key.
+- [ ] **(D-H, Oscar's product requirement)** The app detects, or otherwise makes unmistakably
+      clear to the user, when the vault they picked is not being actively cloud-synced — never
+      silently shows a picked-but-unsynced vault as if it were current. The exact mechanism is
+      that advance's to design (see `advances/M4/refined.md` §6 D-H and `docs/sync.md`).
+- [ ] No analytics or crash-reporting SDK of any kind — mobile or desktop (D-K, confirmed).
 
 ---
 
 ## 9. Deliverables summary (for the planner, not a plan)
 
-Under the recommended defaults (D-A Option 3, D-B Option 2, D-C Tier 1, D-D deferred): a new
-`docs/vault-format.md` capturing the crypto parameters, header schema, schema-v3 tables, pack
-algorithm, markdown rendering, FTS query construction, and the read-only contract for a second
-implementation; a committed golden-vault fixture with expected pack markdown and expected search
-results, plus a conformance test that holds the *desktop* to them; a compatibility spike report
-answering whether an official SQLCipher mobile build and a native Argon2id can open that fixture,
-with the working parameter set recorded or the divergence named; and the `docs/SPEC.md` roadmap and
-"Out"-list edits that D-A selects. No `src/` behaviour change is expected; no mobile toolchain,
-dependency, or CI job lands in this repo.
+Per the decisions confirmed in §6a: a new `docs/vault-format.md` capturing the crypto parameters,
+header schema, schema-v3 tables, pack algorithm, markdown rendering, FTS query construction, and
+the read-only contract for a second implementation; a committed golden-vault fixture with expected
+pack markdown and expected search results, plus a conformance test that holds the *desktop* to
+them; a compatibility spike **targeting iOS** (per D-E) reporting pass/fail on **both** the
+read/unlock path and a write round-trip (per D-G's amendment), with the working parameter set
+recorded or the divergence named; and `advances/GUI/idea.md`, already captured separately and
+explicitly out of this advance's scope. No `src/` behaviour change is expected; no mobile
+toolchain, dependency, or CI job lands in this repo; no `docs/SPEC.md` roadmap edit is needed this
+round (D-A keeps mobile unscheduled, so §2's Out line is untouched for now).
 
-If Gate R instead selects a shipping Tier 1 app (D-B Option 1), the deliverable set changes
-completely and D-E, D-H, D-I, D-K, and D-L all become binding immediately — that is a different,
-much larger advance, and the planner should be re-briefed rather than asked to stretch this one.
+A future advance that picks up a shipping Tier 1 app is a different, much larger effort — D-E, D-H,
+D-I, D-K, and D-L are all recorded above for it, but none of them bind this advance's deliverables.
 
 ---
 
