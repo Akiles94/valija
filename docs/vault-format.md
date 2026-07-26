@@ -449,8 +449,10 @@ already answered the core question using the official SPM package on Apple's own
 | Question | Tier | Result |
 |---|---|---|
 | Argon2id reference-C vector reproduction | B | **PASS** — exact match, two vectors (default and non-default params) |
-| Raw-key open (upstream SQLCipher, Linux) | B | **FAIL** — see below |
-| Raw-key open (official SPM SQLCipher package, macOS via GitHub Actions) | C′ | **FAIL** — identical signature to Tier B |
+| Raw-key open (upstream SQLCipher, Linux), `legacy=0` (valija's actual vaults) | B | **FAIL** — see below |
+| Raw-key open (official SPM SQLCipher package, macOS via GitHub Actions), `legacy=0` | C′ | **FAIL** — identical signature to Tier B |
+| Raw-key open, bidirectional, `legacy=4` (Linux) | B | **PASS** — real data verified, both directions |
+| Raw-key open, official SPM package, `legacy=4` (macOS) | C′ | **FAIL** — identical signature, despite every queryable parameter matching |
 | Argon2id on-device (literal iOS) | C | DEFERRED — low value, B1 already conclusive |
 | Rendered pack / search byte-match (literal iOS) | C | DEFERRED — blocked on a compatible SQLCipher build existing |
 | Write round-trip (literal iOS) | C | DEFERRED — informational only (D-D deferred) |
@@ -459,26 +461,41 @@ already answered the core question using the official SPM package on Apple's own
 npm `argon2` package and, per D-G, the iOS side are meant to link) reproduces valija's
 derived key exactly. Key derivation carries no remaining risk.
 
-**SQLCipher compatibility is closed too, and the answer is no — confirmed on two independent
-platforms.** Upstream SQLCipher fails to open a vault created by `better-sqlite3-multiple-ciphers`
-(12.11.1) both via Ubuntu's packaged CLI (SQLCipher 4.5.6 community, Tier B — not with the raw
-key, not the combined key+salt form, not across four `cipher_compatibility` settings, and not
-even through SQLCipher's own native passphrase path) **and via the official, Zetetic-maintained
-SPM package** (`SQLCipher.swift`, resolved to `4.17.0`, on a GitHub Actions macOS runner —
-Tier C′): `sqlite3_key` accepts the raw key without error, but the first real read fails with
-`SQLITE_NOTADB` ("file is not a database") — the exact same signature Tier B found. A self-test
-on Linux confirmed the testing methodology itself is sound (upstream SQLCipher round-trips
-against its own output); `PRAGMA cipher` also answers differently on each side (`AES-256-CBC`
-vs. `sqlcipher`), consistent with what they are: two independently-maintained codebases
-attempting compatibility, not the same implementation.
+**SQLCipher compatibility is closed, and the answer is no — including the library's own
+documented compatibility mode.** Upstream SQLCipher fails to open a vault created by
+`better-sqlite3-multiple-ciphers` (12.11.1) at its default settings (`legacy=0`, what
+valija's `openVaultDb` actually produces) both via Ubuntu's packaged CLI (SQLCipher 4.5.6
+community, Tier B) and via the official, Zetetic-maintained SPM package (`SQLCipher.swift`,
+resolved to `4.17.0`, on a GitHub Actions macOS runner, Tier C′): `sqlite3_key` accepts the
+raw key without error, but the first real read fails with `SQLITE_NOTADB` ("file is not a
+database"). A self-test on Linux confirmed the testing methodology itself is sound (upstream
+SQLCipher round-trips against its own output).
+
+`SQLite3MultipleCiphers` (the library `better-sqlite3-multiple-ciphers` wraps) documents a
+`legacy` cipher parameter specifically to fix this: `legacy=4` selects SQLCipher 4's exact
+parameters and is documented to produce SQLCipher-compatible files. Re-tested with `legacy=4`
+set: on Linux, it works — a `legacy=4` vault round-trips real data in both directions against
+upstream `sqlcipher` (Node writes, `sqlcipher` reads a real row back, and the reverse). But the
+same vault, byte-for-byte, still fails against the official SPM package on macOS, with the
+identical `SQLITE_NOTADB` signature — even though every queryable parameter matches exactly
+between the two real SQLCipher builds (`kdf_iter`, `page_size`, `use_hmac`,
+`plaintext_header_size`, both digest algorithms at SHA512, the HMAC salt mask). This is not a
+new problem: `utelle/SQLite3MultipleCiphers` issues
+[#20](https://github.com/utelle/SQLite3MultipleCiphers/issues/20) and
+[#47](https://github.com/utelle/SQLite3MultipleCiphers/issues/47) report the identical
+unresolved symptom against real SQLCipher and DB Browser for SQLite, respectively — this
+spike's result is a fresh, independent reproduction of a known pattern, not a one-off
+misconfiguration.
 
 **This does not change anything documented above** — §5's parameter table is still exactly
 what `better-sqlite3-multiple-ciphers` produces, verified by this repository's own
 conformance test on every run. What it changes is the plan for a future mobile app advance:
-**D-G's Option 2 (build the `SQLite3MultipleCiphers` amalgamation for mobile, so both sides
-run the literal same implementation) should now be the starting plan, not a fallback** — Option
-1 (an official SQLCipher build) has failed identically on two independent platforms. See
-`advances/M4/spike.md` §Tier B and §Tier C′ for the full detail, including the exact commands
+**"official SQLCipher on one side, `better-sqlite3-multiple-ciphers` (with or without
+`legacy=N`) on the other" is closed, not just de-prioritized.** D-G's Option 2 — build/link
+the literal `SQLite3MultipleCiphers` C library for mobile, so both ends run the *same*
+implementation rather than two independently-compatible ones — remains the only untested path,
+and needs its own direct empirical verification before being trusted. See
+`advances/M4/spike.md` §"Tier B/C′ re-check" for the full detail, including the exact commands
 and Swift source, so this can be independently re-checked or re-run against a future Option 2
 build.
 
