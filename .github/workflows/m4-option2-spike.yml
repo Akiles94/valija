@@ -42,7 +42,7 @@ jobs:
         run: |
           CLANG="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
           SRC=node_modules/better-sqlite3-multiple-ciphers/deps/sqlite3
-          "$CLANG" -O1 -static \
+          "$CLANG" -O1 \
             -DHAVE_INT16_T=1 -DHAVE_INT32_T=1 -DHAVE_INT8_T=1 -DHAVE_STDINT_H=1 \
             -DHAVE_UINT16_T=1 -DHAVE_UINT32_T=1 -DHAVE_UINT8_T=1 -DHAVE_USLEEP=1 \
             -DSQLITE_DEFAULT_CACHE_SIZE=-16000 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 \
@@ -60,7 +60,8 @@ jobs:
       - name: Run under qemu-user against the real golden-vault fixture
         run: |
           cp src/testing/__fixtures__/golden-vault/vault.db /tmp/android-vault.db
-          qemu-aarch64-static ./test_android /tmp/android-vault.db
+          SYSROOT="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
+          qemu-aarch64-static -L "$SYSROOT" ./test_android /tmp/android-vault.db
 
   ios-simulator:
     runs-on: macos-latest
