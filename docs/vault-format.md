@@ -1,6 +1,7 @@
 # The valija vault format — a contract for a second implementation
 
-**Status:** verified compatibility pending (§13) — see `advances/M4/spike.md`.
+**Status:** Argon2id verified compatible; SQLCipher raw-key open verified **incompatible**
+with the official build, on two independent platforms (§13) — see `advances/M4/spike.md`.
 **Owner:** this repository. Any change to the facts documented here is a change to this
 contract, and must land together with a regenerated conformance fixture (§14).
 **Who this is for:** anyone building a second, non-Node reader of a valija vault — starting
@@ -441,45 +442,45 @@ compatibility without a human in the loop. Never reuse these values for a real v
 
 ## 13. Verified compatibility
 
-Tier A and Tier B are done — see `advances/M4/spike.md` for the full commands and analysis.
-Tier C (iOS, needs a Mac with Xcode) is **deferred, not blocking**: no Mac is currently
-available to run it (plan.md Decision D-4's fallback). The runbook is ready to run whenever
-one is — see `advances/M4/spike.md`'s Tier C section for a GitHub Actions macOS-runner
-alternative that avoids needing to own or rent one, pending a decision on the one-off CI-job
-trade-off it implies.
+Tiers A, B, and C′ are done — see `advances/M4/spike.md` for the full commands and analysis.
+A literal iOS device/simulator run (Tier C) remains open, but is now lower priority: C′
+already answered the core question using the official SPM package on Apple's own toolchain.
 
 | Question | Tier | Result |
 |---|---|---|
 | Argon2id reference-C vector reproduction | B | **PASS** — exact match, two vectors (default and non-default params) |
 | Raw-key open (upstream SQLCipher, Linux) | B | **FAIL** — see below |
-| Argon2id on-device | C | DEFERRED — no Mac available |
-| Raw-key open on iOS | C | DEFERRED — no Mac available |
-| Rendered pack byte-match on iOS | C | DEFERRED |
-| Search results byte-match on iOS | C | DEFERRED |
-| Write round-trip on iOS — informational, does not block Tier 1 (D-G amendment) | C | DEFERRED |
+| Raw-key open (official SPM SQLCipher package, macOS via GitHub Actions) | C′ | **FAIL** — identical signature to Tier B |
+| Argon2id on-device (literal iOS) | C | DEFERRED — low value, B1 already conclusive |
+| Rendered pack / search byte-match (literal iOS) | C | DEFERRED — blocked on a compatible SQLCipher build existing |
+| Write round-trip (literal iOS) | C | DEFERRED — informational only (D-D deferred) |
 
 **Argon2id is a closed question.** The reference C implementation (the same library both the
 npm `argon2` package and, per D-G, the iOS side are meant to link) reproduces valija's
 derived key exactly. Key derivation carries no remaining risk.
 
-**SQLCipher compatibility is not yet closed, and the news from Tier B is not good.** Upstream
-SQLCipher (Ubuntu's packaged CLI, SQLCipher 4.5.6 community) could not open a vault created
-by `better-sqlite3-multiple-ciphers` (12.11.1) — not with the raw key, not with the raw
-key+salt combined form, not across four `cipher_compatibility` settings, and **not even
-through SQLCipher's own native passphrase path** (ruling out valija's raw-key convention
-specifically as the cause). A self-test confirmed the testing methodology itself is sound —
-upstream SQLCipher round-trips correctly against its *own* output. `PRAGMA cipher` answers
-differently on each side (`AES-256-CBC` vs. `sqlcipher`), consistent with what they are:
-two independently-maintained codebases attempting compatibility, not the same implementation.
+**SQLCipher compatibility is closed too, and the answer is no — confirmed on two independent
+platforms.** Upstream SQLCipher fails to open a vault created by `better-sqlite3-multiple-ciphers`
+(12.11.1) both via Ubuntu's packaged CLI (SQLCipher 4.5.6 community, Tier B — not with the raw
+key, not the combined key+salt form, not across four `cipher_compatibility` settings, and not
+even through SQLCipher's own native passphrase path) **and via the official, Zetetic-maintained
+SPM package** (`SQLCipher.swift`, resolved to `4.17.0`, on a GitHub Actions macOS runner —
+Tier C′): `sqlite3_key` accepts the raw key without error, but the first real read fails with
+`SQLITE_NOTADB` ("file is not a database") — the exact same signature Tier B found. A self-test
+on Linux confirmed the testing methodology itself is sound (upstream SQLCipher round-trips
+against its own output); `PRAGMA cipher` also answers differently on each side (`AES-256-CBC`
+vs. `sqlcipher`), consistent with what they are: two independently-maintained codebases
+attempting compatibility, not the same implementation.
 
 **This does not change anything documented above** — §5's parameter table is still exactly
 what `better-sqlite3-multiple-ciphers` produces, verified by this repository's own
-conformance test on every run. What it changes is the *default expectation* for Tier C:
+conformance test on every run. What it changes is the plan for a future mobile app advance:
 **D-G's Option 2 (build the `SQLite3MultipleCiphers` amalgamation for mobile, so both sides
-run the literal same implementation) should be weighted higher than Option 1 (an official
-SQLCipher mobile build) succeeding on its own** — Tier C should plan to test both rather than
-assume the official build "just works." See `advances/M4/spike.md` §Tier B for the full
-detail, including the exact commands, so this can be independently re-checked.
+run the literal same implementation) should now be the starting plan, not a fallback** — Option
+1 (an official SQLCipher build) has failed identically on two independent platforms. See
+`advances/M4/spike.md` §Tier B and §Tier C′ for the full detail, including the exact commands
+and Swift source, so this can be independently re-checked or re-run against a future Option 2
+build.
 
 ## 14. Change control
 

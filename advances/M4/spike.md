@@ -9,13 +9,14 @@ raw 32-byte key valija derives?** If the answer is no, the mobile idea needs a f
 rethink before any app work — which is exactly why this spike exists *before* committing to
 building one.
 
-Three tiers, in increasing order of what they need:
+Four tiers, in increasing order of what they need:
 
 | Tier | Who runs it | What it needs | What it answers |
 |---|---|---|---|
 | A | this advance (Slices 1-4) | nothing beyond this repo | The desktop side, empirically: the real cipher parameters, a golden vault, byte-exact expected outputs |
-| B | this advance (below) | any Linux/macOS shell, `sqlcipher` + `argon2` CLIs | Whether upstream SQLCipher and reference-C Argon2id agree with what Node produced — **run below, real results** |
-| C | Oscar, on a Mac | Xcode, CocoaPods/SwiftPM SQLCipher, a native Argon2id | The iOS-specific packaging (CommonCrypto vs OpenSSL, the CocoaPods build's defaults) and the write round-trip |
+| B | this advance (below) | any Linux/macOS shell, `sqlcipher` + `argon2` CLIs | Whether upstream SQLCipher and reference-C Argon2id agree with what Node produced — **run, real results** |
+| C′ | this advance (below) | a GitHub Actions `macos-latest` runner (no Mac owned/rented) | Whether the official SPM SQLCipher package opens the fixture — **run, real result** |
+| C | Oscar, on a literal iOS device/simulator, if ever wanted | Xcode, CocoaPods/SwiftPM SQLCipher, a native Argon2id | The remaining iOS-specific packaging nuance and the write round-trip — lower priority now that C′ has answered the core question |
 
 ## Inputs
 
@@ -118,24 +119,52 @@ proof that, at least for this exact pairing of versions (`better-sqlite3-multipl
 
 ---
 
-## Tier C — iOS, needs a Mac with Xcode (Oscar)
+## Tier C′ — macOS via GitHub Actions, the official SPM package: **DONE, real result**
 
-**Deferred — no Mac available (plan.md Decision D-4's fallback).** This tier cannot be
-executed by an agent in this container — no Xcode, no iOS toolchain, and none may be added
-to this repo (refined §8: *"The spike leaves no mobile toolchain, dependency, or CI job in
-this repo."*) — and Oscar does not currently have access to a Mac to run it manually either.
+**Not literally iOS** (no device, no simulator) — but the exact dependency and toolchain a
+real iOS app would declare: `https://github.com/sqlcipher/SQLCipher.swift`, the SPM package
+maintained by Zetetic (SQLCipher's own authors), resolved to `4.17.0`, on a GitHub Actions
+`macos-latest` runner (`macos-26-arm64`, Swift 6.3.2). Answers question C2 without needing
+Oscar to own or rent a Mac, once he confirmed the trade-off (a temporary, path-scoped,
+push-triggered workflow — deleted below, per D-L).
 
-Per D-4, this advance ships now with Tiers A and B complete and Tier C explicitly open,
-rather than blocking indefinitely on hardware access. The runbook below stays ready to run
-whenever a Mac becomes available (borrowed, rented by the hour, or a colleague's) — nothing
-about it expires. One option that doesn't require owning or renting a Mac: a GitHub Actions
-`macos-latest` runner (free for public repos) can run Tier C's checks via a `workflow_dispatch`
-job — the workflow file would need to be committed to trigger it, so `refined.md`'s "no CI job
-in this repo" acceptance criterion would need Oscar's explicit sign-off to make a one-off,
-delete-afterward exception, or to accept a small permanent job. Not started; a decision for
-Oscar, not something to build unilaterally.
+**Setup:** a throwaway SPM executable target (`advances/M4/tier-c-spike/`, now deleted)
+depending on the `SQLCipher` product, with `cSettings: [.define("SQLITE_HAS_CODEC", to: nil)]`
+— required to make the codec-specific C declarations (`sqlite3_key` etc.) visible at all;
+without it the build fails with "cannot find 'sqlite3_key' in scope" (this repo's own
+`SQLCipherTests` target sets the identical define). Confirmed by this spike's first run.
 
-### Setup
+**C2 result: FAIL — matches Tier B exactly.**
+```
+sqlite3_open(tmpPath, &db)                                    -> SQLITE_OK
+sqlite3_key(db, <32 raw bytes from manifest.keyHex>, 32)       -> SQLITE_OK
+sqlite3_prepare_v2(db, "SELECT count(*) FROM sqlite_master")   -> SQLITE_NOTADB (26)
+RESULT raw_key_open=FAIL detail=prepare returned 26: file is not a database
+```
+The key is *accepted* (no error at `sqlite3_key`) but the first real read fails with the
+identical "file is not a database" signature Tier B found on Linux. This is the strongest
+evidence yet that the incompatibility is not a Linux-packaging artifact: **the official,
+Apple-platform-maintained SQLCipher package cannot open a vault written by
+`better-sqlite3-multiple-ciphers`, using valija's raw key, either.**
+
+**Updated recommendation for D-G:** Option 2 (build the `SQLite3MultipleCiphers` amalgamation
+for mobile, so both sides run the literal same implementation) should now be treated as the
+starting plan for a future app advance, not a fallback to reach for only if Option 1 fails —
+Option 1 has now failed on two independent platforms with the same signature.
+
+**What C2's result doesn't answer, still open:**
+- **C1 (Argon2id on-device)** — not attempted here; already conclusively answered by Tier B1
+  (reference-C implementation, platform-agnostic by construction). Low value in re-running on
+  Apple hardware specifically.
+- **C3 (pack/search byte-match)** and **C4 (write round-trip)** — both blocked on C2 passing,
+  which it didn't. Nothing to test until a compatible SQLCipher build (D-G's Option 2) exists.
+
+### If a literal iOS (device/simulator) run is ever wanted
+
+The setup below is kept for that case — it targets an actual iOS app bundle rather than a
+macOS CLI executable, which the GitHub Actions run above did not attempt. Given C2's result,
+running this against Option 1 (official build) is now expected to reproduce the same failure;
+it's more useful once an Option 2 (amalgamation) build exists to test instead.
 
 1. Create a throwaway iOS (or macOS) Xcode project — a Playground or a minimal single-view
    app is enough. Nothing here is kept.
@@ -152,13 +181,12 @@ Derive with `manifest.json`'s passphrase, `saltBase64` (`GoldenVaultSalt!`), and
 D-G asks whether a 64 MiB derivation is acceptable in the app's main process on a real
 device, not just in principle.
 
-### C2 — Raw-key open (the core question, now elevated by B2's result)
+### C2 — Raw-key open: **answered by Tier C′ above (macOS, official package) — FAIL**
 
-Open the bundled `vault.db` with `PRAGMA key = "x'<keyHex>'"` (and, if that fails, try the
-combined key+salt form B2 also tried). Given B2's result, **do not be surprised if this also
-fails** — if it does, that is not a spike failure, it is the spike doing its job. Record
-whichever of Option 1 (official build, if it happens to work) or Option 2 (the
-`SQLite3MultipleCiphers` amalgamation, built for iOS) actually succeeds.
+Superseded by the GitHub Actions run above, which used the exact same official package a
+literal iOS run would. If this is ever re-attempted on a real device/simulator, expect the
+same "file is not a database" result against Option 1 (official build) — test Option 2 (the
+`SQLite3MultipleCiphers` amalgamation, built for iOS) instead, once one exists.
 
 ### C3 — Pack and search byte-match (only if C2 passes)
 
@@ -195,17 +223,20 @@ algorithms, and byte-compare against `expected-pack.md`. Run each query in
 |---|---|---|---|---|
 | 1 | Argon2id reference-C vector reproduction | B | **PASS** | Two vectors, exact match — see B1 |
 | 2 | Raw-key open (upstream SQLCipher, Linux) | B | **FAIL** | Also fails via the native passphrase path — see B2. Not a usage error (self-test passed) |
-| 3 | Argon2id on-device | C | DEFERRED | No Mac available (D-4 fallback) |
-| 4 | Raw-key open on iOS | C | DEFERRED | No Mac available — see B2's note on lowered expectations |
-| 5 | Pack byte-match on iOS | C | DEFERRED | Blocked on #4 |
-| 6 | Search byte-match on iOS | C | DEFERRED | Blocked on #4 |
+| 3 | Argon2id on-device | C | DEFERRED | Low value — B1 already conclusive (reference-C, platform-agnostic) |
+| 4 | Raw-key open, official SPM package (macOS, GitHub Actions) | C′ | **FAIL** | Identical signature to #2 — `SQLITE_NOTADB` on the first read. Not literally iOS, but the exact official package + toolchain |
+| 5 | Pack byte-match on iOS | C | DEFERRED | Blocked on #4's FAIL |
+| 6 | Search byte-match on iOS | C | DEFERRED | Blocked on #4's FAIL |
 | 7 | Write round-trip on iOS | C | DEFERRED | Informational only (D-D deferred) |
 
 ## What must not happen (confirmed)
 
-- No toolchain, dependency, script, or CI job from this spike landed in the repo —
-  `sqlcipher`/`argon2` were installed system-wide in the implementation container for this
-  spike only; `package.json` and `.github/workflows/ci.yml` are untouched.
+- No toolchain, dependency, script, or CI job from this spike landed in the repo, in its
+  final state — `sqlcipher`/`argon2` were installed system-wide in the implementation
+  container for Tier B only, and the temporary `advances/M4/tier-c-spike/` SPM package plus
+  `.github/workflows/m4-tier-c-spike.yml` (used for Tier C′) were both deleted once this
+  result was recorded, in the same commit as this update. `package.json` and
+  `.github/workflows/ci.yml` (the real CI) are untouched throughout.
 - The fixture in the repo was never edited — every Tier B command operated on a `/tmp` copy.
 - No real vault, passphrase, or key was used anywhere in this spike — only the published
   test values.
