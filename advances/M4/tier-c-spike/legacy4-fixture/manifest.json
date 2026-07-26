@@ -1,5 +1,0 @@
-{
-  "fixtureVersion": 1,
-  "note": "Throwaway probe vault for the M4 Tier C' legacy=4 re-check (advances/M4/spike.md). Created by better-sqlite3-multiple-ciphers with PRAGMA cipher='sqlcipher'; PRAGMA legacy=4; before the key, using the same published golden-vault test key for direct comparability. Contains one throwaway table/row, not the golden vault schema. Deleted, with the rest of this directory, once the result is recorded.",
-  "keyHex": "3e53d9f1d53beb152abeab88320e77a4fd9e5e878828a1c1aec4d0327d46dc67"
-}
