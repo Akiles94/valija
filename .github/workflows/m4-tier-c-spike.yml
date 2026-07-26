@@ -1,0 +1,24 @@
+name: "M4 Tier C spike (temporary, one-off)"
+
+# advances/M4/spike.md, Tier C, question C2: does the official, Zetetic-maintained
+# SQLCipher.swift SPM package -- the exact dependency a real iOS app would declare --
+# open a vault written by better-sqlite3-multiple-ciphers, using the raw key valija
+# derives? Manually triggered only; not part of the normal CI pipeline. This workflow
+# and advances/M4/tier-c-spike/ are deleted once the result is recorded (D-L, plan.md
+# acceptance criteria: "the spike leaves no mobile toolchain, dependency, or CI job in
+# this repo").
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  sqlcipher-raw-key-open:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift toolchain version
+        run: swift --version
+      - name: Raw-key-open check against the golden vault fixture
+        run: |
+          swift run --package-path advances/M4/tier-c-spike ValijaTierCSpike \
+            "$GITHUB_WORKSPACE/src/testing/__fixtures__/golden-vault"
