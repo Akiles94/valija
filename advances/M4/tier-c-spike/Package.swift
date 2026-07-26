@@ -18,7 +18,12 @@ let package = Package(
             name: "ValijaTierCSpike",
             dependencies: [
                 .product(name: "SQLCipher", package: "SQLCipher.swift")
-            ]
+            ],
+            // Matches SQLCipher.swift's own SQLCipherTests target exactly: without this,
+            // sqlite3_key and the other codec-specific declarations are conditionally
+            // compiled out of the imported header, and the build fails with
+            // "cannot find 'sqlite3_key' in scope" -- confirmed by this spike's first run.
+            cSettings: [.define("SQLITE_HAS_CODEC", to: nil)]
         )
     ]
 )
