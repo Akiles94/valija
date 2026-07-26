@@ -25,6 +25,13 @@ on:
 
 jobs:
   android-ndk:
+    # Compile-only evidence for the real device architecture: does the literal amalgamation
+    # build clean against the NDK's bionic toolchain for arm64, the architecture real Android
+    # phones run? bare qemu-user cannot actually execute the result (tried both static --
+    # "TLS segment is underaligned ... needs to be at least 64 for ARM64 Bionic", a qemu/Bionic
+    # ELF quirk -- and dynamic -- needs /system/bin/linker64, which only exists on a real
+    # Android system image, not the NDK alone). Real execution evidence comes from the
+    # android-emulator job below instead, which boots an actual system image.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,12 +40,7 @@ jobs:
           node-version: 22
       - name: npm ci (populates node_modules/better-sqlite3-multiple-ciphers/deps/sqlite3)
         run: npm ci
-      - name: Locate NDK and qemu-user
-        run: |
-          echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME"
-          ls "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin" | grep aarch64 || true
-          sudo apt-get update -y && sudo apt-get install -y qemu-user-static
-      - name: Cross-compile the literal amalgamation for Android arm64
+      - name: Cross-compile the literal amalgamation for Android arm64 (the real device architecture)
         run: |
           CLANG="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
           SRC=node_modules/better-sqlite3-multiple-ciphers/deps/sqlite3
@@ -57,11 +59,59 @@ jobs:
             -DSQLITE_USER_AUTHENTICATION=0 -DSQLITE_USE_URI=0 \
             -I"$SRC" -o test_android advances/M4/option2-spike/main.c "$SRC/sqlite3.c" -lm -ldl
           file test_android
-      - name: Run under qemu-user against the real golden-vault fixture
+
+  android-emulator:
+    # Real execution evidence: boots an actual Android system image (x86_64 -- runs natively
+    # under KVM on the GH-hosted runner, no ARM translation overhead, and just as valid a
+    # Bionic/Android-userspace test as arm64 since the cipher logic is portable, architecture-
+    # independent C -- arm64 portability is already covered by android-ndk's real-device-arch
+    # compile above) and executes the binary via adb, exactly like a real device would.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: npm ci (populates node_modules/better-sqlite3-multiple-ciphers/deps/sqlite3)
+        run: npm ci
+      - name: Enable KVM group perms (required for hardware-accelerated emulator)
         run: |
-          cp src/testing/__fixtures__/golden-vault/vault.db /tmp/android-vault.db
-          SYSROOT="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
-          qemu-aarch64-static -L "$SYSROOT" ./test_android /tmp/android-vault.db
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Cross-compile the literal amalgamation for Android x86_64 (matches the emulator image)
+        run: |
+          CLANG="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android24-clang"
+          SRC=node_modules/better-sqlite3-multiple-ciphers/deps/sqlite3
+          "$CLANG" -O1 \
+            -DHAVE_INT16_T=1 -DHAVE_INT32_T=1 -DHAVE_INT8_T=1 -DHAVE_STDINT_H=1 \
+            -DHAVE_UINT16_T=1 -DHAVE_UINT32_T=1 -DHAVE_UINT8_T=1 -DHAVE_USLEEP=1 \
+            -DSQLITE_DEFAULT_CACHE_SIZE=-16000 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 \
+            -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DQS=0 \
+            -DSQLITE_ENABLE_COLUMN_METADATA -DSQLITE_ENABLE_DBSTAT_VTAB -DSQLITE_ENABLE_DESERIALIZE \
+            -DSQLITE_ENABLE_FTS3 -DSQLITE_ENABLE_FTS3_PARENTHESIS -DSQLITE_ENABLE_FTS4 -DSQLITE_ENABLE_FTS5 \
+            -DSQLITE_ENABLE_GEOPOLY -DSQLITE_ENABLE_JSON1 -DSQLITE_ENABLE_MATH_FUNCTIONS \
+            -DSQLITE_ENABLE_PERCENTILE -DSQLITE_ENABLE_RTREE -DSQLITE_ENABLE_STAT4 \
+            -DSQLITE_ENABLE_UPDATE_DELETE_LIMIT -DSQLITE_LIKE_DOESNT_MATCH_BLOBS -DSQLITE_OMIT_DEPRECATED \
+            -DSQLITE_OMIT_PROGRESS_CALLBACK -DSQLITE_OMIT_SHARED_CACHE -DSQLITE_OMIT_TCL_VARIABLE \
+            -DSQLITE_SOUNDEX -DSQLITE_THREADSAFE=2 -DSQLITE_TRACE_SIZE_LIMIT=32 \
+            -DSQLITE_USER_AUTHENTICATION=0 -DSQLITE_USE_URI=0 \
+            -I"$SRC" -o test_android_emu advances/M4/option2-spike/main.c "$SRC/sqlite3.c" -lm -ldl
+          file test_android_emu
+      - name: Run inside a real Android emulator via adb
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: default
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            adb push test_android_emu /data/local/tmp/test_android_emu
+            adb push src/testing/__fixtures__/golden-vault/vault.db /data/local/tmp/vault.db
+            adb shell chmod 755 /data/local/tmp/test_android_emu
+            adb shell /data/local/tmp/test_android_emu /data/local/tmp/vault.db
 
   ios-simulator:
     runs-on: macos-latest
