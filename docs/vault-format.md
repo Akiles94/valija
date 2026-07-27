@@ -228,10 +228,30 @@ CREATE VIRTUAL TABLE context_items_fts USING fts5(
   content='context_items',
   content_rowid='rowid'
 );
--- kept in sync by three triggers (items_ai / items_ad / items_au) on
--- INSERT/DELETE/UPDATE of context_items — a reader never has to reproduce
--- these; they exist to keep the committed vault.db's FTS index correct, and
--- a read-only client only ever queries the index, never writes to it (§11).
+
+CREATE TRIGGER items_ai AFTER INSERT ON context_items BEGIN
+  INSERT INTO context_items_fts(rowid, content, tags)
+  VALUES (new.rowid, new.content, new.tags);
+END;
+
+CREATE TRIGGER items_ad AFTER DELETE ON context_items BEGIN
+  INSERT INTO context_items_fts(context_items_fts, rowid, content, tags)
+  VALUES ('delete', old.rowid, old.content, old.tags);
+END;
+
+CREATE TRIGGER items_au AFTER UPDATE ON context_items BEGIN
+  INSERT INTO context_items_fts(context_items_fts, rowid, content, tags)
+  VALUES ('delete', old.rowid, old.content, old.tags);
+  INSERT INTO context_items_fts(rowid, content, tags)
+  VALUES (new.rowid, new.content, new.tags);
+END;
+-- verbatim from src/shared/infra/migrations/002-imported-type.ts — a reader
+-- never has to reproduce these; they exist to keep the committed vault.db's
+-- FTS index correct, and a read-only client only ever queries the index,
+-- never writes to it (§11). Reproduced here (not just named) because D-D
+-- keeps writes open as a real future step, and this file's own §14
+-- write-round-trip note otherwise tells an implementer to rely on triggers
+-- they cannot verify without the definitions.
 
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 -- Created by the migration runner itself (not by a numbered migration's SQL),
@@ -498,15 +518,22 @@ the literal `SQLite3MultipleCiphers` amalgamation (the exact `sqlite3.c` `node-g
 into the desktop native addon) for mobile, so both ends run the same implementation, was
 tested directly: compiled standalone (no Node, no N-API) and run against valija's real
 production golden-vault fixture (`legacy=0`, the actual desktop config — no changes needed on
-that side) on Linux, on iOS (Apple's own clang, arm64, plus a separate real-device-target
-link check), and on Android (arm64 compiles clean against the real NDK/bionic toolchain;
-x86_64 executes correctly inside a real, booted Android emulator via `adb`). **Every platform
-that could execute the binary passed, reading back byte-identical data** — the same 16-table
-count, the same six-way row breakdown, everywhere. A future mobile-companion advance can adopt
-this with confidence: build/vendor the amalgamation for the mobile app rather than depending
-on the official SQLCipher package, no desktop-side migration required. See
-`advances/M4/spike.md` §"Option 2 verification" for the full detail, including the exact
-commands and C source, so this can be independently re-checked or re-run.
+that side) on Linux, on Apple/Darwin (arm64, Apple's own clang — executed on **macOS**; the
+real iOS device target linked clean but was never executed, since a literal iOS-simulator
+binary needs full CoreSimulator infrastructure to run, not just a compile flag), and on
+Android (arm64 compiles clean against the real NDK/bionic toolchain; x86_64 executes
+correctly inside a real, booted Android emulator via `adb`). **Every run that could execute
+the binary passed, reading back byte-identical data** — the same 16-table count, the same
+six-way row breakdown, on Linux, Apple/Darwin, and the Android emulator. A separate write
+round-trip check (refined §8's D-G amendment) confirms the format survives a mobile-side
+write too: a row inserted through the same literal amalgamation reads back correctly through
+the real desktop `openVaultDb` and `SearchContext` code paths — **PASS**. A future
+mobile-companion advance can adopt this with confidence: build/vendor the amalgamation for
+the mobile app rather than depending on the official SQLCipher package, no desktop-side
+migration required. A literal iOS device/simulator execution remains the one genuinely open
+item. See `advances/M4/spike.md` §"Option 2 verification" and §"Write round-trip
+verification" for the full detail, including the exact commands and C source, so this can be
+independently re-checked or re-run.
 
 ## 14. Change control
 

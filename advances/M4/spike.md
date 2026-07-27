@@ -250,12 +250,16 @@ not ruled out is Option 2 as originally scoped — building/linking the literal
 (build it for iOS/Android, open a real valija vault with it) before being trusted, exactly
 like every other claim in this spike.
 
-**What C2's result doesn't answer, still open:**
+**What C2's result doesn't answer, as of this point in the document:**
 - **C1 (Argon2id on-device)** — not attempted here; already conclusively answered by Tier B1
   (reference-C implementation, platform-agnostic by construction). Low value in re-running on
   Apple hardware specifically.
-- **C3 (pack/search byte-match)** and **C4 (write round-trip)** — both blocked on C2 passing,
-  which it didn't. Nothing to test until a compatible SQLCipher build (D-G's Option 2) exists.
+- **C3 (pack/search byte-match)** — still open; blocked on C2 passing, which it didn't, and
+  nothing in this document later closes it.
+- **C4 (write round-trip)** — was blocked on C2 at this point, but is **not** still open by
+  the end of this document: once Option 2 was verified (below), it stopped being true that
+  "nothing to test until a compatible SQLCipher build exists" — one did, and the "Write
+  round-trip verification" section further down uses it to answer C4 directly: **PASS**.
 
 ### If a literal iOS (device/simulator) run is ever wanted
 
@@ -293,6 +297,12 @@ algorithms, and byte-compare against `expected-pack.md`. Run each query in
 `expected-search.json` and byte-compare the hits.
 
 ### C4 — Write round-trip (D-G amendment — informational, does not block Tier 1)
+
+**Already answered, not via a literal iOS run — see "Write round-trip verification" above:
+PASS**, using the same Option 2 harness on Linux (mobile-side write via the literal
+amalgamation, desktop-side read-back via real `openVaultDb` + `SearchContext`). The steps
+below are kept for whenever a literal on-device run is wanted; nothing here contradicts the
+PASS already recorded, it's a stronger (device-specific) version of the same check.
 
 1. Copy the fixture to a **throwaway** path (never the original).
 2. `INSERT` one row into `context_items` through the mobile binding — any valid `type`
@@ -336,22 +346,77 @@ all-zero decrypt.
 | Platform | Toolchain | What ran | Result |
 |---|---|---|---|
 | Linux | `cc`, same defines as `node-gyp` | Compile + run natively | **PASS** — `sqlite_master_count=16`, correct per-type row counts |
-| iOS (arm64) | Apple `clang`, `-target arm64-apple-macos13.0` (real device target linked separately) | Compile + run on the arm64 GitHub Actions runner; iOS-device target link-only as a second check | **PASS** — identical `sqlite_master_count=16` and row breakdown; device-target linked clean |
+| Apple/Darwin (arm64) | Apple `clang`, `-target arm64-apple-macos13.0` | Compile + run **on macOS**, the arm64 GitHub Actions runner | **PASS** — identical `sqlite_master_count=16` and row breakdown |
+| iOS device target (arm64) | Apple `clang`, `-target arm64-apple-ios15.0`, real iPhoneOS SDK | **Link-only** — a literal arm64-apple-ios-simulator binary needs full CoreSimulator to execute (see the Tier C′ note above); no iOS binary was run | Linked clean — no execution evidence |
 | Android (arm64) | NDK `clang`, `aarch64-linux-android24-clang` | Compile only (the real device architecture) | Compiles clean — bare `qemu-user` couldn't execute the result (two independent emulation-harness limits, not compatibility findings: static hit a qemu/Bionic TLS-alignment bug, dynamic needed `/system/bin/linker64`, which only exists on a real system image) |
 | Android (x86_64) | NDK `clang`, real Android emulator (API 30, GitHub Actions, KVM) via `adb` | Compile + execute inside a booted emulator | **PASS** — identical `sqlite_master_count=16` and row breakdown, real Bionic userspace |
 
-**Every platform that could actually execute the binary passed, with byte-identical results**
-(the same 16-table count, the same six-way row breakdown by `type`, on every platform). The
-one architecture that didn't get a full execution run (Android arm64) still compiled clean
-against the real NDK/bionic toolchain, and the cipher logic is portable, architecture-
-independent C with no per-platform branches — the x86_64 emulator run already exercises the
-identical Bionic/Android userspace path arm64 would.
+**No binary was executed on an iOS device or simulator.** The Apple/Darwin row above is a
+macOS execution — the same substitution the original Tier C′ spike used (and disclosed) for
+the identical reason: a literal iOS-simulator-targeted Mach-O binary needs full CoreSimulator
+infrastructure to run (`dyld_sim`), not just a compiler flag. It is still real evidence — the
+same C source, the same Apple clang/toolchain, the same arm64 silicon, reading the same real
+row data — but it is Apple-platform evidence, not iOS-platform evidence. The iOS *device*
+target link-checked clean (proves the source compiles against the real iPhoneOS SDK) but was
+never executed anywhere.
 
-**Conclusion: Option 2 is confirmed, not just theoretically sound.** Building the literal
-`SQLite3MultipleCiphers` amalgamation for a mobile app — rather than depending on the
-official SQLCipher package — gives real, verified format compatibility with valija's desktop
-vaults, with no changes to the desktop side at all (`legacy=0`, the actual shipped config,
-worked as-is; no re-encryption, no migration, no breaking change for existing users).
+**Every run that could actually execute the binary passed, with byte-identical results**
+(the same 16-table count, the same six-way row breakdown by `type`, on Linux, Apple/Darwin,
+and the Android emulator). Two targets got compile-only evidence, not execution: the iOS
+device target (blocked on needing a real device/simulator to run a non-simulator arm64
+binary) and Android arm64 (blocked on the qemu-user limitations above). Both compiled clean
+against their real toolchains, and the cipher logic is portable, architecture-independent C
+with no per-platform branches — the executions that did happen (Apple/Darwin arm64, Android
+x86_64 real emulator) already exercise the identical code path those two targets would run.
+
+**Conclusion: Option 2 is confirmed on every platform that could be executed, and compiles
+clean on the two that couldn't.** Building the literal `SQLite3MultipleCiphers` amalgamation
+for a mobile app — rather than depending on the official SQLCipher package — gives real,
+verified format compatibility with valija's desktop vaults, with no changes to the desktop
+side at all (`legacy=0`, the actual shipped config, worked as-is; no re-encryption, no
+migration, no breaking change for existing users). A literal iOS device/simulator execution
+remains the one genuinely open item, same as Tier C above.
+
+## Write round-trip verification (D-G amendment, refined §8 B6)
+
+refined.md's D-G amendment asks the spike to separately report pass/fail on a write
+round-trip: INSERT a row via the mobile binding into a throwaway copy of the fixture, reopen
+it, and read the row back through desktop `openVaultDb`. This was left `DEFERRED` earlier in
+this document (previously here: "blocked on a compatible SQLCipher build (D-G's Option 2)
+existing") — stale by the time Option 2 was actually verified above, since that verification
+*is* a working mobile-side build. Re-run with that harness, locally (no CI needed — Linux
+already has a proven-working native build):
+
+**Mobile-side write** — a 60-line C program, same amalgamation source and compile flags as
+the Option 2 harness, `INSERT`s one `context_items` row into a throwaway copy of the golden
+vault (never the committed fixture):
+
+```
+$ ./write_insert /tmp/.../mutated-vault.db
+RESULT insert=PASS changes=1
+```
+
+**Desktop-side read-back** — a temporary Vitest case (deleted immediately after this result
+was recorded) opened the mutated copy through the exact function named in the review,
+`openVaultDb` (`src/shared/infra/sqlite.ts`), then through the real `SearchContext` use case
+— not raw SQL, the same code path `valija search` runs:
+
+```
+$ npx vitest run src/delivery/m4-write-roundtrip.temp.test.ts
+ ✓ M4 write round-trip (temporary, C1 fix verification) > reads back a row written by the
+   mobile-side (literal amalgamation) harness
+RESULT write_roundtrip=PASS integrity=ok search_hits=1
+```
+
+Checked and passed: `PRAGMA integrity_check` → `ok`; the inserted row present via a direct
+`openVaultDb` query with the exact `content`/`project_id` written; `SearchContext.execute()`
+returns exactly one hit for a query matching the inserted content, with the correct `type`;
+no `-wal`/`-shm` sidecar left behind. **PASS.**
+
+This only exercises the write path on Linux (the platform with a proven-working native
+build) — it does not by itself prove an iOS or Android *app* can write, only that the file
+format itself round-trips a write correctly when the same amalgamation writes it. A literal
+on-device write round-trip remains open, same as the rest of Tier C.
 
 ## Results
 
@@ -363,13 +428,14 @@ worked as-is; no re-encryption, no migration, no breaking change for existing us
 | 4 | Raw-key open, official SPM package (macOS, GitHub Actions) | C′ | **FAIL** | Identical signature to #2 — `SQLITE_NOTADB` on the first read. Not literally iOS, but the exact official package + toolchain |
 | 5 | Pack byte-match on iOS | C | DEFERRED | Blocked on #4's FAIL |
 | 6 | Search byte-match on iOS | C | DEFERRED | Blocked on #4's FAIL |
-| 7 | Write round-trip on iOS | C | DEFERRED | Informational only (D-D deferred) |
+| 7 | Write round-trip (D-G amendment) | — | **PASS** | Answered using the working Option 2 harness, not literally on iOS — see "Write round-trip verification" below |
 | 8 | Raw-key open, bidirectional, `legacy=4` (Linux) | B | **PASS** | Real data verified both directions — see B3. Looked like a full fix |
 | 9 | Raw-key open, official SPM package, `legacy=4` (macOS) | C′ | **FAIL** | Identical signature to #2/#4, despite every queryable parameter matching — see C3. Matches two known, unresolved upstream issues (#20, #47) |
 | 10 | Option 2: literal amalgamation, compile + run, Linux | — | **PASS** | Real row data verified — see "Option 2 verification" |
-| 11 | Option 2: literal amalgamation, compile + run, iOS (arm64) | — | **PASS** | Identical row data; iOS device target also linked clean |
+| 11 | Option 2: literal amalgamation, compile + run, Apple/Darwin (arm64) | — | **PASS** | Identical row data. Not iOS — see the platform note above. iOS device target linked clean, not executed |
 | 12 | Option 2: literal amalgamation, compile, Android (arm64) | — | Compiles clean | Real device architecture; execution blocked by qemu-user limits, not a compatibility finding |
 | 13 | Option 2: literal amalgamation, compile + run, Android (x86_64, real emulator) | — | **PASS** | Identical row data, real Bionic userspace via `adb` |
+| 14 | Write round-trip: mobile-side INSERT read back through desktop `openVaultDb` + `SearchContext` | — | **PASS** | See "Write round-trip verification" below |
 
 ## What must not happen (confirmed)
 

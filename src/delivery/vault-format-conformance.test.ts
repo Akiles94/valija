@@ -231,9 +231,14 @@ describe("vault format conformance", () => {
     expect(estimateTokens("abcde")).toBe(2);
   });
 
-  it("rebuilding from the seed reproduces the same pack", async () => {
+  it("rebuilding from the seed reproduces the same derived key and the same pack", async () => {
     const root = tempRoot("rebuild");
     const built = await buildGoldenVault(root, manifest, seed);
+    // Pins the published Argon2id vector (docs/vault-format.md §4) against the stored
+    // manifest.keyHex — without this, an Argon2id parameter or adapter change would leave
+    // the suite green while silently invalidating the vector every second implementation
+    // is told to check first.
+    expect(built.keyHex).toBe(manifest.keyHex);
     const reader = makeGoldenVaultReader(root, { ...manifest, keyHex: built.keyHex });
     const result = new GetContextPack(reader.sessions, reader.clock).execute({
       project: "alpha",
