@@ -1,15 +1,16 @@
-# M4 — Vault format contract, conformance fixture & compatibility spike · Review
+Verdict: PASS
 
-Verdict: FAIL
+# M4 — Vault format contract, conformance fixture & compatibility spike · Review (second pass)
 
-**Branch:** `docs/vault-format-M4` · **Base:** `main` · **Reviewed at:** `2f3063c`
+**Branch:** `docs/vault-format-M4` · **Base:** `main` (`6441ea5`) · **Reviewed at:** `02444fd`
 **Spec:** `advances/M4/refined.md` (Gate R, Oscar 2026-07-26) ·
 **Plan:** `advances/M4/plan.md` (carries `Approved: Oscar 2026-07-26` on line 1 ✓)
+**Previous pass:** `Verdict: FAIL` at `2f3063c` — C1, C2, C3 Critical; W1 Warning.
 
-This is a strong advance that does substantially more empirical work than the plan asked
-for. It fails on two specific, cheap-to-close gaps and one factual overclaim, all listed
-under **Critical** below. Nothing here is a security regression, and nothing here requires
-re-planning.
+The three Critical findings and W1 are closed. I re-derived each one rather than trusting the
+commit message, and I independently reproduced the two load-bearing empirical claims (the new
+write round-trip and both published Argon2id vectors) in this container from scratch — see §3.
+Every acceptance criterion is now met and no hard gate is breached.
 
 ---
 
@@ -17,267 +18,261 @@ re-planning.
 
 | Artifact | Lines | Plan estimate |
 |---|---|---|
-| `docs/vault-format.md` | 521 | ~500 |
-| `advances/M4/spike.md` | 385 | ~200 |
+| `docs/vault-format.md` | 548 | ~500 |
+| `advances/M4/spike.md` | 451 | ~200 |
 | `src/testing/golden-vault.ts` (the only non-test `src/` addition) | 272 | ~150 |
-| `src/delivery/vault-format-conformance.test.ts` | 261 | ~190 |
-| Fixture data (`seed.json`, `expected-*`, `manifest.json`, `README.md`, `vault.json`) | 360 | ~420 |
+| `src/delivery/vault-format-conformance.test.ts` | 266 | ~190 |
+| Fixture data (`seed.json`, `expected-*`, `manifest.json`, `README.md`, `vault.json`) | 372 | ~420 |
 | `.gitattributes` + `CHANGELOG.md` | 5 | ~5 |
 | `src/testing/__fixtures__/golden-vault/vault.db` | binary, 61,440 B | ~60–120 KB |
-| **Total** | **+1,816 / −0**, 14 files, 1 binary | ~1,470 |
+| **Total (excl. `review.md`)** | **+1,914 / −0**, 14 files, 1 binary | ~1,470 |
 
-Over the estimate by ~23%, driven by `spike.md` (nearly double, justified — it carries four
-tiers of real results the plan only budgeted a runbook for) and `golden-vault.ts` (272 vs
-150). No file is oversized for what it does.
+The fix commit itself is **+129 / −31 across 3 files** — `advances/M4/spike.md`,
+`docs/vault-format.md`, `src/delivery/vault-format-conformance.test.ts`. Nothing else moved.
+No scope creep: no new dependency, no new CI job, no `src/` production module touched.
 
-Suite: `npm run typecheck` ✓, `npm run lint` ✓ (one pre-existing biome-config `info`, present
-on `main`), `npm run test` ✓ — **48 files, 241 tests passing**; the 10 new conformance cases
-all green, full run 7.0 s.
+Suite (re-run for this pass): `npm run typecheck` ✓, `npm run lint` ✓ (one pre-existing
+biome-config `info`, present on `main`), `npm run test` ✓ — **48 files, 241 tests passing**,
+6.2 s.
 
 ---
 
-## 2. Acceptance criteria (refined.md §8)
+## 2. The three Critical findings, re-derived
+
+### C1 — write-round-trip criterion unanswered → **CLOSED**
+
+refined §8 asks the spike to "separately report **pass/fail** on a write round-trip". The
+previous pass found `DEFERRED`, which is neither, and found the stated blocker
+("nothing to test until a compatible SQLCipher build exists") contradicted by the Option 2
+section further down the same file.
+
+What landed: a new `advances/M4/spike.md:380-419` §"Write round-trip verification", Results
+row 7 (`spike.md:431`) flipped to **PASS**, a new row 14 (`spike.md:438`), and the stale
+"blocked on C2" paragraph rewritten (`spike.md:253-262`) so the still-open item (C3
+pack/search byte-match) is separated from the now-answered one.
+
+**I reproduced it.** Not to spot-check the wording — to test the claim. In this container:
+
+1. Compiled a ~25-line `INSERT` harness against the *literal* amalgamation
+   `node_modules/better-sqlite3-multiple-ciphers/deps/sqlite3/sqlite3.c`, standalone `cc`, no
+   Node, no N-API — the same source and the same approach the Option 2 section describes.
+2. Ran it against a throwaway copy of the committed fixture:
+   `RESULT insert=PASS changes=1` — character-identical to the transcript at `spike.md:396`.
+3. Read the mutated file back through the exact `openVaultDb` pragma sequence
+   (`src/shared/infra/sqlite.ts:19-28`): `sqlite_master_count = 16`,
+   `integrity_check = ok`, the inserted row present with the exact `content`/`project_id`,
+   and the FTS query from `src/context/infra/item-repo.ts` returning **exactly one hit** —
+   i.e. the `items_ai` trigger fired on a mobile-side write. No `-wal`/`-shm` sidecar left
+   behind.
+
+Every claim in `spike.md:411-414` holds. The scoping caveat at `spike.md:416-419` ("only
+exercises the write path on Linux… a literal on-device write round-trip remains open") is the
+honest framing and I would not want it removed.
+
+*Is the substitution legitimate?* refined §8 words the criterion as "an INSERT via the mobile
+SQLCipher binding". That wording presupposed D-G Option 1, which this spike closed as
+non-viable — so the literal criterion is unexecutable, and the closest available proxy is the
+same C source that *would be* the mobile binding under Option 2, on a target where it
+demonstrably runs. Combined with the Option 2 table's real Android-emulator execution
+(`spike.md:352`, real Bionic userspace via `adb`), that is a defensible, disclosed
+substitution, and refined §8 explicitly makes this row non-blocking either way. Criterion met.
+
+### C2 — published Argon2id vector untested → **CLOSED**
+
+`src/delivery/vault-format-conformance.test.ts:241` now asserts
+`expect(built.keyHex).toBe(manifest.keyHex)` inside the rebuild case, with the reasoning in a
+comment at `:237-240`. This bites: `buildGoldenVault` derives through the real
+`Argon2VaultCrypto().deriveKey(manifest.passphrase, salt, manifest.kdf)`
+(`src/testing/golden-vault.ts:145`), so an Argon2id parameter or adapter change now fails the
+suite instead of silently invalidating the vector. `manifest.keyHex` is byte-identical to the
+published vector in `docs/vault-format.md:104`. The case title was updated to match. I also
+re-derived both published vectors with the reference `phc-winner-argon2` CLI — both match
+exactly, independently confirming `spike.md:45-60`.
+
+The second, non-default vector (`docs/vault-format.md:105`, 8192 KiB / t=1) is still unpinned
+by any test. That was a "consider" last pass, not a criterion, and the plan's §4 promise
+("**the** published vector") is now satisfied. Restated as **S1** below.
+
+### C3 — macOS run published as iOS → **CLOSED**
+
+`spike.md:349` now reads `Apple/Darwin (arm64) … Compile + run **on macOS**`, with a separate
+`spike.md:350` row for the iOS device target explicitly marked `**Link-only** … no iOS binary
+was run … Linked clean — no execution evidence`. A new paragraph at `spike.md:354-361` opens
+with "**No binary was executed on an iOS device or simulator**" and explains the CoreSimulator
+reason without hedging. Results row 11 (`spike.md:435`) matches. `docs/vault-format.md:522-527`
+now says "executed on **macOS**; the real iOS device target linked clean but was never
+executed". The conclusion is preserved and correctly weakened only where the evidence was
+weaker. This is the fix I asked for, and it is now the *most* carefully-scoped claim in the
+document.
+
+### W1 — FTS5 triggers named, not reproduced → **CLOSED**
+
+`docs/vault-format.md:232-247` now carries all three trigger definitions. I diffed them against
+`src/shared/infra/migrations/002-imported-type.ts:39-54`: **byte-identical**. The
+"a reader never has to reproduce these" note is kept and the reason for including them anyway
+(D-D keeps writes open) is stated at `:248-254`.
+
+---
+
+## 3. Independent verification performed for this pass
+
+| Claim | Where | How I checked | Result |
+|---|---|---|---|
+| Argon2id vector, default params | `spike.md:45-51`, `docs:104` | `argon2` reference CLI, published salt/params | Exact match |
+| Argon2id vector, non-default params | `spike.md:56-60`, `docs:105` | same | Exact match |
+| Upstream SQLCipher cannot open the fixture (the headline FAIL) | `spike.md:67-76` | `sqlcipher` 4.5.6 CLI, published raw key, throwaway copy | Reproduced: `ok` then `file is not a database (26)` — transcript-identical |
+| Literal amalgamation writes, desktop reads back | `spike.md:380-419` | compiled harness + `openVaultDb` pragma sequence + FTS query | Reproduced end to end, integrity ok, 1 search hit, no sidecar |
+| Triggers verbatim | `docs:232-247` | `diff` against migration source | Identical |
+| Suite | — | `typecheck`/`lint`/`test` | 241/241 green |
+
+`sqlcipher` and `argon2` are present in this container (`/usr/bin/…`), corroborating Tier B's
+own account of how it was run.
+
+---
+
+## 4. Acceptance criteria (refined.md §8)
 
 ### Applies under every option
 
 | # | Criterion | Verdict | Evidence |
 |---|---|---|---|
-| A1 | No milestone number assigned to mobile; `docs/SPEC.md` §2 Out line untouched | **MET** | `git diff main...HEAD --name-status` — `docs/SPEC.md` absent from the diff; `docs/vault-format.md` and `spike.md` assign no milestone |
-| A2 | No change to `vault.json` schema, Argon2id params, key format, SQLCipher configuration | **MET** | No file under `src/vault/**` or `src/shared/infra/**` in the diff; `src/shared/infra/sqlite.ts:19-20` and `src/vault/infra/argon2.ts` unmodified |
+| A1 | No milestone number assigned to mobile; `docs/SPEC.md` §2 Out line untouched | **MET** | `docs/SPEC.md` absent from `git diff main...HEAD --name-only` |
+| A2 | No change to `vault.json` schema, Argon2id params, key format, SQLCipher configuration | **MET** | No file under `src/vault/**` or `src/shared/infra/**` in the diff |
 | A3 | MCP surface byte-for-byte unchanged (5 tools, 2 prompts, stdio) | **MET** | No `src/delivery/mcp/**` path in the diff; `server.test.ts` unchanged and green |
-| A4 | No network call, telemetry, analytics or cloud SDK added, mobile or desktop | **MET** | `package.json` byte-identical; no `fetch`/`http` in the two new source files; `.github/workflows/` contains only `ci.yml` |
-| A5 | `typecheck && lint && test` pass; `src/` behaviour changes reflected in `specs/*.md` | **MET** | All three run clean above; no production module edited, so `specs/*` correctly untouched |
+| A4 | No network call, telemetry, analytics or cloud SDK added | **MET** | `package.json` byte-identical; `.github/workflows/` contains `ci.yml` only |
+| A5 | `typecheck && lint && test` pass; `src/` behaviour changes reflected in `specs/*.md` | **MET** | All three clean; no production module edited, so `specs/*` correctly untouched |
 
 ### Under the decided scope (D-B Option 2)
 
 | # | Criterion | Verdict | Evidence |
 |---|---|---|---|
-| B1 | `docs/vault-format.md` specifies SQLCipher params + raw-key convention; Argon2id params and their source; `vault.json` schema incl. unknown-key stripping; **schema-v3 tables incl. the FTS5 external-content triggers** and `meta` lineage rows; pack assembly incl. token estimate, over-budget pinned rule, section order; markdown rendering; FTS query construction incl. quote-escaping; `imported` searchable-but-never-packed | **NOT MET** (one sub-item) | Everything present and accurate **except the FTS5 triggers**: `docs/vault-format.md:231-234` replaces them with a comment naming `items_ai`/`items_ad`/`items_au` instead of reproducing them. Source is `src/shared/infra/migrations/002-imported-type.ts:39-54`. Plan Slice 5 §6 said "verbatim". See **W1** |
-| B2 | The read-only contract is explicit: no journal pragma, no migration, no lineage bump, no device identity; behaviour on unknown `schema_version` and on a `-wal` sidecar | **MET** | `docs/vault-format.md:384-417` — all four prohibitions plus both required refusals, with the exact messages |
-| B3 | Committed golden vault + expected pack + expected search exist; a test proves the desktop reproduces them byte-for-byte | **MET** | `src/testing/__fixtures__/golden-vault/{vault.db,vault.json,expected-pack.md,expected-export.md,expected-search.json}`; `src/delivery/vault-format-conformance.test.ts:174-227` — plain `toBe` byte-compare, no snapshots. A renderer or pack-algorithm change fails the build |
-| B4 | Fixture key/passphrase is a published test value, clearly marked; no real user content | **MET** | `src/testing/__fixtures__/golden-vault/README.md:1-6`; `manifest.json:4-5` + `golden-vault.ts:29-32`; `docs/vault-format.md:439-441`. `seed.json` is entirely synthetic |
-| B5 | Spike reports **pass/fail** on official-SQLCipher raw-key open and Argon2id reproduction; params recorded on pass / divergent param named + D-G fallback triggered on fail; targets iOS first | **MET, with a caveat** | `spike.md:356-373` rows 1/2/4/9. Argon2id **PASS** (B1, two vectors); raw-key open **FAIL** on Linux and on the official Zetetic SPM package via macOS CI. No divergent parameter could be named — the spike documents that *every* queryable parameter matches (`spike.md:216-229`), which is the honest answer, and D-G's fallback is not just triggered but empirically verified. iOS-first sequencing honoured (Tier C′ used the exact SPM package an iOS app would declare) |
-| B6 | Spike **separately reports pass/fail on a write round-trip**: INSERT via the mobile binding into a throwaway copy of the fixture, reopened and read back through desktop `openVaultDb` | **NOT MET** | `spike.md:366` row 7 reads `DEFERRED — Informational only`, not PASS/FAIL. The stated blocker (`spike.md:257-258`, "Nothing to test until a compatible SQLCipher build (D-G's Option 2) exists") is **stale by the end of the same document**: `spike.md:318-354` proves such a build exists and executes against the real fixture on Linux, Darwin/arm64 and a booted Android emulator. See **C1** |
-| B7 | The spike leaves no mobile toolchain, dependency or CI job in this repo | **MET** | Final tree verified: `.github/workflows/` holds `ci.yml` only; `advances/M4/` holds `idea/refined/plan/spike.md` only; `package.json` unchanged. `git log --diff-filter=D` confirms `m4-tier-c-spike.yml`, `m4-option2-spike.yml`, `advances/M4/tier-c-spike/**` and `advances/M4/option2-spike/main.c` were all deleted in the commits that recorded their results |
+| B1 | `docs/vault-format.md` specifies SQLCipher params + raw-key convention; Argon2id params and source; header schema incl. unknown-key stripping; **schema-v3 tables incl. the FTS5 triggers** and `meta` lineage rows; pack assembly; markdown rendering; FTS query construction incl. quote-escaping; `imported` searchable-but-never-packed | **MET** | Previously the only gap was the triggers; now verbatim at `docs/vault-format.md:232-247`, diff-verified against `002-imported-type.ts:39-54` |
+| B2 | Read-only contract explicit: no journal pragma, no migration, no lineage bump, no device identity; unknown `schema_version` and `-wal` sidecar behaviour | **MET** | `docs/vault-format.md` §11 — all four prohibitions plus both refusals with exact messages |
+| B3 | Committed golden vault + expected pack + expected search; a test proves the desktop reproduces them byte-for-byte | **MET** | `src/testing/__fixtures__/golden-vault/*`; `vault-format-conformance.test.ts:174-227` plain `toBe`, no snapshots |
+| B4 | Fixture key/passphrase is a published test value, clearly marked; no real user content | **MET** | fixture `README.md:1-6`, `manifest.json:4-5`, `golden-vault.ts:29-32`, `docs/vault-format.md` §12 |
+| B5 | Spike reports pass/fail on official-SQLCipher raw-key open and Argon2id reproduction; params recorded / divergence named + D-G fallback triggered; targets iOS first | **MET** | `spike.md` Results rows 1/2/4/9. Argon2id **PASS** (both vectors, verified by me); raw-key open **FAIL** on Linux and on the official Zetetic SPM package. No single divergent parameter exists — the spike documents that every queryable parameter matches (`spike.md:216-229`) and links two unresolved upstream issues, which is the honest answer. D-G's fallback is not just triggered but empirically verified. C3's relabelling makes the Apple-platform evidence claim exactly as strong as it is |
+| B6 | Spike **separately reports pass/fail on a write round-trip**: INSERT via the mobile binding into a throwaway copy, read back through desktop `openVaultDb` | **MET** | `spike.md:380-419` + Results rows 7 and 14 = **PASS**, mirrored into `docs/vault-format.md:528-532`. Reproduced independently by this reviewer (§3). Scope caveat honestly stated at `spike.md:416-419` |
+| B7 | The spike leaves no mobile toolchain, dependency or CI job in this repo | **MET** | Final tree: `.github/workflows/ci.yml` only; `advances/M4/` holds `idea/refined/plan/spike/review.md` only; `package.json` unchanged. The write harness was never committed at all |
 
-The "Additional criteria if a Tier 1 app is in scope (D-B Option 1)" block is **N/A** — no
-app code exists, correctly.
+The "Additional criteria if a Tier 1 app is in scope (D-B Option 1)" block is **N/A** — no app
+code exists, correctly.
 
-**Score: 10 of 12 met.** B1 (partial) and B6 (not met) block the verdict.
-
----
-
-## 3. Plan compliance
-
-Slices 1–6 were executed essentially as written: fixture at
-`src/testing/__fixtures__/golden-vault/` (D-2), `VALIJA_WRITE_GOLDEN_VAULT=1` regeneration
-branch that deliberately throws (`vault-format-conformance.test.ts:116-118`, D-3), production
-KDF params in the fixture (D-6), cipher pragmas asserted **including the exact key set**
-(`vault-format-conformance.test.ts:161-162`, D-7), no second `-wal` fixture (D-8), no
-`docs/SPEC.md` edit (D-9), `*.db binary` added to `.gitattributes` (Slice 2 step 7).
-
-**Deviations, all disclosed and defensible:**
-
-1. **Slice 7's human gate was replaced by CI-based execution.** Oscar had no Mac
-   (`29e425c`). Rather than taking D-4's fallback verbatim (ship Tiers A+B, mark iOS
-   `PENDING`), the implementer ran Tier C′ on a GitHub Actions `macos-latest` runner with the
-   official `SQLCipher.swift` SPM package, then the `legacy=4` re-check, then a full Option 2
-   verification. This is *more* evidence than the plan required and it is the right call.
-   One wording concern: D-4's fallback specifies `PENDING`; the delivered table uses
-   `DEFERRED — low value` for the remaining iOS rows, which reads as a closed decision rather
-   than an outstanding obligation. See **W2**.
-2. **The plan's test-plan table (§4, row 2) promises the published Argon2id vector is
-   "asserted by the derivation case (Slice 2/3)". There is no such assertion.** See **C2**.
-3. **FTS triggers documented by name, not verbatim** (plan Slice 5 §6). See **W1**.
-
-No scope creep toward the app (plan R6): no Swift/Kotlin/`mobile/` artifact survives, no
-biometric or picker work, no roadmap edit.
+**Score: 12 of 12 met.**
 
 ---
 
-## 4. Hard gates
+## 5. Hard gates
 
 | Gate | Result |
 |---|---|
-| Security surface weakened (secrets/keys logged, plaintext to disk, KDF/keychain altered, SQLCipher unkeyed, MCP over-exposed) | **PASS** — no `console.*` anywhere in the two new source files; the only writes outside a temp dir are behind `REGENERATE` and produce synthetic fixture data; `openVaultDb` is always handed a key before any read (`golden-vault.ts:156`, `vault-format-conformance.test.ts:144`); no keychain or KDF code touched. The published passphrase/key are synthetic and marked as such in four places |
-| Tests missing for new behaviour / suite not passing | **PASS on the suite** (241/241). One documented contract claim ships untested — see **C2** — which is a drift hole, not a red suite |
+| Security surface weakened (secrets/keys logged, plaintext to disk, KDF/keychain altered, SQLCipher unkeyed, MCP over-exposed) | **PASS** — the fix commit adds one `expect` and documentation. No `console.*`/`process.stdout` in either new source file; the only writes outside a temp dir are behind `VALIJA_WRITE_GOLDEN_VAULT` and produce synthetic data; `openVaultDb` is always handed a key before any read; no keychain or KDF code touched. The published passphrase/key remain synthetic and marked as such in four places |
+| Tests missing for new behaviour / suite not passing | **PASS** — 241/241 green. The one documented-but-untested contract claim from last pass (the Argon2id vector) is now asserted at `vault-format-conformance.test.ts:241` |
 | Advance ritual evidenced (`refined.md` → approved `plan.md` → `review.md`) | **PASS** — `plan.md:1` = `Approved: Oscar 2026-07-26`; `refined.md:3` records Gate R approval; this file completes the trail |
-| Naming, clean architecture, file placement | **PASS** — `src/testing/` is a test-support folder, not a bounded context with layers, and already held a bare `test-vault.ts`; `golden-vault.ts` sits beside it. `vault-format-conformance.test.ts` sits at `src/delivery/`'s root exactly like the existing cross-module `multi-device-sync.test.ts`. `__fixtures__/` mirrors `src/importers/infra/parsers/__fixtures__/`. Helper names (`buildGoldenVault`, `copyGoldenVaultTo`, `makeGoldenVaultReader`, `readGoldenVaultManifest`, `FixedIds`) match the existing `makeUnlockedVault`/`FakeKeychain`/`SeqIds` style. `readGoldenVaultManifest` rather than `parseGoldenVaultManifest` is correct — `parseX → Result` is for untrusted input crossing a domain boundary, and the deviation is justified in a comment at `golden-vault.ts:85-91`. No new *kind* of domain/application object was introduced, so no new subfolder was owed |
+| Naming, clean architecture, file placement | **PASS** — unchanged from last pass and still correct. `src/testing/` is a test-support folder, not a bounded context with layers, and already held a bare `test-vault.ts`. `vault-format-conformance.test.ts` sits at `src/delivery/`'s root exactly like the existing cross-module `multi-device-sync.test.ts`. `__fixtures__/` mirrors `src/importers/infra/parsers/__fixtures__/`. Helper names (`buildGoldenVault`, `copyGoldenVaultTo`, `makeGoldenVaultReader`, `readGoldenVaultManifest`, `FixedIds`) match the `makeUnlockedVault`/`FakeKeychain`/`SeqIds` style. `readGoldenVaultManifest` rather than `parseGoldenVaultManifest` is correct and justified in-file at `golden-vault.ts:85-91`. No new *kind* of domain/application object, so no new subfolder was owed |
 
-**No hard gate is breached.** The FAIL is on acceptance criteria B6 and B1, plus C3.
-
----
-
-## 5. Issues
-
-### Critical — must be fixed to flip this to PASS
-
-**C1. The write-round-trip criterion is unanswered, and it is now answerable.**
-`advances/M4/spike.md:366` records row 7 as `DEFERRED`. refined §8 asks for `pass/fail`, and
-goes out of its way to say a FAIL is acceptable and non-blocking — so `DEFERRED` is not a
-permitted outcome, it is a missing one. The spike's own justification is stale: lines 257-258
-say the round-trip is "blocked on C2 passing… Nothing to test until a compatible SQLCipher
-build (D-G's Option 2) exists", but lines 318-354 then prove exactly such a build, running
-the unmodified `SQLite3MultipleCiphers` amalgamation against the real `legacy=0` fixture and
-reading real rows back on Linux, Darwin/arm64 and a booted Android x86_64 emulator.
-
-*Fix:* extend the existing 47-line `main.c` harness with one `INSERT INTO context_items`
-(valid `type`, `project_id = 'proj-alpha'`) against a throwaway copy, run it on whichever
-target already executes, move the file back, and reopen it with desktop `openVaultDb` —
-`node dist/program.js unlock` + `search`, per the runbook's own step 4
-(`spike.md:302-312`). Record PASS/FAIL in `spike.md` row 7 and mirror it into
-`docs/vault-format.md` §13. Also delete or correct the stale "blocked on C2" paragraph.
-If Oscar prefers not to spend that time, the alternative is his explicit, recorded waiver of
-this checkbox — but the reviewer cannot grant it.
-
-**C2. The published Argon2id test vector is not defended by any test.**
-`docs/vault-format.md:104` publishes
-`3e53d9f1…dc67` as *the* derivation of the published passphrase + salt + params, and
-`spike.md:45-51` records it as the PASS that "closes the Argon2id half of H1a". Nothing in
-the suite asserts it. `vault-format-conformance.test.ts:142-152` opens the vault with the
-**stored** `manifest.keyHex` (so a derivation change cannot fail it), and
-`vault-format-conformance.test.ts:236-237` deliberately substitutes the freshly derived key:
-
-```ts
-const built = await buildGoldenVault(root, manifest, seed);
-const reader = makeGoldenVaultReader(root, { ...manifest, keyHex: built.keyHex });
-```
-
-`manifest.keyHex` and the derivation are therefore fully decoupled: an Argon2id parameter or
-adapter change would leave the whole suite green while silently invalidating the vector every
-second implementation is told to check first. The plan's §4 test-plan row 2 explicitly
-promised this assertion.
-
-*Fix:* one line in the "rebuilding from the seed" case, at zero extra cost since
-`buildGoldenVault` already performs the derivation:
-`expect(built.keyHex).toBe(manifest.keyHex);`. Consider also pinning the second, non-default
-vector (`docs/vault-format.md:105`) — it is currently unverifiable from this repo, and it is
-the vector that proves "parameters come from the header".
-
-**C3. A macOS-target run is published as an iOS run.**
-`spike.md:339` labels the platform `iOS (arm64)` while the toolchain column reads
-`-target arm64-apple-macos13.0` — a macOS binary. The iOS *device* target was link-checked
-only. Results row 11 (`spike.md:370`) then reads "compile + **run**, iOS (arm64) — **PASS**",
-and `docs/vault-format.md:502-503` states the harness was "run against valija's real
-production golden-vault fixture … on Linux, **on iOS** …, and on Android". No binary was
-executed on an iOS device or simulator. In an advance whose entire premise is that a contract
-must not claim verification it does not have (plan D-4), this is the one claim that
-overstates its evidence.
-
-*Fix:* relabel that row `Apple/Darwin (arm64)` with "executed on macOS; iOS device target
-link-checked only", change Results row 11 to match, and reword `docs/vault-format.md` §13 to
-"on Linux, on Apple arm64 (macOS execution, iOS device target link-verified), and on
-Android". The conclusion survives intact — this is a wording correction, not a retraction.
-
-### Warning — should be fixed
-
-**W1. §6 omits the FTS5 triggers refined §8 names explicitly.**
-`docs/vault-format.md:231-234` names `items_ai`/`items_ad`/`items_au` in a comment and says
-"a reader never has to reproduce these". Defensible for a pure reader, but the criterion asks
-for them, the plan said "verbatim", D-D keeps writes open as a real future step, and the
-document's own §14 write-round-trip step (`spike.md:300`) tells an implementer to rely on
-"the FTS triggers keep the index in step automatically" — which they cannot verify without
-the definitions. *Fix:* paste the 16 lines from
-`src/shared/infra/migrations/002-imported-type.ts:39-54` into §6, keeping the "a reader never
-has to reproduce these" note.
-
-**W2. `DEFERRED` vs `PENDING`, and stale prose in `spike.md`.** Plan D-4's fallback
-prescribes `PENDING — iOS not yet run`; the delivered table uses
-`DEFERRED — low value / informational only`, which reads as a decision rather than an open
-obligation. Separately, the "What C2's result doesn't answer, still open" block
-(`spike.md:253-258`) is contradicted by the "Option 2 verification" section immediately
-below it. *Fix:* restore `PENDING` for any genuinely open row and delete or rewrite the stale
-block.
-
-**W3. `spike.md` uses the label `C3` for two different steps.** `spike.md:195`
-("C3 — Raw-key open, official SPM package, `legacy=4`") and `spike.md:289`
-("C3 — Pack and search byte-match"), with `spike.md:257` referring to the latter. In a
-runbook explicitly written so "whoever runs it needs no context from this plan", a duplicated
-step id is a real navigation hazard. *Fix:* renumber the `legacy=4` re-check to `B3′/C2′`.
-
-**W4. §8's section-label budgeting is under-specified for byte-identical output.**
-`docs/vault-format.md:296` says heading labels are "added once per section, not per item".
-The implementation charges them three different ways: `Pinned` is charged unconditionally
-before the loop (`context-pack.ts:90`); `Latest handoff` is folded into a single all-or-
-nothing affordability check (`context-pack.ts:107-108`); a by-type label is charged only
-inside the *first candidate's* check, so a section whose first item does not fit is charged
-nothing (`context-pack.ts:120`). A second implementation charging by-type labels eagerly
-would truncate earlier and diverge from `expected-pack.md`. *Fix:* three sub-bullets spelling
-this out; note also that the by-type label costs the **domain type name** (`"decision"`), not
-the rendered heading (`"Decisions"`).
-
-**W5. §8's "latest handoff" rule omits the already-included clause.**
-`docs/vault-format.md:304-306` says "'latest' means exactly one, always" and "Older handoffs
-are never shown". `context-pack.ts:104` selects the newest handoff **not already in the
-Pinned section** — so if the newest handoff is pinned, the section shows the *second*-newest
-handoff. Not exercised by the fixture. *Fix:* add "…the newest handoff that was not already
-included in the Pinned section".
-
-**W6. Two published search constants have no test and no fixture coverage.**
-`docs/vault-format.md:381-382` publishes "clamped to 1..100, default 20"; `MAX_LIMIT`/
-`DEFAULT_LIMIT` live at `search-context.use-case.ts:14-15` and neither is pinned by the
-"pins the documented constants" case (`vault-format-conformance.test.ts:229-232`), which
-covers only `DEFAULT_BUDGET_TOKENS` and `estimateTokens`. `manifest.searchLimitDefault: 20`
-is declared, published and never read by any code. *Fix:* add two assertions in the same
-case, and either assert `manifest.searchLimitDefault` or drop the field.
-
-### Suggestion — non-blocking
-
-- **S1. `FixedIds` placement.** `golden-vault.ts:101-110` sits away from its three siblings
-  (`FakeKeychain`, `FixedClock`, `SeqIds`, `FakeDeviceIdentity`) in
-  `src/testing/test-vault.ts`. Moving it beside `SeqIds` keeps the repo's test doubles in one
-  discoverable place; nothing about it is golden-vault-specific.
-- **S2. Zero discoverability for the new contract.** `docs/vault-format.md` is linked from no
-  index — `README.md:204-205` lists `docs/sync.md` and `docs/SPEC.md` only. Plan D-9 left the
-  README link optional; a one-line entry costs nothing and is the difference between a
-  contract a second implementer finds and one they do not.
-- **S3. `CHANGELOG.md`'s new entry points users at `advances/M4/`.** A user-facing changelog
-  referencing an internal advance directory is unusual for this repo; the `docs/vault-format.md`
-  link alone would read better.
-- **S4. `reader.close()` is skipped on assertion failure** in six cases
-  (`vault-format-conformance.test.ts:183`, `197`, `211`, `243`, and the surrounding blocks).
-  Harmless today — `SqliteVaultSessions.withSession` closes the database in a `finally`
-  (`vault-sessions.ts:30-34`) and `close()` only clears an in-memory keychain entry — but it
-  is a pattern that stops being harmless the moment the reader owns anything real. A small
-  `unwrap(result)` helper that throws would remove the repeated
-  `expect(result.ok).toBe(true); if (!result.ok) return;` and make `close()` unconditional.
-- **S5. `fixtureVersion` is published and never read** (`manifest.json:2`,
-  `golden-vault.ts:27`). Either assert it in the conformance test so a fixture-format change
-  is a deliberate act, or drop it.
-- **S6. §9 omits the `Handoffs` label.** `context-pack-markdown.ts:11` defines it; it is
-  currently unreachable because `SECTION_TYPE_ORDER` excludes `handoff`. Worth one sentence so
-  an implementer reading the table does not think the renderer is incomplete.
-- **S7. Branch history retains the deleted spike artifacts.** A `--no-ff` merge carries
-  `m4-tier-c-spike.yml`, `m4-option2-spike.yml`, the SPM package and a second encrypted
-  fixture into `main`'s history permanently. The final tree is clean and none of it contains a
-  real secret, so the acceptance criterion is met — but squashing the six `ci(M4):` commits
-  before merge would keep `main`'s history matching what the advance actually shipped.
+**No hard gate is breached.**
 
 ---
 
-## 6. What would flip this to PASS
+## 6. Did the fix commit introduce anything new?
 
-1. **C1** — answer the write round-trip with an explicit PASS/FAIL in `spike.md` row 7 and
-   `docs/vault-format.md` §13, using the Option 2 harness that already executes, and remove
-   the stale "blocked on C2" paragraph. (Or record Oscar's explicit waiver of refined §8's
-   write-round-trip checkbox.)
-2. **C2** — `expect(built.keyHex).toBe(manifest.keyHex);` in the rebuild case, so the
-   published Argon2id vector cannot drift silently.
-3. **C3** — relabel the Darwin/arm64 execution honestly in `spike.md` (platform column,
-   Results row 11) and in `docs/vault-format.md` §13.
-4. **W1** — paste the three FTS5 triggers verbatim into `docs/vault-format.md` §6.
+Checked deliberately, since a fix commit is where regressions hide.
 
-W2–W6 and S1–S7 are not merge blockers, but W4 and W5 are cheap and directly serve this
-document's stated purpose (a second implementation that never reads `src/`), so they are
-worth taking in the same pass.
+- **No scope creep.** Three files, all in the advance's own footprint. No `src/` production
+  module, no dependency, no CI job, no roadmap edit.
+- **No new unsubstantiated claim.** Every new assertion in the fix commit is either something I
+  reproduced (write round-trip, triggers verbatim) or a *weakening* of a prior claim (C3).
+  The one exception is a stale pointer, **W1** below.
+- **Suite intact.** Still 241 tests; the C2 fix strengthened an existing case rather than adding
+  a decorative one.
+- **The C3 edit is a genuine retreat, not a rewording that preserves the overclaim.** The
+  Option 2 conclusion at `spike.md:372-378` now says "confirmed on every platform that could be
+  executed, and compiles clean on the two that couldn't", where it previously said "confirmed".
 
-**What this advance got right, and should not be lost in a revision:** the cipher parameters
-are probed from a live database rather than transcribed from documentation, and the exact key
-set is asserted (`vault-format-conformance.test.ts:154-163`) so a dependency bump cannot drift
-silently; the raw-key salt convention — the single fact most likely to strand a mobile client
-— is verified against the file's own bytes (`:165-172`); the read-only discipline the contract
-demands of others is enforced on this repo by the SHA-256 no-mutation case (`:248-260`); the
-regeneration path fails on purpose so a stray env var can never green-wash CI (`:116-118`);
-and the spike reports a headline **FAIL** on the advance's own premise, then does the harder
-work of proving the fallback empirically instead of asserting it. That is the honest version
-of this advance, and it is why the fixes above are small.
+---
+
+## 7. Issues (all non-blocking)
+
+### Warning
+
+**W1. `docs/vault-format.md:535` still promises source that is not there.**
+The §13 pointer reads "See `advances/M4/spike.md` §'Option 2 verification' and §'Write
+round-trip verification' for the full detail, **including the exact commands and C source**, so
+this can be independently re-checked or re-run." Neither section contains C source or a compile
+command. The Option 2 `main.c` exists only in this branch's deleted history
+(`git show a977045:advances/M4/option2-spike/main.c`); the write harness was never committed
+anywhere. This is the same class of defect as C3 — a claim about evidence that overstates what
+is actually in hand — in a document whose whole premise is that it must not do that.
+*Fix (either):* inline the ~60-line write harness and its `cc` line into `spike.md` §"Write
+round-trip verification" (it is fixture-only C, so it lands nothing that violates refined §8's
+"no toolchain in this repo"); **or** reword to "…for the full detail and exact results; the
+Option 2 harness source is preserved in this branch's history at
+`a977045:advances/M4/option2-spike/main.c`."
+
+**W2. `docs/vault-format.md` §13's results table does not carry the write-round-trip PASS.**
+Row `:478` still reads `| Write round-trip (literal iOS) | C | DEFERRED — informational only |`
+and there is no PASS row; the answer lives only in prose at `:528-532`. A table exists to be
+scanned, and this one now understates the advance's own result. The adjacent row `:477`
+("Rendered pack / search byte-match … DEFERRED — **blocked on a compatible SQLCipher build
+existing**") also carries a reason that is now stale — a compatible build was verified; the
+real blocker is that nobody has reimplemented the pack/render algorithm in a second language.
+*Fix:* add `| Write round-trip (mobile-side amalgamation write → desktop openVaultDb /
+SearchContext read) | — | **PASS** |`, keep the literal-iOS row as `DEFERRED`, and reword
+`:477`'s reason to "no second implementation of the pack/render algorithm exists yet".
+
+### Suggestion
+
+- **S1. The second published Argon2id vector is still unpinned.** `docs/vault-format.md:105`
+  (8192 KiB / t=1) is the vector that proves "parameters come from the header", and it is the
+  one a second implementation would use to test that path. I verified it by hand; nothing in
+  the suite defends it. One extra `deriveKey` call in the same case would close it, at ~50 ms.
+- **S2. Results rows 7 and 14 are the same answer twice.** `spike.md:431` and `:438` both record
+  the write round-trip as PASS. Row 7 also silently lost its `(literal iOS)` scoping and its
+  Tier (`C` → `—`), so the literal-iOS write question no longer has a row — whereas the Option 2
+  table correctly kept a separate "iOS device target" row for exactly that distinction. *Fix:*
+  keep row 7 as `Write round-trip on literal iOS | C | DEFERRED` and let row 14 carry the PASS.
+- **S3. Three cross-references point the wrong way**, two of them introduced by the fix commit.
+  `spike.md:301` says "see 'Write round-trip verification' **above**" — that section is at
+  `:380`, below it. `spike.md:431` and `:438` say "**below**" — it is above them. Small, but this
+  is the runbook that is meant to be navigable "with no context from this plan".
+
+### Still standing from the previous pass (explicitly out of scope this round — noted, not penalised)
+
+- **W3 (prev W2)** — `DEFERRED` vs plan D-4's `PENDING` for genuinely open rows
+  (`spike.md:427/429/430`, `docs:475-478`).
+- **W4 (prev W3)** — the label `C3` still names two different steps (`spike.md:195` and `:293`);
+  the new text at `:257` refers to the latter.
+- **W5 (prev W4)** — `docs/vault-format.md:296` still under-specifies section-label budgeting.
+  The implementation charges labels three different ways (`context-pack.ts:90`, `:107-108`,
+  `:120`); an implementer charging by-type labels eagerly would truncate early and diverge from
+  `expected-pack.md`. This is the most likely real-world source of a byte-mismatch for a second
+  implementation, and it is cheap to fix.
+- **W6 (prev W5)** — `docs/vault-format.md:324-326` still says "'latest' means exactly one,
+  always", but `context-pack.ts:104` picks the newest handoff **not already pinned**.
+- **W7 (prev W6)** — `MAX_LIMIT`/`DEFAULT_LIMIT` (`search-context.use-case.ts:14-15`) are
+  published at `docs/vault-format.md:401` and pinned by nothing;
+  `manifest.searchLimitDefault` is declared and never read.
+- **S4–S10 (prev S1–S7)** — `FixedIds` placement, no README link to the new contract,
+  `CHANGELOG` pointing at `advances/M4/`, `reader.close()` skipped on assertion failure,
+  unread `fixtureVersion`, the unreachable `Handoffs` label, and the six `ci(M4):` commits that
+  a `--no-ff` merge carries into `main`'s history.
+
+W5 and W6 remain the two I would most want taken before this document is handed to a second
+implementer, since they are the only places where the contract is *wrong* rather than merely
+incomplete. Neither blocks this advance.
+
+---
+
+## 8. Summary
+
+The previous FAIL turned on two missing answers and one overstated one. All three are closed on
+their merits, not on assertion: the write round-trip is real and I reproduced it end to end, the
+Argon2id vector is now defended by a test that actually bites, and the Apple-platform claim has
+been narrowed to exactly what was executed. W1 is closed byte-for-byte. The fix commit is small,
+in-footprint, and introduces no regression.
+
+What is left is one stale pointer (**W1**), one table row that undersells the advance's own
+result (**W2**), and a list of pre-existing non-blocking items. None of them touch the security
+surface, the suite, the ritual, or the repo's conventions.
+
+**Verdict: PASS.**
