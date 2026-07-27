@@ -1,0 +1,70 @@
+{
+  "single-term": [
+    {
+      "id": "item-a01",
+      "project": "alpha",
+      "type": "decision",
+      "content": "We chose SQLCipher for at-rest encryption; it lets the same vault.db file live inside a synced folder without ever exposing plaintext to the sync client.",
+      "tags": ["security", "storage"],
+      "pinned": false,
+      "createdAt": "2026-01-01T01:00:00.000Z"
+    }
+  ],
+  "two-term-and": [
+    {
+      "id": "item-a06",
+      "project": "alpha",
+      "type": "handoff",
+      "content": "Handoff: the golden vault fixture is ready for the conformance test; next step is the cipher-parameter probe.",
+      "tags": ["handoff"],
+      "pinned": false,
+      "createdAt": "2026-01-01T06:00:00.000Z"
+    }
+  ],
+  "quoted-term-no-match": [],
+  "imported-only": [
+    {
+      "id": "item-a10",
+      "project": "alpha",
+      "type": "imported",
+      "content": "Imported conversation snippet: discussed database choices with the assistant.",
+      "tags": [],
+      "pinned": false,
+      "source": "chatgpt-import",
+      "createdAt": "2026-01-01T10:00:00.000Z"
+    }
+  ],
+  "archived-excluded": [],
+  "project-scoped": [
+    {
+      "id": "item-b02",
+      "project": "beta",
+      "type": "fact",
+      "content": "Beta project exists to prove per-project search scoping.",
+      "tags": ["scope"],
+      "pinned": false,
+      "createdAt": "2026-01-02T02:00:00.000Z"
+    }
+  ],
+  "whitespace-only": [],
+  "limit-truncation": [
+    {
+      "id": "item-a04",
+      "project": "alpha",
+      "type": "fact",
+      "content": "The vault's schema is currently at version 3 — search scoping is verified per project.",
+      "tags": [],
+      "pinned": false,
+      "createdAt": "2026-01-01T04:00:00.000Z"
+    },
+    {
+      "id": "item-a06",
+      "project": "alpha",
+      "type": "handoff",
+      "content": "Handoff: the golden vault fixture is ready for the conformance test; next step is the cipher-parameter probe.",
+      "tags": ["handoff"],
+      "pinned": false,
+      "createdAt": "2026-01-01T06:00:00.000Z"
+    }
+  ]
+}
