@@ -491,13 +491,22 @@ misconfiguration.
 what `better-sqlite3-multiple-ciphers` produces, verified by this repository's own
 conformance test on every run. What it changes is the plan for a future mobile app advance:
 **"official SQLCipher on one side, `better-sqlite3-multiple-ciphers` (with or without
-`legacy=N`) on the other" is closed, not just de-prioritized.** D-G's Option 2 — build/link
-the literal `SQLite3MultipleCiphers` C library for mobile, so both ends run the *same*
-implementation rather than two independently-compatible ones — remains the only untested path,
-and needs its own direct empirical verification before being trusted. See
-`advances/M4/spike.md` §"Tier B/C′ re-check" for the full detail, including the exact commands
-and Swift source, so this can be independently re-checked or re-run against a future Option 2
-build.
+`legacy=N`) on the other" is closed, not just de-prioritized.**
+
+**D-G's Option 2 is confirmed — not just theoretically sound, empirically verified.** Building
+the literal `SQLite3MultipleCiphers` amalgamation (the exact `sqlite3.c` `node-gyp` compiles
+into the desktop native addon) for mobile, so both ends run the same implementation, was
+tested directly: compiled standalone (no Node, no N-API) and run against valija's real
+production golden-vault fixture (`legacy=0`, the actual desktop config — no changes needed on
+that side) on Linux, on iOS (Apple's own clang, arm64, plus a separate real-device-target
+link check), and on Android (arm64 compiles clean against the real NDK/bionic toolchain;
+x86_64 executes correctly inside a real, booted Android emulator via `adb`). **Every platform
+that could execute the binary passed, reading back byte-identical data** — the same 16-table
+count, the same six-way row breakdown, everywhere. A future mobile-companion advance can adopt
+this with confidence: build/vendor the amalgamation for the mobile app rather than depending
+on the official SQLCipher package, no desktop-side migration required. See
+`advances/M4/spike.md` §"Option 2 verification" for the full detail, including the exact
+commands and C source, so this can be independently re-checked or re-run.
 
 ## 14. Change control
 

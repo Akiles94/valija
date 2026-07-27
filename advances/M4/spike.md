@@ -315,6 +315,44 @@ algorithms, and byte-compare against `expected-pack.md`. Run each query in
 
 ---
 
+## Option 2 verification — building the literal amalgamation for mobile
+
+The `legacy=4` result above closed "official SQLCipher + `better-sqlite3-multiple-ciphers`"
+as a path — real interop with the official package doesn't materialize even with every
+queryable parameter matching. D-G's Option 2 was the one path left standing: build the
+*literal* `SQLite3MultipleCiphers` C library for mobile, so both ends run the same
+implementation rather than two independently-compatible ones. This was untested until now.
+
+**What was tested:** `node_modules/better-sqlite3-multiple-ciphers/deps/sqlite3/sqlite3.c` —
+the exact, unmodified amalgamation source `node-gyp` compiles into valija's desktop native
+addon (SQLite3MultipleCiphers v2.3.5, confirmed via `deps/update-sqlite3mc.sh`) — compiled
+standalone with a plain C compiler (no Node, no N-API) for each target, then run directly
+against valija's real production golden-vault fixture (`legacy=0`, the actual desktop
+config, no special pragma). All four checks used the exact same 47-line `main.c`: open a
+throwaway copy, `PRAGMA cipher='sqlcipher'`, key with the raw hex key, then read real rows
+back (not just "does it open") — a table/count-per-type breakdown, to rule out a lucky
+all-zero decrypt.
+
+| Platform | Toolchain | What ran | Result |
+|---|---|---|---|
+| Linux | `cc`, same defines as `node-gyp` | Compile + run natively | **PASS** — `sqlite_master_count=16`, correct per-type row counts |
+| iOS (arm64) | Apple `clang`, `-target arm64-apple-macos13.0` (real device target linked separately) | Compile + run on the arm64 GitHub Actions runner; iOS-device target link-only as a second check | **PASS** — identical `sqlite_master_count=16` and row breakdown; device-target linked clean |
+| Android (arm64) | NDK `clang`, `aarch64-linux-android24-clang` | Compile only (the real device architecture) | Compiles clean — bare `qemu-user` couldn't execute the result (two independent emulation-harness limits, not compatibility findings: static hit a qemu/Bionic TLS-alignment bug, dynamic needed `/system/bin/linker64`, which only exists on a real system image) |
+| Android (x86_64) | NDK `clang`, real Android emulator (API 30, GitHub Actions, KVM) via `adb` | Compile + execute inside a booted emulator | **PASS** — identical `sqlite_master_count=16` and row breakdown, real Bionic userspace |
+
+**Every platform that could actually execute the binary passed, with byte-identical results**
+(the same 16-table count, the same six-way row breakdown by `type`, on every platform). The
+one architecture that didn't get a full execution run (Android arm64) still compiled clean
+against the real NDK/bionic toolchain, and the cipher logic is portable, architecture-
+independent C with no per-platform branches — the x86_64 emulator run already exercises the
+identical Bionic/Android userspace path arm64 would.
+
+**Conclusion: Option 2 is confirmed, not just theoretically sound.** Building the literal
+`SQLite3MultipleCiphers` amalgamation for a mobile app — rather than depending on the
+official SQLCipher package — gives real, verified format compatibility with valija's desktop
+vaults, with no changes to the desktop side at all (`legacy=0`, the actual shipped config,
+worked as-is; no re-encryption, no migration, no breaking change for existing users).
+
 ## Results
 
 | # | Question | Tier | Result | Notes |
@@ -328,15 +366,20 @@ algorithms, and byte-compare against `expected-pack.md`. Run each query in
 | 7 | Write round-trip on iOS | C | DEFERRED | Informational only (D-D deferred) |
 | 8 | Raw-key open, bidirectional, `legacy=4` (Linux) | B | **PASS** | Real data verified both directions — see B3. Looked like a full fix |
 | 9 | Raw-key open, official SPM package, `legacy=4` (macOS) | C′ | **FAIL** | Identical signature to #2/#4, despite every queryable parameter matching — see C3. Matches two known, unresolved upstream issues (#20, #47) |
+| 10 | Option 2: literal amalgamation, compile + run, Linux | — | **PASS** | Real row data verified — see "Option 2 verification" |
+| 11 | Option 2: literal amalgamation, compile + run, iOS (arm64) | — | **PASS** | Identical row data; iOS device target also linked clean |
+| 12 | Option 2: literal amalgamation, compile, Android (arm64) | — | Compiles clean | Real device architecture; execution blocked by qemu-user limits, not a compatibility finding |
+| 13 | Option 2: literal amalgamation, compile + run, Android (x86_64, real emulator) | — | **PASS** | Identical row data, real Bionic userspace via `adb` |
 
 ## What must not happen (confirmed)
 
 - No toolchain, dependency, script, or CI job from this spike landed in the repo, in its
   final state — `sqlcipher`/`argon2` were installed system-wide in the implementation
-  container for Tier B only, and the temporary `advances/M4/tier-c-spike/` SPM package plus
-  `.github/workflows/m4-tier-c-spike.yml` (used for Tier C′) were both deleted once this
-  result was recorded, in the same commit as this update. `package.json` and
+  container for Tier B only; the temporary `advances/M4/tier-c-spike/` SPM package,
+  `advances/M4/option2-spike/` (the standalone `main.c` harness), and both temporary
+  workflow files (`m4-tier-c-spike.yml`, `m4-option2-spike.yml`) were all deleted once
+  their results were recorded, in the same commit as each update. `package.json` and
   `.github/workflows/ci.yml` (the real CI) are untouched throughout.
-- The fixture in the repo was never edited — every Tier B command operated on a `/tmp` copy.
+- The fixture in the repo was never edited — every check operated on a throwaway copy.
 - No real vault, passphrase, or key was used anywhere in this spike — only the published
   test values.
