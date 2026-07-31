@@ -1,13 +1,19 @@
 # MOBILE — minimal real mobile app proof of concept · Refined Spec
 
-**Status:** Awaiting Gate R. Nothing below is approved. Every `P-n` in §7 is open and carries a
-recommended default, not a decision.
-**Directory:** `MOBILE`, deliberately not a milestone number — see **P-4**, which decides whether
-that stays true and whether `docs/SPEC.md` §2's Out line must change.
+**Status:** All twelve `P-n` decisions in §7 are now recorded (each carries a **Decided:** line
+under its options). Gate R itself is **not yet approved** — this document does not carry an
+`Approved:` line, and none is added until Oscar gives it explicitly. One open operational point
+raised by P-3's outcome (where `plan.md`/`review.md` live, now that the PoC code has a separate
+home in `valija-mobile`) is flagged inline under P-3 and still needs Oscar's confirmation before
+`task-planner` runs.
+**Directory:** `MOBILE`, deliberately not a milestone number — per **P-4**, decided: the Out line
+in `docs/SPEC.md` §2 gets corrected, but no milestone number is assigned.
 **Inherits from:** `advances/M4/refined.md` (Gate R approved, Oscar 2026-07-26),
 `advances/M4/spike.md`, `docs/vault-format.md`, `src/testing/__fixtures__/golden-vault/`.
-**Legend:** each decision in §7 lists the options on the table, then a **Default:** line with its
-reason. The main agent presents these at Gate R; Oscar decides.
+**Companion repo:** [`akiles94/valija-mobile`](https://github.com/akiles94/valija-mobile), created
+and seeded 2026-07-31 (P-3), holds the PoC's Kotlin/Compose Multiplatform code.
+**Legend:** each decision in §7 lists the options on the table, a **Default:** line with its
+reason, and now a **Decided:** line with the outcome and Oscar's own words.
 
 ---
 
@@ -272,6 +278,11 @@ Gate-R material and neither should be resolved silently.
   as a split across advances, and it keeps a clean cut line for the highest-variance work. If Oscar
   wants D-E honoured strictly, Option 1 is the coherent choice — but the advance should then say
   plainly in `poc.md` that G2 remains open, rather than implying the platform question is closed.
+- **Decided: Option 2 — both platforms, in one pass, treated as equal deliverables**, overriding the
+  recommended Option 3 gated sequence. Oscar: "For both," confirmed against this exact reading (no
+  cut line, Android is not droppable if iOS overruns). §4, §6, and §9's "Android slice may be cut"
+  contingency language no longer applies — the planner should read both platforms as equally
+  mandatory, not one gating the other.
 
 ### P-2. What "shows a value" means — the depth of the on-screen result
 
@@ -302,6 +313,7 @@ Gate-R material and neither should be resolved silently.
   under §5's pyramid, most of the Option 3 work is JVM-testable and does not consume device time.
   *If Gate R wants the smallest possible advance, Option 2 is the honest floor* — it still closes
   G1/G2/G3/G6, which are the execution gaps Oscar named.
+- **Decided: Option 3**, matching the recommended default. Oscar: "Your recommendation then."
 
 ### P-3. Where the PoC code lives, and whether it survives the advance
 
@@ -336,6 +348,17 @@ behind. This advance produces real, if disposable, application code.
   it acquires unearned authority. Option 2 is a reasonable, cheap alternative **if** Oscar's
   priority is that the app advance start from running code rather than a recipe — in which case the
   plan must state that the tree is explicitly non-authoritative scaffolding.
+- **Decided: Option 3**, overriding the recommended Option 1 (throwaway). Oscar: "Seed the real
+  valija mobile repo" / "valija-mobile is ok, public, same account." The repo
+  [`akiles94/valija-mobile`](https://github.com/akiles94/valija-mobile) was created 2026-07-31 and
+  seeded the same day with this repo's `.claude/` directory (agent definitions + guard hooks,
+  copied verbatim per Oscar: "We can copy the .claude directory with the agents definitions"),
+  commit `f02c3ca`. **Open operational point, not one of the original 12, surfaced by this answer:**
+  with the PoC code living in a second repo, does `plan.md`/`review.md` for this advance stay in
+  `valija/advances/MOBILE/` (spec, plan, evidence, and doc fixes here; `valija-mobile` holds only
+  the code, ordinary commits, no separate gate) — or does the advance's plan/review/ship cycle move
+  to `valija-mobile` too? Flagged for Oscar to confirm at Gate R sign-off; not blocking the decisions
+  recorded in this section.
 
 ### P-4. The roadmap: `docs/SPEC.md` §2 and the milestone number
 
@@ -355,6 +378,8 @@ specs-are-contracts rule. This advance builds a running mobile application. Two 
 - **Default: Option 1.** Reason: the word "rejected" is now demonstrably false, and it is false in a
   document this project treats as a contract. Correcting a false statement is not the same as
   scheduling work, and the fix is small and honest.
+- **Decided: Option 1**, matching the recommended default. Executed as part of this advance's own
+  deliverables (§6 In item 9), during implementation — not before Gate R.
 
 **(b) Does mobile get a milestone number now?**
 - **Option 1 — no number.** Stay `MOBILE`, same posture M4 held.
@@ -365,6 +390,9 @@ specs-are-contracts rule. This advance builds a running mobile application. Two 
   does not tell you how long the ladder is. Number it at the *next* Gate R, when there is a scoped
   app to number. *(If Gate R disagrees, note that assigning a number also forces a decision about
   §9's standing promise that per-tool scoping "arrives in M4" — the same collision M4's D-A mapped.)*
+- **Decided: Option 1**, matching the recommended default, explicitly re-confirmed by Oscar in the
+  final round: "The not yet recommendation its ok for me since I don't think it is fittable for a
+  milestone number per se."
 
 ### P-5. What counts as proof — the evidence standard
 
@@ -381,6 +409,7 @@ The whole advance is an evidence artifact, so this is not a formality.
 - **Default: Option 3.** Reason: the M4 review's one FAIL-worthy finding was a claim scoped more
   broadly than its evidence. The screenshot is what Oscar asked for; the exit code is what keeps it
   true; the disclosure is what keeps the advance from repeating C3. All three are cheap.
+- **Decided: Option 3**, matching the recommended default. Oscar: "Default is ok."
 
 **Non-negotiable regardless of the option chosen:** the phrase "ran on iOS" may only describe an
 iOS simulator or device, never macOS. The simulator's own limits are stated at the point of claim —
@@ -412,6 +441,10 @@ Two independent sub-decisions with different mechanics and different costs.
   prompted this advance; closing it with x86_64 again would be the same substitution M4 already
   disclosed. Naming a fallback ladder up front prevents the advance from quietly settling for the
   weakest rung.
+- **Decided: Option 4**, overriding the recommended emulator-first fallback ladder. Oscar has a
+  physical Android phone and will test on it directly: "I have an IOS and an android physical
+  mobile so I can test it there." A real device is the strongest possible answer to G2 and makes the
+  emulator fallback ladder moot for this advance.
 
 **(b) A physical iOS device (beyond the simulator).**
 - **Option 1 — simulator only.** No Apple Developer account, no provisioning profile, no signing
@@ -425,6 +458,10 @@ Two independent sub-decisions with different mechanics and different costs.
   delta — signing, entitlements, Secure Enclave, thermals, store review — is not exercised by any
   part of this PoC anyway, since D-I and D-K are out of scope. Buying an Apple Developer account to
   test a screen that shows a fixture is not proportionate. **The gap must be stated, not implied.**
+- **Decided: Option 3**, overriding the recommended simulator-only default. Oscar has a physical
+  iPhone and access to a Mac to build for it: "I can borrow a friend's mac, so we can take it as I
+  have a mac." This resolves the "needs a Mac he does not have" trade-off originally listed against
+  this option — a real device via a borrowed Mac + Xcode, not simulator-only.
 
 ### P-7. Argon2id on device
 
@@ -441,6 +478,9 @@ Two independent sub-decisions with different mechanics and different costs.
   in the spec today. The marginal cost is one more small C library through interop machinery the
   advance is already building. **Mandatory caveat:** simulator and emulator timings are not device
   timings and must be reported as indicative only, with the hardware named.
+- **Decided: Option 2**, matching the recommended default. Since P-6 landed on real physical devices
+  for both platforms, this timing will be a genuine on-device measurement, not the simulator/emulator
+  proxy the caveat above anticipated.
 
 ### P-8. KMP shape
 
@@ -454,6 +494,14 @@ Two independent sub-decisions with different mechanics and different costs.
 - **Default: Option 1.** Reason: the PoC's job is to test the decided architecture, not a
   convenient one. The UI is a single text view — the saving from Option 2 is small, and it comes at
   the cost of leaving the exact interop boundary D-E gambled on unexercised.
+- **Decided: Option 2**, explicitly overriding the recommended Option 1. Oscar: "No, maybe there
+  was a missunderstood, I want it with compose multiplatform instead of two separated swift, kotlin
+  UI, so option 2." Compose Multiplatform is the shared UI layer on both platforms, not just the
+  domain core. This does not remove the risky interop boundary — Kotlin/Native cinterop on iOS and
+  JNI/NDK on Android are still exercised beneath the port (§5) — it only means the UI calling into
+  that port is one Compose codebase instead of SwiftUI-plus-a-native-Android-view. The planner
+  should adjust §5's "thin native shell per platform" language to "a thin Compose Multiplatform
+  shell, shared across platforms" accordingly.
 
 ### P-9. How the PoC gets a vault
 
@@ -466,6 +514,10 @@ Two independent sub-decisions with different mechanics and different costs.
   platform APIs, exactly as M4's D-H says. **The snapshot-copy discipline is kept anyway** — opening
   a copy rather than the bundled resource costs nothing and makes the read-only guarantee structural
   from the first line of code (`docs/vault-format.md` §11).
+- **Decided: Option 1**, matching the recommended default. Oscar first asked for the real picker
+  ("Implement the real document picker"), then reversed on reflection: "since it is a poc I will go
+  with a easier approach, what do you recommend?" — and agreed with Option 1. No document picker;
+  bundled fixture only.
 
 ### P-10. Amalgamation sourcing, pinning, and licensing
 
@@ -489,6 +541,9 @@ Two independent sub-decisions with different mechanics and different costs.
   valija artifact. SQLite itself is public domain; `SQLite3MultipleCiphers` carries its own licence
   (believed MIT — **the plan must verify, not assume**), and valija is Apache-2.0. Attribution
   obligations must be identified and satisfied in whatever tree the PoC lands in (P-3).
+- **Decided: Option 1**, matching the recommended default, accepted via "go with your
+  recommendations." The vendored `sqlite3.c`'s hash, compile flags, and verified licence terms are
+  recorded in `valija-mobile` (P-3), attributed per whatever that licence requires.
 
 ### P-11. CI job lifecycle
 
@@ -505,6 +560,14 @@ Two independent sub-decisions with different mechanics and different costs.
   tree. Reason: a CI job that builds code that no longer exists is dead weight; a kept tree with no
   way to re-verify it is worse. Under no option does the mobile job join the existing `ci.yml`
   matrix — `npm run lint/typecheck/test/build` on three OSes must stay untouched and unslowed.
+- **Decided: superseded by P-3.** None of Options 1–3 apply as written, since they all assumed the
+  PoC's code — and therefore its CI — lives inside `valija`. P-3 went a different way (a separate
+  `valija-mobile` repo), so the recommendation actually adopted is: **`valija`'s `.github/workflows/`
+  gets zero mobile-related jobs, temporary or permanent** — this repo's existing `ci.yml` matrix is
+  the only thing that runs here, unchanged. CI for the PoC (iOS simulator + Android device/emulator
+  builds) is entirely `valija-mobile`'s own concern, decided at that repo's own planning stage —
+  which may reuse M4's temporary-workflow discipline, but that is an independent decision, not this
+  advance's. Accepted by Oscar as part of "last questions I will go with your recommendations."
 
 ### P-12. Corrections to `docs/vault-format.md`
 
@@ -526,6 +589,9 @@ published but pinned by no test).
   `docs/vault-format.md` §14 **no fixture regeneration and no `src/` change is expected**; if a
   correction ever *would* require changing `src/` behaviour, that is a finding to escalate at the
   next Gate R, not a change to make inside this advance.
+- **Decided: Option 1**, matching the recommended default, accepted via "go with your
+  recommendations." `docs/vault-format.md` gets fixed in `valija` (this repo) in the same advance,
+  driven by real byte mismatches surfaced while implementing in `valija-mobile`.
 
 ---
 
