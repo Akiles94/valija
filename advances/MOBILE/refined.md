@@ -1,11 +1,12 @@
 # MOBILE — minimal real mobile app proof of concept · Refined Spec
 
-**Status:** All twelve `P-n` decisions in §7 are now recorded (each carries a **Decided:** line
-under its options). Gate R itself is **not yet approved** — this document does not carry an
-`Approved:` line, and none is added until Oscar gives it explicitly. One open operational point
-raised by P-3's outcome (where `plan.md`/`review.md` live, now that the PoC code has a separate
-home in `valija-mobile`) is flagged inline under P-3 and still needs Oscar's confirmation before
-`task-planner` runs.
+Approved: Oscar 2026-07-31
+
+**Status:** Gate R approved. All twelve `P-n` decisions in §7 are recorded (each carries a
+**Decided:** line under its options). The one open operational point raised by P-3's outcome —
+where `plan.md`/`review.md` live now that the PoC code has a separate home in `valija-mobile` — is
+resolved: **Option A**, this advance's plan, review, and ship cycle stay in `valija`'s
+`advances/MOBILE/`; `valija-mobile` holds only the code, via ordinary commits, no separate gate.
 **Directory:** `MOBILE`, deliberately not a milestone number — per **P-4**, decided: the Out line
 in `docs/SPEC.md` §2 gets corrected, but no milestone number is assigned.
 **Inherits from:** `advances/M4/refined.md` (Gate R approved, Oscar 2026-07-26),
@@ -353,12 +354,10 @@ behind. This advance produces real, if disposable, application code.
   [`akiles94/valija-mobile`](https://github.com/akiles94/valija-mobile) was created 2026-07-31 and
   seeded the same day with this repo's `.claude/` directory (agent definitions + guard hooks,
   copied verbatim per Oscar: "We can copy the .claude directory with the agents definitions"),
-  commit `f02c3ca`. **Open operational point, not one of the original 12, surfaced by this answer:**
-  with the PoC code living in a second repo, does `plan.md`/`review.md` for this advance stay in
-  `valija/advances/MOBILE/` (spec, plan, evidence, and doc fixes here; `valija-mobile` holds only
-  the code, ordinary commits, no separate gate) — or does the advance's plan/review/ship cycle move
-  to `valija-mobile` too? Flagged for Oscar to confirm at Gate R sign-off; not blocking the decisions
-  recorded in this section.
+  commit `f02c3ca`. **Operational point surfaced by this answer, resolved at Gate R sign-off:** with
+  the PoC code living in a second repo, `plan.md`/`review.md` for this advance stay in
+  `valija/advances/MOBILE/` (Option A) — spec, plan, evidence, and doc fixes here; `valija-mobile`
+  holds only the code, via ordinary commits, no separate gate of its own.
 
 ### P-4. The roadmap: `docs/SPEC.md` §2 and the milestone number
 
