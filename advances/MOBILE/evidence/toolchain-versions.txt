@@ -1,0 +1,21 @@
+# Toolchain used for the checks recorded in poc.md
+
+## This sandbox (Linux) — the JVM and full-stack-interop rows
+os:          Linux 6.18.5 x86_64
+gcc:         gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+java:        openjdk version "21.0.10" 2026-01-20 (Temurin/Ubuntu build 21.0.10+7)
+gradle:      Gradle 8.14.3
+kotlin:      2.1.20 (via Gradle plugin)
+
+## Declared for the CI and device builds (gradle/libs.versions.toml)
+kotlin = "2.1.20"
+agp = "8.7.3"
+compose-multiplatform = "1.7.3"
+kotlinx-serialization = "1.7.3"
+android-compile-sdk = "35"
+android-min-sdk = "24"
+android-target-sdk = "35"
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
