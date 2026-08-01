@@ -45,9 +45,9 @@ Every row names the hardware that produced it. Rows a device must produce say `P
 | — | Read-only: fixture unmutated, no `-wal`/`-shm`/`-journal` produced | Same | **PASS** |
 | — | Vendored C compiles through the **real Android NDK** for `arm64-v8a` **and** `x86_64` | GitHub Actions `ubuntu-latest`, AGP 8.7.3 + NDK via CMake | **PASS** — `:composeApp:assembleDebug` green |
 | — | Vendored C compiles and archives through **real Xcode clang** for `arm64-apple-ios` **and** `arm64-apple-ios-simulator` | GitHub Actions `macos-latest` | **PASS** — `build-apple-native.sh` green for both targets |
-| G3a | JNI/NDK → amalgamation executing on Android | x86_64 emulator, GitHub Actions | **NOT REACHED** — job failed earlier, at the APK-permissions step (§3a) |
-| G3b | Kotlin/Native cinterop → amalgamation executing | iOS **simulator**, GitHub Actions `macos-latest` | **FAIL** — the cinterop conformance step failed after the native build succeeded (§3a) |
-| — | APK declares zero permissions | GitHub Actions | **NOT ESTABLISHED** — the check step itself failed (§3a) |
+| G3a | JNI/NDK → amalgamation executing on Android | x86_64 **emulator**, GitHub Actions | **PASS** — `:vault-interop:connectedAndroidTest` green (§3a) |
+| G3b | Kotlin/Native cinterop → amalgamation executing | iOS **simulator**, GitHub Actions `macos-latest` | **PASS** — `:vault-interop:iosSimulatorArm64Test` green (§3a) |
+| — | APK declares zero permissions | GitHub Actions | **PASS** — `aapt2 dump badging` shows no `uses-permission` line |
 | **G1** | **App executes on a physical iPhone** | Oscar's iPhone, borrowed Mac + Xcode | **PENDING** |
 | **G2** | **App executes on physical Android arm64** | Oscar's Android phone | **PENDING** |
 | **G6** | **A real app process — bundle, sandbox, lifecycle, UI thread** | Both physical devices | **PENDING** |
@@ -77,6 +77,51 @@ say so rather than borrowing confidence from the compile step that did pass.
 A run that is red because a permissions-check invocation is wrong is not evidence that the app
 works. It is also not evidence that it does not. Both jobs need fixing and re-running before
 anything here is claimed.
+
+**Update — now green.** [`valija-mobile` run #11](https://github.com/akiles94/valija-mobile/actions/runs/30723496087)
+(commit `644e4e1`). **3 of 3 jobs green.** Getting there took several real, evidence-driven fix
+rounds rather than one; each is recorded because two of them disprove an earlier theory rather
+than confirm it:
+
+- **YAML**: an unquoted step name with a colon was parsed as a mapping key, producing a 0-job
+  workflow before any job could even start.
+- **Domain/iOS source-set configuration**: `KotlinSourceSet with name 'iosTest' not found`, then a
+  raw Gradle NPE from the same eager-lookup pattern once `androidTarget()` was in the mix.
+  `compilations.getByName("test").defaultSourceSet` (a proven, already-used API rather than a name
+  lookup) fixed it.
+- **Android permissions**: the merged manifest declared
+  `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`. First theory — `androidx.profileinstaller` — was
+  wrong; the next CI run showed the identical permission, unchanged, with the exclusion in place.
+  The real, confirmed cause was `androidx.core` itself; fixed with an explicit
+  `tools:remove` in `AndroidManifest.xml`.
+- **iOS cinterop compile**: `sqlite3`/`sqlite3_stmt` unresolved. SQLite's opaque, forward-declared
+  structs land in the shared `cnames.structs.*` namespace, not the `.def` file's own package.
+  While fixing this, a real correctness bug surfaced too: the original bound-parameter destructor
+  was effectively `SQLITE_STATIC`, a latent use-after-free — replaced with a manually reconstructed
+  `SQLITE_TRANSIENT` (cinterop cannot extract the C macro, which is a cast expression, not a
+  constant).
+- **iOS source-set duplication**: fixing the source-set lookup above (by explicitly re-adding
+  `src/iosTest/kotlin`) made `IosVaultConformanceTest.kt` a member of two source sets at once. The
+  shared `iosTest` source set turned out to already exist and be wired by Kotlin's own naming
+  convention; the explicit re-add was removed.
+- **iOS generated-constant visibility**: fixing source-set duplication then exposed
+  `Unresolved reference 'FIXTURES_PATH'` — the generated fixtures-path constant was wired onto each
+  leaf target's own `test` compilation, invisible to the shared parent `iosTest` source set the
+  test class actually lives in. Fixed by wiring it onto `iosTest` itself via a Gradle
+  live-collection filter (`sourceSets.matching { }.configureEach { }`), since eager name lookups on
+  that source set are what failed earlier in this same file.
+- **Android instrumented-test dependency, twice**: `Unresolved reference 'Test'` /
+  `assertEquals` / `assertTrue`. First attempt added `kotlin-test` to the plain AGP
+  `androidTestImplementation` configuration — the next CI run showed the identical errors,
+  unchanged, proving that fix did nothing. `kotlin-test` is a genuinely multiplatform artifact
+  with a distinct `androidJvm` Gradle Module Metadata variant; the plain AGP configuration carries
+  no Kotlin platform-type attribute to select it. The working fix routes it through
+  `kotlin { sourceSets { androidInstrumentedTest.dependencies { } } }` instead, the Kotlin-aware
+  path.
+
+G3a, G3b, and the zero-permissions claim are now established — see §2. Slice 9's physical-device
+rows (G1, G2, G6, and G5 on real hardware) are unaffected by any of this: no CI run, however
+green, is a substitute for them.
 
 ## 3. Claim scoping — what was **not** executed
 
