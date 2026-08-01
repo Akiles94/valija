@@ -516,6 +516,10 @@ Tiers A, B, and C′ are done — see `advances/M4/spike.md` for the full comman
 A literal iOS device/simulator run (Tier C) remains open, but is now lower priority: C′
 already answered the core question using the official SPM package on Apple's own toolchain.
 
+Since then, `advances/MOBILE/` built a real second implementation in Kotlin and exercised the
+vendored amalgamation through a real language boundary — the second table below. **No binary
+has yet executed on a physical phone**; those rows say so explicitly rather than being omitted.
+
 | Question | Tier | Result |
 |---|---|---|
 | Argon2id reference-C vector reproduction | B | **PASS** — exact match, two vectors (default and non-default params) |
@@ -524,8 +528,21 @@ already answered the core question using the official SPM package on Apple's own
 | Raw-key open, bidirectional, `legacy=4` (Linux) | B | **PASS** — real data verified, both directions |
 | Raw-key open, official SPM package, `legacy=4` (macOS) | C′ | **FAIL** — identical signature, despite every queryable parameter matching |
 | Argon2id on-device (literal iOS) | C | DEFERRED — low value, B1 already conclusive |
-| Rendered pack / search byte-match (literal iOS) | C | DEFERRED — blocked on a compatible SQLCipher build existing |
 | Write round-trip (literal iOS) | C | DEFERRED — informational only (D-D deferred) |
+
+**A second implementation now exists** (`advances/MOBILE/`, Kotlin), so the rows below are no
+longer hypothetical. Full detail and claim scoping: `advances/MOBILE/poc.md`.
+
+| Question | Where it ran | Result |
+|---|---|---|
+| Rendered pack byte-match, second implementation (Kotlin, unbudgeted `expected-export.md`) | Linux x86_64, JVM — no SQLite, no C, no device | **PASS** — 1887 bytes |
+| Rendered pack byte-match, second implementation (Kotlin, budgeted `expected-pack.md`) | Same | **PASS** — 967 bytes |
+| Vendored SQLite3MultipleCiphers amalgamation opens a real vault via Kotlin↔C interop | Linux x86_64, JDK 21, the same JNI bridge and vendored C the Android build compiles — **not an Android run** | **PASS** |
+| Argon2id derives the published key through that same interop path | Same | **PASS** — 155–178 ms on desktop-class silicon, *not a phone measurement* |
+| Wrong key surfaces as `WRONG_PASSPHRASE`, not corruption | Same | **PASS** |
+| Read-only: fixture unmutated, no `-wal`/`-shm`/`-journal` produced | Same | **PASS** |
+| Search byte-match (second implementation) | — | DEFERRED — the PoC deliberately omits the search path (`advances/MOBILE/refined.md` P-2), so no second implementation of it exists yet |
+| App execution on a physical iPhone / physical Android arm64 | — | **PENDING** — `advances/MOBILE/poc.md` §2. Nothing has run on a phone yet |
 
 **Argon2id is a closed question.** The reference C implementation (the same library both the
 npm `argon2` package and, per D-G, the iOS side are meant to link) reproduces valija's

@@ -28,7 +28,8 @@ One npm package. One binary surface: `valija`.
 - GUI, encrypted backup / restore → later (bumped from M3 by M3's redefinition, see §10b)
 - Scoped profiles, per-tool visibility → M4
 - Browser extension → M5
-- A valija-hosted sync service, mobile client → explicitly rejected / not scheduled (see §10b — M3 ships the lower-risk BYO-cloud slice instead)
+- A valija-hosted sync service → explicitly rejected (see §10b — M3 ships the lower-risk BYO-cloud slice instead)
+- Mobile client → not scheduled, but no longer rejected: a two-platform proof of concept validated the vault format and the toolchain (see `advances/MOBILE/poc.md`). No milestone number is assigned yet
 - Auto-capture (model decides what to save) — explicit saves only
 - Embeddings / semantic search / any AI inside the app — FTS only
 - Remote/HTTP MCP transport — local stdio only
@@ -228,9 +229,11 @@ pairing (rejected, not deferred); automatic conflict merge; telemetry or any "is
 client done yet?" polling; simultaneous multi-device use (the supported model is strictly
 sequential); a background daemon or OS sleep/shutdown hooks (idle auto-lock is deliberately
 lazy instead); `valija init --cloud <path>` (the plain `VALIJA_HOME` mechanism already
-suffices — deferred, not rejected, as a future convenience). Mobile is unscheduled; see
-`advances/M4/idea.md` for the raw idea and the note on why its milestone number is still
-tentative.
+suffices — deferred, not rejected, as a future convenience). Mobile is unscheduled but its
+feasibility is no longer open: `advances/MOBILE/poc.md` records a Kotlin Multiplatform proof of
+concept, and `docs/vault-format.md` §13 records what has actually executed where. A milestone
+number is still deliberately unassigned — a PoC shows the ceiling is reachable, not how long the
+ladder is.
 
 ---
 
