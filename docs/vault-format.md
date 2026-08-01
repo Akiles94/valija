@@ -306,15 +306,39 @@ catch that.
 - **Token estimate:** `estimateTokens(text) = ceil(text.length / 4)` — a character count, not
   a real tokenizer. `estimateTokens("abcde")` must equal `2` (this exact value is a pinned
   constant in the conformance test).
+- **`text.length` means UTF-16 code units**, because that is what JavaScript's `String.length`
+  is. This matters for any character outside the Basic Multilingual Plane, where the two
+  plausible readings diverge: `"𝄞"` (U+1D11E) is **two** UTF-16 code units but **one**
+  grapheme cluster. Kotlin's `String.length` and Java's `String.length()` match JavaScript.
+  **Swift's `String.count` does not** — it counts grapheme clusters; Swift implementations must
+  use `text.utf16.count`. A second implementation that gets this wrong agrees with valija on
+  all-BMP text (including the fixture's `café ☕`, which is 6 units *and* 6 graphemes) and
+  silently disagrees the first time a user writes an emoji with a skin-tone modifier or a
+  musical symbol.
 - **An item's cost** against the budget is `estimateTokens` of exactly this string:
   ``` `${type} ${YYYY-MM-DD} ${tags.join(" ")}\n\n${content}` ```
   — the type, the `created_at` date truncated to 10 characters (`YYYY-MM-DD`, **not** the
   full ISO timestamp), the tags space-joined, a blank line, then the raw content.
 - **The preamble** (the pack's own overhead) costs
   ``` `Context pack: ${projectName} — ${items.length} items, generated ${generatedAt.toISOString()}` ```
-  — note this uses the **full** ISO timestamp, unlike the per-item date.
-- **Section headings cost their own label's tokens too** (`"Pinned"`, `"Latest handoff"`, or
-  the type name for a by-type section) — added once per section, not per item.
+  — note this uses the **full** ISO timestamp, unlike the per-item date. That timestamp is
+  JavaScript's `Date.toISOString()`: UTC, **always exactly three fractional-second digits**,
+  and a literal trailing `Z` — `2026-07-26T12:00:00.000Z`, never `2026-07-26T12:00:00Z`. Most
+  other languages' default ISO formatters elide zero milliseconds, which produces a token
+  estimate and a rendered header that are each wrong by a few characters. The safest port keeps
+  the stored string and never parses it into a date type at all.
+- **Section headings cost their own label's tokens too, but the three sections charge for them
+  differently.** "Added once per section" is true; *when* it is added is not uniform, and a
+  budgeted pack comes out different if you get this wrong:
+  - **Pinned:** `estimateTokens("Pinned")` is added **unconditionally, before any pinned item
+    is considered** — it is charged even if the section ends up empty.
+  - **Latest handoff:** the item's own cost **plus** `estimateTokens("Latest handoff")` are
+    tested against the budget **together, as one sum**. The label is charged only if the pair
+    fits; if it does not, neither is charged and the section is omitted.
+  - **By type:** the label is `estimateTokens(<type>)` — the **lowercase wire name**
+    (`"decision"`, 2 tokens), *not* the rendered plural heading (`"Decisions"`) — and it is
+    folded into the **first candidate item's** budget test. So it is charged only if that first
+    item fits, and never charged for a section that ends up omitted.
 - **Order, and what goes in each section:**
   1. **Pinned**, newest first. **The newest pinned item is always included, even if it alone
      exceeds the whole budget** — only starting from the *second* pinned item does the budget
@@ -323,7 +347,11 @@ catch that.
      in the tight-budget pack — see `expected-pack.md`.)
   2. **The single latest handoff**, if one exists and fits the remaining budget. Older
      handoffs are **never** shown, even in an unbudgeted pack — "latest" means exactly one,
-     always.
+     always. Precisely, "latest" is **the newest `handoff` item not already placed in the
+     Pinned section** — not simply the newest handoff in the project. The distinction is
+     invisible in the fixture (no handoff there is pinned) but real: a pinned handoff appears
+     under **Pinned** and this section is then filled by the next-newest handoff, while a
+     pinned handoff that the *budget* pushed out of the Pinned section is still eligible here.
   3. **One section per type, in this fixed order:** `decision → preference → progress →
      fact`. Each section holds items of that type not already included above, newest first,
      until the budget is exhausted; a section with zero eligible items is omitted entirely
@@ -370,6 +398,28 @@ match it exactly, since `expected-pack.md`/`expected-export.md` are byte-compare
 - Tags render as `#tag`, space-separated, only when the item has at least one.
 - The exact worked example is `src/testing/__fixtures__/golden-vault/expected-export.md` —
   when in doubt, that file is more authoritative than this prose.
+
+**The concatenation rule — the part the template above cannot show you.** The blank lines are
+not decoration and they are not uniform: there is **one** blank line between an item and the
+next item, and **two** before a `##` heading that follows an item. That falls out of how the
+pieces are joined, so a second implementation must reproduce the construction, not eyeball the
+spacing:
+
+```
+header      = "# Context pack: <name>\n\n> <N> items in vault · generated <ISO>\n"
+sectionPart = "\n## <Section title>\n"
+itemPart    = "### <type> · <YYYY-MM-DD>[ · #tag …]\n\n<content>\n"
+
+parts  = for each section: [sectionPart] followed by one itemPart per item
+output = header + parts.join("\n")
+```
+
+Note the three separate sources of newlines: the header already ends with one, each section
+part *begins* with one, each item part *ends* with one, and the `join("\n")` adds one more
+between every adjacent pair. Building this with a per-line "append with newline" helper, or
+joining with `""`, yields output that looks correct in a rendered Markdown preview and fails a
+byte comparison. The output ends with a single `\n` after the last item's content — there is no
+trailing blank line.
 
 ## 10. Search
 
