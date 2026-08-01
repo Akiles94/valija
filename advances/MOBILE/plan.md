@@ -1,5 +1,7 @@
 # MOBILE — minimal real mobile app proof of concept · Implementation Plan
 
+Approved: Oscar 2026-08-01
+
 **Spec:** `advances/MOBILE/refined.md` (Gate R approved — Oscar, 2026-07-31). All twelve `P-n`
 decisions carry a **Decided:** line and are treated here as settled input, not as options:
 P-1 both platforms as equal, non-cuttable deliverables · P-2 rendered pack, byte-compared,
@@ -13,7 +15,16 @@ byte mismatches.
 
 **Branch in `valija` (this repo — implementer creates it after approval):** `docs/mobile-poc-MOBILE`
 
-**Branch in `valija-mobile`:** see Decision D-2 (recommended: ordinary commits on `main`).
+**Branch in `valija-mobile`:** `feat/poc` (D-2 Option 2), created off `main` at commit `699e1a3`
+2026-08-01, to be merged `--no-ff` at the end of the advance. Implementation slices land here, not
+directly on `main`.
+
+**Git identity note (not one of D-1..D-13, fixed before Slice 1 starts):** `valija-mobile`'s clone
+had no repo-local git identity, so its one prior commit (the `.claude/` seed) inherited the
+session's global identity and was attributed to "Claude." Fixed by setting a repo-local
+`user.name`/`user.email` (Oscar Vinueza, matching `valija`'s own local override) and amending that
+commit; the corrected history was force-pushed to `main` before `feat/poc` was cut, so `feat/poc`
+and everything after it inherits the correct identity from the start.
 
 > Implementation must NOT begin until Oscar has reviewed this file and recorded an `Approved:`
 > line at its top. **The implementation gate is live for this advance even though `valija/src/`
@@ -716,6 +727,7 @@ Every item below is a genuine open choice this plan had to make. The `P-n` decis
   `docs/vault-format-M4`: what lands in *this* repo is documentation and evidence.
   *Trade-off:* it under-sells an advance whose real output is an application — in another repo.
   *Alternatives:* `poc/mobile-MOBILE` (leads with the artifact) or `evidence/mobile-MOBILE`.
+  **Decided: Option 1**, matching the recommendation.
 
 - **D-2 — Where `valija-mobile` is checked out, and how its commits are made.**
   *Recommend:* a sibling working tree at `/home/user/valija-mobile`, ordinary commits pushed
@@ -724,6 +736,11 @@ Every item below is a genuine open choice this plan had to make. The `P-n` decis
   that repo. *Alternative:* a `feat/poc` branch merged with `--no-ff` at the end, which reads
   better in the log and costs nothing — take it if Oscar wants the mobile history to look like
   `valija`'s.
+  **Decided: Option 2** (the alternative), overriding the recommendation. Oscar wants the mobile
+  history to look like `valija`'s. Branch `feat/poc` created off `main` (commit `699e1a3`); all
+  implementation slices commit there via plain Bash, still never the `git-ops` subagent (same
+  reason: `guard-git-ops.sh` fails closed with no `review.md`); merged `--no-ff` into `main` in
+  `valija-mobile` at the end of the advance.
 
 - **D-3 — Gradle module layout.** *Recommend:* three modules — `:vault-core` (pure domain,
   renderer, port, use case; targets `jvm` + `android` + both iOS), `:vault-interop` (the
@@ -734,6 +751,7 @@ Every item below is a genuine open choice this plan had to make. The `P-n` decis
   perhaps 80 extra lines of build script. *Alternative:* two modules (`:vault-core` + `:composeApp`
   with the adapters inside the app module) — less ceremony, but the "not called directly from UI
   code" criterion becomes a convention rather than a compile error.
+  **Decided: Option 1**, matching the recommendation.
 
 - **D-4 — Where the JVM conformance test lives.** *Recommend:* `vault-core/src/jvmTest/`, testing
   100% `commonMain` code, with `poc.md` saying exactly that. Reading fixture files from a literal
@@ -742,6 +760,7 @@ Every item below is a genuine open choice this plan had to make. The `P-n` decis
   *Trade-off:* `refined.md` §9 says "a commonTest running on the JVM"; this satisfies the intent
   (no device, no SQLite, deterministic) but not the letter. *Alternative:* add `kotlinx-io` and
   keep it in `commonTest` — one more dependency in something billed as minimal.
+  **Decided: Option 1**, matching the recommendation.
 
 - **D-5 — Platform order inside the advance.** *Recommend:* Android first, then iOS developed on
   GitHub Actions `macos-latest`, with the borrowed Mac reserved for the physical-iPhone run.
@@ -751,6 +770,7 @@ Every item below is a genuine open choice this plan had to make. The `P-n` decis
   is dropped either way — this is purely about which failure you find first.
   *Alternative:* iOS first, honouring D-E's sequencing, accepting that a cinterop dead-end would
   be discovered before the shared design is validated.
+  **Decided: Option 1**, matching the recommendation.
 
 - **D-6 — How the vendored C reaches the iOS binary.** *Recommend:* a Gradle `Exec` task builds
   `libvalijanative.a` per Apple target and cinterop links it, so `./gradlew` alone reproduces the
@@ -759,6 +779,8 @@ Every item below is a genuine open choice this plan had to make. The `P-n` decis
   argon2 sources to the Xcode target's Compile Sources and let Xcode link them into the app,
   keeping the Kotlin framework static — simpler to get working, but the compile flags then live in
   two places and could drift between the Gradle and Xcode paths, which P-10 explicitly warns about.
+  **Decided: Option 1**, matching the recommendation. If R1 stalls it badly enough, Option 2 remains
+  the named fallback — record the switch and its flags explicitly in `poc.md` if it's taken.
 
 - **D-7 — Timestamps as raw ISO strings in the Kotlin domain.** *Recommend:* yes — no date type
   anywhere. Ordering is SQL's; the per-item date is `take(10)`; the preamble uses the manifest's
@@ -767,6 +789,7 @@ Every item below is a genuine open choice this plan had to make. The `P-n` decis
   the app does anything time-aware. *Alternative:* `kotlinx-datetime` with a hand-written
   JS-compatible formatter — more faithful to the desktop model, one more dependency, one more
   place to get three fractional digits wrong.
+  **Decided: Option 1**, matching the recommendation.
 
 - **D-8 — On-device machine-checkable verdict.** *Recommend:* one instrumented test per platform
   (`connectedAndroidTest`, `xcodebuild test`) alongside the on-screen verdict, so P-5's "exit
@@ -774,6 +797,7 @@ Every item below is a genuine open choice this plan had to make. The `P-n` decis
   code and, on iOS, a signed test bundle (A7). *Alternative:* screen + committed log only — the
   screenshot is still self-verifying because it prints the byte count, but nothing fails
   automatically when it stops being true.
+  **Decided: Option 1**, matching the recommendation.
 
 - **D-9 — Also byte-compare `expected-pack.md` (the budgeted pack) on the JVM.** *Recommend:* yes.
   P-2 Option 3 governs what the **screen** shows and stays unbudgeted; but the unbudgeted path
@@ -783,6 +807,7 @@ Every item below is a genuine open choice this plan had to make. The `P-n` decis
   it is the comparison most likely to fail first (M4's review predicted as much).
   *Alternative:* unbudgeted only, and W5's correction is then a documentation claim resting on a
   careful reading rather than on a byte comparison.
+  **Decided: Option 1**, matching the recommendation.
 
 - **D-10 — Evidence file names.** *Recommend:* `ios-device.png` / `android-device.png` (plus
   `ci-ios-simulator.png` / `ci-android-emulator.png` for the CI artifacts), overriding
@@ -791,11 +816,13 @@ Every item below is a genuine open choice this plan had to make. The `P-n` decis
   the C3 class of error, and file names get quoted more often than captions.
   *Trade-off:* the plan deviates from the spec's literal file list. *Alternative:* keep §4.3's
   names and disclose in prose — worse, for the reason just given.
+  **Decided: Option 1**, matching the recommendation.
 
 - **D-11 — Kotlin package and Android `applicationId`.** *Recommend:* `dev.valija.poc` — coherent,
   clearly a PoC, and nothing is ever submitted to a store so no registration is implied.
   *Trade-off:* `valija.dev` is not a domain the project owns. *Alternatives:* `app.valija.poc`, or
   `io.github.akiles94.valija.poc` (accurate to the actual namespace, ugly in every stack trace).
+  **Decided: Option 1**, matching the recommendation.
 
 - **D-12 — Search / the FTS query builder.** *Recommend:* leave it out entirely. P-2 landed on
   Option 3 (the rendered pack), and Option 4 (search cases) was explicitly declined as past
@@ -805,6 +832,7 @@ Every item below is a genuine open choice this plan had to make. The `P-n` decis
   *Alternative:* port `toFtsQuery` (about 8 lines) with a JVM-only unit test and no on-device
   search — cheap, but it proves the string builder, not the FTS behaviour, which is the part that
   could actually differ.
+  **Decided: Option 1**, matching the recommendation.
 
 - **D-13 — What happens if the borrowed Mac window closes before the iPhone run.**
   *Recommend:* hold the advance at Slice 9 rather than ship. G1 is half the advance's reason to
@@ -813,6 +841,8 @@ Every item below is a genuine open choice this plan had to make. The `P-n` decis
   as the iOS evidence, G1 recorded as **closed for the simulator and open for a physical device**,
   and P-6(b)'s decision explicitly marked unmet in `poc.md` — honest, but it hands the next Gate R
   a weaker answer than Oscar asked for.
+  **Decided: Option 1**, matching the recommendation. If the borrowed Mac window closes, the
+  advance holds at Slice 9 rather than shipping on simulator evidence alone.
 
 ---
 
