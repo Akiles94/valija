@@ -541,6 +541,8 @@ longer hypothetical. Full detail and claim scoping: `advances/MOBILE/poc.md`.
 | Argon2id derives the published key through that same interop path | Same | **PASS** — 155–178 ms on desktop-class silicon, *not a phone measurement* |
 | Wrong key surfaces as `WRONG_PASSPHRASE`, not corruption | Same | **PASS** |
 | Read-only: fixture unmutated, no `-wal`/`-shm`/`-journal` produced | Same | **PASS** |
+| Vendored amalgamation opens a real vault via JNI, executing on Android | x86_64 **emulator**, GitHub Actions — **not** the arm64 evidence for a physical device | **PASS** |
+| Vendored amalgamation opens a real vault via Kotlin/Native cinterop, executing on iOS | iOS **simulator**, GitHub Actions `macos-latest` — **not** a physical device | **PASS** |
 | Search byte-match (second implementation) | — | DEFERRED — the PoC deliberately omits the search path (`advances/MOBILE/refined.md` P-2), so no second implementation of it exists yet |
 | App execution on a physical iPhone / physical Android arm64 | — | **PENDING** — `advances/MOBILE/poc.md` §2. Nothing has run on a phone yet |
 
