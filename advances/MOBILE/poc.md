@@ -43,15 +43,40 @@ Every row names the hardware that produced it. Rows a device must produce say `P
 | G5 | Argon2id 64 MiB / t=3 / p=1 | Same (GitHub-hosted Linux runner class CPU) | **155–178 ms** — *desktop-class silicon; not a phone measurement* |
 | — | Wrong key surfaces as `WRONG_PASSPHRASE`, not corruption | Same | **PASS** |
 | — | Read-only: fixture unmutated, no `-wal`/`-shm`/`-journal` produced | Same | **PASS** |
-| G3a | JNI/NDK → amalgamation on Android | x86_64 emulator, GitHub Actions | *(see §3 CI status)* |
-| G3b | Kotlin/Native cinterop → amalgamation | iOS **simulator**, GitHub Actions `macos-latest` | *(see §3 CI status)* |
-| — | APK declares zero permissions | GitHub Actions | *(see §3 CI status)* |
+| — | Vendored C compiles through the **real Android NDK** for `arm64-v8a` **and** `x86_64` | GitHub Actions `ubuntu-latest`, AGP 8.7.3 + NDK via CMake | **PASS** — `:composeApp:assembleDebug` green |
+| — | Vendored C compiles and archives through **real Xcode clang** for `arm64-apple-ios` **and** `arm64-apple-ios-simulator` | GitHub Actions `macos-latest` | **PASS** — `build-apple-native.sh` green for both targets |
+| G3a | JNI/NDK → amalgamation executing on Android | x86_64 emulator, GitHub Actions | **NOT REACHED** — job failed earlier, at the APK-permissions step (§3a) |
+| G3b | Kotlin/Native cinterop → amalgamation executing | iOS **simulator**, GitHub Actions `macos-latest` | **FAIL** — the cinterop conformance step failed after the native build succeeded (§3a) |
+| — | APK declares zero permissions | GitHub Actions | **NOT ESTABLISHED** — the check step itself failed (§3a) |
 | **G1** | **App executes on a physical iPhone** | Oscar's iPhone, borrowed Mac + Xcode | **PENDING** |
 | **G2** | **App executes on physical Android arm64** | Oscar's Android phone | **PENDING** |
 | **G6** | **A real app process — bundle, sandbox, lifecycle, UI thread** | Both physical devices | **PENDING** |
 | **G5** | **Argon2id on real phone hardware** | Both physical devices | **PENDING** |
 
 ---
+
+## 3a. CI status — red, and honestly so
+
+First real CI run: [`valija-mobile` run #2](https://github.com/akiles94/valija-mobile/actions/runs/30712157216)
+(commit `e508cf7`). **1 of 3 jobs green.**
+
+| Job | Result |
+|---|---|
+| Domain conformance (JVM) | **green** — both byte comparisons pass on a clean checkout, which also proves the four-target KMP build configures correctly |
+| Android build + x86_64 emulator | **red** — the NDK build of the vendored C for both ABIs **succeeded**; the job then failed at my `aapt2 dump badging` permissions step, so the emulator step never ran |
+| iOS simulator | **red** — `build-apple-native.sh` **succeeded** for both Apple targets on a real Mac; the job then failed at the cinterop conformance step |
+
+**What this does and does not mean.** Both real mobile toolchains — Android's NDK and Xcode's
+clang — compiled and archived the vendored SQLite3MultipleCiphers amalgamation and Argon2id for
+their **device** architectures without modification. That was the largest unknown in the build
+story and it is now answered. What is *not* answered is whether that C then executes correctly
+through each language boundary on those platforms: both failures land in the glue after the
+native build, and neither has been diagnosed yet. **G3a and G3b are open**, and the rows in §2
+say so rather than borrowing confidence from the compile step that did pass.
+
+A run that is red because a permissions-check invocation is wrong is not evidence that the app
+works. It is also not evidence that it does not. Both jobs need fixing and re-running before
+anything here is claimed.
 
 ## 3. Claim scoping — what was **not** executed
 
