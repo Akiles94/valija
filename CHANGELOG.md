@@ -8,6 +8,10 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
 
 - `docs/vault-format.md` — a written contract documenting the vault's crypto parameters, header schema, encrypted schema, pack-assembly algorithm, markdown rendering, and search query construction, for anyone building a second (non-Node) reader — starting with the mobile companion groundwork in `advances/M4/`. Verified against a committed golden-vault conformance fixture (`src/testing/__fixtures__/golden-vault/`) that proves the desktop implementation matches it byte-for-byte; no behavior change.
 
+### Fixed
+
+- `docs/vault-format.md` corrected in five places where a real second implementation (the Kotlin proof of concept in `advances/MOBILE/`) proved the contract wrong or under-specified: the markdown concatenation rule, the three distinct section-label budgeting rules, latest-handoff selection, `estimateTokens`'s UTF-16 code-unit semantics, and the preamble's ISO timestamp format. Documentation only — this describes existing behavior; no code, fixture, or output changed.
+
 ## [0.3.0] — 2026-07-25
 
 Bring-your-own-cloud vault sync — keep your vault in a folder your own sync client (Dropbox, iCloud Drive, OneDrive, Syncthing, …) already replicates, and use it safely across devices. See [docs/sync.md](docs/sync.md).
