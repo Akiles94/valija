@@ -36,7 +36,11 @@ The precise gaps M4 left, from `refined.md` §3:
 
 ## 2. Results
 
-Every row names the hardware that produced it. Rows a device must produce say `PENDING`.
+Every row names the hardware that produced it. The four rows only a physical device could
+produce — bolded below — say `NOT COLLECTED`, permanently, and rest on nothing CI produced; see
+§10. **G1 is not one of them**: its general form (§1's original question) is closed by the iOS
+simulator run, the same event as G3b — only the narrower "on a *physical* iPhone" claim, listed
+separately below as **G1 (physical)**, stays uncollected.
 
 | # | Question | Where it ran | Result |
 |---|---|---|---|
@@ -50,10 +54,11 @@ Every row names the hardware that produced it. Rows a device must produce say `P
 | — | Vendored C compiles and archives through **real Xcode clang** for `arm64-apple-ios` **and** `arm64-apple-ios-simulator` | GitHub Actions `macos-latest` | **PASS** — `build-apple-native.sh` green for both targets |
 | G3a | JNI/NDK → amalgamation executing on Android | x86_64 **emulator**, GitHub Actions | **PASS** — `:vault-interop:connectedAndroidTest` green (§3a) |
 | G3b | Kotlin/Native cinterop → amalgamation executing | iOS **simulator**, GitHub Actions `macos-latest` | **PASS** — `:vault-interop:iosSimulatorArm64Test` green (§3a) |
+| **G1** | **Has any valija-related binary ever executed on iOS?** (§1's original, general question — device *or* simulator) | iOS **simulator**, same run as G3b | **PASS** — a real binary executed on iOS for the first time. G3b *is* the answer to G1; they are the same event, viewed from M4's gap list vs. this advance's interop question |
 | — | APK declares zero permissions | GitHub Actions | **PASS** — `aapt2 dump badging` shows no `uses-permission` line |
-| **G1** | **App executes on a physical iPhone** | — | **NOT COLLECTED** — advance closed before Slice 9, §10 |
-| **G2** | **App executes on physical Android arm64** | — | **NOT COLLECTED** — advance closed before Slice 9, §10 |
-| **G6** | **A real app process — bundle, sandbox, lifecycle, UI thread** | — | **NOT COLLECTED** — advance closed before Slice 9, §10 |
+| **G1 (physical)** | **App executes specifically on a physical iPhone** — the narrower claim P-6(b) introduced, distinct from the general G1 row above | — | **NOT COLLECTED** — advance closed before Slice 9, §10 |
+| **G2** | **App executes on physical Android arm64** — never closed at *any* tier: the CI emulator is explicitly x86_64, not arm64 evidence (§3, §3a) | — | **NOT COLLECTED** — advance closed before Slice 9, §10 |
+| **G6** | **A real app process — bundle, sandbox, lifecycle, UI thread** — rests on nothing CI produced either: both CI jobs run isolated `:vault-interop` conformance tests, never launch `:composeApp`'s UI, so no tier ever demonstrated a real app process | — | **NOT COLLECTED** — advance closed before Slice 9, §10 |
 | **G5** | **Argon2id on real phone hardware** | — | **NOT COLLECTED** — advance closed before Slice 9, §10 |
 
 ---
@@ -74,17 +79,24 @@ clang — compiled and archived the vendored SQLite3MultipleCiphers amalgamation
 their **device** architectures without modification. That was the largest unknown in the build
 story and it is now answered. What is *not* answered is whether that C then executes correctly
 through each language boundary on those platforms: both failures land in the glue after the
-native build, and neither has been diagnosed yet. **G3a and G3b are open**, and the rows in §2
-say so rather than borrowing confidence from the compile step that did pass.
+native build, and neither has been diagnosed yet. **At this point in the run, G3a and G3b were
+still open** — the rows in §2 said so rather than borrowing confidence from the compile step
+that did pass. Both are now closed; see the update immediately below and §2's current PASS rows.
 
 A run that is red because a permissions-check invocation is wrong is not evidence that the app
 works. It is also not evidence that it does not. Both jobs need fixing and re-running before
 anything here is claimed.
 
 **Update — now green.** [`valija-mobile` run #11](https://github.com/akiles94/valija-mobile/actions/runs/30723496087)
-(commit `644e4e1`). **3 of 3 jobs green.** Getting there took several real, evidence-driven fix
-rounds rather than one; each is recorded because two of them disprove an earlier theory rather
-than confirm it:
+(commit `644e4e1`). **3 of 3 jobs green.** Independently re-verified 2026-08-16 against the GitHub
+Actions API directly (not just the linked page): all three jobs — `Domain conformance (JVM)`,
+`Android build + x86_64 emulator (NOT arm64 evidence)`, `iOS simulator (NOT a physical device)` —
+report `status: completed`, `conclusion: success`. `valija-mobile`'s `.github/workflows/ci.yml`
+was read directly, not inferred: none of the three jobs runs a screenshot step (see §8's evidence
+table); the Android job's zero-permissions claim is enforced by the workflow itself (`grep -q
+"uses-permission" ... && exit 1`), and its passing is what proves the claim, not a separate
+assertion. Getting to green took several real, evidence-driven fix rounds rather than one; each
+is recorded because two of them disprove an earlier theory rather than confirm it:
 
 - **YAML**: an unquoted step name with a colon was parsed as a mapping key, producing a 0-job
   workflow before any job could even start.
@@ -313,7 +325,7 @@ point of the claim, not in a footnote.
 | `evidence/toolchain-versions.txt` | Compilers and versions behind every row above |
 | `evidence/android-device.png` + `.log` + `-info.txt` | **NOT COLLECTED** — Slice 9 skipped, §10 |
 | `evidence/ios-device.png` + `.log` + `-info.txt` | **NOT COLLECTED** — Slice 9 skipped, §10 |
-| `evidence/ci-android-emulator.png`, `ci-ios-simulator.png` | **PENDING** — CI artifacts |
+| `evidence/ci-android-emulator.png`, `ci-ios-simulator.png` | **NOT COLLECTED, permanently** — checked against `valija-mobile`'s `.github/workflows/ci.yml` directly: neither CI job ever runs a screenshot step. Both upload test reports, `android-permissions.txt`, and the debug APK — not an image. This row was aspirational at planning time and was never implemented; it is not "pending" in the sense of still arriving. |
 
 ---
 
@@ -324,12 +336,16 @@ byte-identical output, and the vendored SQLite3MultipleCiphers amalgamation plus
 Argon2id open and read a real encrypted valija vault through a real Kotlin/C interop boundary —
 demonstrated on Linux/x86_64 with the same sources the mobile builds use, and through CI on both
 platforms' real toolchains (NDK clang for Android, Xcode clang for iOS) against an x86_64 Android
-emulator and an iOS simulator respectively.
+emulator and a real iOS **simulator** respectively. That simulator run closes G1 in its original,
+general form (§1: "has any valija-related binary ever executed on iOS?") — a real binary really
+did, on Apple's own simulator runtime.
 
-**Never established, by decision, not by omission:** that any of it runs on a physical phone. §2's
-four device-only rows are closed as `NOT COLLECTED` — see §10. Do not size a future mobile-app
-advance against this document as though the hard parts are fully proven; size it against exactly
-what §2 and §3a say ran, and where.
+**Never established, by decision, not by omission:** that any of it runs on a *physical* phone.
+§2's four bolded rows — **G1 (physical)**, **G2** (arm64 specifically; the CI emulator is x86_64
+and was never claimed otherwise), **G6** (a real app process was never launched by any CI job,
+only isolated interop tests), and **G5** (on-device timing) — are closed as `NOT COLLECTED`; see
+§10. Do not size a future mobile-app advance against this document as though the hard parts are
+fully proven; size it against exactly what §2 and §3a say ran, and where.
 
 ## 10. Disposition — advance closed, no distributable app
 
@@ -348,10 +364,13 @@ This does not discard the advance's findings. Independent of any phone:
 - **G7** is closed, and answered *no*: `docs/vault-format.md` had five real defects, all found by
   this second implementation and fixed (§5). That correction stands regardless of what runs on a
   phone.
-- **G1/G2/G5/G6** — anything that only a physical device can answer — are closed as
-  **not collected**. If a mobile app is ever reconsidered, these four are exactly what the next
-  advance would need to re-open, starting from `plan.md` Slice 9's runbook (§7 above), which
-  remains valid and unexecuted.
+- **G1**, in its original general form, is also closed: the iOS simulator run is a real binary
+  really executing on iOS (§2, §9).
+- **G1 (physical) / G2 / G5 / G6** — anything that only a physical device can answer, plus G2's
+  arm64-specific claim, which no CI tier ever attempted — are closed as **not collected**. If a
+  mobile app is ever reconsidered, these four are exactly what the next advance would need to
+  re-open, starting from `plan.md` Slice 9's runbook (§7 above), which remains valid and
+  unexecuted.
 
 **`akiles94/valija-mobile` is left as-is**: real, CI-green, non-authoritative proof-of-concept
 scaffolding — not a maintained product. No further work is planned there under this advance.
