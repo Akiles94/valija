@@ -330,8 +330,13 @@ catch that.
 - **Section headings cost their own label's tokens too, but the three sections charge for them
   differently.** "Added once per section" is true; *when* it is added is not uniform, and a
   budgeted pack comes out different if you get this wrong:
-  - **Pinned:** `estimateTokens("Pinned")` is added **unconditionally, before any pinned item
-    is considered** — it is charged even if the section ends up empty.
+  - **Pinned:** if there is at least one pinned item, `estimateTokens("Pinned")` is added
+    **before any pinned item's own cost is tested against the budget** — the label is
+    unconditional relative to the budget check, not relative to whether the section exists.
+    The section can never end up empty: with zero pinned items the whole step is skipped (no
+    label charged, no section pushed), and with one or more, the newest pinned item is always
+    kept regardless of budget (§9's next bullet), so a "Pinned" heading never appears over an
+    empty list.
   - **Latest handoff:** the item's own cost **plus** `estimateTokens("Latest handoff")` are
     tested against the budget **together, as one sum**. The label is charged only if the pair
     fits; if it does not, neither is charged and the section is omitted.
@@ -513,8 +518,13 @@ compatibility without a human in the loop. Never reuse these values for a real v
 ## 13. Verified compatibility
 
 Tiers A, B, and C′ are done — see `advances/M4/spike.md` for the full commands and analysis.
-A literal iOS device/simulator run (Tier C) remains open, but is now lower priority: C′
-already answered the core question using the official SPM package on Apple's own toolchain.
+Tier C (a literal iOS device/simulator run) is now **split**: `advances/MOBILE/` later ran a real
+iOS **simulator** execution (the second table below, Kotlin/Native cinterop row, **PASS**) —
+lower priority to begin with since C′ already answered the compatibility question using the
+official SPM package on Apple's own toolchain, and now genuinely closed at the simulator level.
+A literal iOS **device** run never happened and never will under this advance
+(`advances/MOBILE/poc.md` §10); the two Tier-C rows below that are specifically about on-device
+behavior (Argon2id timing, write round-trip) stay `DEFERRED`, unaffected by the simulator result.
 
 Since then, `advances/MOBILE/` built a real second implementation in Kotlin and exercised the
 vendored amalgamation through a real language boundary — the second table below. **No binary

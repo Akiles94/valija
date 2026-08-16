@@ -445,6 +445,9 @@ Two independent sub-decisions with different mechanics and different costs.
   mobile so I can test it there." A real device is the strongest possible answer to G2 and makes the
   emulator fallback ladder moot for this advance.
 
+**Superseded 2026-08-16 — see the amendment after (b) below.** This "Decided: Option 4" no longer
+holds; do not read it in isolation.
+
 **(b) A physical iOS device (beyond the simulator).**
 - **Option 1 — simulator only.** No Apple Developer account, no provisioning profile, no signing
   (`CODE_SIGNING_ALLOWED=NO` is enough for a simulator build). *Trade-off:* code signing,
@@ -462,13 +465,25 @@ Two independent sub-decisions with different mechanics and different costs.
   have a mac." This resolves the "needs a Mac he does not have" trade-off originally listed against
   this option — a real device via a borrowed Mac + Xcode, not simulator-only.
 
-**Amendment (Oscar, 2026-08-16):** superseded. Oscar decided not to pursue a distributable mobile
-app (Apple's 99 USD/year Developer Program and ongoing store maintenance aren't justified for a
-project with no monetization), so the physical-device runs this sub-decision gated — for both (a)
-Android and (b) iOS — will not happen. The advance closes on Option 1's original trade-off for
-both: G1/G2/G6 rest on the CI-level simulator/emulator evidence in `poc.md` §2 and §3a, and G5's
-Argon2id timing stays a desktop/CI-class measurement, never a phone one. See `plan.md`'s matching
-amendment and `poc.md` §10 for the full disposition.
+**Amendment (Oscar, 2026-08-16) — supersedes both (a)'s and (b)'s Decided lines above.** Oscar
+decided not to pursue a distributable mobile app (Apple's 99 USD/year Developer Program and
+ongoing store maintenance aren't justified for a project with no monetization), so the
+physical-device runs both sub-decisions gated — (a) Android and (b) iOS alike — will not happen.
+
+What that leaves closed and open, precisely (`poc.md` §2, §9, §10 — read those for the full
+claim-scoping, not this summary):
+- **G1**, in its original general form ("has any binary executed on iOS"), is **closed** — the
+  CI iOS simulator run is a real execution on iOS, not a substitute claiming to be one.
+- **G1 (physical) and G2 (arm64 specifically)** — the narrower, device-specific claims (a) and
+  (b) actually gated — are **not collected**. G2 in particular was never close to closed by CI:
+  the emulator job is explicitly x86_64.
+- **G6** (a real app *process* — bundle, sandbox, lifecycle, UI thread) is **not collected** by
+  any tier, CI included: both CI jobs run isolated `:vault-interop` conformance tests and never
+  launch `:composeApp`'s UI.
+- **G5** (Argon2id on real phone hardware) stays a desktop/CI-class measurement, never a phone
+  one, at any tier.
+
+See `plan.md`'s matching amendment for the plan-level disposition.
 
 ### P-7. Argon2id on device
 
