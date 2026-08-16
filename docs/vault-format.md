@@ -518,7 +518,8 @@ already answered the core question using the official SPM package on Apple's own
 
 Since then, `advances/MOBILE/` built a real second implementation in Kotlin and exercised the
 vendored amalgamation through a real language boundary — the second table below. **No binary
-has yet executed on a physical phone**; those rows say so explicitly rather than being omitted.
+ever executed on a physical phone**; the advance closed before that run (`advances/MOBILE/poc.md`
+§10), and the row below says so explicitly rather than being omitted.
 
 | Question | Tier | Result |
 |---|---|---|
@@ -544,7 +545,7 @@ longer hypothetical. Full detail and claim scoping: `advances/MOBILE/poc.md`.
 | Vendored amalgamation opens a real vault via JNI, executing on Android | x86_64 **emulator**, GitHub Actions — **not** the arm64 evidence for a physical device | **PASS** |
 | Vendored amalgamation opens a real vault via Kotlin/Native cinterop, executing on iOS | iOS **simulator**, GitHub Actions `macos-latest` — **not** a physical device | **PASS** |
 | Search byte-match (second implementation) | — | DEFERRED — the PoC deliberately omits the search path (`advances/MOBILE/refined.md` P-2), so no second implementation of it exists yet |
-| App execution on a physical iPhone / physical Android arm64 | — | **PENDING** — `advances/MOBILE/poc.md` §2. Nothing has run on a phone yet |
+| App execution on a physical iPhone / physical Android arm64 | — | **NOT COLLECTED** — `advances/MOBILE/poc.md` §10: advance closed, no distributable app pursued. Nothing ever ran on a phone |
 
 **Argon2id is a closed question.** The reference C implementation (the same library both the
 npm `argon2` package and, per D-G, the iOS side are meant to link) reproduces valija's

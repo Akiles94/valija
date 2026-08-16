@@ -1,7 +1,10 @@
 # MOBILE — proof-of-concept runbook and results
 
-**Status: awaiting the two physical-device runs (plan.md Slice 9).** Every row below that a
-device produces is marked `PENDING`. Nothing in this document is a device claim yet.
+**Status: closed without physical-device evidence (Oscar, 2026-08-16).** Oscar decided not to
+pursue a distributable mobile app — Apple's Developer Program (99 USD/year) and ongoing store
+maintenance aren't justified for a project with no monetization. Slice 9 (the two physical-device
+runs) was skipped; see §10 for the full disposition. Every row below that only a device run could
+produce is marked `NOT COLLECTED`, not `PASS` — nothing in this document is a device claim.
 
 **Code:** [`akiles94/valija-mobile`](https://github.com/akiles94/valija-mobile), branch
 `feat/poc`. That repository is **non-authoritative proof-of-concept scaffolding**, not the
@@ -48,10 +51,10 @@ Every row names the hardware that produced it. Rows a device must produce say `P
 | G3a | JNI/NDK → amalgamation executing on Android | x86_64 **emulator**, GitHub Actions | **PASS** — `:vault-interop:connectedAndroidTest` green (§3a) |
 | G3b | Kotlin/Native cinterop → amalgamation executing | iOS **simulator**, GitHub Actions `macos-latest` | **PASS** — `:vault-interop:iosSimulatorArm64Test` green (§3a) |
 | — | APK declares zero permissions | GitHub Actions | **PASS** — `aapt2 dump badging` shows no `uses-permission` line |
-| **G1** | **App executes on a physical iPhone** | Oscar's iPhone, borrowed Mac + Xcode | **PENDING** |
-| **G2** | **App executes on physical Android arm64** | Oscar's Android phone | **PENDING** |
-| **G6** | **A real app process — bundle, sandbox, lifecycle, UI thread** | Both physical devices | **PENDING** |
-| **G5** | **Argon2id on real phone hardware** | Both physical devices | **PENDING** |
+| **G1** | **App executes on a physical iPhone** | — | **NOT COLLECTED** — advance closed before Slice 9, §10 |
+| **G2** | **App executes on physical Android arm64** | — | **NOT COLLECTED** — advance closed before Slice 9, §10 |
+| **G6** | **A real app process — bundle, sandbox, lifecycle, UI thread** | — | **NOT COLLECTED** — advance closed before Slice 9, §10 |
+| **G5** | **Argon2id on real phone hardware** | — | **NOT COLLECTED** — advance closed before Slice 9, §10 |
 
 ---
 
@@ -128,8 +131,9 @@ green, is a substitute for them.
 This section decides whether this advance repeats M4's C3 finding (a macOS run published as an
 iOS run). It is written **before** the device runs, so it cannot be shaped to fit a nice result.
 
-- **Nothing has run on a physical iPhone or a physical Android phone yet.** Both G1 and G2 are
-  open at the time of writing. The screenshots that will close them do not exist.
+- **Nothing ever ran on a physical iPhone or a physical Android phone.** Both G1 and G2 are
+  closed as **not collected**, permanently, for this advance — see §10. The screenshots that would
+  have closed them do not exist and will not be produced under this advance.
 - **The Linux full-stack run (§4) is not an Android run and not an iOS run.** It compiles the
   *same* `valija_native.c`, the *same* vendored `sqlite3.c`, and the *same* Kotlin sources the
   Android build uses, on Linux/x86_64 against the JDK's JNI rather than the NDK's. It proves the
@@ -307,20 +311,47 @@ point of the claim, not in a footnote.
 | `evidence/linux-fullstack-interop.log` | The §4 run: real C, real JNI, real encrypted vault, Linux/x86_64 |
 | `evidence/sqlite3c-sha256.txt` | Hashes of the vendored amalgamation |
 | `evidence/toolchain-versions.txt` | Compilers and versions behind every row above |
-| `evidence/android-device.png` + `.log` + `-info.txt` | **PENDING** — Slice 9 |
-| `evidence/ios-device.png` + `.log` + `-info.txt` | **PENDING** — Slice 9 |
+| `evidence/android-device.png` + `.log` + `-info.txt` | **NOT COLLECTED** — Slice 9 skipped, §10 |
+| `evidence/ios-device.png` + `.log` + `-info.txt` | **NOT COLLECTED** — Slice 9 skipped, §10 |
 | `evidence/ci-android-emulator.png`, `ci-ios-simulator.png` | **PENDING** — CI artifacts |
 
 ---
 
 ## 9. What a reader should conclude
 
-**So far:** a second, independent implementation of valija's pack algorithm produces
+**Established:** a second, independent implementation of valija's pack algorithm produces
 byte-identical output, and the vendored SQLite3MultipleCiphers amalgamation plus vendored
 Argon2id open and read a real encrypted valija vault through a real Kotlin/C interop boundary —
-demonstrated on Linux/x86_64 with the same sources the mobile builds use.
+demonstrated on Linux/x86_64 with the same sources the mobile builds use, and through CI on both
+platforms' real toolchains (NDK clang for Android, Xcode clang for iOS) against an x86_64 Android
+emulator and an iOS simulator respectively.
 
-**Not yet:** that any of it runs on a phone. Until the two rows marked `PENDING` in §2 carry a
-device model and a screenshot, the honest summary of this advance is *"the hard parts look
-solved and nothing has run on a phone."* Do not size the mobile app against this document until
-§2's device rows are filled in.
+**Never established, by decision, not by omission:** that any of it runs on a physical phone. §2's
+four device-only rows are closed as `NOT COLLECTED` — see §10. Do not size a future mobile-app
+advance against this document as though the hard parts are fully proven; size it against exactly
+what §2 and §3a say ran, and where.
+
+## 10. Disposition — advance closed, no distributable app
+
+Oscar decided not to pursue a distributable mobile app (2026-08-16). Apple's Developer Program
+costs 99 USD/year, is required for any iOS installation beyond a 7-day self-signed build on the
+developer's own device, and — together with the ongoing burden of maintaining two store listings —
+is not proportionate for a project with no monetization plan. That decision, not a technical
+failure, is why Slice 9 (the two physical-device runs) was skipped and Slice 10 closes this
+advance on CI-level evidence alone.
+
+This does not discard the advance's findings. Independent of any phone:
+
+- **G3/G4** are closed: Kotlin can call the vendored C through both interop paths (JNI/NDK,
+  Kotlin/Native cinterop), and a second, independent implementation of the pack algorithm is
+  byte-identical to the Node one.
+- **G7** is closed, and answered *no*: `docs/vault-format.md` had five real defects, all found by
+  this second implementation and fixed (§5). That correction stands regardless of what runs on a
+  phone.
+- **G1/G2/G5/G6** — anything that only a physical device can answer — are closed as
+  **not collected**. If a mobile app is ever reconsidered, these four are exactly what the next
+  advance would need to re-open, starting from `plan.md` Slice 9's runbook (§7 above), which
+  remains valid and unexecuted.
+
+**`akiles94/valija-mobile` is left as-is**: real, CI-green, non-authoritative proof-of-concept
+scaffolding — not a maintained product. No further work is planned there under this advance.

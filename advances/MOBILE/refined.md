@@ -462,6 +462,14 @@ Two independent sub-decisions with different mechanics and different costs.
   have a mac." This resolves the "needs a Mac he does not have" trade-off originally listed against
   this option — a real device via a borrowed Mac + Xcode, not simulator-only.
 
+**Amendment (Oscar, 2026-08-16):** superseded. Oscar decided not to pursue a distributable mobile
+app (Apple's 99 USD/year Developer Program and ongoing store maintenance aren't justified for a
+project with no monetization), so the physical-device runs this sub-decision gated — for both (a)
+Android and (b) iOS — will not happen. The advance closes on Option 1's original trade-off for
+both: G1/G2/G6 rest on the CI-level simulator/emulator evidence in `poc.md` §2 and §3a, and G5's
+Argon2id timing stays a desktop/CI-class measurement, never a phone one. See `plan.md`'s matching
+amendment and `poc.md` §10 for the full disposition.
+
 ### P-7. Argon2id on device
 
 - **Option 1 — skip it.** Hard-code `manifest.keyHex` and open the vault with the raw key. Smallest
