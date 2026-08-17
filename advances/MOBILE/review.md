@@ -1,6 +1,314 @@
 Verdict: FAIL
 
-# MOBILE — review (third pass)
+# MOBILE — review (fourth pass)
+
+Reviewed `docs/mobile-poc-MOBILE` @ `848da54` against `main` (`git diff main...HEAD`, base
+`543d2fe`), working tree clean. Re-reviewed from scratch, not as a diff of `848da54`. The third and
+second passes are retained verbatim below.
+
+**Line count:** 8 files changed, 572 insertions(+), 14 deletions(-), excluding this `review.md`
+(9/1201/14 including it). No `src/` line, no `package.json`, no build config, no `.github/`.
+
+**What I could check.** `/workspace/valija-mobile` is attached at `feat/poc` @ `644e4e1` — the exact
+commit `poc.md` §3a cites for run #11 — so every claim about the PoC code, its CI workflow and its
+tests is checkable, and I checked them against the tree rather than against `poc.md`'s description
+of them. Run #11's `conclusion: success` remains the one assertion I cannot independently confirm.
+
+**Bottom line.** Two of pass 3's three criticals are fully fixed and the third is fixed in two of
+its three places. What holds the merge is (a) the one sentence the third-pass fix missed, which now
+makes `poc.md` contradict itself about the same three facts, and (b) something no earlier pass
+caught: **the two evidence logs this advance points at are `.gitignore`d and have never been
+committed to this repository, on any branch, in any commit.** After merge, `advances/MOBILE/evidence/`
+contains two `.txt` files and nothing else, while `poc.md` §4 and §8 describe two `.log` files that
+a reader will not find. Both fixes are small and neither requires recovering anything.
+
+---
+
+## 0. Disposition of pass 3's findings
+
+| Pass 3 | Now | Verdict |
+|---|---|---|
+| **C1-3** — `docs/vault-format.md`'s four harness-derived rows published bare `PASS` with no provenance caveat and no pointer to `poc.md` §4 | The §13 lead-in (`docs/vault-format.md:545–548`) now states the harness "was never committed to `valija-mobile` and cannot be re-run from either repository as it stands — see `poc.md` §4", and all four rows (`:554–557`) carry ⚠. I verified the marker is on exactly the four rows sourced from the harness and on none of the CI rows | **FIXED** |
+| **C2-3** — the `WRONG_PASSPHRASE` and no-sidecar rows falsely claimed to be uncorroborated; "the only Argon2id timing" wrong | `poc.md:54–55` and `docs/vault-format.md:556–557` are corrected, and every citation checks out against the tree: `AndroidVaultConformanceTest.kt:90–93` (sidecars), `:97–103` (`WRONG_PASSPHRASE`), `IosVaultConformanceTest.kt:102–108` (`WRONG_PASSPHRASE`), `:62` (the emulator Argon2id print). `:53` now says "the only *committed*" number. **But §4's own caveat (`poc.md:192–196`) was not touched** and still names those two checks as resting solely on unreproducible evidence | **NOT SATISFIED** (C1-4) |
+| **C3-3** — `155–178 ms` sourced nowhere | `grep -rn "155"` over `poc.md`, `docs/vault-format.md`, `docs/SPEC.md`, `CHANGELOG.md` and `evidence/` returns nothing. Both publication sites now read `178 ms`, which is the number in `linux-fullstack-interop.log:27` and in `poc.md:207`'s quoted excerpt | **FIXED** |
+| **W1-3** — §10 lumped G6 in with the device-gated gaps (you asked me to confirm this one) | `poc.md:395–401` now reads "**G1 (physical), G2 and G5** … closed as **not collected**, by this closure decision. **G6** is also **not collected**, but for a different reason: the CI screenshot step that would have closed it (`plan.md` step 46) was never implemented, independent of this decision". That matches §2 (`:42–44`) and §9 (`:366–374`). All four places now agree | **CONFIRMED FIXED** (one wording nit, S1-4) |
+| **W2-3** — the `toolchain-versions.txt` row blamed blocked network access, contradicting §3a (you asked me to confirm this one) | `poc.md:347` now reads "The run's overall conclusion was reachable via the GitHub Actions API (§3a) and confirmed `success`; the finer-grained log detail that would carry these versions was not pulled down and committed, as part of the same closure decision as the row below". No contradiction with `:98–101` or `:351` remains; the reason given is the decision, not an inability | **CONFIRMED FIXED** |
+
+---
+
+## 1. Acceptance criteria (`refined.md` §9)
+
+### Applies under every option
+
+| # | Criterion | Status | Evidence |
+|---|---|---|---|
+| A1 | No `src/`, `package.json`, `tsup.config.ts`, `tsconfig*.json`, `.github/` in the diff | **MET** | `git diff main...HEAD --stat -- src/ package.json tsup.config.ts tsconfig*.json .github/` → empty. Changed: `CHANGELOG.md`, `advances/MOBILE/{plan,poc,refined,review}.md`, two `evidence/*.txt`, `docs/SPEC.md`, `docs/vault-format.md`. |
+| A2 | No change to format, crypto, KDF params, key format, SQLCipher config, `vault.json` | **MET** | `docs/vault-format.md` §§3–6 untouched; only §8/§9/§13 prose. |
+| A3 | MCP surface byte-for-byte unchanged | **MET** | `git diff main...HEAD -- src/delivery/mcp/` → 0 lines. |
+| A4 | No network/telemetry/analytics/cloud SDK in any app artifact | **MET** | Re-verified in the tree this pass: `libs.versions.toml` holds Kotlin, AGP, Compose MP, serialization, activity-compose, test runner and nothing network-capable; `AndroidManifest.xml:22–24` declares only a `tools:node="remove"` of the transitive self-scoped `androidx.core` permission; `Info.plist` has no ATS key; `valija_native.c` opens no socket. |
+| A5 | `typecheck && lint && test` pass unchanged; CI matrix not slowed or gated | **MET** | Ran all three this pass: `tsc --noEmit` clean; biome "Checked 146 files… No fixes applied" (1 pre-existing config-migration *info*); vitest **48 files / 241 tests passed**. No workflow file touched. |
+| A6 | Every value from the golden fixture; no real vault/passphrase/key/content anywhere | **MET** | Re-hashed all 7 vendored fixture files against `src/testing/__fixtures__/golden-vault/` — identical, zero drift. Both logs contain only fixture-derived output. |
+| A7 | PASS/FAIL/NOT ATTEMPTED per §3 question **with the hardware, OS version, and toolchain version** | **NOT MET — waived by the recorded closure** | Every G1–G7 question has a row; the CI rows carry what the repo can prove and name what is missing at the point of claim (`poc.md:56`, `:57`, `:59`). NDK/Xcode/macOS-image/simulator-runtime remain unrecorded. Unchanged from pass 3; not a flip-blocker. |
+| A8 | Explicit claim-scoping section; no claim stated more broadly than its evidence | **NOT MET** | §3 (`:148–180`) and the new ⚠ discipline are good. But `poc.md:192–196` contradicts `:54–55` and `docs/vault-format.md:556–557` about the same three facts (C1-4), and §4 `:212` plus §8 `:344–345` assert the existence of two evidence files that this branch does not contain (C2-4). One under-claim, one over-claim; both fail this criterion. |
+| A9 | No sentence describes a macOS/Linux/x86_64 run as an iOS/arm64 run | **MET in the shipped prose** | Re-read `poc.md`, `docs/vault-format.md` §13, `docs/SPEC.md:31`/§10b and the `CHANGELOG.md` entry: every mobile claim carries "simulator"/"emulator"/"x86_64" at the point of claim. `poc.md:53`'s new "device-class (emulator)" is imprecise in the wrong direction but names the emulator inline — W1-4, not an A9 breach. |
+
+### The app itself
+
+| # | Criterion | Status | Evidence |
+|---|---|---|---|
+| B1 | Single-screen app per platform, shared Kotlin core, amalgamation only behind one port | **MET** | `:vault-core` has no `expect`/`actual` and no platform API; `:vault-interop` is the only module that names C; `composeApp/App.kt` calls `RunGoldenVaultConformance`, never the port. Enforced by the module graph. |
+| B2 | Sandbox copy; bundled bytes unchanged; no `-wal`/`-shm`/`-journal` | **MET** | `RunGoldenVaultConformance.execute()` snapshots before opening; `infra/files/FixtureSnapshot` refuses on a sidecar; `AndroidVaultConformanceTest.kt:39–45,90–93` re-proves both halves on the emulator — and `poc.md:55` now says so correctly. |
+| B3 | No journal pragma, migration, lineage write or device identity in the PoC source | **MET** | My grep over the whole tree returns only comments *naming their absence* (`valija_native.c:6`, `Sqlite3mcDatabase.kt:15`) and the `SCHEMA_TOO_NEW` refusal paths. |
+| B4 | Derived key never written to keychain/keystore/prefs/file/log | **MET** | Zero hits for `Keychain`/`Keystore`/`UserDefaults`/`SharedPreferences`/`SecItem` outside `vendor/`; both `Argon2idKeyDeriver` actuals zero the raw key and passphrase bytes; `valija_native.c` `memset`s the `PRAGMA key` buffer on every path; the only three `println`s print the Argon2id milliseconds and the verdict line. |
+| B5 | Zero network requests, verified by source **and declared capabilities of both binaries** | **MET in substance, unevidenced in this repo** | I verified both declarations myself (A4). `advances/MOBILE/` records neither: no `android-permissions.txt`, no mention of `Info.plist`. W4-4 (carried, non-blocking). |
+
+### Execution evidence (G1, G2, G3, G6)
+
+| # | Criterion | Status | Evidence |
+|---|---|---|---|
+| C1 | Screenshot from a **booted iOS simulator**, committed | **NOT MET — disposed of honestly** | Re-verified against `ci.yml`: no job takes a screenshot and no job launches `:composeApp`. `poc.md:350` records permanent non-collection with the true reason. Waived by the closure. |
+| C2 | Screenshot from a **booted Android emulator or device** | **NOT MET — same disposition** | Same. |
+| C3 | Interop exercised per platform through its own mechanism, both recorded | **MET** | Visibly different code paths: hand-written JNI bridge (`androidMain/cpp/valija_native.c`) vs. cinterop `.def` with no hand-written C. `poc.md:58–59` records both. |
+| C4 | Run logs, **including exit codes**, committed | **NOT MET, and the disposition is now inaccurate** | The CI-log gap is disclosed at `poc.md:351` and that row is honest. But the two logs the advance *claims to have* — `evidence/jvm-conformance.log`, `evidence/linux-fullstack-interop.log` — are matched by `.gitignore:4` (`*.log`), are absent from `git ls-files`, and have never been added in any commit on any branch (`git log --all --diff-filter=A -- '*.log'` → empty). `git ls-tree -r HEAD advances/MOBILE/` lists only the two `.txt` files. C2-4. |
+| C5 | Android result states arm64 vs x86_64 plainly; x86_64 ⇒ G2 still open | **MET** | `poc.md:56`, `:58`, `:63`, `:161–164`; `docs/vault-format.md:558`; the CI job is literally named "Android build + x86_64 emulator (NOT arm64 evidence)". |
+
+### Conformance (G4, G7)
+
+| # | Criterion | Status | Evidence |
+|---|---|---|---|
+| D1 | JVM byte-compare against `expected-export.md`, passing | **MET** | `GoldenVaultConformanceTest` has exactly 10 `@Test`s; `expected-export.md` = 1887 B and `expected-pack.md` = 967 B on disk, the numbers `poc.md:50` claims. (The log that corroborates the run is subject to C2-4.) |
+| D2 | Same comparison on device, shown on screen and in the exit status | **NOT MET (screen half)** | The screen half exists in `App.kt` and was never captured on any target; the exit-status half exists in CI and is not verifiable from this repo. |
+| D3 | Byte comparison, not a snapshot, not normalised | **MET** | `PackConformance.compareRendered` is a `ByteArray` loop with a first-difference index. |
+| D4 | `estimateTokens` counts UTF-16 code units, asserted by a test | **MET** | Asserts `"𝄞".length == 2`; documented at `docs/vault-format.md:309–317`. |
+
+### Argon2id (G5)
+
+| # | Criterion | Status | Evidence |
+|---|---|---|---|
+| E1 | Derived key equals `manifest.keyHex`, asserted in code | **MET off-device; N/A on-device by amendment** | Asserted before opening in all three conformance tests (JVM, Android instrumented, iOS). |
+| E2 | Derivation time reported, labelled with the hardware, marked not-a-device measurement | **MET (documentation half); screen half waived** | Pass 3's fabricated range is gone. `178 ms` is the number in `poc.md:207`'s quoted excerpt, labelled "desktop-class silicon; not a phone measurement" in both documents. Two residual wording defects, neither fatal to this criterion: "the only *committed* Argon2id number" is undercut by C2-4, and "device-class (emulator)" is wrong (W1-4). |
+
+### Contract and roadmap
+
+| # | Criterion | Status | Evidence |
+|---|---|---|---|
+| F1 | Every `docs/vault-format.md` defect fixed or recorded; M4's W5 and W6 addressed | **MET** | All five corrections still check out against `src/context/domain/services/context-pack.ts` and `src/delivery/context-pack-markdown.ts`; W7 recorded-not-fixed with a reason. |
+| F2 | §13's table gains rows for what executed, with the same scoping precision as its existing rows | **MET** | `:545–548` lead-in plus per-row ⚠ at `:554–557`. This is pass 3's C1-3, done. (That the document it points at contradicts two of those rows is charged to A8.) |
+| F3 | `docs/SPEC.md` §2 Out line and §10b pointer corrected | **MET** | `:31` and §10b separate what is proven (interop path, CI level) from what is permanently unmeasured (on-device Argon2id latency, Android arm64). Accurate against `poc.md`. |
+| F4 | Kept tree: location stated, non-authoritative scaffolding declared | **MET** | `poc.md:9–11`, `:403–404`; `valija-mobile/README.md` agrees; the runbook clones `-b feat/poc`. |
+| F5 | Amalgamation version, SHA-256, compile flags recorded; licence satisfied; no unauthorised CI/dependency | **MET** | Re-hashed this pass: `sha256(valija-mobile/vendor/sqlite3mc/sqlite3.c)` == `sha256(node_modules/better-sqlite3-multiple-ciphers/deps/sqlite3/sqlite3.c)` == the recorded `670d8d05…98b9`. `THIRD-PARTY-NOTICES.md` carries both licences; `valija/.github/` untouched. |
+
+**Score: 24 met, 6 not met** — A7, C1, C2 and D2's screen half are waived-and-disclosed by Oscar's
+closure; **A8 and C4 are genuinely open**, and both trace to the two issues below. E2 and F2 flipped
+to met this pass.
+
+---
+
+## 2. Plan compliance
+
+Slices 1–8 and 10 are evidenced; Slice 9 is skipped by Oscar's recorded amendment (`plan.md:5–11`,
+`refined.md:470–488`). Deviations not covered by that amendment, all carried and all now disclosed
+except the last:
+
+- **Slice 7 step 46** — the planned iOS "boot, install, launch, `xcrun simctl io booted screenshot`"
+  steps were never implemented; `ci.yml`'s `ios` job stops at `linkDebugFrameworkIosArm64`. Now
+  correctly and consistently named as the cause of the missing screenshots (`:350`) and of G6
+  (`:64`, `:366–374`, `:395–401`) — pass 3's W1-3 is closed.
+- **Step 49** — `evidence/` still lacks `android-permissions.txt` and any CI log; disclosed at `:351`.
+- **Steps 45 and 58** — the read-only/no-keychain greps and the three final gate outputs are still
+  not pasted into `poc.md`. I ran all of them myself and they hold, so no criterion turns on it.
+- **Step 49, the part nobody noticed** — the plan says `evidence/` gets `jvm-conformance.log` and
+  (by §9's tree) the run logs. They were written to the working tree but never entered git, because
+  `.gitignore:4` silently swallows `*.log`. The slice reads as done and is not. C2-4.
+- **D-2** — `valija-mobile`'s `feat/poc` is still unmerged into its `main`; scheduled for ship, and
+  the runbook works around it.
+
+---
+
+## 3. Hard gates
+
+| Gate | Result |
+|---|---|
+| Security surface weakened (secrets/keys logged, plaintext to disk, KDF/keychain use altered, SQLCipher unkeyed, MCP over-exposed) | **PASS** — re-checked against the app tree, not the prose. Zero `src/` change; MCP diff empty; §§4–6 of the format contract untouched; raw key and passphrase bytes zeroed in both `Argon2idKeyDeriver` actuals; the `PRAGMA key` buffer `memset` in C; no keychain/keystore/prefs API anywhere; `sqlite3_open_v2(…READONLY)` → `PRAGMA cipher='sqlcipher'` → `PRAGMA key` → `SELECT count(*) FROM sqlite_master` in the documented order; no `journal_mode`, no `wal_checkpoint`, no DDL/INSERT, no migration; zero effective Android permissions; only published fixture values anywhere, including both logs. |
+| Tests present for new behaviour; suite passing | **PASS** — no `valija` behaviour changed; 48 files / 241 tests green; typecheck and lint clean. Each new contract rule is backed by a Kotlin assertion in `GoldenVaultConformanceTest` and by the pre-existing `vault-format-conformance.test.ts`. |
+| Advance ritual evidenced | **PASS** — `refined.md:3` `Approved: Oscar 2026-07-31`; `plan.md:3` `Approved: Oscar 2026-08-01`; both 2026-08-16 amendments dated, attributed and additive; this `review.md`. |
+| Naming, placement, clean-architecture conventions | **PASS** — `valija`'s diff is docs-only. In `valija-mobile` the CLAUDE.md mapping holds: kind-named subfolders throughout (`domain/{entities,values,services}`, `application/{ports,use-cases}`, `infra/{sqlite,argon2,files}`), only `domain/VaultError.kt`, `shared/UseCase.kt`, `shared/Result.kt` at a layer root (the standing exceptions), tech-named adapters, `parseX → Result` at boundaries. One placement nit carried at S8-4. |
+
+**No hard gate is breached.** The FAIL is on acceptance criteria A8 and C4 — the accuracy of the
+disclosure and the existence of the evidence it points at.
+
+---
+
+## 4. Issues
+
+### Critical
+
+**C1-4 — §4's provenance caveat still says the opposite of what §2 and the contract document now
+say, about the same three facts.** The fix commit corrected `poc.md:54`, `:55` and
+`docs/vault-format.md:556–557`, but left `poc.md:192–196` untouched:
+
+```
+§2 marks every row that depends on it. Where a row is
+also independently established elsewhere in this document (G3a, via the Android CI emulator run
+at a stronger tier — real NDK, not this harness's plain JNI), that independent evidence stands on
+its own; where it is not (the Argon2id timing, the `WRONG_PASSPHRASE` check, the no-sidecar
+check), the claim rests solely on unreproducible evidence and should be weighted accordingly.
+```
+
+`:54` now says the `WRONG_PASSPHRASE` check *is* "independently corroborated at a stronger tier",
+`:55` says the same of the no-sidecar check, and `docs/vault-format.md:556–557` repeat it — and I
+verified all four citations in the tree, so §2 is the correct half. §4 is the section every ⚠ in
+both documents points a reader to; it is the one place where being wrong propagates everywhere.
+Pass 3's flip condition named `:195–196` explicitly and it was the one edit of the three that did
+not land. *Fix (one clause):* "…where it is not (the Argon2id timing), the claim rests solely on
+unreproducible evidence; the `WRONG_PASSPHRASE` and no-sidecar checks are independently asserted at
+a stronger tier by `AndroidVaultConformanceTest.kt:90–93,97–103` and `IosVaultConformanceTest.kt:102–108`
+in run #11."
+
+**C2-4 (new; no earlier pass caught it) — the two evidence logs are `.gitignore`d and have never
+been committed, while `poc.md` presents them as files in `advances/MOBILE/evidence/`.**
+
+```
+$ git check-ignore -v advances/MOBILE/evidence/*.log
+.gitignore:4:*.log	advances/MOBILE/evidence/jvm-conformance.log
+.gitignore:4:*.log	advances/MOBILE/evidence/linux-fullstack-interop.log
+
+$ git ls-tree -r HEAD --name-only advances/MOBILE/evidence/
+advances/MOBILE/evidence/sqlite3c-sha256.txt
+advances/MOBILE/evidence/toolchain-versions.txt
+
+$ git log --all --diff-filter=A --name-only -- '*.log'      # empty: never added, ever
+```
+
+They exist only in this working tree. Against that, `poc.md:212` says "Full log:
+`evidence/linux-fullstack-interop.log`", and §8's evidence table (`:344–345`) describes both files
+in the present tense, in a table whose other rows say `NOT COLLECTED` or `NOT RETRIEVED` when
+something is absent — so the contrast actively tells a reader these two are present. They will not
+be. This is the same defect class as pass 3's W5-3 (documents pointing at artifacts that do not
+exist), except here it is this repo's own primary deliverable, in an advance whose entire output is
+`poc.md` + `evidence/`, and it silently voids `plan.md` Slice 8 step 49.
+
+It also undercuts the C3-3 fix: `poc.md:53` and `docs/vault-format.md:555` both now describe
+`178 ms` as "the only **committed** Argon2id number", when the file it is read from is precisely
+what is not committed. The number does survive — `poc.md:207` quotes the three relevant lines
+inline — but the word is wrong and the log's `BUILD SUCCESSFUL` / per-test PASSED lines, which are
+the only exit-status-shaped evidence in the whole advance, ship nowhere.
+
+*Fix (one command, no recovery needed):*
+`git add -f advances/MOBILE/evidence/jvm-conformance.log advances/MOBILE/evidence/linux-fullstack-interop.log`,
+and — because this will happen again to the next advance that captures a log — add
+`!advances/**/evidence/*.log` to `.gitignore` so evidence is never silently dropped. If instead the
+decision is that they do not ship, then say that in §8 in the same register as the CI-log row, drop
+`:212`'s "Full log:" pointer, and remove "committed" from `poc.md:53` and
+`docs/vault-format.md:555`. The first option is obviously better: it costs 2.6 KB and turns the
+advance's most-cited non-CI result into something a stranger can read.
+
+### Warning
+
+**W1-4 — "device-class (emulator) timing" is wrong in the overclaiming direction.** `poc.md:53` says
+`AndroidVaultConformanceTest.kt` "prints a device-class (emulator) timing on every green CI run".
+The Android CI job is an x86_64 emulator on `ubuntu-latest`; an Argon2id run inside it is bounded by
+the runner's own desktop-class CPU and memory, not by phone hardware. It is the *same class of
+measurement* as the 178 ms number, not a step toward the phone measurement §2 marks `NOT COLLECTED`.
+In the one document written to keep exactly this distinction, "device-class" is the wrong word.
+*Fix:* "also prints an emulator timing (the CI host's x86_64 CPU, not phone hardware)".
+
+**W2-4 (carried W3-3) — §9's "Established" paragraph, the one a skimmer reads, still credits the
+unreproducible run with no marker.** `poc.md:358–361`: "demonstrated on Linux/x86_64 with the same
+sources the mobile builds use". The sentence survives on its CI half alone, so it is not an
+overclaim — but the ⚠ discipline now applied in two documents exists so the Linux half is never
+cited bare. One parenthetical.
+
+**W3-4 (carried W4-3, and more pressing under C2-4) — the log calls the Linux sandbox
+"device-equivalent hardware".** `evidence/linux-fullstack-interop.log:26,29`. Not editing a
+transcript is right. But if C2-4 is fixed by committing it, that phrase becomes a shipped sentence
+in exactly the register A9 forbids, uncontradicted anywhere. One clause in §8's row closes it:
+"the test name in that log calls the Linux sandbox 'device-equivalent hardware'; it is not — see
+§2's G5 row".
+
+**W4-4 (carried W5-3) — `valija-mobile` still points readers at two artifacts that do not exist.**
+`composeApp/src/androidMain/AndroidManifest.xml:8` cites
+"`advances/MOBILE/evidence/android-permissions.txt` in valija"; `PackConformance.kt` cites "the
+committed screenshots". Out of this diff, so non-blocking — but it is a two-line comment fix in a
+repo the ship step touches anyway, and C2-4 shows how this class of claim ages.
+
+**W5-4 — a copy-paste artifact in the contract document.** `docs/vault-format.md:556`'s
+`WRONG_PASSPHRASE` row reads "⚠ number from the unreproducible harness, but independently
+corroborated". That row has no number; the phrasing came from `poc.md:54`, where "the *number*
+above" refers to the G5 row directly above it. In `docs/vault-format.md` the row above is the
+Argon2id one, so the sentence reads as if this row published a figure. *Fix:* "⚠ result from the
+unreproducible harness, but independently corroborated…".
+
+### Suggestion
+
+- **S1-4** — `poc.md:397` calls it "the CI screenshot step that would have closed it"; a screenshot
+  does not close G6, launching the app process does. `plan.md` step 46's boot/install/launch is the
+  thing that was never built, and §2 (`:42–43`) says it correctly. Match §2's wording.
+- **S2-4 (carried S1-3)** — `poc.md:39` "The four bolded rows below say `NOT COLLECTED`" — five rows
+  are bolded; `**G1**` at `:60` is bold and says PASS. `:44`'s sentence disambiguates it in prose,
+  but the visual cue and the sentence still disagree.
+- **S3-4 (carried S2-3)** — §3a is numbered between §2 and §3. Renumber or drop the "a".
+- **S4-4 (carried S3-3)** — `refined.md` §9 fixes the vocabulary as PASS/FAIL/**NOT ATTEMPTED**;
+  `poc.md` uses `NOT COLLECTED` and `NO`. One mapping line under §2's table makes A7 literally
+  checkable.
+- **S5-4 (carried S4-3)** — two rows are both labelled `G3a` (`:52` Linux JNI, `:58` Android
+  emulator) at very different strengths; label the first "G3a (partial — same bridge, not the NDK)".
+- **S6-4 (carried S5-3)** — `evidence/toolchain-versions.txt` still carries only the sandbox and
+  `libs.versions.toml` values while `plan.md` §9 designates it as where toolchain facts go; the
+  repo-derivable CI facts (API 34, `x86_64`, `google_apis`) live only in `poc.md` §2. Three lines.
+- **S7-4 (carried S6-3)** — `poc.md:59` cites "Compose Multiplatform 1.7.3" as the toolchain behind
+  `:vault-interop:iosSimulatorArm64Test`, which does not depend on Compose at all.
+- **S8-4 (carried S9-3)** — placement nit in `valija-mobile`:
+  `composeApp/src/commonMain/kotlin/dev/valija/poc/GoldenVaultBundleLoader.kt` is bundle-resource IO
+  at the module package root beside `App.kt`, while its sibling `FixtureSnapshot` correctly lives in
+  `infra/files/`. `infra/bundle/GoldenVaultBundleLoader.kt` matches CLAUDE.md's
+  kind-named-subfolder rule; `RunGoldenVaultConformance.GoldenVaultBundle` would read better as
+  `application/dto/GoldenVaultBundle.kt`.
+- **S9-4 (carried S8-3)** — `docs/vault-format.md:7–8` still points a second implementer at "the
+  read-only mobile companion described in `advances/M4/refined.md`", now that no such companion is
+  planned.
+- **S10-4 (carried S7-3)** — worth one line in §8: the NDK version is unrecoverable *even in
+  principle* from the kept tree, because `valija-mobile` pins no `ndkVersion` and AGP took whatever
+  the runner image had. That is the reproducibility defect behind A7, cheaper to record than to
+  rediscover.
+
+---
+
+## 5. What would flip this to PASS
+
+1. **C1-4** — one clause in `poc.md:192–196`, so §4 stops contradicting `:54–55` and
+   `docs/vault-format.md:556–557` about the `WRONG_PASSPHRASE` and no-sidecar checks.
+2. **C2-4** — make `evidence/jvm-conformance.log` and `evidence/linux-fullstack-interop.log`
+   actually exist in the commit (`git add -f`, plus a `!advances/**/evidence/*.log` negation in
+   `.gitignore` so this cannot recur), **or** disclose in §8 that they are not committed, drop
+   `:212`'s "Full log:" pointer, and stop calling `178 ms` "committed" in `poc.md:53` and
+   `docs/vault-format.md:555`.
+
+Nothing else holds the merge. W1-4 is strongly recommended in the same edit — "device-class
+(emulator)" is the one phrase in the new text that drifts toward the register this advance was
+written to avoid — and W3-4 becomes necessary if and only if C2-4 is fixed by committing the log.
+W2-4, W4-4, W5-4 and every S-item are optional.
+
+**Credit where it is due.** Two of three criticals are fully closed and I verified them rather than
+accepting them: the ⚠ markers in `docs/vault-format.md` sit on exactly the four harness-derived rows
+and on no CI row, the lead-in names the caveat and points at `poc.md` §4, and `155` is gone from
+every file in the repo. The corroboration rewrite is not just a retraction — every one of the four
+line citations it added (`AndroidVaultConformanceTest.kt:62`, `:90–93`, `:97–103`,
+`IosVaultConformanceTest.kt:102–108`) is accurate against the attached tree, and the G5 row's new
+"an emulator timing exists but was never extracted" sentence is a disclosure nobody asked for and
+the advance is better for. Both warnings you asked me to confirm are genuinely fixed: §10 now splits
+G6 out as a CI omission in the same terms as §2 and §9, and the `toolchain-versions.txt` row now
+gives the true reason instead of the network one. What is left is one sentence that was missed and
+one file-tracking accident — and the second is the more interesting of the two, because for four
+review passes an entire class of this advance's evidence has been read off a working tree that no
+one else will ever have.
+
+---
+---
+
+# MOBILE — review (third pass, retained for history)
+
+(Verdict at the time: FAIL. Reviewed `docs/mobile-poc-MOBILE` @ `b270262`.)
 
 Reviewed `docs/mobile-poc-MOBILE` @ `b270262` against `main` (`git diff main...HEAD`), working tree
 clean. Re-reviewed from scratch, not as a diff of `b270262`. The second pass is retained verbatim

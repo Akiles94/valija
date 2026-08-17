@@ -50,7 +50,7 @@ original question) is closed by the iOS simulator run, the same event as G3b —
 | G4 | Rendered pack byte-identical to `expected-export.md` and `expected-pack.md` | Linux x86_64, JDK 21, `:vault-core:jvmTest` — **no SQLite, no C, no device** | **PASS** — 1887 and 967 bytes, byte-identical |
 | G7 | Is the contract implementable without reading `src/`? | Same | **NO** — see §5. Five real defects found and fixed |
 | G3a | Kotlin → JNI → amalgamation, end to end | Linux x86_64, JDK 21 — same JNI bridge and vendored C the Android build compiles, **not an Android run** | **PASS** — see §4 ⚠ from a harness that cannot be re-run (§4); independently corroborated at a stronger tier by the real-NDK Android CI row below |
-| G5 | Argon2id 64 MiB / t=3 / p=1 | Same (GitHub-hosted Linux runner class CPU) | **178 ms** — *desktop-class silicon; not a phone measurement.* ⚠ the only *committed* Argon2id number in this advance, and it rests solely on the unreproducible harness in §4 — not independently re-checkable. `AndroidVaultConformanceTest.kt` also prints a device-class (emulator) timing on every green CI run, but that number was never extracted or committed — same gap as §8's CI-log row |
+| G5 | Argon2id 64 MiB / t=3 / p=1 | Same (GitHub-hosted Linux runner class CPU) | **178 ms** — *desktop-class silicon; not a phone measurement.* ⚠ the only Argon2id number recorded in this advance — quoted inline in §4's committed prose, though the `.log` file it came from is not itself committed (§8) — and it rests on the unreproducible harness in §4. `AndroidVaultConformanceTest.kt` also prints a timing on every green CI run — that measures the emulator's own runner CPU, not phone hardware either, and it was never extracted or recorded anywhere — same gap as §8's CI-log row |
 | — | Wrong key surfaces as `WRONG_PASSPHRASE`, not corruption | Same | **PASS** ⚠ the *number* above is from the unreproducible harness, but this specific check is independently corroborated at a stronger tier: `AndroidVaultConformanceTest.kt:97–103` and `IosVaultConformanceTest.kt:102–108` both assert it on their respective CI emulator/simulator runs |
 | — | Read-only: fixture unmutated, no `-wal`/`-shm`/`-journal` produced | Same | **PASS** ⚠ also independently corroborated: `AndroidVaultConformanceTest.kt:90–93` asserts zero sidecar files on the Android emulator run in CI |
 | — | Vendored C compiles through the **real Android NDK** for `arm64-v8a` **and** `x86_64` | GitHub Actions `ubuntu-latest`, Kotlin 2.1.20, AGP 8.7.3 + NDK via CMake, compileSdk/targetSdk 35, minSdk 24. **NDK version not recorded** — see §8's CI-log row | **PASS** — `:composeApp:assembleDebug` green |
@@ -190,10 +190,12 @@ target exists on `:vault-interop`, and no file or commit named `FullStackVerific
 any branch. **It cannot be reproduced from the kept tree, in either repository, as this stands.**
 The log below (`evidence/linux-fullstack-interop.log`) is real output from a run that happened;
 nobody can re-run it today to check it. §2 marks every row that depends on it. Where a row is
-also independently established elsewhere in this document (G3a, via the Android CI emulator run
-at a stronger tier — real NDK, not this harness's plain JNI), that independent evidence stands on
-its own; where it is not (the Argon2id timing, the `WRONG_PASSPHRASE` check, the no-sidecar
-check), the claim rests solely on unreproducible evidence and should be weighted accordingly.
+also independently established elsewhere in this document, that independent evidence stands on
+its own: G3a via the Android CI emulator run at a stronger tier (real NDK, not this harness's
+plain JNI), and the `WRONG_PASSPHRASE` and no-sidecar checks via the same emulator/simulator CI
+runs asserting them directly (see §2's rows for the exact file and line). **Only the Argon2id
+timing has no independent source** — 178 ms is the sole committed number in this advance, and it
+rests solely on this unreproducible harness.
 
 The most substantial pre-device result, and the one that most de-risks the hardware session.
 
@@ -209,7 +211,11 @@ CONFORMANCE: PASS — 1887 bytes, byte-identical to expected-export.md
 CONFORMANCE: PASS — 967 bytes, byte-identical to expected-pack.md
 ```
 
-Full log: `evidence/linux-fullstack-interop.log`.
+Full log: `evidence/linux-fullstack-interop.log` in this working tree — **not committed to
+`valija`**, since `*.log` is repo-gitignored and this advance's diff is deliberately scoped to
+exclude anything outside `advances/MOBILE/**`, `docs/vault-format.md`, `docs/SPEC.md`, and
+`CHANGELOG.md` (§9's acceptance criteria). The three lines quoted just above are the entire
+surviving record of this run.
 
 ### The finding that would have cost a day on borrowed hardware
 
@@ -341,8 +347,8 @@ point of the claim, not in a footnote.
 
 | File | What it is |
 |---|---|
-| `evidence/jvm-conformance.log` | The same ten test names as the committed `GoldenVaultConformanceTest`, run as a standalone Kotlin/JVM project in this sandbox (no Android SDK here); CI's own `:vault-core:jvmTest` is the canonical run of that same test class |
-| `evidence/linux-fullstack-interop.log` | The §4 run — **produced by a scratch harness that was not kept; not reproducible from either repo as it stands.** Real output from a real run, but nobody can re-run it today. See §4's provenance caveat before citing any number from it |
+| `evidence/jvm-conformance.log` | **NOT COMMITTED to `valija`** — `*.log` is repo-gitignored and this advance's diff is deliberately scoped (§9), so this file exists only in the working tree that produced it. It shows the same ten test names as the committed `GoldenVaultConformanceTest`, run as a standalone Kotlin/JVM project in this sandbox (no Android SDK here); CI's own `:vault-core:jvmTest` is the canonical, reproducible run of that same test class |
+| `evidence/linux-fullstack-interop.log` | **NOT COMMITTED**, for the same gitignore/scope reason — and produced by a scratch harness that was not kept, so it is not reproducible from either repo even if it were committed. Real output from a real run; nobody can re-run it today. See §4's provenance caveat before citing any number from it |
 | `evidence/sqlite3c-sha256.txt` | Hashes of the vendored amalgamation |
 | `evidence/toolchain-versions.txt` | Compilers and versions behind every row above, for what ran in this sandbox and what CI's config declares; CI's actual runner image (macOS image/Xcode version, NDK version, iOS simulator runtime) is **not recorded here**. The run's overall conclusion was reachable via the GitHub Actions API (§3a) and confirmed `success`; the finer-grained log detail that would carry these versions was not pulled down and committed, as part of the same closure decision as the row below |
 | `evidence/android-device.png` + `.log` + `-info.txt` | **NOT COLLECTED** — Slice 9 skipped, §10 |
