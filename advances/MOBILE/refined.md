@@ -2,7 +2,9 @@
 
 Approved: Oscar 2026-07-31
 
-**Status:** Gate R approved. All twelve `P-n` decisions in §7 are recorded (each carries a
+**Status:** Gate R approved. **Amended 2026-08-16 (Oscar): no distributable mobile app will be
+built; the physical-device runs below are superseded — see the P-6 amendment and
+`poc.md` §10.** All twelve `P-n` decisions in §7 are recorded (each carries a
 **Decided:** line under its options). The one open operational point raised by P-3's outcome —
 where `plan.md`/`review.md` live now that the PoC code has a separate home in `valija-mobile` — is
 resolved: **Option A**, this advance's plan, review, and ship cycle stay in `valija`'s

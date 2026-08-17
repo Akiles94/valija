@@ -335,7 +335,7 @@ catch that.
     unconditional relative to the budget check, not relative to whether the section exists.
     The section can never end up empty: with zero pinned items the whole step is skipped (no
     label charged, no section pushed), and with one or more, the newest pinned item is always
-    kept regardless of budget (§9's next bullet), so a "Pinned" heading never appears over an
+    kept regardless of budget (§8's next bullet), so a "Pinned" heading never appears over an
     empty list.
   - **Latest handoff:** the item's own cost **plus** `estimateTokens("Latest handoff")` are
     tested against the budget **together, as one sum**. The label is charged only if the pair
@@ -610,8 +610,10 @@ write too: a row inserted through the same literal amalgamation reads back corre
 the real desktop `openVaultDb` and `SearchContext` code paths — **PASS**. A future
 mobile-companion advance can adopt this with confidence: build/vendor the amalgamation for
 the mobile app rather than depending on the official SQLCipher package, no desktop-side
-migration required. A literal iOS device/simulator execution remains the one genuinely open
-item. See `advances/M4/spike.md` §"Option 2 verification" and §"Write round-trip
+migration required. A literal iOS **simulator** execution of this exact amalgamation later ran
+under `advances/MOBILE/` (see this document's own §13 device-execution row); a **physical**
+device run never happened and, per `advances/MOBILE/poc.md` §10, now never will. See
+`advances/M4/spike.md` §"Option 2 verification" and §"Write round-trip
 verification" for the full detail, including the exact commands and C source, so this can be
 independently re-checked or re-run.
 
