@@ -542,16 +542,19 @@ ever executed on a physical phone**; the advance closed before that run (`advanc
 | Write round-trip (literal iOS) | C | DEFERRED — informational only (D-D deferred) |
 
 **A second implementation now exists** (`advances/MOBILE/`, Kotlin), so the rows below are no
-longer hypothetical. Full detail and claim scoping: `advances/MOBILE/poc.md`.
+longer hypothetical. Full detail and claim scoping: `advances/MOBILE/poc.md`. **The four rows
+below marked ⚠ were produced by a scratch test harness that was never committed to
+`valija-mobile` and cannot be re-run from either repository as it stands — see `poc.md` §4 for
+the full provenance caveat before citing any of their numbers.**
 
 | Question | Where it ran | Result |
 |---|---|---|
 | Rendered pack byte-match, second implementation (Kotlin, unbudgeted `expected-export.md`) | Linux x86_64, JVM — no SQLite, no C, no device | **PASS** — 1887 bytes |
 | Rendered pack byte-match, second implementation (Kotlin, budgeted `expected-pack.md`) | Same | **PASS** — 967 bytes |
-| Vendored SQLite3MultipleCiphers amalgamation opens a real vault via Kotlin↔C interop | Linux x86_64, JDK 21, the same JNI bridge and vendored C the Android build compiles — **not an Android run** | **PASS** |
-| Argon2id derives the published key through that same interop path | Same | **PASS** — 155–178 ms on desktop-class silicon, *not a phone measurement* |
-| Wrong key surfaces as `WRONG_PASSPHRASE`, not corruption | Same | **PASS** |
-| Read-only: fixture unmutated, no `-wal`/`-shm`/`-journal` produced | Same | **PASS** |
+| Vendored SQLite3MultipleCiphers amalgamation opens a real vault via Kotlin↔C interop | Linux x86_64, JDK 21, the same JNI bridge and vendored C the Android build compiles — **not an Android run** | **PASS** ⚠ unreproducible harness; independently corroborated at a stronger tier by the real-NDK Android CI row below |
+| Argon2id derives the published key through that same interop path | Same | **PASS** — 178 ms on desktop-class silicon, *not a phone measurement* ⚠ unreproducible harness; the only committed Argon2id number in the advance |
+| Wrong key surfaces as `WRONG_PASSPHRASE`, not corruption | Same | **PASS** ⚠ number from the unreproducible harness, but independently corroborated: asserted on both the Android emulator and iOS simulator CI runs |
+| Read-only: fixture unmutated, no `-wal`/`-shm`/`-journal` produced | Same | **PASS** ⚠ independently corroborated on the Android emulator CI run |
 | Vendored amalgamation opens a real vault via JNI, executing on Android | x86_64 **emulator**, GitHub Actions — **not** the arm64 evidence for a physical device | **PASS** |
 | Vendored amalgamation opens a real vault via Kotlin/Native cinterop, executing on iOS | iOS **simulator**, GitHub Actions `macos-latest` — **not** a physical device | **PASS** |
 | Search byte-match (second implementation) | — | DEFERRED — the PoC deliberately omits the search path (`advances/MOBILE/refined.md` P-2), so no second implementation of it exists yet |

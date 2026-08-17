@@ -50,9 +50,9 @@ original question) is closed by the iOS simulator run, the same event as G3b —
 | G4 | Rendered pack byte-identical to `expected-export.md` and `expected-pack.md` | Linux x86_64, JDK 21, `:vault-core:jvmTest` — **no SQLite, no C, no device** | **PASS** — 1887 and 967 bytes, byte-identical |
 | G7 | Is the contract implementable without reading `src/`? | Same | **NO** — see §5. Five real defects found and fixed |
 | G3a | Kotlin → JNI → amalgamation, end to end | Linux x86_64, JDK 21 — same JNI bridge and vendored C the Android build compiles, **not an Android run** | **PASS** — see §4 ⚠ from a harness that cannot be re-run (§4); independently corroborated at a stronger tier by the real-NDK Android CI row below |
-| G5 | Argon2id 64 MiB / t=3 / p=1 | Same (GitHub-hosted Linux runner class CPU) | **155–178 ms** — *desktop-class silicon; not a phone measurement.* ⚠ the only Argon2id timing in this advance, and it rests solely on the unreproducible harness in §4 — not independently re-checkable |
-| — | Wrong key surfaces as `WRONG_PASSPHRASE`, not corruption | Same | **PASS** ⚠ from the unreproducible harness in §4, not independently corroborated elsewhere |
-| — | Read-only: fixture unmutated, no `-wal`/`-shm`/`-journal` produced | Same | **PASS** ⚠ from the unreproducible harness in §4, not independently corroborated elsewhere |
+| G5 | Argon2id 64 MiB / t=3 / p=1 | Same (GitHub-hosted Linux runner class CPU) | **178 ms** — *desktop-class silicon; not a phone measurement.* ⚠ the only *committed* Argon2id number in this advance, and it rests solely on the unreproducible harness in §4 — not independently re-checkable. `AndroidVaultConformanceTest.kt` also prints a device-class (emulator) timing on every green CI run, but that number was never extracted or committed — same gap as §8's CI-log row |
+| — | Wrong key surfaces as `WRONG_PASSPHRASE`, not corruption | Same | **PASS** ⚠ the *number* above is from the unreproducible harness, but this specific check is independently corroborated at a stronger tier: `AndroidVaultConformanceTest.kt:97–103` and `IosVaultConformanceTest.kt:102–108` both assert it on their respective CI emulator/simulator runs |
+| — | Read-only: fixture unmutated, no `-wal`/`-shm`/`-journal` produced | Same | **PASS** ⚠ also independently corroborated: `AndroidVaultConformanceTest.kt:90–93` asserts zero sidecar files on the Android emulator run in CI |
 | — | Vendored C compiles through the **real Android NDK** for `arm64-v8a` **and** `x86_64` | GitHub Actions `ubuntu-latest`, Kotlin 2.1.20, AGP 8.7.3 + NDK via CMake, compileSdk/targetSdk 35, minSdk 24. **NDK version not recorded** — see §8's CI-log row | **PASS** — `:composeApp:assembleDebug` green |
 | — | Vendored C compiles and archives through **real Xcode clang** for `arm64-apple-ios` **and** `arm64-apple-ios-simulator` | GitHub Actions `macos-latest`, Kotlin 2.1.20. **macOS image and Xcode version not recorded** — see §8's CI-log row | **PASS** — `build-apple-native.sh` green for both targets |
 | G3a | JNI/NDK → amalgamation executing on Android | Android emulator, GitHub Actions `ubuntu-latest`, API 34, `google_apis`, **x86_64** (not arm64 — G2) | **PASS** — `:vault-interop:connectedAndroidTest` green (§3a) |
@@ -344,7 +344,7 @@ point of the claim, not in a footnote.
 | `evidence/jvm-conformance.log` | The same ten test names as the committed `GoldenVaultConformanceTest`, run as a standalone Kotlin/JVM project in this sandbox (no Android SDK here); CI's own `:vault-core:jvmTest` is the canonical run of that same test class |
 | `evidence/linux-fullstack-interop.log` | The §4 run — **produced by a scratch harness that was not kept; not reproducible from either repo as it stands.** Real output from a real run, but nobody can re-run it today. See §4's provenance caveat before citing any number from it |
 | `evidence/sqlite3c-sha256.txt` | Hashes of the vendored amalgamation |
-| `evidence/toolchain-versions.txt` | Compilers and versions behind every row above, for what ran in this sandbox and what CI's config declares; CI's actual runner image (macOS image/Xcode version, NDK version, iOS simulator runtime) is **not recorded here** — retrieving it needs the run's own logs, and this session's network access cannot reach `api.github.com` to fetch them (see the row below) |
+| `evidence/toolchain-versions.txt` | Compilers and versions behind every row above, for what ran in this sandbox and what CI's config declares; CI's actual runner image (macOS image/Xcode version, NDK version, iOS simulator runtime) is **not recorded here**. The run's overall conclusion was reachable via the GitHub Actions API (§3a) and confirmed `success`; the finer-grained log detail that would carry these versions was not pulled down and committed, as part of the same closure decision as the row below |
 | `evidence/android-device.png` + `.log` + `-info.txt` | **NOT COLLECTED** — Slice 9 skipped, §10 |
 | `evidence/ios-device.png` + `.log` + `-info.txt` | **NOT COLLECTED** — Slice 9 skipped, §10 |
 | `evidence/ci-android-emulator.png`, `ci-ios-simulator.png` | **NOT COLLECTED, permanently** — checked against `valija-mobile`'s `.github/workflows/ci.yml` directly: neither CI job ever runs a screenshot step. Both upload test reports, `android-permissions.txt`, and the debug APK — not an image. This row was aspirational at planning time and was never implemented; it is not "pending" in the sense of still arriving. |
@@ -392,11 +392,13 @@ This does not discard the advance's findings. Independent of any phone:
   phone.
 - **G1**, in its original general form, is also closed: the iOS simulator run is a real binary
   really executing on iOS (§2, §9).
-- **G1 (physical) / G2 / G5 / G6** — anything that only a physical device can answer, plus G2's
-  arm64-specific claim, which no CI tier ever attempted — are closed as **not collected**. If a
-  mobile app is ever reconsidered, these four are exactly what the next advance would need to
-  re-open, starting from `plan.md` Slice 9's runbook (§7 above), which remains valid and
-  unexecuted.
+- **G1 (physical), G2 and G5** — anything only a physical device can answer, plus G2's
+  arm64-specific claim, which no CI tier ever attempted — are closed as **not collected**, by this
+  closure decision. **G6** is also **not collected**, but for a different reason: the CI screenshot
+  step that would have closed it (`plan.md` step 46) was never implemented, independent of this
+  decision — see §2, §9. If a mobile app is ever reconsidered, all four are what the next advance
+  would need to re-open, starting from `plan.md` Slice 9's runbook (§7 above), which remains valid
+  and unexecuted.
 
 **`akiles94/valija-mobile` is left as-is**: real, CI-green, non-authoritative proof-of-concept
 scaffolding — not a maintained product. No further work is planned there under this advance.
