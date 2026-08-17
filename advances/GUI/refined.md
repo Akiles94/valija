@@ -1,793 +1,798 @@
-# GUI — desktop application to administer and curate valija context · Refined Spec
+# GUI — desktop companion for valija · Refined Spec
 
-**Status:** Gate-R draft. **Nothing below is approved.** Every `D-n` in §7 is genuinely open and
-carries a recommended default with its reason; the defaults are the refiner's opinion, not Oscar's
-choice.
-**Directory:** `GUI`. **No milestone number is proposed** (see D-O) — `docs/SPEC.md` §2 lists
-"GUI, encrypted backup / restore → later" with no number, and that stays true until Gate R says
-otherwise.
-**Supersedes:** `advances/GUI/idea.md`. That file framed a *read-only* browser of the vault and
-assumed the platform choice would be inherited from a mobile app. Both premises are gone (§2).
-**Inherits from:** `docs/SPEC.md` (§2 scope, §9 security model, §10 module layout),
-`docs/vault-format.md` (the format contract, read-only by its own §1), `docs/sync.md`,
-`advances/M3/` (lineage, device identity, idle auto-lock), `advances/MOBILE/poc.md` (Kotlin
-Multiplatform prior art, and the cost record of a second implementation).
-**Legend:** each decision lists the options on the table and a **Default:** line with its reason.
-No `Decided:` lines exist yet — that is what Gate R is for.
+**Status:** Gate R draft, **revised 2026-08-17** to record Oscar's answers to §7's `D-n`
+decisions. Several answers changed the *shape* of this advance relative to the first draft —
+most of all **D-A**, which declined curation for now, and **D-M**, which added vault
+initialization back in. Read §1 and §3 before anything else; the earlier framing ("this is
+fundamentally a management/write surface") is no longer the framing.
+**Directory:** `GUI`, deliberately not a milestone number — same posture `MOBILE` held
+(see D-O).
+**Source idea:** `advances/GUI/idea.md` (idea capture only, written while refining `M4`).
+**Inherits from:** `docs/SPEC.md` (§1–§10b), `docs/sync.md`, `advances/MOBILE/refined.md`
+(the `P-n` idiom this file copies), `src/testing/__fixtures__/golden-vault/`.
+**Legend:** each decision in §7 lists the options that were on the table, a **Default:** line
+with its reason, and a **Decided:** line with the outcome in Oscar's terms. Decisions that
+this advance's shape made irrelevant carry **Decided: not applicable to this advance** and
+keep their analysis for the advance that will need it.
+**Still open at Gate R (three items, each with a default):** **D-L** (where the desktop code
+lives), **D-P** (exactly which existing operations the shell surfaces), and **D-J(b)** (what
+the GUI does when the vault's schema is behind). Everything else in §7 is decided.
 
 ---
 
 ## 1. Goal
 
-**Give a user a desktop application on macOS, Windows and Linux that lets them *administer* the
-context valija stores — curate and refine what is already in the vault, and author reusable AI
-artifacts ("skills", "agents", and similar) — so that one curated setup can be applied
-consistently across every AI provider and surface valija reaches.**
+**Ship a desktop application that lets someone who never opens a terminal do what `valija`
+already does on the read side — unlock, browse projects, read items, search, preview and copy
+or export a rendered context pack — and, as the one write capability in scope, create the
+vault itself.**
 
-The distinction from today's product is the load-bearing part. Today's CLI and MCP server are
-**consumption** surfaces: they save an item, read a pack, search, export. They cannot edit an item,
-cannot unpin one, cannot delete one, cannot rename a project, and have no concept of a skill or an
-agent at all. This advance is about the **management** half of the product, and a GUI is the
-vehicle Oscar has asked for, not the feature itself.
+That is the whole goal. Nothing in this advance edits, pins, archives, deletes, renames, or
+otherwise *changes* saved context. Nothing in this advance adds an MCP tool, an argument, a
+prompt, a schema column, a migration, a dependency in the crypto path, or a network call.
 
-Two framing facts a planner must not skip past:
-
-1. **The vault has almost no write surface today, and none of it is curation.** Verified against
-   `src/`: the only write use cases are `SaveContext` (append one item) and `ImportItems` (append a
-   batch). There is no update, no delete, no unarchive, no retag, no move-between-projects, no
-   project rename. `ContextItemRepository.archive(itemId)` exists in the port
-   (`src/context/application/ports/repositories.ts:28`) and in SQLite
-   (`src/context/infra/item-repo.ts:121`) and is unit-tested — **and is called by no use case, no
-   CLI command and no MCP tool.** `SaveContext` accepts `pinned` but **no shipped surface ever
-   passes `true`**, so a pinned item cannot currently be created by any user action; `valija show`
-   renders a 📌 for a state the product cannot reach. "Refine the context" therefore means building
-   a curation write path that does not exist, before any pixel is drawn.
-2. **"Skills" and "agents" are entirely new domain territory.** A search of `src/` for
-   `skill|agent|Skill|Agent` returns **zero matches**. The domain model is `Project` +
-   `ContextItem` over six storable types (`decision`, `progress`, `preference`, `fact`, `handoff`,
-   `imported`) and nothing else. `docs/vault-format.md` documents that schema as a contract with
-   change control (§14), and explicitly scopes itself to *reading*: "Writing is out of scope for
-   this document." Anything stored for skills/agents is a schema change, a migration, a fixture
-   regeneration, and a contract edit — not a UI feature.
+The advance is deliberately a **delivery-surface** advance: the domain already does everything
+the app needs (`ListProjects`, `ShowProject`, `SearchContext`, `GetContextPack`, `VaultStatus`,
+`UnlockVault`, `LockVault`, `CreateVault`, plus `renderContextPackMarkdown`). The new code is a
+window over use cases that already exist, plus the packaging that gets that window onto three
+operating systems.
 
 ---
 
-## 2. What changed since `idea.md`, and what is therefore re-opened
+## 2. What is already decided and is *not* re-opened here
 
-`advances/GUI/idea.md` is a raw capture, not a spec, and two of its three load-bearing assumptions
-no longer hold.
+Input, not agenda. A planner who wants to change any of these is in the wrong advance.
 
-| `idea.md` said | Status now |
+| Source | Constraint carried into this advance |
 |---|---|
-| "Read-only first… no new write path" | **Superseded by Oscar's framing.** The ask is explicitly to *refine/curate* and to *create* artifacts. This is a writing surface. Every consequence of that — lineage, device identity, concurrency, migration authority — is now in scope to decide. |
-| "Rides on M4's platform/framework choice (KMP); comparatively cheap to inherit" | **Void.** `advances/MOBILE/` closed with Oscar deciding not to pursue a distributable mobile app (Apple Developer Program cost, unmonetized project). There is no mobile app to share a core with, so there is no free inheritance. Platform/framework is a **fully open decision** (D-F). |
-| "Just another reader of the documented format — no separate spec needed for the vault side" | **False under the new framing.** `docs/vault-format.md` documents reads only; §11's read-only contract forbids exactly the things a writer must do (journal pragmas, migrations, lineage bumps). A writing second implementation would need a *new* contract section. This is the strongest argument for D-C's default. |
-| "Non-technical-user equivalent of the CLI's read path" | **Still an open product question** (D-N). Curation and artifact authoring are power-user activities; a non-technical audience and an editing surface pull in different directions. |
-| "Runs against the local vault directly via `VALIJA_HOME`; session mirrors the OS-keychain unlock/lock" | **Still the right starting assumption**, but the keychain detail is sharper than it looks (D-H) and no longer free. |
-
-What the MOBILE advance leaves behind that is still real: a Kotlin/Compose Multiplatform
-implementation of the vault-read + pack-render path, byte-identical to the TypeScript one on the
-JVM, with the SQLite3MultipleCiphers amalgamation and Argon2id compiling and executing through both
-JNI and Kotlin/Native cinterop (`advances/MOBILE/poc.md` §2). That is available prior art for D-F —
-but note what it cost: five real defects found in `docs/vault-format.md`, a long CI fix chain, and
-**no write path was ever built or verified.**
-
-### What is *not* re-opened
-
-These are inputs, not agenda. A planner may not trade them away for GUI convenience.
-
-| Source | Constraint carried forward |
-|---|---|
-| `docs/SPEC.md` §1, §9 | Local-first, end-to-end encrypted, **no cloud, no accounts, no telemetry, no network calls at runtime.** A GUI with an update-checker, a crash reporter, or an analytics beacon is not this product. |
-| D4, D5, D6 | SQLCipher via `better-sqlite3-multiple-ciphers`; Argon2id with the header's parameters; session key in the OS keychain between `unlock` and `lock`. No new KDF, no reduced parameters, no key cached anywhere else. |
-| D11 | One vault per machine at `VALIJA_HOME` (default `~/.valija`). Multi-vault remains `docs/SPEC.md` §12 open question 4. |
-| `docs/SPEC.md` §7 | The MCP surface is 5 tools + 2 prompts over stdio, and the standing instruction is "resist adding more." Any MCP change is a decision (D-K), never a side effect. |
-| M3 / `docs/sync.md` | Single self-consistent `vault.db` at rest after every command; lineage stamp committed with every write; forks are **reported, never auto-merged**; device state lives in `VALIJA_STATE_HOME` and never syncs; the supported multi-device model is strictly **sequential**. |
-| `docs/vault-format.md` §14 | The format doc and the golden-vault fixture change **together, in the same commit**. A schema change is a migration + a fixture regeneration + a contract edit. |
-| `CLAUDE.md` Conventions | Module-first bounded contexts with `domain/application/infra`, ports in `application/`, `parseX`/`createX`/`xxxErr`, tech-named adapters, no bare files at a layer root. |
+| `SPEC.md` D11 | **One vault per machine**, at `~/.valija/`, overridable with `VALIJA_HOME`. No vault switcher, no multi-vault UI. |
+| `SPEC.md` D6 | **Session model = OS keychain.** `unlock` derives + verifies + stores the key; `lock` removes it; every reader fetches it per call. No daemon. |
+| `SPEC.md` D5, D7 | **Argon2id 64 MiB / t=3 / p=1 → 32-byte raw key**; recovery kit is the raw key + vault id + instructions. Unchanged, parameters and all. |
+| `SPEC.md` §7 | **MCP surface is 5 tools + 2 prompts over stdio**, and "resist adding more". This advance adds none. |
+| `SPEC.md` §9 | **No telemetry, no network calls at runtime.** Applies to the desktop app in full. |
+| M3 §10b D-A | **Single file at rest**: rollback journal, never WAL. Any surface that opens the vault must leave `vault.db` alone as one self-consistent file. |
+| M3 §10b D-B, D-C | **Lineage stamp** bumped atomically with every write; **device identity** lives under `VALIJA_STATE_HOME` (default `~/.valija-state`), deliberately outside `VALIJA_HOME`. |
+| M3 §10b D-I | **Idle auto-lock**, lazy, checked at session open, `VALIJA_AUTOLOCK_MINUTES` (default 15). |
+| MOBILE | **No distributable mobile app.** The desktop GUI does not inherit or revive that decision; `docs/vault-format.md` remains the mobile-era artifact it is. |
 
 ---
 
-## 3. What this advance is actually answering
+## 3. Two framing facts a planner must not skip past
 
-The raw idea fuses at least three separable products. Naming them separately is the single most
-useful thing this spec does, because D-A asks whether they ship together.
+**1. This is `idea.md`'s original read-only shell — reaffirmed on purpose, after the
+alternative was considered and declined.** The first draft of this spec argued that "administer
+and refine your context" implies write verbs, and recommended shipping the shell *and* curation
+together. Oscar was shown what curation concretely means (edit, pin/unpin, archive, delete,
+rename) and chose to start with **only the operations that already exist today** (D-A). That is
+a reversal of this document's own earlier recommendation, and it is stated here plainly so a
+future reader does not mistake the narrower scope for an oversight. Curation is a **separate,
+later advance** with its own Gate R; §7's D-B and D-C hold the analysis it will need.
 
-| # | Capability | State today | Weight |
-|---|---|---|---|
-| **C1** | **A desktop shell** — browse projects, read items, search, view a rendered pack, copy/export, see vault status | Fully supported by existing read use cases (`ListProjects`, `ShowProject`, `SearchContext`, `GetContextPack`). A shell over them adds **no domain code**. | Small domain cost, all cost is platform/packaging |
-| **C2** | **Curation** — edit an item's content/tags, pin/unpin, archive/unarchive, delete, move between projects, rename a project, edit its description | **Does not exist in any layer.** Needs new use cases, new port methods, new errors, new tests; mostly *not* a schema change (the `pinned`/`archived` columns already exist), but `delete` and `unarchive` are genuinely new behaviour with FTS-trigger and lineage consequences | Medium — real domain work, no UI required to build or test it |
-| **C3** | **Artifacts (skills / agents / rules)** — author them in valija, store them, and materialize them into each provider's own convention so the setup is the same everywhere | **Zero domain territory exists.** New entity, new table, new migration, new fixture, new contract section, new provider-mapping layer, and a **new plaintext-egress path** writing files outside the vault | Largest — and the only part that touches the security model |
+**2. Exactly one write path is in scope, and it is the most security-sensitive flow in the
+product.** Oscar decided the GUI may also **initialize a vault** (D-M): passphrase entry,
+Argon2id derivation, and **recovery-kit display in a window**. This document's own trade-off
+text called that "a materially worse ritual than a terminal that prints it once" and noted it
+"duplicates the most security-sensitive flow in a new surface". That text stands unchanged and
+unsoftened — it is now an **accepted risk**, not an open objection (see §7 D-M and §8.2). The
+practical consequence for the planner: the review budget for this advance concentrates on the
+first-run flow, not on the browser.
 
-Secondary questions this advance must answer regardless of which of C1–C3 ships:
-
-| # | Question | Why it is not obvious |
-|---|---|---|
-| Q1 | Is the GUI the **same device** as the CLI, for M3's lineage model? | If it mints its own id under `VALIJA_STATE_HOME`, GUI-write-then-CLI-write on one machine can classify as a **fork** — a false alarm in the one place the product promises never to auto-resolve |
-| Q2 | What happens when the GUI, the MCP server and the CLI touch one `vault.db` at once? | Every current entry point opens → works → closes inside one command. A GUI naturally wants a long-lived connection. Rollback-journal SQLite serializes writers, so a held connection turns a normal MCP save into `SQLITE_BUSY` |
-| Q3 | Does the GUI **defeat idle auto-lock**? | `SessionGuard` is lazy: it checks last-activity at session open, and every session records activity. A GUI that polls the vault to refresh a list resets the idle clock forever, silently disabling M3's D-I |
-| Q4 | May the GUI run **migrations**? | `SqliteVaultSessions.open()` calls `migrate()` on every session. `docs/vault-format.md` §11 forbids migration for a *second implementation*, permanently. Whether the GUI is "desktop valija" or "a second implementation" decides this, and D-F decides that |
-| Q5 | Can a non-Node GUI read the **keychain** entry? | Service `"valija"`, account = `vaultId` (`src/vault/infra/keyring.ts`). On macOS, keychain ACLs are bound to the *signed application*; a second, differently-signed (or unsigned) binary triggers an allow-access prompt and can lose the ACL on every rebuild |
-| Q6 | How is the app **distributed**, and does it need code signing? | Unsigned macOS apps hit Gatekeeper; Windows SmartScreen flags unsigned installers. Apple's Developer Program is the **exact cost Oscar just declined for mobile**. This is a known, budgeted-at-zero constraint, not a detail |
+A third fact, less about scope and more about honesty: **"read-only" here means "performs no
+domain write and never bumps the lineage stamp"** — it does not mean "touches zero bytes".
+Opening a session today runs `wal_checkpoint(TRUNCATE)`, sets `journal_mode = DELETE`, runs
+`migrate()`, and records a device-local activity timestamp. See §5 and D-J(b).
 
 ---
 
 ## 4. User walkthrough
 
-Written for the recommended defaults (D-A Option 3 — two advances, this one being the shell +
-curation; D-C core-first; D-E Option 2 — materialize on explicit request). **If Gate R moves D-A,
-D-D or D-E, this section is the first thing that changes.** Where a step depends on C3 (artifacts),
-it is marked and shown separately, because C3 may not ship in this advance at all.
+Written for a person who does not use a terminal (D-N). Every acceptance criterion in §9 traces
+back to a step here.
 
-### 4.1 Getting in — the first two minutes
+### 4.1 Getting the app onto the machine (D-G: unsigned)
 
-| # | Step | What the user does | What they see |
+| # | Step | What the user does | What the user sees |
 |---|---|---|---|
-| 0 | Prerequisite | Has valija installed and a vault at `VALIJA_HOME` (`valija init` already run). The GUI **does not create vaults** (D-M) | If no vault exists: a single screen saying "No vault found at `~/.valija`. Run `valija init` in a terminal first", with the exact command to copy |
-| 1 | Launch | Opens **valija** from the Dock / Start menu / app launcher | A window with the vault path in the title bar and a lock state: **Locked** |
-| 2 | Unlock | Types the same passphrase used on desktop, or pastes the 64-hex recovery key | ~1 s Argon2id derivation (parameters read from `vault.json`, never assumed), then **Unlocked**. The key goes to the **same OS keychain entry** the CLI uses — `valija status` in a terminal now also reports unlocked |
-| 3 | Orient | — | Left: the project list with item counts and last activity (same data as `valija projects`). Right: the selected project's items, newest first (same as `valija show`). A search box (same FTS as `valija search`) |
-| 4 | Idle | Walks away past `VALIJA_AUTOLOCK_MINUTES` (default 15) | The window returns to **Locked** on the next action — the GUI honours M3's idle auto-lock rather than holding the vault open (D-H) |
+| 0 | Download | Picks the build for their OS from the GitHub release page | `Valija-<version>-mac-arm64.dmg`, `Valija-<version>-win-x64.exe`, `Valija-<version>-linux-x86_64.AppImage`, each with a published SHA-256 |
+| 1 | Open it | macOS: double-click → **blocked** | *"Valija can't be opened because Apple cannot check it for malicious software."* The docs tell them: right-click → **Open** → **Open**, or `xattr -d com.apple.quarantine /Applications/Valija.app` |
+| 1' | Same, Windows | Runs the installer → **blocked** | SmartScreen: *"Windows protected your PC"* → **More info** → **Run anyway** |
+| 1'' | Same, Linux | `chmod +x` the AppImage and run it | No OS-level block; a desktop-integration prompt at most |
+| 2 | Alternative | Prefers not to bypass a warning | The docs' **run-from-source** path: clone, `npm install`, one documented command. Slower, no bypass, same app |
 
-### 4.2 Curating — the part that does not exist today (C2)
+This friction is real, it is the first thing the target user meets, and §9 requires it to be
+documented per OS with the literal words the OS shows.
 
-| # | Step | What the user does | What they see | Underlying write |
-|---|---|---|---|---|
-| 5 | Fix a stale decision | Selects an item, clicks **Edit**, rewrites the markdown, saves | The item updates in place; its `updatedAt` advances, `createdAt` does **not** — so pack ordering is unchanged | New `EditItem` use case |
-| 6 | Promote what matters | Clicks the pin icon on two items | They move to the top under **Pinned**; the preview pane shows the pack recomposed with them first | New `SetItemPinned` use case — **the first shipped surface that can ever create a pinned item** |
-| 7 | Retire noise | Selects three items, clicks **Archive** | They leave the list and the pack; a filter toggle "Show archived" brings them back, with an **Unarchive** action | Wires the existing unused `archive()`; adds `unarchive` |
-| 8 | Delete for real | Clicks **Delete** on an item, confirms a typed confirmation | Gone. A one-line explanation that this is permanent and not covered by the recovery kit | New `DeleteItem` use case — the first destructive path in the product (D-B) |
-| 9 | Tidy a project | Renames `vault-app` → `valija-core`, edits its description | Every item follows; the name is re-parsed as a `ProjectName`, so an invalid rename is refused with the same error the CLI would give | New `RenameProject` / `EditProject` |
-| 10 | See the effect | Clicks **Preview pack** with the budget slider at 4000 | The exact markdown `valija export` produces — the same renderer, not a lookalike | Existing `GetContextPack` |
-| 11 | Confirm from outside | Opens a terminal: `valija export valija-core` | Byte-identical to what the GUI previewed | — |
+### 4.2 First run — creating a vault (D-M, the one write path)
 
-### 4.3 Authoring artifacts — **C3, conditional on D-D and D-E**
-
-Shown so the shape is arguable at Gate R, not because it is settled. Under the recommended
-defaults this is a **second advance**, not this one.
-
-| # | Step | What the user does | What they see |
+| # | Step | What the user does | What the user sees |
 |---|---|---|---|
-| 12 | Create | Clicks **New artifact**, picks kind **skill**, names it `release-checklist`, writes the body, optionally attaches it to a project | An editor with the body and a small metadata panel. Stored **inside the encrypted vault**, like every other content |
-| 13 | Target | Ticks which surfaces it applies to: Claude Code, Cursor, Claude Desktop | A per-target preview showing exactly what file would be written, where, and in whose format |
-| 14 | Materialize | Clicks **Apply to selected tools** | A diff-style confirmation, then: files written, with a **plaintext warning** stated once and plainly |
-| 15 | Verify drift | Reopens the artifact later | A status per target: **in sync** / **modified outside valija** / **missing** — valija reports, it never silently overwrites a file a user edited by hand |
+| 3 | Launch, no vault present | — | *"No vault on this machine yet."* Two choices: **Create a vault** · **I already have one** (the second explains `VALIJA_HOME` in plain words) |
+| 4 | Create | Types a passphrase twice | The same warning the CLI prints, in the window: minimum 8 characters; *"If you lose it AND the recovery kit, your data is gone. No reset exists."* Mismatch is caught before anything is written |
+| 5 | Derive | Waits | *"Creating your encrypted vault (about a second)…"* — `CreateVault`, unchanged: header written, DB initialized, key placed in the OS keychain, idle clock started |
+| 6 | **Recovery kit** | Reads a full-window panel | The exact text `renderRecoveryKit` produces — vault id, the raw key hex, what it is, what to do with it. Marked **shown once**. A **Copy key** button (with a warning that the clipboard is readable by other apps) and no automatic file write |
+| 7 | Acknowledge | Ticks *"I have stored this somewhere offline"* and confirms | Only then does the panel close. It cannot be reopened; the app never persists the kit |
+| 8 | Land | — | The main window, vault **unlocked** (matching `CreateVault`'s behaviour), empty state: *"No context saved yet. Connect an AI tool and it will start filling up."* |
 
-```
-# what step 14 would write (illustrative — exact paths are D-E's to decide, and
-# these are third-party conventions valija does not own)
-~/.claude/skills/release-checklist/SKILL.md        # plaintext, outside the vault
-~/.cursor/rules/release-checklist.mdc              # plaintext, outside the vault
-```
+`valija status` in a terminal now reports the same vault, unlocked. There is exactly one vault,
+one keychain entry, one device identity — the GUI is not a second device.
 
-**The security fact this step introduces, stated plainly:** valija's claim is that everything *at
-rest in the vault* is ciphertext. Materialization writes vault-derived content to **plaintext files
-outside the vault**, on purpose, because that is the only way a provider that has no MCP surface
-can use it. Today the only comparable egress paths are `valija export` (a file the user explicitly
-names) and an MCP tool response (in memory, to a client). A recurring, valija-managed set of
-plaintext files on disk is **new**, and `docs/SPEC.md` §9 does not currently describe it. If D-E
-lands anywhere except "no file writing", §9 gains a line.
+### 4.3 Daily use — the shell (D-A: what already exists)
 
-### 4.4 How the data is used afterward — which surfaces expose it, and which deliberately do not
+| # | Step | What the user does | What the user sees |
+|---|---|---|---|
+| 9 | Launch | Opens the app; the vault is locked (they locked it, or idle auto-lock did) | An unlock panel: passphrase field only |
+| 9' | Or not | Had already run `valija unlock` in a terminal | **No prompt.** The app shares the CLI's exact keychain entry (D-H) and is simply unlocked |
+| 10 | Browse | — | Project list: name, item count, last activity — the same rows `valija projects` prints |
+| 11 | Open a project | Clicks one | Its items: type, date, pinned marker, tags, content — the same content `valija show <project>` prints, in the same order (same use case). A type filter mirrors `--type` |
+| 12 | Search | Types "sqlcipher" | Full-text hits across the vault, optionally narrowed to one project — the same rows `valija search` prints |
+| 13 | Read the pack | Clicks **Context pack** | The rendered markdown for that project, unbudgeted — byte-for-byte what `valija export <project>` writes (§9 pins this) |
+| 14 | Take it | Clicks **Copy** | The pack is on the clipboard, ready to paste into any chat window that is not MCP-connected |
+| 14' | Or | Clicks **Export…** | A native save dialog; one file, at a path the user chose. Parity with `valija export -o <file>` — the same plaintext egress that already exists, not a new one |
+| 15 | Finish | Clicks **Lock**, or quits, or walks away | Locked: the key leaves the keychain. Walks away: idle auto-lock does it at the existing TTL — **the app does not extend the unlocked window by polling** |
 
-| Surface | What it sees after this advance |
+### 4.4 What the user deliberately cannot do here
+
+| Not available | Why, and where it goes |
 |---|---|
-| `valija` CLI (`projects`, `show`, `search`, `export`) | **Everything C2 does.** Edits, pins, archives and deletes are ordinary rows in the same vault — the CLI sees the curated result with no code change. Pinned items finally appear because something can now create them |
-| MCP `get_context` / `get_context` packs in Claude, Cursor, Claude Desktop | **The curated pack, immediately.** This is the whole point: curation improves what every AI tool loads, without changing a single tool description |
-| MCP `search_context` | Curated items; deleted items are gone; archived items stay excluded (`docs/vault-format.md` §10) |
-| MCP tool list | **Unchanged by default** (D-K): 5 tools, 2 prompts, stdio. A model cannot edit, delete, pin or archive anything — curation is a human act, deliberately |
-| Artifacts (C3), if it ships | **Not in context packs, not in `search_context`, not in `get_context`** by default (D-D) — an artifact is a *configuration* for a tool, not context to load into a conversation. Materialized files are read by the provider directly, on its own terms |
-| `valija status` / `lock` / `doctor` | Same output; the GUI shares the keychain entry and the device state, so terminal and window agree on lock state and lineage |
-| A second machine syncing the vault (M3) | Sees the curated vault after a normal `lock` → sync → `unlock`. **Deletes propagate as deletes** — there is no tombstone, no undo, and no cross-device merge; the sequential model is unchanged |
-| `vault.json`, the recovery kit, the KDF parameters | **Untouched.** The GUI never rewrites the header and never mints a recovery kit (D-M) |
-| The published npm package | **Unchanged in shape.** The GUI is not shipped inside `npm i -g valija` (D-G) |
+| Edit, pin/unpin, archive, delete, rename, retag, merge — any change to saved content | **Deferred (D-A).** A curation advance with its own Gate R; D-B (verb set) and D-C (where the write paths live) are its first two questions |
+| Save new context from the GUI | Same. Saving remains an MCP-tool action from inside an AI tool, by design (`SPEC.md` §3) |
+| Import chatbot exports | CLI-only (`SPEC.md` §10a), and it is a write path — see D-P |
+| Wire up Claude Desktop / Cursor from the GUI | `valija install` — **open, D-P.** It is the single most useful thing a non-technical user would want and it writes third-party config files |
+| Generate provider artifacts (skills, agents, rules files, `CLAUDE.md`) | **Future advance (D-D).** Its delivery shape is already decided (D-E): live over MCP, plus a copy button here — never a file the app writes |
+| Anything mobile, cloud, or account-shaped | Out of scope permanently or by prior decision |
+
+### 4.5 How the data is used afterward — which surfaces change, which do not
+
+| Surface | Effect of this advance |
+|---|---|
+| The desktop app itself | **New.** The only new surface |
+| MCP tools + prompts (5 + 2, stdio) | **Untouched, byte-for-byte.** The GUI is not an MCP client and does not proxy tools |
+| The `valija` CLI | **Untouched.** Every command keeps working, and keeps being the surface a technical user prefers |
+| The vault file, schema, crypto, `vault.json`, KDF parameters, lineage | **Untouched.** No migration is authored here; no lineage stamp is bumped by the GUI |
+| The OS keychain | **Shared, not extended** (D-H): same service, same entry as the CLI. GUI init and GUI unlock write the same entry the CLI writes |
+| `VALIJA_STATE_HOME` device identity | **Reused, not duplicated.** The GUI is the same device as the CLI on that machine |
+| The clipboard | **New affordance** — one click instead of `valija export \| pbcopy`. User-initiated only, never automatic; named in the docs (§8.6) |
+| A file the user names in a save dialog | Parity with `valija export -o`; the only file the app writes outside the vault |
+| The published npm package | **Untouched in content.** `files` is `["dist","README.md","LICENSE"]`; desktop artifacts ship as GitHub release downloads, not inside the tarball |
+| `docs/SPEC.md` §1's "one binary surface" and §2's "GUI … → later" | **Corrected** (D-O). Both become false the day this ships |
 
 ---
 
 ## 5. Architecture expectations
 
-Stated as boundary requirements, not a file layout. The planner owns the layout; these are the
-constraints that decide whether the result is testable.
+Stated as boundary requirements, not a file layout. Two groups: what binds **this** advance,
+and what is written down now but stays dormant until curation ships.
 
-1. **The GUI is a delivery adapter, not a place where logic lives.** `docs/SPEC.md` §10 already
-   says both entry points are "thin adapters over the same use cases", and §3 of `specs/delivery.md`
-   says rendering belongs to delivery. A third entry point changes nothing about that: every
-   curation action is a `UseCase<In, Out>` in `src/context/application/use-cases/`, and the window
-   calls it. **No SQL, no pack assembly, no markdown rendering, and no `Result` unwrapping logic in
-   view code.**
-2. **Curation is buildable and testable with no GUI at all.** This is the pyramid that makes the
-   advance reviewable: `EditItem`, `DeleteItem`, `SetItemPinned`, `ArchiveItem`, `RenameProject`
-   are plain use cases with per-layer tests, exercised headlessly in `vitest` exactly like
-   `SaveContext` is today. If they can only be verified by clicking, the boundary is wrong.
-3. **Every mutation goes through `session.write(...)`.** That is the seam
-   (`src/context/infra/vault-sessions.ts`) that bumps the M3 lineage stamp atomically with the
-   change. A curation path that writes outside it silently breaks fork detection for every user
-   with a synced vault. Multi-item operations ("archive these three") should be **one** `write`,
-   like `ImportItems` already is, so one user action is one generation bump.
-4. **Sessions stay short-lived.** `withSession` opens, works, and always closes. A GUI must not
-   hold a `Database` handle open across user think-time (Q2, Q3): it makes the MCP server contend
-   for the write lock, and it defeats idle auto-lock. The GUI's read model is a snapshot it
-   re-requests, not a live cursor.
-5. **Artifacts, if they ship, are their own bounded context.** A new top-level `src/artifacts/`
-   with `domain/application/infra`, depending on `shared` (and on `context` only if an artifact can
-   reference a project), following the dependency rule in `docs/SPEC.md` §10. **Provider mapping
-   is not domain logic** — "what a Claude Code skill file looks like" is a rendering/adapter
-   concern and belongs in `infra/` behind a port, one adapter per provider, so a provider changing
-   its convention touches one file. The precedent is `src/delivery/cli/installer.ts`, which already
-   knows three clients' config paths and merges rather than overwrites.
-6. **If D-F picks a non-Node runtime, the pyramid inverts and the cost multiplies.** A second
-   implementation must re-derive Argon2id, re-open SQLCipher, re-implement pack assembly *and*
-   re-implement writes — and `docs/vault-format.md` documents none of the write side. MOBILE is the
-   evidence: a read-only second implementation found five contract defects and took a long fix
-   chain to get green. Treat "one implementation of the domain" as the property to preserve unless
-   Gate R deliberately trades it away.
-7. **Error surfaces stay the domain's.** `INVALID_PROJECT_NAME`, `CONTENT_TOO_LARGE`,
-   `PROJECT_NOT_FOUND`, `ITEM_NOT_FOUND`, `VAULT_LOCKED`, `VAULT_FORK_DETECTED` already exist. The
-   GUI renders them; it does not invent parallel validation, and it does not weaken any of them
-   into a warning.
+### 5.1 Binding on this advance
+
+- **The GUI is a delivery adapter and nothing else.** It introduces no domain concept, no
+  entity, no value object, and no new use case. If the planner finds itself writing domain
+  logic to make a screen work, that is the signal that something outside D-A's scope crept in.
+- **Rendering is not re-implemented.** The pack markdown comes from
+  `delivery/context-pack-markdown.ts`, called in the trusted process. The renderer displays a
+  string it was given. This is what makes "byte-identical to `valija export`" a structural
+  property rather than a test that will rot.
+- **Process boundary is a security boundary.** The Electron main process (Node, trusted) owns
+  the container and every vault interaction. The renderer runs with `contextIsolation: true`,
+  `nodeIntegration: false`, `sandbox: true`, and reaches the main process only through a
+  preload-exposed API with **one method per use case** — an enumerated, closed list, validated
+  at the boundary with the same zod discipline the MCP server uses. No generic "run this query"
+  channel, no module name, no file path except the one the user picks in a save dialog.
+- **Sessions are per action, never long-lived.** Use the existing `VaultSessions.withSession`
+  shape: open, read, close. A GUI that holds a `Database` handle open while the user reads
+  keeps a lock against the MCP server and defeats M3's single-file-at-rest guarantee.
+- **No background polling.** Every session open records device activity, which resets the idle
+  auto-lock clock. A status poller would silently disable auto-lock (M3 D-I) for anyone who
+  leaves the window open. State refreshes on user action and on window focus, not on a timer.
+- **Secrets do not cross the IPC boundary.** The passphrase travels renderer → main once, and
+  is not retained. The session key never travels main → renderer. The single exception is the
+  recovery kit at init, which *is* the raw key on screen by definition (D-M) — it crosses once,
+  is never persisted, never logged, and cannot be re-requested.
+- **The shell must be testable without a window.** Whatever holds view state and calls use
+  cases is plain TypeScript, unit-tested headlessly. Packaging is the part that cannot be
+  unit-tested, so keep it thin and keep logic out of it.
+- **Repo conventions apply** to whatever tree this lands in (D-L): `domain/application/infra`
+  where relevant, no bare files at a layer root, kind-named subfolders, tests per layer.
+
+### 5.2 Written now, dormant until curation ships (do not implement here)
+
+- **Every write goes through `session.write(...)`**, so the lineage bump is atomic with the
+  mutation. A curation UI must never reach a repository directly.
+- **One lineage bump per user-visible action.** A "archive these 12 items" gesture is one
+  transaction and one generation bump, not twelve — otherwise a sync-folder user's generation
+  counter becomes noise and fork classification gets harder to reason about.
+- **Fork/lineage UX** (M3 D-B): a GUI that writes must decide how it surfaces
+  `VAULT_FORK_DETECTED` to a non-technical user, and must never auto-merge (D-I holds this).
+- **Concurrency with a live MCP server**: two writers on one SQLite file needs a stated
+  behaviour (retry, busy timeout, or refuse) before curation ships (D-J(a)).
 
 ---
 
 ## 6. Scope
 
-Stated for the recommended defaults (D-A Option 3). **This section is downstream of §7 — if Gate R
-picks different options, re-read it as illustrative, not binding.**
+### In
 
-### In (under the defaults)
+1. **An Electron desktop application** (D-F) whose main process composes the existing container
+   and whose renderer is a UI, packaged for **macOS, Windows and Linux, unsigned** (D-G), with a
+   documented run-from-source path.
+2. **Vault initialization** (D-M): passphrase entry with confirmation, Argon2id derivation via
+   the existing `CreateVault`, one-time recovery-kit display with explicit acknowledgement.
+3. **Unlock / lock / status**, sharing the CLI's exact keychain entry (D-H), honouring idle
+   auto-lock unchanged.
+4. **Browse**: project list (parity with `valija projects`), project item view with type filter
+   (parity with `valija show [--type]`).
+5. **Search**: full-text, optional project narrowing (parity with `valija search [-p]`).
+6. **Context pack view**: rendered markdown, unbudgeted, identical to `valija export`.
+7. **Copy to clipboard** and **Export…** to a user-chosen file (parity with `valija export -o`).
+8. **Docs**: a GUI page covering install per OS (including the literal Gatekeeper/SmartScreen
+   text and the bypass), first run, the recovery-kit ritual, and what the GUI deliberately does
+   not do; plus the `docs/SPEC.md` corrections D-O requires.
+9. **A recorded answer to the macOS keychain-ACL question** (D-H's mandatory spike) — whether a
+   second binary reading the CLI's keychain entry prompts, succeeds silently, or fails, on a
+   named macOS version.
 
-1. **Curation use cases in the TypeScript core** (C2), with per-layer tests, plus the port and
-   repository methods they need, plus whatever `specs/context.md` and `specs/delivery.md` must say.
-2. **A desktop application shell** for macOS, Windows and Linux over the existing read use cases
-   plus the new curation ones: unlock/lock, project list, item list, item editor, search, pack
-   preview, vault status.
-3. **CLI parity for every destructive verb** the GUI gains, so nothing is GUI-only and everything
-   is scriptable and testable (D-B) — or an explicit Gate-R decision that it is not.
-4. **Documentation in the same commit**: `specs/`, `docs/SPEC.md` §2's GUI line (D-O), a
-   user-facing doc for the app, and `docs/vault-format.md` **only if** the schema changes.
-5. **A packaging/distribution story that is honest about signing** (D-G), including what a user
-   sees on first launch of an unsigned build on each OS.
+### Out — explicit non-goals
 
-### Out — explicit non-goals under the defaults
-
-- **No vault creation, no passphrase change, no recovery-kit generation, no vault destruction from
-  the GUI** (D-M). `valija init` stays a terminal ritual.
-- **No new MCP tool, argument or prompt** (D-K). Models cannot curate.
-- **No change to the vault format, the crypto, the KDF parameters, `vault.json`, the keychain entry
-  naming, or the SQLCipher configuration.**
-- **No network call of any kind** — no auto-update check, no crash reporting, no analytics, no
-  remote config, no telemetry. `docs/SPEC.md` §9's "no network calls at runtime" is absolute and
-  covers this binary.
-- **No cross-device merge, no conflict resolution UI, no simultaneous multi-device editing.** M3's
-  fork model is *report, never merge*, and this advance does not soften it.
-- **No multi-vault support** (`docs/SPEC.md` §12 open question 4 stays open).
-- **No mobile, no web-hosted, no remote-access variant.**
-- **No embeddings, no semantic search, no AI inside the app** — `docs/SPEC.md` §2 rejects it, and a
-  GUI is exactly where it would sneak in as "smart suggestions".
-- **No auto-capture.** Explicit saves only, still.
-- **Artifacts (C3) are out under the D-A default** and are a separate advance with their own Gate R.
+- **All curation**: no edit, pin/unpin, archive, delete, rename, retag, merge, bulk action, or
+  undo. No `save_context` equivalent. → future advance (D-A, D-B, D-C).
+- **Provider artifacts** — skills, agents, rules files, generated `CLAUDE.md` — and any
+  materialization of them. → future advance (D-D), whose delivery shape D-E already fixes.
+- **No MCP change of any kind**: no tool, argument, prompt, resource, or transport (D-K). The
+  GUI does not run or embed an MCP server.
+- **No schema change, no migration authored here, no format change, no crypto or KDF change, no
+  `vault.json` field.** Swapping a crypto or keychain library for packaging convenience is
+  explicitly forbidden (§8.1).
+- **No import, no `install`, no `doctor`, no `mcp`** in the GUI — pending D-P.
+- **No multi-vault, no vault switcher, no remote vault, no cloud, no accounts, no pairing.**
+- **No auto-update, no telemetry, no crash reporting, no analytics, no remote content, no
+  network call at all** — including fonts, icons, and update feeds.
+- **No code signing, no notarization, no store distribution, no Apple Developer account**
+  (D-G).
+- **No localization.** English only this advance; the non-technical-first audience (D-N) makes
+  a Spanish UI a reasonable follow-up, not a requirement here.
+- **No mobile anything.**
 
 ---
 
-## 7. Decisions to confirm
+## 7. Decisions
 
-### D-A. The shape of the advance — what actually ships together
+Each entry: the options that were on the table, the **Default:** with its reason, and the
+**Decided:** line. Entries marked *not applicable to this advance* keep their analysis for the
+advance that will need it.
 
-The raw idea contains three products (§3, C1/C2/C3). They have very different weights and very
-different risk profiles.
+### D-A. What the GUI actually is
 
-- **Option 1 — one advance, all three.** Shell + curation + artifacts + provider materialization.
-  *Trade-off:* this is the largest advance the project has ever attempted, and it fuses a
-  packaging/toolchain problem, a domain-model extension with a migration, and a new plaintext
-  egress path. Every one of those can fail independently, and none is reviewable until all are
-  done. The MOBILE advance's secondary risk (toolchain scope creep producing an unreviewable
-  branch) applies here with more surface.
-- **Option 2 — shell only (C1), read-only, exactly `idea.md`'s original scope.** Smallest, ships
-  fastest, zero domain risk. *Trade-off:* it does not do what Oscar asked. "Administer and refine"
-  is precisely what a read-only shell cannot do, and shipping a viewer would leave the actual ask
-  untouched while spending the entire platform/packaging budget.
-- **Option 3 — two advances: (a) shell + curation (C1+C2), (b) artifacts (C3).** (a) delivers a
-  usable management app over the existing domain plus one new, well-bounded slice of write use
-  cases; (b) is then a focused advance on new domain territory, provider mapping, and the egress
-  security question, with its own Gate R and its own security review. *Trade-off:* the
-  headline feature Oscar named — skills and agents — lands second, not first.
-- **Option 4 — three advances: (a) curation in the core, CLI-only; (b) the desktop shell over it;
-  (c) artifacts.** Maximum reviewability: (a) is pure TypeScript with no toolchain at all and can
-  ship in days; (b) becomes a comparatively pure platform/packaging advance. *Trade-off:* the user
-  sees no GUI until the second advance, and (a) alone might feel like it missed the point.
-- **Option 5 — artifacts first (C3), no GUI yet**, authored via the CLI and materialized into
-  provider directories. *Trade-off:* it delivers the "same setup everywhere" promise soonest and
-  cheapest, and defers the entire platform decision — but it is not the desktop UI Oscar asked for.
-- **Default: Option 3.** Reason: it is the smallest split that still delivers a *management* app
-  rather than a viewer, and it puts the one genuinely security-model-touching capability (C3's
-  plaintext egress) behind its own gate rather than smuggling it in beside a packaging problem.
-  Option 4 is the more disciplined choice if Gate R prefers to de-risk the platform decision
-  entirely, and is strictly better than Option 3 if D-F turns out contentious. Option 1 is not
-  recommended at any point.
+- **Option 1 — a viewer only**: projects, items, search, pack preview, copy. Smallest possible
+  surface; ships nothing the CLI cannot do, only in a window.
+- **Option 2 — the operations that already exist, as a first-class shell**: Option 1 plus the
+  existing vault operations (unlock/lock/status), i.e. everything `valija` does read-side, with
+  no new verbs invented.
+- **Option 3 — shell + curation together**: Option 2 plus edit, pin/unpin, archive, delete,
+  rename. *Trade-off:* this is the only option that fulfils "administer and refine your
+  context", but it introduces the product's first non-MCP content-write path and drags D-B,
+  D-C, D-I and D-J into scope with it.
+- **Default: Option 3.** Reason: a window that can only look at things does not answer the
+  need that produced the idea, and the domain already has the repositories a curation layer
+  would need.
+- **Decided: Option 2**, overriding the recommended Option 3. Oscar, relayed: *"GUI but with the
+  operations that [already] exist"*, and confirmed in a follow-up after "curar" was spelled out
+  concretely as edit/pin/archive/delete/rename — he wants to start with **only what exists
+  today**: browse, search, export/copy a rendered pack (plus, per D-M, vault creation).
+  **Curation is not bundled here**; it becomes its own advance with its own Gate R. The Default
+  text above is retained deliberately: it is the argument that was considered and declined, and
+  a future reader should see that the narrow scope was chosen, not overlooked.
 
-### D-B. What "administer / refine" means concretely — the verb set
+### D-B. The curation verb set
 
-"Curate" has to become a finite list before anyone can plan it. Each verb has a different cost and
-a different blast radius.
+- **Option 1 — pin/unpin + archive only.** The two verbs the schema already models
+  (`pinned`, `archived`) with no new state and no destruction.
+- **Option 2 — Option 1 + edit content and tags.** Editing raises the "is this the same item?"
+  question: `updatedAt` moves, FTS reindexes, and an item an AI wrote is now partly human.
+- **Option 3 — Option 2 + hard delete and project rename.** Rename is a slug change with
+  referential consequences; hard delete is the only irreversible verb in the product.
+- **Default: Option 1 for the first curation pass**, because it is the only set with no new
+  domain semantics, then Option 2 behind an explicit confirmation.
+- **Decided: not applicable to this advance.** D-A landed on the read-only shell, so no
+  curation verb ships. This analysis is the starting point for the curation advance, where it
+  is the first question to answer — not a settled decision.
 
-- **Option 1 — non-destructive only:** edit content/tags, pin/unpin, archive/unarchive. Nothing is
-  ever irrecoverably lost; archive is already a reversible soft-delete and the columns exist.
-  *Trade-off:* the vault only grows. Users who imported a 4 000-item ChatGPT history (M2) cannot
-  prune it, and pruning is a real reason to want a management UI.
-- **Option 2 — Option 1 plus hard delete** of items, with a typed confirmation. *Trade-off:* the
-  first irreversible path in the product. The recovery kit recovers a *key*, not data; there is no
-  backup feature (`docs/SPEC.md` §2 lists "encrypted backup/restore → later"). A delete that syncs
-  to another device is gone everywhere.
-- **Option 3 — Option 2 plus project-level operations:** rename, edit description, delete a project
-  (cascade or refuse-if-non-empty), move items between projects. *Trade-off:* `projects.name` is
-  `UNIQUE` and `context_items.project_id` is a real FK with `foreign_keys = ON`, so cascade
-  semantics need deciding, not assuming; and deleting a project is a many-item destructive act.
-- **Option 4 — Option 3 plus bulk operations** (multi-select archive/delete/retag, "archive all
-  imported older than X"). *Trade-off:* the highest-value feature for an imported-history user and
-  the easiest way to destroy a vault with one click.
-- **Default: Option 3, with hard delete gated behind a typed confirmation, and bulk operations
-  deferred to a follow-up.** Reason: Option 1 does not solve the problem that motivates a
-  management surface (an unprunable vault), and Option 4's blast radius deserves its own design
-  pass once single-item delete has proven its confirmation UX. **Sub-decision the planner must not
-  guess:** deleting a project with items → *refuse and tell the user to empty it first* (default,
-  safest, matches the product's never-auto-destroy posture) vs. *cascade with confirmation*.
-  **Second sub-decision:** does every new verb also get a CLI command? Default **yes** — it keeps
-  the GUI a true adapter, makes destructive paths scriptable and testable without a UI harness, and
-  prevents a two-tier product where the terminal cannot undo what the window did.
+### D-C. Where the write paths live
 
-### D-C. Where the curation write paths live
+- **Option 1 — new use cases in `context/application/use-cases/`** (`PinItem`, `ArchiveItem`,
+  …), reused by CLI and GUI alike. Consistent with the existing architecture; forces the CLI to
+  grow matching commands or to knowingly lag.
+- **Option 2 — GUI-only application services** in the desktop tree. Faster, and immediately
+  creates a second-class path the CLI cannot reach and the MCP server cannot audit.
+- **Option 3 — one generic `UpdateItem` use case** taking a patch. Fewer classes, weaker
+  invariants, harder to review.
+- **Default: Option 1.** Reason: the repo's whole shape (`SPEC.md` §10) is "entry points are
+  thin adapters over shared use cases", and a write path that only one adapter can reach is the
+  first crack in that.
+- **Decided: not applicable to this advance.** There are no write paths in scope beyond
+  `CreateVault`, which already exists and is already shared with the CLI. Retained for the
+  curation advance.
 
-- **Option 1 — in the TypeScript core (`src/context/application/use-cases/`), consumed by both the
-  CLI and the GUI.** One implementation, one set of invariants, one lineage seam, per-layer tests
-  with no UI. *Trade-off:* only viable if the GUI can call TypeScript in-process or over a
-  process boundary — i.e. it constrains D-F.
-- **Option 2 — in the GUI's own runtime**, reimplementing validation and SQL there. *Trade-off:*
-  two implementations of `parseContent`, `parseTags`, the lineage bump and the FTS trigger
-  contract, diverging silently. `docs/vault-format.md` documents **none** of the write side, so
-  there is not even a contract to implement against — it would have to be written first.
-- **Option 3 — the GUI shells out to the `valija` CLI** for every mutation. One implementation,
-  process-isolated. *Trade-off:* needs machine-readable CLI output (a `--json` mode on more than
-  `export`), pays process-spawn latency per action, and makes error handling stringly-typed.
-- **Default: Option 1.** Reason: it is the only option that keeps a single guardian of the
-  `ContextItem` invariants, and it is what `docs/SPEC.md` §3 and §10 already promise ("both entry
-  points are thin adapters over the same use cases"). Option 3 is the honest fallback if D-F picks
-  a runtime that cannot host Node in-process. **Option 2 should be treated as effectively
-  foreclosed** unless Gate R also commissions a written write-side format contract, because it
-  re-opens byte-level compatibility on the one path where getting it wrong corrupts user data
-  rather than mis-rendering it.
+### D-D. Skills / agents / provider artifacts in scope?
 
-### D-D. Do skills and agents ship, and what are they in the domain model?
+- **Option 1 — in this advance**, alongside the shell.
+- **Option 2 — a separate advance with its own Gate R.**
+- **Default: Option 2.** Reason: artifact generation is a new *product concept*, not a new
+  window. It needs its own domain thinking (what an artifact is, where it comes from, how it
+  stays in sync with the vault) and bundling it here would make one advance carry two unrelated
+  risks.
+- **Decided: Option 2**, matching the recommended default. Not in this advance; a separate
+  advance with its own Gate R.
 
-Only reachable if D-A puts C3 in scope. Recorded here regardless, because it shapes what a schema
-migration would look like.
+### D-E. How provider artifacts reach a provider (decided now, for that future advance)
 
-- **Option 1 — a new `ContextItem` type** (`skill`, `agent`) added to the `CHECK` constraint via
-  migration 004, reusing everything. Cheapest by far. *Trade-off:* an artifact is not context — it
-  has a name, a target set, and a materialization state that `ContextItem` has no columns for; the
-  pack algorithm and FTS would need explicit exclusions everywhere (`imported` already shows how
-  many places that touches: pack assembly, `totalCount`, search, the MCP enum, `show --type`).
-  Conceptually it overloads a well-defined ubiquitous language.
-- **Option 2 — a new `artifacts` bounded context** with its own table(s), its own entity, its own
-  value objects (`ArtifactKind`, `ArtifactName`), and its own module under `src/artifacts/`.
-  *Trade-off:* migration 004 is a new table (lower risk than 002's table rebuild), plus a new
-  `docs/vault-format.md` section, plus a fixture regeneration.
-- **Option 3 — artifacts live outside the vault entirely**, as plaintext files valija manages in a
-  known directory. *Trade-off:* cheapest to build, and it abandons the product's core claim for
-  this data class — a "skill" containing a company's internal review checklist would sit in
-  plaintext, which is exactly what a user chose valija to avoid.
-- **Option 4 — not in this advance at all.** Ship curation, defer artifacts to their own Gate R.
-- **Sub-decision (naming/ubiquitous language):** one `Artifact` entity with a `kind`
-  (`skill | agent | rule | instruction`) vs. separate `Skill` and `Agent` entities. **Default: one
-  entity with a kind**, because the difference between a "skill" and an "agent" is mostly *which
-  file a provider expects*, which is a rendering concern (§5.5), and provider vocabularies drift.
-- **Default: Option 4 for this advance (per D-A Option 3), and Option 2 when it ships.** Reason:
-  artifacts are the part with genuinely new invariants, a genuinely new security surface, and a
-  dependency on third-party formats nobody controls; they deserve a spec of their own rather than
-  a section in a GUI spec. If Gate R wants artifacts in *this* advance, Option 2 is the right
-  shape and Option 1 should be resisted — the `imported` type is already a cautionary tale about
-  how far a special-case type propagates.
+- **Option 1 — the GUI shows the artifact and offers copy-to-clipboard.** No file written by
+  valija; the user pastes wherever they want. *Trade-off:* manual, and nothing stays in sync.
+- **Option 2 — an explicit per-target write** ("write this to `.cursor/rules/…`"). *Trade-off:*
+  a brand-new plaintext egress path — valija writing decrypted vault content into a location it
+  does not own — which would require amending `docs/SPEC.md` §9's security model.
+- **Option 3 — continuous sync** (watch the vault, keep target files current). Same egress as
+  Option 2 plus a daemon, which M3 deliberately refused.
+- **Option 4 — expose artifacts live over MCP**, so an MCP-capable client reads them at call
+  time and nothing is ever written to disk.
+- **Default: Option 2**, as the shape most users expect from a "rules file" feature.
+- **Decided: Option 4 + the copy affordance from Option 1**, rejecting file writing entirely.
+  Oscar: *"Por MCP principalmente pero pudiendo a través de la GUI copiar y pegar el contenido
+  de forma fácil."* Consequences a planner must carry forward:
+  1. **No new plaintext-file egress path, ever, under this decision.** The `docs/SPEC.md` §9
+     amendment Options 2 and 3 would have required is **moot**.
+  2. **This reopens D-K — in that future advance, not this one.** Exposing artifacts "live over
+     MCP" means new MCP surface (a tool, or a resource) against `SPEC.md` §7's standing "5 tools
+     — resist adding more". D-K's *"nothing changes"* below is true for **this** advance only,
+     and the artifacts advance must answer the MCP-surface question from scratch.
+  3. The copy affordance is the same mechanism this advance already ships for packs (§4.3 step
+     14), so nothing new is needed here to keep that door open.
 
-### D-E. Provider materialization — does valija write files outside the vault?
+### D-F. Framework
 
-The decision that turns "one curated setup, used consistently everywhere" from a slogan into a
-mechanism. It is also the only decision in this spec that changes the security model.
+- **Option 1 — Electron.** Runs Node, so the app reuses the **actual** `src/` use cases,
+  `better-sqlite3-multiple-ciphers`, `argon2`, and `@napi-rs/keyring` unchanged — zero
+  reimplementation, and byte-identical rendering by construction. *Trade-off:* a large bundle,
+  and three native modules that must be rebuilt against Electron's ABI and packaged per
+  OS/arch (the real cost — see §11).
+- **Option 2 — Tauri.** Much smaller binaries, Rust host. *Trade-off:* the vault logic is
+  TypeScript; Tauri means either a bundled Node sidecar (most of Electron's cost without its
+  integration) or a Rust reimplementation of crypto/session/render logic — exactly the
+  second-implementation drift risk the mobile work spent an advance measuring.
+- **Option 3 — Compose Multiplatform / KMP**, per `idea.md`'s original guess. *Trade-off:*
+  `idea.md` assumed the desktop GUI would ride on a shipping mobile app; that app was cancelled,
+  so this option now means standing up a whole Kotlin toolchain plus a second implementation of
+  the domain, for a desktop-only deliverable.
+- **Option 4 — a native app per OS.** Best integration, three times the work, three chances to
+  diverge.
+- **Default: Option 1 (Electron).** Reason: the one property worth more than binary size here
+  is that the GUI cannot drift from the CLI, because it *is* the CLI's code with a window on it.
+- **Decided: Option 1 (Electron)**, matching the recommended default. The planner must verify
+  Electron-ABI availability (prebuilds or `electron-rebuild`) for all three native modules on
+  every target before committing to a matrix, and must **not** substitute a pure-JS or
+  alternative crypto/keychain library to make packaging easier (§8.1).
 
-- **Option 1 — no file writing. Copy to clipboard / "reveal the text" only.** The user pastes it
-  wherever they want. Zero new egress, zero coupling to third-party conventions.
-  *Trade-off:* it does not deliver "consistently across every provider" — it delivers "here is the
-  text, good luck", which the existing `valija export` already roughly does.
-- **Option 2 — explicit, per-target, user-initiated materialization**, mirroring
-  `valija install`'s existing discipline: back up first, merge rather than overwrite, refuse to
-  touch anything it cannot parse, print exactly what changed, and detect drift (file changed
-  outside valija → report, never clobber). *Trade-off:* valija now owns a set of plaintext files on
-  the user's disk and takes on the maintenance of three-plus third-party formats that change
-  without notice.
-- **Option 3 — continuous sync / watcher.** valija keeps provider files in step automatically.
-  *Trade-off:* a background process (which M3 deliberately refused for auto-lock — "lazy instead of
-  a daemon"), silent overwrites of user edits, and the largest possible plaintext footprint.
-  Contradicts the project's standing posture.
-- **Option 4 — expose artifacts through MCP instead of files**, so MCP-capable clients read them
-  live and nothing is written to disk. *Trade-off:* it only reaches MCP clients — Cursor rules,
-  Claude Code skill files, and any web chat are exactly the surfaces that need a file, so
-  "everywhere" is not achieved; and it needs a new MCP tool or resource (D-K).
-- **Default: Option 2, with Option 4 as a complement later.** Reason: files are the only mechanism
-  that actually reaches the provider surfaces Oscar named, and `valija install` already establishes
-  a safe, reviewable pattern for writing into someone else's config (backup, merge, refuse,
-  report). Option 3 is rejected on the same grounds M3 rejected a daemon. **Non-negotiable riders
-  if Option 2 or 3 is chosen:** a plaintext warning at the point of the first write; a `docs/SPEC.md`
-  §9 amendment naming the new egress; drift detection that reports and never overwrites; and an
-  explicit list of every path valija may write to, reviewable in one place.
+### D-G. Signing and distribution
 
-### D-F. Platform and framework
+- **Option 1 — signed and notarized** (Apple Developer Program ~99 USD/yr, a Windows OV/EV
+  certificate). Clean first launch. *Trade-off:* recurring cost Oscar already declined for
+  mobile, for an unmonetized project.
+- **Option 2 — unsigned artifacts + a documented run-from-source path**, with published
+  checksums and per-OS first-launch instructions.
+- **Option 3 — source only.** No artifacts at all; honest, and excludes the exact audience the
+  GUI exists for.
+- **Default: Option 2.** Reason: it is the only option that both costs nothing and produces
+  something a non-technical user can actually double-click, provided the friction is documented
+  rather than discovered.
+- **Decided: Option 2**, matching the recommended default. Unsigned artifacts, run-from-source
+  documented, first-launch friction written down per OS in the words the OS actually uses. The
+  security cost of teaching a bypass is acknowledged in §8.8, not hidden.
 
-Fully re-opened (§2). The decisive property is **whether the app can run valija's existing
-TypeScript core, including three native modules** (`better-sqlite3-multiple-ciphers`, `argon2`,
-`@napi-rs/keyring`), or must reimplement it.
+### D-H. Session model
 
-- **Option 1 — Electron** (+ any web UI framework). The existing core runs in-process in the main
-  process; one implementation, one language, all three platforms from one codebase, and the three
-  native modules are ordinary Node addons rebuilt against Electron's ABI. *Trade-off:* ~100–150 MB
-  per install, Chromium's own security surface and update cadence, and a native-module rebuild step
-  that must be pinned in CI. It is the least architecturally interesting and the least risky.
-- **Option 2 — Tauri v2 (Rust shell, web frontend) with the Node core as a bundled sidecar
-  process.** Much smaller installer, native webview, and still **one** implementation of the domain
-  (the Rust side never touches SQLCipher). *Trade-off:* the sidecar must ship a Node runtime or a
-  packaged binary anyway, IPC becomes a real interface to design and version, and the project gains
-  a Rust toolchain it has no other use for.
-- **Option 3 — Compose Multiplatform / KMP desktop**, reusing `valija-mobile`'s Kotlin core.
-  *Trade-off:* this is a **second implementation**, and unlike MOBILE it must implement **writes**,
-  for which `docs/vault-format.md` provides no contract at all (§1: "Writing is out of scope"). It
-  also inherits the JVM packaging story and needs the SQLite3MultipleCiphers amalgamation and
-  Argon2id vendored again for three desktop OSes. The prior art is real but read-only. Chooseable
-  only if Gate R also commissions a write-side format contract and accepts byte-level dual
-  maintenance.
-- **Option 4 — a local web UI served by the existing Node process** (`valija ui` → opens
-  `http://127.0.0.1:<port>` in the user's browser). By far the cheapest: no new runtime, no
-  packaging, no signing, no second implementation, works on all three OSes today.
-  *Trade-off:* it is not an "app" in the sense Oscar asked for (no icon, no window, lives in a
-  browser tab), and it introduces an HTTP surface to an unlocked vault on the loopback interface —
-  which is philosophically adjacent to `docs/SPEC.md` §2's "Remote/HTTP MCP transport — local stdio
-  only" rejection, and would need origin/CSRF/token discipline that stdio never needed.
-- **Option 5 — native per OS** (SwiftUI / WinUI / GTK). Best fit and feel per platform; three
-  codebases and three second implementations. Not recommended at this project's scale.
-- **Default: Option 1 (Electron).** Reason: this advance's value is the *management model* — the
-  curation verbs, the artifact concept, the consistency ritual — and every non-Node option spends
-  its entire budget re-earning capabilities the project already has, on the one path (writes) where
-  a divergence corrupts data instead of mis-rendering it. Electron's cost is disk space and a
-  rebuild step; every other option's cost is a second implementation or a new network surface.
-  **Option 4 is the strongest alternative if Gate R's priority is shipping something usable fastest**,
-  and it is a legitimate stepping stone — but it should be chosen deliberately, with the loopback
-  HTTP surface named as a decision, not adopted as a shortcut. Option 2 is the right answer if
-  installer size is a hard requirement.
+- **Option 1 — share the CLI's exact keychain entry** (service `valija`, account = vault id).
+  Unlock in the terminal, the GUI is unlocked; lock in the GUI, MCP tools lock. One session, one
+  mental model. *Trade-off:* **macOS keychain items carry an ACL tied to the creating
+  application**, so a second binary reading an entry the CLI created may prompt the user
+  ("Valija wants to use your confidential information"), or fail outright, depending on how
+  `@napi-rs/keyring` creates the item.
+- **Option 2 — a separate GUI keychain entry.** Avoids the ACL question and creates two
+  independent session states, which is a worse product and a worse security story (two places a
+  key can be left behind).
+- **Option 3 — no keychain in the GUI**: hold the key in memory only, per app run. Tightest
+  window, but the GUI could no longer unlock *for* the MCP server, which is most of the point.
+- **Default: Option 1, with a mandatory macOS ACL spike before the plan is finalized.**
+- **Decided: Option 1**, matching the recommended default. **The macOS ACL spike stays
+  mandatory**: the plan must establish, on a named macOS version, whether the GUI reading the
+  CLI's entry is silent, prompts once, prompts every time, or fails — and the answer must reach
+  the docs (§6 In, item 9). If it prompts every time, that is a product fact the first-run docs
+  must state, not a bug to paper over with a second entry.
 
-### D-G. Where the code lives, and how it is distributed
+### D-I. Device identity and lineage
 
-- **(a) Repository.** Options: a `valija-desktop` repo (mirrors the `valija-mobile` precedent from
-  MOBILE P-3, keeps a Chromium/Rust/JVM toolchain out of a Node package repo, but splits the
-  advance ritual across repos again and duplicates the guard hooks); a workspace/monorepo folder in
-  this repo (`desktop/`, one ritual, one CI, one place to review — but `.claude/hooks/guard-implementation.sh`
-  currently gates `src/`, `package.json` and build config, so a new top-level tree's governance
-  needs stating); or inside `src/delivery/` (only coherent for D-F Option 4).
-  **Default: a workspace folder in this repo** if D-F picks Option 1, 2 or 4, because the GUI calls
-  the same use cases and should move with them in one commit and one review; a separate repo only
-  if D-F picks Option 3 or 5, where the toolchain genuinely does not belong here.
-- **(b) Packaging and signing.** macOS notarization needs an Apple Developer Program membership —
-  **the exact 99 USD/year cost Oscar declined for mobile** (`advances/MOBILE/refined.md` P-6
-  amendment). Windows Authenticode certificates are a comparable annual cost. Options: unsigned
-  artifacts with documented first-launch instructions per OS (right-click-Open on macOS, "More
-  info → Run anyway" on Windows); signed artifacts (requires a budget decision Gate R must make
-  explicitly); or **no binary distribution at all** — the GUI runs from the repo / from npm, which
-  sidesteps signing entirely and matches the developer audience.
-  **Default: unsigned artifacts plus a run-from-source path, with the first-launch friction
-  documented per OS.** Reason: the audience is developers, the project is unmonetized, and the
-  mobile decision already set the precedent that store/signing costs are not justified. Gate R
-  should confirm rather than inherit this.
-- **(c) Does the GUI ship inside the npm package?** **Default: no.** `package.json`'s `files` is
-  `["dist","README.md","LICENSE"]`; adding an Electron bundle would multiply `npm i -g valija` for
-  every CLI-only user. Separate artifact, separate release channel.
+- **Option 1 — the GUI is the same device as the CLI**: same `VALIJA_STATE_HOME`, same device
+  id, so its writes are ordinary fast-forwards.
+- **Option 2 — the GUI mints its own device id.** Every GUI write on the same machine would then
+  look like a second device to `classifyLineage`, and a CLI write plus a GUI write between syncs
+  would be classified as a **fork** — a false alarm on the product's loudest error.
+- **Default: Option 1**, unambiguously.
+- **Decided: not applicable to this advance's acceptance criteria** — a shell that performs no
+  domain write can never contribute a write to classify. **One half still binds, though:** the
+  GUI must resolve `VALIJA_STATE_HOME` exactly as the CLI does, so it is the same device for
+  activity/auto-lock purposes and so curation, when it ships, inherits Option 1 by default
+  rather than by accident (§9 keeps a criterion for this).
 
-### D-H. The GUI's session model
+### D-J. Concurrency
 
-- **Option 1 — share the CLI's keychain session exactly.** Same entry (service `"valija"`, account
-  `vaultId`), same `unlock`/`lock` semantics, same `SessionGuard` idle TTL. Terminal and window
-  agree at all times. *Trade-off:* on macOS the keychain ACL is per-application; an unsigned or
-  differently-signed GUI binary reading the entry the Node CLI wrote triggers an allow-access
-  prompt and may re-prompt after every rebuild. This must be tested on macOS, not assumed (D-F
-  Option 4 avoids it entirely by running inside the same Node process).
-- **Option 2 — the GUI holds its own in-memory key** for its window lifetime and does not use the
-  keychain. *Trade-off:* two independent lock states, a confusing `valija status`, and a second
-  place a key lives — a strict regression against D6.
-- **Option 3 — the GUI never unlocks; it refuses to work unless `valija unlock` was run in a
-  terminal.** Safest and most consistent; unusable for the non-technical audience `idea.md` named.
-- **Default: Option 1**, with a mandatory early spike on the macOS keychain-ACL behaviour, since a
-  failure there is a UX blocker discovered late. **Riders regardless of option:** the GUI honours
-  `VALIJA_AUTOLOCK_MINUTES` and must not defeat it by polling (Q3) — background refresh must not
-  count as user activity; the passphrase is never persisted, never logged, never written to
-  preferences; the key never leaves the keychain and process memory.
+**(a) Write-lock contention.** With an MCP server and a GUI both live, two processes may write
+the same SQLite file. Options were: a busy timeout with retry; refuse and tell the user; or a
+single-writer advisory lock.
+- **Default: busy timeout with a bounded retry**, since SQLCipher/SQLite already serializes and
+  the alternative is a scary error for a benign race.
+- **Decided: not applicable to this advance.** No writes, no contention. Retained for the
+  curation advance, which must answer it before shipping a single write verb.
 
-### D-I. Device identity and the M3 lineage model
-
-- **Option 1 — the GUI is the *same device* as the CLI** on that machine: it reads the same
-  `VALIJA_STATE_HOME` device id and last-seen record. GUI writes and CLI writes on one machine are
-  one writer, so they can never classify as a fork. *Trade-off:* requires the GUI to resolve
-  `VALIJA_STATE_HOME` exactly as `resolveStatePaths()` does, including the env override.
-- **Option 2 — the GUI mints its own device id.** *Trade-off:* GUI-write then CLI-write on the same
-  machine produces two writers at comparable generations, which is exactly `classifyLineage`'s
-  fork signature. Users would see `VAULT_FORK_DETECTED` on their own single machine — a false
-  positive in the one place the product promises never to auto-resolve, which would either erode
-  trust in the warning or push someone to weaken the check.
-- **Default: Option 1, unconditionally.** Reason: a false fork is worse than no fork detection,
-  because it teaches users to ignore the alarm. This is also the answer that requires the least new
-  code. **Acceptance must include a test that GUI-then-CLI writes on one machine produce a clean
-  fast-forward, not a fork** — the existing `src/delivery/multi-device-sync.test.ts` is the model.
-
-### D-J. Concurrency — GUI, MCP server and CLI on one vault
-
-- **Option 1 — short-lived sessions everywhere** (§5.4): the GUI opens, reads or writes, closes,
-  per action, exactly as the CLI does. SQLite's rollback-journal locking then behaves as it does
-  today. *Trade-off:* the GUI re-reads more often, and a stale view is possible between refreshes
-  (acceptable — nothing else is writing except the user's own tools).
-- **Option 2 — a long-lived connection** held by the GUI. *Trade-off:* the MCP server's `save_context`
-  can hit `SQLITE_BUSY` while the window is open; there is no retry/backoff policy anywhere in the
-  codebase today, so this would surface to a model as a tool error.
-- **Option 3 — a coordinating daemon** that owns the vault and serves all three surfaces.
-  *Trade-off:* M3 explicitly rejected a background daemon; this would be a much larger
-  architectural change than the feature warrants.
-- **Default: Option 1**, plus an explicit decision on what the GUI does when a write fails because
-  another process holds the lock (**default: surface a plain "the vault is busy, try again" and
-  retry once**, not a silent swallow). Reason: it preserves the exact concurrency behaviour every
-  existing entry point already has, and it is the only option that does not need a new policy.
+**(b) What a read session does to the file — the part that is *not* moot, and is still open.**
+Today `SqliteVaultSessions.open()` runs `wal_checkpoint(TRUNCATE)`, sets `journal_mode = DELETE`,
+and calls `migrate(db, path)`. So a "read-only" GUI opening a vault whose schema is behind will
+**run migrations** — including the transactional table rebuilds of migrations 002/003, which
+take a ciphertext backup on a populated vault.
+- **Option 1 — reuse the existing session path unchanged**: the GUI behaves exactly like any
+  CLI read command, migrations included. One code path, zero divergence.
+  *Trade-off:* "read-only" is then true of *content*, not of *bytes*, and the most invasive
+  operation in the product can be triggered by double-clicking an app icon.
+- **Option 2 — pre-flight the schema version and refuse to migrate**, telling the user to run a
+  CLI command first (the posture mobile took, permanently). Strongest read-only guarantee.
+  *Trade-off:* it dead-ends a non-technical user (D-N) at a terminal instruction, in an app that
+  exists precisely so they never need one — and it needs a new check outside the shared path.
+- **Option 3 — migrate, but only after an explicit "upgrade this vault" confirmation** in the
+  GUI, with the backup behaviour explained.
+- **Default: Option 1**, on the grounds that D-N's audience has no terminal and divergence
+  between surfaces is the failure mode this architecture is built to avoid; §3's third framing
+  fact and §8 then have to state plainly that "read-only" means no domain write, not zero bytes.
+  Option 3 is the honest compromise if Gate R wants the user to consent to the upgrade.
+- **Decided: open — no answer recorded.** Needs a Gate R answer.
 
 ### D-K. Does anything reach the MCP surface?
 
-- **Option 1 — nothing changes.** 5 tools, 2 prompts, stdio. Curation is a human act; artifacts are
-  materialized as files. *Trade-off:* an AI cannot help the user tidy their own vault, which is
-  arguably a natural use of the product.
-- **Option 2 — add read-only exposure of artifacts** (a 6th tool, or MCP *resources*, which this
-  server does not use today). *Trade-off:* crosses "resist adding more" (`docs/SPEC.md` §7); MCP
-  resources are a new protocol surface with their own semantics.
-- **Option 3 — add curation tools** (`edit_context`, `delete_context`, `pin_context`).
-  *Trade-off:* gives a model destructive authority over the user's vault. `docs/SPEC.md` §9 already
-  notes any connected MCP client receives plaintext; letting it *delete* is a different category of
-  trust, and the server never sees the conversation that motivated the call.
-- **Default: Option 1.** Reason: every prior advance (M2, M3) deliberately shipped with **no MCP
-  change**, and the one asymmetry worth preserving in this product is that models read and append,
-  while humans curate and destroy. Option 3 should be rejected outright rather than deferred.
+- **Option 1 — nothing changes.** No tool, argument, prompt, resource, or transport.
+- **Option 2 — the GUI exposes something over MCP** (e.g. artifacts, per D-E).
+- **Default: Option 1.**
+- **Decided: Option 1**, trivially, matching the recommended default: there is nothing new to
+  expose. No curation (D-A), and artifacts — including their MCP exposure — are deferred to
+  their own advance (D-D, D-E). **Scoped to this advance only:** D-E(2) records that the
+  artifacts advance reopens this question and must answer it against `SPEC.md` §7's five-tool
+  discipline.
 
-### D-L. May the GUI run migrations?
+### D-L. Where the desktop code lives
 
-`SqliteVaultSessions.open()` calls `migrate()` on every session, and `docs/vault-format.md` §11
-forbids migration for a second implementation, permanently.
+- **Option 1 — a top-level `desktop/` workspace in this repo.** Imports the existing use cases
+  directly, so D-F's whole rationale (no second implementation) holds with no publishing step.
+  *Trade-off:* an Electron build lands in a Node CLI repo; CI grows; and `desktop/` is **not**
+  covered by `.claude/hooks/guard-implementation.sh`, which gates `src/`, `package.json`,
+  `tsup.config.ts`, `tsconfig*.json` — so the hook would need extending, which is a governance
+  change the plan must call out rather than slip in.
+- **Option 2 — inside `src/delivery/desktop/`**, treating the GUI as a third entry point beside
+  `cli/` and `mcp/`, which is literally what `SPEC.md` §10 says delivery is for. Already gated by
+  the hook. *Trade-off:* a renderer app (HTML/CSS/assets, its own bundler, its own tsconfig)
+  living inside a tree that `tsup` builds for npm is awkward, and risks the GUI's front-end
+  files leaking into the published `dist`.
+- **Option 3 — a separate `valija-desktop` repo** (the `MOBILE` P-3 precedent). Clean
+  separation. *Trade-off:* this package exports no library entry point (`bin` only, no
+  `exports`), so a second repo would have to vendor or re-export internals — reintroducing
+  exactly the drift risk D-F chose Electron to avoid — and it would need this repo's whole gate
+  apparatus copied again.
+- **Default: Option 1**, with two riders: `desktop/` is excluded from the npm `files` list (it
+  already is, since `files` is an allow-list), and the plan explicitly proposes whether
+  `guard-implementation.sh` should gate `desktop/` too (recommended: yes).
+- **Decided: open — no answer recorded in this round.** Needs a Gate R answer; the default
+  above is what the planner should assume otherwise.
 
-- **Option 1 — yes, if the GUI runs the same TypeScript core** (D-F Options 1/2/4). It *is* desktop
-  valija, not a second implementation, and refusing would break the ordinary upgrade path.
-- **Option 2 — no; the GUI refuses to open a vault needing migration** and tells the user to run a
-  CLI command first. Safest, and mandatory if D-F picks a second implementation.
-- **Default: Option 1 if D-F lands on 1/2/4; Option 2 if it lands on 3/5.** Reason: the rule's
-  purpose is that only one, well-tested implementation of the migration ritual exists — not that
-  only one *binary* runs it. **Rider either way:** migration 002 and 003 both take a ciphertext
-  backup on a populated vault; a GUI that triggers a migration must surface that backup's location
-  to the user rather than migrating silently behind a spinner.
+### D-M. Vault lifecycle in the GUI
 
-### D-M. Vault lifecycle operations in the GUI
+- **Option 1 — the GUI can init, unlock, lock, and (some day) destroy a vault.**
+- **Option 2 — the GUI can init, unlock and lock**, but never destroys.
+- **Option 3 — terminal-only init; the GUI unlocks and locks, and shows a guided empty state
+  pointing at `valija init`.** *Trade-off in the other direction:* a non-technical user cannot
+  get started at all without a terminal.
+- **Default: Option 3.** Reason, stated at the time and **retained verbatim because it is now
+  an accepted risk rather than a rejected argument**: showing the recovery kit in a window is *a
+  materially worse ritual than a terminal that prints it once*, and putting init in the GUI
+  *duplicates the most security-sensitive flow in a new surface*.
+- **Decided: Option 2**, overriding the recommended Option 3. **The GUI can initialize a
+  vault**, including passphrase entry and recovery-kit display; it never destroys one. This is a
+  deliberate security-posture acceptance by Oscar, not a default that fell through — the
+  trade-off above is accepted, not disputed, and §8.2 carries it as a named surface with
+  required mitigations. Do not re-litigate it in the plan; do not soften it in the docs.
+  **One sub-question this raises, defaulted here:** `SPEC.md` D7 says init "write[s] a one-page
+  recovery file", while the shipped CLI *prints* the kit and states it is "never stored". The
+  GUI must **mirror the shipped behaviour** — display once, copy-to-clipboard, no automatic file
+  write — and must not silently resolve that spec/code drift in the direction of writing a file.
+  If Gate R wants a "Save kit to file…" button (a plausible ask for this audience), that is an
+  explicit decision with its own security note, not an implementation detail.
 
-- **Option 1 — none.** No init, no passphrase change, no recovery-kit regeneration, no vault
-  deletion. The GUI opens an existing vault or explains how to create one.
-- **Option 2 — init in the GUI too**, including passphrase entry and recovery-kit display.
-  *Trade-off:* the recovery kit is the single most consequential artifact in the product ("losing
-  passphrase + kit = data loss, by design"); displaying it in a window the user can dismiss
-  without reading is a materially worse ritual than a terminal that prints it once. It also
-  duplicates the most security-sensitive flow in a new surface.
-- **Option 3 — Option 1 plus a guided "no vault found" screen** that shows the exact command to run
-  and re-checks when the user returns.
-- **Default: Option 3.** Reason: it keeps the irreversible ritual in one place while removing the
-  dead-end for the non-technical user. Passphrase change does not exist anywhere in the product
-  today and is not this advance's job to invent.
+### D-N. Audience
 
-### D-N. Who is this for?
+- **Option 1 — non-technical-first.** `idea.md`'s framing: someone who does not open terminals.
+  Vocabulary, error messages, and the empty state are written for them; lineage generations,
+  journal modes, and device ids stay out of the main flow.
+- **Option 2 — power-user-first.** Density, keyboard-driven, jargon allowed.
+- **Option 3 — both, layered**: a simple default surface with an advanced panel.
+- **Default: Option 3**, on the grounds that the same person may want both and the curation
+  surface skews technical.
+- **Decided: Option 1**, overriding the recommended Option 3. Non-technical-first. Note that the
+  tension the first draft flagged — `idea.md`'s non-technical framing versus a power-user
+  curation surface — **dissolves** under D-A: with no curation in scope, there is no
+  power-user-shaped feature left to design for. Consequences: plain-language errors, no
+  lineage/journal jargon in the main flow (a status panel may still show it), and the install
+  friction of D-G becomes the single most important thing the docs get right. Locale stays
+  English-only this advance (§6 Out).
 
-`idea.md` framed the GUI as the *non-technical user's* mirror of the CLI. Oscar's new framing
-(curate context, author agents and skills, apply them across providers) describes a **power user**.
+### D-O. Roadmap and `docs/SPEC.md`
 
-- **Option 1 — non-technical first.** Simple, guided, few affordances, hides projects/types/tags
-  behind friendly language. *Trade-off:* curation and artifact authoring are inherently technical;
-  a simplified UI would hide the concepts the feature is about.
-- **Option 2 — power user first.** Dense, keyboard-driven, exposes types/tags/pins/budget directly,
-  assumes the user knows what a context pack is. *Trade-off:* abandons `idea.md`'s original
-  rationale for the GUI existing at all.
-- **Option 3 — power user first, with the read path usable by anyone.** Browsing, searching and
-  copying a pack need no vocabulary; the curation and artifact surfaces are unapologetically
-  technical.
-- **Default: Option 3.** Reason: it matches what the feature actually is without discarding the
-  original motivation, and it gives the planner a clear tie-breaker for every UI trade-off.
-  It also implies **no i18n in this advance** (English only) unless Gate R says otherwise.
+- **(a) Does the Out line change?** `docs/SPEC.md` §2 currently reads *"GUI, encrypted backup /
+  restore → later (bumped from M3 by M3's redefinition, see §10b)"*. Under the
+  specs-are-contracts rule, the advance that ships a GUI must correct it: split the two clauses,
+  mark the GUI as shipped in `advances/GUI/`, leave encrypted backup/restore as "later".
+  **Also §1**, which reads *"One npm package. One binary surface: `valija`."* — that becomes
+  false the day a desktop app ships and needs a sentence acknowledging the companion app.
+- **(b) Does the GUI get a milestone number?** Options: assign one, or stay `GUI` like `MOBILE`
+  stayed `MOBILE`.
+- **Default: correct §2 (and §1), assign no milestone number.** Reason: the correction is a
+  factual fix a contract document requires; numbering implies a place in a roadmap sequence that
+  nothing else depends on.
+- **Decided: the default applies** — no strong opinion was expressed, so: `docs/SPEC.md` §2's
+  Out line and §1's "one binary surface" sentence are corrected as part of this advance's own
+  deliverables, and **no milestone number is assigned**.
 
-### D-O. The roadmap: `docs/SPEC.md`
+### D-P. Which existing operations the shell actually surfaces *(new in this revision)*
 
-`docs/SPEC.md` §2 currently lists "GUI, encrypted backup / restore → later (bumped from M3 by M3's
-redefinition, see §10b)". The specs-are-contracts rule (M4 D-A, MOBILE P-4) says the advance that
-builds toward a thing corrects the line that denies it.
+D-A's answer — "the operations that already exist" — is not self-evident, because the CLI has
+eleven commands and they are not all the same kind of thing. This must be settled before
+planning.
 
-- **(a) Does the Out line change?** **Default: yes** — split the fused clause so "encrypted backup /
-  restore" stays *later* and the GUI line reflects reality, and add a §10 subsection describing what
-  shipped, in the idiom of §10a/§10b. Also: if C2 ships, §5's use-case list and §8's CLI surface are
-  both out of date the moment it merges and must be updated in the same commit.
-- **(b) Does the GUI get a milestone number?** Options: no number (stay `GUI`, matching MOBILE's
-  posture); or assign one, which forces a collision with §2's existing assignments (M4 = scoped
-  profiles, M5 = browser extension) and with §9's standing promise that per-tool scoping "arrives
-  in M4". **Default: no number**, decided again at the next Gate R once the artifact half is scoped.
+- **Option 1 — the read set plus session control**: `init` (per D-M), `unlock`, `lock`,
+  `status`, `projects`, `show`, `search`, `export`. Excludes `import` (a write path that ingests
+  files), `install` (mutates third-party config files), `doctor` (diagnostics written for
+  technical users), and `mcp` (a server process, not a user action).
+- **Option 2 — Option 1 plus `install`**, as a guided "Connect Claude Desktop / Cursor" step.
+  *Strongest argument for:* it is arguably the single most valuable non-terminal operation for
+  D-N's audience — a vault they cannot connect to any AI tool is a vault that stays empty, and
+  §4.2 step 8's empty state currently ends by telling a non-technical user to run a CLI command.
+  *Trade-off:* it writes files outside `VALIJA_HOME` (client config JSON), which is a genuine
+  write path with its own failure modes (existing config, malformed JSON, missing client).
+- **Option 3 — Option 2 plus `doctor`**, as a read-only "check my setup" panel. Cheap, and
+  mostly reformats output the CLI already produces.
+- **Option 4 — Option 1 plus `import`.** Rejected on its face: file ingest is a bulk *write*,
+  which D-A put out of scope.
+- **Default: Option 1**, on the strict reading of D-A's answer, with **Option 2 named as the
+  strongest alternative** because of the D-N argument above.
+- **Decided: open — no answer recorded.** Needs a Gate R answer.
 
 ---
 
 ## 8. Security surfaces that must not weaken
 
-A GUI is the most likely place in this project's history for a claim to erode quietly, because
-"just for the UI" is a persuasive reason to cache, to hold open, and to write out.
-
-1. **No new place a key or passphrase can live.** The key lives in the OS keychain and in process
-   memory. Not in `localStorage`, not in an Electron `safeStorage` blob, not in a preferences file,
-   not in a renderer process, not in a log, not in a crash dump, not in a window title.
-2. **No plaintext cache of vault content.** No "for speed" SQLite mirror, no JSON index on disk, no
-   search cache, no thumbnail/preview cache. Everything at rest stays inside `vault.db`.
-3. **The vault format, crypto, KDF parameters, `vault.json`, and the SQLCipher configuration are
-   untouched** unless a schema migration is explicitly in scope (D-D) — and then only through a
-   numbered migration, a fixture regeneration, and a `docs/vault-format.md` edit in the same commit
-   (§14).
-4. **Every write goes through `session.write(...)`** so the M3 lineage stamp advances atomically.
-   No path may write to `vault.db` outside that seam. Fork classification is **never** softened,
-   auto-resolved, or hidden from the user because a warning looks bad in a window.
-5. **No journal-mode drift.** The single-file-at-rest guarantee (M3 D-A) must hold after every GUI
-   action, not only after `lock`. No `-wal`, `-shm` or `-journal` sidecar may survive an action.
-6. **Idle auto-lock is not defeated.** A GUI must not keep the vault unlocked by polling, and must
-   not count its own background refresh as user activity (Q3). If it does, M3's D-I is silently
-   removed from every user who installs the app.
-7. **No network traffic, at all.** No auto-update, no crash reporting, no analytics, no remote
-   config, no font/CDN fetch, no telemetry. This must be verifiable by inspecting the shipped
-   bundle's declared capabilities, not by reading a promise.
-8. **If D-E allows file materialization:** every writable path is enumerated in one reviewable
-   place; every write backs up first and merges rather than overwrites (the `installer.ts`
-   discipline); a file modified outside valija is **reported, never clobbered**; the plaintext
-   nature of those files is stated to the user at the first write; and `docs/SPEC.md` §9 gains a
-   line naming this egress. valija must never write outside the enumerated paths.
-9. **Destructive operations are irreversible and must say so.** Delete has no undo, no tombstone
-   and no backup behind it (`docs/SPEC.md` §2: encrypted backup/restore is "later"). The
-   confirmation must be explicit, and the deletion must propagate honestly to synced devices rather
-   than being hidden locally.
-10. **If D-F picks a web-technology shell:** no remote content is ever loaded into a renderer; any
-    user-authored markdown rendered as HTML is sanitized (vault content is attacker-influenced the
-    moment a user imports someone else's export — M2's importers ingest arbitrary third-party
-    files); Node integration is disabled in renderers; context isolation is on; and the IPC surface
-    between renderer and main is an explicit allowlist, not a generic "run this use case" bridge.
-11. **If D-F picks a loopback HTTP variant (Option 4):** bind to `127.0.0.1` only, require a
-    per-launch token, enforce origin checks, and treat the port as an unlock-equivalent surface —
-    or do not choose that option.
-12. **The MCP surface stays as it is** unless D-K says otherwise, and never gains a destructive
-    tool.
-13. **The desktop threat model in `docs/SPEC.md` §9 is unchanged** except where D-E forces an
-    addition. A GUI does not get to imply stronger protection than the vault provides.
+1. **Key material stays where it is.** The 32-byte key exists in the OS keychain and in
+   main-process memory, and nowhere else — no renderer copy, no `localStorage`/`IndexedDB`/
+   `sessionStorage`, no file, no log line, no crash dump. **No substitution of the crypto or
+   keychain libraries** (`argon2`, `@napi-rs/keyring`, `better-sqlite3-multiple-ciphers`) to
+   simplify packaging: a pure-JS Argon2id or an alternative keyring is a crypto/session change
+   wearing a build-tooling disguise.
+2. **The recovery kit in a window — the risk Oscar accepted (D-M).** Stated plainly, because it
+   is the one place this "simple shell" advance touches the product's most sensitive flow: a
+   terminal prints the kit into a scrollback the user already controls, whereas a GUI window is
+   screenshot-able, screen-recordable, readable by accessibility and automation APIs, capturable
+   by screen-sharing software the user forgot was running, and structurally invites a "save it
+   for me" button. **Required mitigations, none optional:** shown exactly once; never written to
+   disk by the app; not re-openable after acknowledgement; not retained in any renderer state
+   after dismissal; an explicit acknowledgement before continuing; the copy action warned as
+   putting the raw key on a clipboard other applications can read. This is a decided risk, not
+   an open question — but it is the reason §9 and any review of this advance should spend most
+   of their attention on first run.
+3. **No plaintext at rest, anywhere new.** No cache of items or packs, no search history, no
+   recently-viewed list containing content, no window-state file holding item text, no
+   Electron `crashReporter` (explicitly disabled), no devtools in production builds. After the
+   app quits, the only valija files on disk are the ones that existed before it started.
+4. **No network, at all.** No auto-update feed, no analytics, no crash upload, no remote fonts
+   or icons, no remote origin loadable by any window. A Content-Security-Policy that forbids
+   remote origins, plus denial of `will-navigate` and `window.open` to non-local URLs, is the
+   enforcement — not a promise in a README. This is `SPEC.md` §9's "no network calls at runtime"
+   applied to a browser engine.
+5. **The IPC surface is a trust boundary and is enumerated.** One channel per use case,
+   arguments validated at the boundary with zod exactly as the MCP server does; no channel that
+   accepts SQL, a module name, a shell command, or an arbitrary filesystem path. The only path
+   the app writes to is the one the user selects in a native save dialog.
+6. **Clipboard is a new egress mechanism and is documented as one.** Plaintext egress by
+   explicit user action already exists (`valija export -o`), so this changes the mechanism, not
+   the threat model — but a one-click copy of an entire context pack deserves a sentence in the
+   GUI docs, and it must never happen automatically.
+7. **Vault integrity and identity.** The GUI resolves `VALIJA_HOME` and `VALIJA_STATE_HOME`
+   exactly as the CLI does, is the **same device**, never mints a second device id, never writes
+   a lineage stamp, and leaves `vault.db` as a single file at rest with no `-wal`/`-shm`/
+   `-journal` sidecar (M3 D-A).
+8. **Unsigned distribution has a security cost (D-G).** Documenting "right-click → Open" or
+   "Run anyway" trains precisely the behaviour malware relies on, for an audience least equipped
+   to judge when it is safe. Accepted, with published SHA-256 checksums and a run-from-source
+   path as the mitigations, and stated openly in the docs rather than glossed as a quirk.
+9. **Idle auto-lock may only get tighter, never looser.** No background polling, no keep-alive,
+   no "stay unlocked while the window is open". The GUI honours `VALIJA_AUTOLOCK_MINUTES`
+   identically to the CLI.
+10. **The MCP surface is untouched** — 5 tools, 2 prompts, stdio. The GUI neither embeds nor
+    proxies an MCP server, and `SPEC.md` §9's statement that any connected MCP client receives
+    plaintext is unaffected by this advance.
+11. **Only fixture data in screenshots and docs.** Any screenshot shipped with this advance uses
+    `src/testing/__fixtures__/golden-vault/`, whose passphrase and key are public by design and
+    labelled as such — never a real vault, never a real key, never a real recovery kit.
 
 ---
 
 ## 9. Acceptance criteria
 
-A reviewer should be able to check each line without running the GUI, except where noted. Lines
-marked *(conditional)* apply only if Gate R selects the corresponding option.
+A reviewer should be able to check each line without guessing what was intended.
 
-**Domain and architecture**
+**Product invariants**
 
-- [ ] Every curation verb selected in D-B exists as a `UseCase` in `src/context/application/use-cases/`
-      with its own test, and passes with **no GUI in the loop**.
-- [ ] No SQL, no pack assembly, no markdown rendering and no validation logic exists in GUI view
-      code; the GUI calls use cases and renders `Result`s.
-- [ ] Every mutation runs inside `session.write(...)`; a multi-item action produces **one**
-      lineage generation bump, not one per item.
-- [ ] New errors follow the `xxxErr(code, message)` convention and are listed in
-      `src/context/domain/errors.ts` and `specs/context.md`.
-- [ ] No file sits bare at a layer's root; new kinds of thing get their own named subfolder
-      (`CLAUDE.md` Conventions).
-- [ ] *(conditional, D-B)* Each destructive verb also exists as a CLI command, documented in
-      `docs/SPEC.md` §8 and `specs/delivery.md`.
+- [ ] The MCP surface is byte-for-byte unchanged: 5 tools with the same arguments, 2 prompts,
+      stdio only.
+- [ ] No change to the schema, to any migration, to the vault format, to `vault.json`, to the
+      Argon2id parameters, to the key format, or to the SQLCipher configuration.
+- [ ] No change to `argon2`, `@napi-rs/keyring`, or `better-sqlite3-multiple-ciphers` as the
+      libraries in the crypto/session/storage path.
+- [ ] Every CLI command behaves exactly as before; `npm run typecheck && npm run lint &&
+      npm run test` pass, and the existing CI matrix is neither slowed nor gated by desktop
+      packaging jobs.
+- [ ] The published npm package's contents are unchanged (`files` remains an allow-list that
+      excludes the desktop tree).
+- [ ] `docs/SPEC.md` §2's "GUI … → later" Out line and §1's "one binary surface" sentence are
+      corrected; no milestone number is assigned (D-O).
 
-**Vault, sync and session integrity**
+**The shell (D-A, D-P)**
 
-- [ ] A test proves that a GUI write followed by a CLI write on the same machine classifies as a
-      clean **fast-forward**, not `VAULT_FORK_DETECTED` (D-I).
-- [ ] After every GUI action, `vault.db` is the only file at rest — no `-wal`, `-shm` or `-journal`
-      sidecar, and `journal_mode` is still `DELETE`.
-- [ ] The GUI holds no database connection across user think-time; sessions open and close per
-      action (D-J).
-- [ ] Idle auto-lock still fires at `VALIJA_AUTOLOCK_MINUTES` with the GUI open and idle; a test or
-      a documented manual check proves background refresh does not reset the idle clock.
-- [ ] The GUI and the CLI report the same lock state at all times; unlocking in one is visible in
-      the other.
-- [ ] The passphrase and the derived key appear in no file, no preference store, no log and no
-      renderer process; verified by inspection and named in the review.
-- [ ] *(conditional, D-L)* If the GUI may migrate, a migration triggered from the GUI surfaces the
-      ciphertext backup path to the user; if it may not, it refuses with an actionable message.
+- [ ] With a fixed clock, the pack the GUI displays for a project is **byte-identical** to the
+      stdout of `valija export <project>` for the same vault, asserted by a test that compares
+      the two strings — not by eye. Under a real clock the only permitted difference is the
+      `generated` timestamp in the preamble.
+- [ ] The project list, item list (including the `--type` filter), and search results are
+      produced by the **same use cases** the CLI calls, so ordering and content match by
+      construction; a test exercises each against the golden-vault fixture.
+- [ ] No code path in the desktop app calls `session.write(...)`, `SaveContext`, `ImportItems`,
+      or any repository mutation. The UI contains no edit, pin, archive, delete, or rename
+      affordance, disabled or otherwise.
+- [ ] The set of operations the UI exposes matches D-P's answer exactly — nothing extra "while
+      we were in there".
+- [ ] Sessions are opened per action and closed; no `Database` handle outlives a user action.
+- [ ] No timer or interval refreshes vault state; refreshes are user- or focus-driven, so idle
+      auto-lock is not extended by leaving the window open.
+- [ ] After any GUI session, the vault folder contains `vault.json` and `vault.db` only — no
+      `-wal`, `-shm`, or `-journal` sidecar.
+- [ ] The GUI resolves `VALIJA_HOME` and `VALIJA_STATE_HOME` exactly as the CLI does and mints
+      no new device id (the still-binding half of D-I).
+- [ ] The GUI's behaviour when the vault's schema version is behind matches D-J(b)'s answer, and
+      whatever that answer is, it is stated in the GUI docs.
 
-**Security posture**
+**Vault initialization (D-M)**
 
-- [ ] The shipped bundle makes **zero** network requests: no update check, no crash reporter, no
-      analytics, no remote asset. Verified against the built artifact, not the source intent.
-- [ ] No plaintext copy of vault content is written anywhere outside the vault — except paths
-      explicitly authorised by D-E.
-- [ ] `vault.json`, the KDF parameters, the keychain entry naming, and the SQLCipher pragma set are
-      byte-for-byte unchanged.
-- [ ] The MCP surface is unchanged: 5 tools, same arguments, 2 prompts, stdio *(unless D-K says
-      otherwise, in which case the change is exactly what D-K authorised and nothing more)*.
-- [ ] *(conditional, D-F web shell)* Context isolation on, Node integration off in renderers, IPC
-      restricted to an explicit allowlist, and user markdown sanitized before rendering.
-- [ ] *(conditional, D-E)* Every writable external path is enumerated in one place; writes back up
-      first, merge rather than overwrite, and report drift instead of clobbering; the plaintext
-      warning is shown at the first write; `docs/SPEC.md` §9 names the egress.
+- [ ] Init runs through the existing `CreateVault` use case, with `parsePassphrase`'s rules
+      enforced (not re-implemented in the renderer) and a mismatch caught before anything is
+      written.
+- [ ] The recovery kit displayed is the exact output of `renderRecoveryKit`, shown once, never
+      written to disk by the app, not re-openable after acknowledgement, and gated behind an
+      explicit "I stored this offline" acknowledgement.
+- [ ] The raw key hex does not appear in any log, any persisted renderer state, or any file
+      written by the app.
+- [ ] After GUI init, `valija status` in a terminal reports the same vault as initialized and
+      unlocked; there is exactly one vault, one keychain entry, one device identity.
+- [ ] The copy-key action warns that the clipboard is readable by other applications.
+- [ ] Nothing in the app can destroy or re-initialize an existing vault (`VAULT_ALREADY_EXISTS`
+      is surfaced in plain language, per D-N).
 
-**Format and documentation**
+**Session (D-H)**
 
-- [ ] *(conditional, D-D)* Any schema change ships as a numbered migration, with the golden-vault
-      fixture regenerated and `docs/vault-format.md` updated **in the same commit** (§14), and the
-      conformance test green.
-- [ ] `specs/context.md` and `specs/delivery.md` describe every new use case and command.
-- [ ] `docs/SPEC.md` §2's GUI line, §5's use-case list and §8's CLI surface are corrected, and a
-      §10-series subsection records what shipped (D-O).
-- [ ] A user-facing document explains: installing the app, first launch on an unsigned build per
-      OS, what the GUI can and cannot do, and that delete is permanent.
+- [ ] `valija unlock` in a terminal leaves the GUI unlocked with no second prompt; `valija lock`
+      leaves the GUI locked; unlocking in the GUI unlocks MCP tools. One keychain entry, shared.
+- [ ] The macOS keychain-ACL behaviour is recorded — silent, prompts once, prompts every time,
+      or fails — with the exact macOS version, and the answer appears in the GUI docs.
+- [ ] Idle auto-lock (`VALIJA_AUTOLOCK_MINUTES`) applies to the GUI identically to the CLI.
 
-**Product behaviour a reviewer can check by hand**
+**Renderer and network hardening (§8.3–§8.5)**
 
-- [ ] Pinning an item in the GUI changes what `valija export <project>` and MCP `get_context`
-      return — the pack is recomposed with it under **Pinned**.
-- [ ] The GUI's pack preview is **byte-identical** to `valija export <project>` for the same budget.
-- [ ] Archiving removes an item from packs and from `search_context`; unarchiving restores it.
-- [ ] A locked vault produces the same actionable message in the GUI that the MCP tools produce,
-      not a stack trace or a blank screen.
-- [ ] A vault reporting `VAULT_FORK_DETECTED` is surfaced in the GUI, not swallowed, and the GUI
-      offers no "resolve" button.
-- [ ] Every step in §4's walkthrough that is in scope can be performed end to end, and every step
-      out of scope is either absent or explains where to go instead.
+- [ ] The renderer runs with `contextIsolation: true`, `nodeIntegration: false`,
+      `sandbox: true`; the preload exposes a fixed, enumerated API with one method per use case,
+      each validating its arguments at the boundary.
+- [ ] No IPC channel accepts SQL, a module name, a shell command, or an arbitrary filesystem
+      path; the only file the app writes outside the vault is the user's chosen export target.
+- [ ] The app makes zero network requests: no auto-update, no analytics, no crash reporting, no
+      remote fonts or icons; a CSP forbids remote origins and navigation to them is denied.
+      Verified against the built artifact, not only the source.
+- [ ] After quitting, no new plaintext file, cache, index, or crash dump containing vault
+      content exists on disk.
+- [ ] Screenshots and docs use only the golden-vault fixture, labelled as published test data.
+
+**Packaging and docs (D-G)**
+
+- [ ] Unsigned artifacts build for macOS, Windows and Linux, each with a published SHA-256; the
+      native modules load correctly in the packaged app on every target (not only in dev).
+- [ ] First-launch friction is documented per OS using the literal text the OS displays, with
+      the exact bypass steps, plus the run-from-source alternative — and the run-from-source
+      path is verified, not assumed.
+- [ ] The GUI docs state what the GUI deliberately does not do (curation, import, artifacts) and
+      where those live.
+
+**Not applicable this advance** *(listed so a reviewer does not look for them)*
+
+- [ ] ~~Curation verbs behave correctly~~ *(not applicable — D-A, D-B)*
+- [ ] ~~Writes go through `session.write` with one lineage bump per action~~ *(not applicable —
+      D-C, D-I; binding on the curation advance)*
+- [ ] ~~Fork detection is surfaced without auto-merge~~ *(not applicable — D-I)*
+- [ ] ~~Concurrent GUI/MCP write behaviour~~ *(not applicable — D-J(a))*
+- [ ] ~~Skills / agents / provider artifacts~~ *(not applicable — D-D, D-E)*
+- [ ] ~~New MCP tool or resource~~ *(not applicable — D-K)*
 
 ---
 
 ## 10. Deliverables summary (for the planner, not a plan)
 
-Under the recommended defaults (D-A Option 3, D-C Option 1, D-F Option 1, D-B Option 3): a slice of
-**curation use cases** in `src/context/` — edit, pin/unpin, archive/unarchive, delete, rename and
-edit a project, move items — each with per-layer tests and a matching CLI command, all writing
-through the existing `session.write` lineage seam; plus a **cross-platform desktop application**
-that unlocks against the same keychain entry, browses projects and items, searches, previews the
-rendered pack, and performs those curation actions, distributed as unsigned artifacts with a
-documented first-launch path per OS. Documentation updates land in the same commit:
-`specs/context.md`, `specs/delivery.md`, `docs/SPEC.md` §2/§5/§8 plus a new §10-series subsection,
-and a user-facing app document. **No MCP change, no vault-format change, no schema migration, no
-network call, and no milestone number.**
+An **Electron** desktop application (D-F) — main process composing the existing container,
+sandboxed renderer over an enumerated IPC surface — that:
 
-**Artifacts (skills and agents) and provider materialization are a separate advance** with their
-own Gate R, their own domain (`src/artifacts/`), their own migration, and their own security review
-of the plaintext-egress path. If Gate R disagrees and wants them here, D-D Option 2 and D-E Option 2
-are the shapes to plan against, and the acceptance criteria marked *(conditional)* become mandatory.
+- **creates a vault** (passphrase, Argon2id, one-time recovery-kit display with explicit
+  acknowledgement) — the single write capability in scope (D-M);
+- **unlocks, locks and reports status** through the CLI's own keychain entry (D-H), honouring
+  idle auto-lock unchanged;
+- **browses** projects and items, **searches** full-text, and **previews** a rendered context
+  pack byte-identical to `valija export`;
+- **copies** that pack to the clipboard or **exports** it to a user-chosen file;
+
+packaged **unsigned** for macOS, Windows and Linux with published checksums, a documented
+run-from-source path, and per-OS first-launch instructions (D-G); documented for a
+non-technical reader (D-N); with `docs/SPEC.md` §1 and §2 corrected and **no milestone number**
+assigned (D-O).
+
+**Not in it:** no curation of any kind, no provider artifacts, no MCP change, no schema or
+format or crypto change, no import/install/doctor (pending D-P), no signing, no auto-update, no
+network call, no localization, no mobile.
+
+Three questions remain for Gate R: **D-L** (repo home), **D-P** (operation set), **D-J(b)**
+(schema-behind behaviour). Each has a default the planner may assume if Gate R stays silent.
 
 ---
 
 ## 11. Biggest risk
 
-**The advance most likely fails by delivering a beautiful shell over a domain that still cannot
-curate anything.** The GUI is the visible, motivating, fun part; the unglamorous truth is that
-valija today has *two* write operations, both append-only, and that no shipped surface can even
-create a pinned item. If planning starts from the window, the platform and packaging problem —
-Electron vs. Tauri, native-module rebuilds, three OSes, unsigned-binary friction, macOS keychain
-ACLs — will absorb the entire advance, and what lands is `idea.md`'s read-only viewer wearing the
-new spec's title. The mitigation is D-A/D-C: build and merge the curation use cases as headless,
-CLI-testable TypeScript **before** any UI exists, so the advance has a reviewable, useful core even
-if the shell slips.
+**The advance's entire value is reaching a non-technical user, and the two things most likely to
+go wrong — unsigned-binary friction and macOS keychain behaviour — both fail exactly at that
+person, on the first two screens, before any of the shell's value is visible.**
 
-The second risk is **the artifacts feature quietly rewriting the security model**. C3 is the part
-Oscar named most enthusiastically, and it is the only part that requires valija to write vault-derived
-plaintext to durable files outside the vault, in formats owned by third parties that change without
-notice. Done inside a large GUI advance, that decision gets made by an implementer choosing a path
-constant rather than by Gate R choosing a posture — and "everything at rest is ciphertext" becomes
-"everything at rest is ciphertext, except the files we also write." Splitting it out (D-A Option 3)
-is what keeps that a decision instead of a side effect.
+D-N says non-technical-first. D-G ships binaries that macOS Gatekeeper and Windows SmartScreen
+actively block with security warnings, so the first instruction the app's own documentation
+gives a nervous user is how to override their operating system's protection. D-H then shares a
+keychain entry across two binaries, which on macOS may prompt for a password on every read or
+fail outright depending on how the item's ACL was created — and if it prompts every time, the
+"no terminal needed" promise degrades into a different kind of friction on every launch. Neither
+risk is speculative; both are properties of decisions already taken, and neither is discovered
+until packaging is real.
 
-The third risk is **a false fork**. If the GUI mints its own device id (D-I Option 2), a user who
-edits in the window and then runs a CLI command on the *same laptop* gets `VAULT_FORK_DETECTED` —
-the product's loudest, most trust-dependent warning, fired at a machine that never forked anything.
-The likely response is not a bug report; it is a user learning to ignore the alarm, which quietly
-disables M3 for the one scenario it exists to protect.
+What makes this the top risk rather than an annoyance is that **there is no curation payload to
+absorb the cost**. With D-A's answer, everything this advance adds over the existing CLI is
+*reachability*: the same data, the same rendering, the same operations, in a window. If
+packaging turns out to be the hard part — three native modules (`better-sqlite3-multiple-
+ciphers`, `argon2`, `@napi-rs/keyring`) rebuilt against Electron's ABI, across three operating
+systems and two macOS architectures, all unsigned — then the advance spends its whole budget on
+distribution and delivers a window the target user is warned against opening. The honest early
+signal to watch for at planning time: if the native-module matrix or the ACL spike looks
+uncertain, that is the moment to re-scope (fewer targets, or run-from-source first), not after
+the UI is built.
+
+**Second risk: the recovery kit in a window (D-M, §8.2).** It is the one place this otherwise
+modest advance touches the product's most sensitive flow, and it is the only failure here that
+is unrecoverable — a kit the user never stored, or one captured by screen-sharing software,
+cannot be re-issued. The mitigations in §8.2 are cheap and specific; the risk is that they get
+quietly relaxed during implementation for usability's sake ("let them re-open it later", "let
+them save it to a file"), which is exactly how an accepted risk becomes a bigger one than the
+person who accepted it agreed to.
+
+**Third risk: "read-only" being read more strongly than it is true.** The shell performs no
+domain write, but a session open still rewrites journal state and, today, will run migrations
+(D-J(b)). If that goes undocumented, someone will eventually open a stale vault with a
+double-click and be surprised by a table rebuild — and the phrase "read-only viewer" will have
+been the reason they were not warned.
