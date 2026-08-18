@@ -14,9 +14,11 @@ fundamentally a management/write surface") is no longer the framing.
 with its reason, and a **Decided:** line with the outcome in Oscar's terms. Decisions that
 this advance's shape made irrelevant carry **Decided: not applicable to this advance** and
 keep their analysis for the advance that will need it.
-**Still open at Gate R (three items, each with a default):** **D-L** (where the desktop code
-lives), **D-P** (exactly which existing operations the shell surfaces), and **D-J(b)** (what
-the GUI does when the vault's schema is behind). Everything else in §7 is decided.
+**All `D-n` decisions in §7 are now recorded**, including the three left open in the first
+revision: **D-L** → this repo, a `desktop/` workspace; **D-P** → the read/session set plus
+`install`, as a guided "connect your AI tools" step (a second write path, outside the vault —
+see D-P's own entry for the required acceptance criterion); **D-J(b)** → migrates like the CLI,
+but only after an explicit "this will update your vault" confirmation screen.
 
 ---
 
@@ -230,6 +232,12 @@ and what is written down now but stays dormant until curation ships.
 9. **A recorded answer to the macOS keychain-ACL question** (D-H's mandatory spike) — whether a
    second binary reading the CLI's keychain entry prompts, succeeds silently, or fails, on a
    named macOS version.
+10. **Connect your AI tools** (D-P): a guided step wrapping the existing `install` use case,
+    reusing `installer.ts`'s backup-and-merge discipline unchanged, to wire up Claude Desktop,
+    Cursor, or Claude Code without a terminal.
+11. **A confirmation screen for schema migration** (D-J-b): shown only when a vault's schema is
+    behind, naming the ciphertext backup migrations 002/003 take, before the shared `migrate()`
+    path runs. A current-schema vault never sees it.
 
 ### Out — explicit non-goals
 
@@ -242,7 +250,8 @@ and what is written down now but stays dormant until curation ships.
 - **No schema change, no migration authored here, no format change, no crypto or KDF change, no
   `vault.json` field.** Swapping a crypto or keychain library for packaging convenience is
   explicitly forbidden (§8.1).
-- **No import, no `install`, no `doctor`, no `mcp`** in the GUI — pending D-P.
+- **No import, no `doctor`, no `mcp`** in the GUI (`install` is now in scope — item 10 above,
+  per D-P).
 - **No multi-vault, no vault switcher, no remote vault, no cloud, no accounts, no pairing.**
 - **No auto-update, no telemetry, no crash reporting, no analytics, no remote content, no
   network call at all** — including fonts, icons, and update feeds.
@@ -450,7 +459,13 @@ take a ciphertext backup on a populated vault.
   between surfaces is the failure mode this architecture is built to avoid; §3's third framing
   fact and §8 then have to state plainly that "read-only" means no domain write, not zero bytes.
   Option 3 is the honest compromise if Gate R wants the user to consent to the upgrade.
-- **Decided: open — no answer recorded.** Needs a Gate R answer.
+- **Decided: Option 3**, overriding the recommended Option 1. The GUI pre-flights the schema
+  version and shows an explicit "this will update your vault" screen — naming the ciphertext
+  backup migrations 002/003 take on a populated vault — before calling the same `migrate()` path
+  every CLI command already calls. One code path, but consent-gated rather than silent, since
+  D-N's non-technical audience should not have a table rebuild triggered by opening a window
+  without being told. The planner must design this screen so it is unmissable but not alarming:
+  a first-run vault (schema already current) never sees it at all.
 
 ### D-K. Does anything reach the MCP surface?
 
@@ -484,8 +499,11 @@ take a ciphertext backup on a populated vault.
 - **Default: Option 1**, with two riders: `desktop/` is excluded from the npm `files` list (it
   already is, since `files` is an allow-list), and the plan explicitly proposes whether
   `guard-implementation.sh` should gate `desktop/` too (recommended: yes).
-- **Decided: open — no answer recorded in this round.** Needs a Gate R answer; the default
-  above is what the planner should assume otherwise.
+- **Decided: Option 1**, matching the recommended default. A top-level `desktop/` workspace in
+  this repo, importing the existing `src/` use cases directly — one ritual, one CI, no publishing
+  step to keep in sync. The plan must extend `.claude/hooks/guard-implementation.sh` to gate
+  `desktop/` the same way it gates `src/`, `package.json`, and build config, and confirm
+  `desktop/` stays out of the npm `files` allow-list.
 
 ### D-M. Vault lifecycle in the GUI
 
@@ -566,7 +584,14 @@ planning.
   which D-A put out of scope.
 - **Default: Option 1**, on the strict reading of D-A's answer, with **Option 2 named as the
   strongest alternative** because of the D-N argument above.
-- **Decided: open — no answer recorded.** Needs a Gate R answer.
+- **Decided: Option 2**, overriding the recommended Option 1. The shell also surfaces `install`
+  as a guided "Connect Claude Desktop / Cursor" step. This introduces a genuine second write
+  path beyond `CreateVault` — one that edits **third-party config files outside `VALIJA_HOME`**,
+  not the vault — so the planner must treat it with the same care as any write path: reuse
+  `installer.ts`'s existing backup-and-merge discipline unchanged, surface its existing error
+  modes (missing client, malformed JSON, already-configured) in plain language for D-N's
+  audience, and add an acceptance criterion that this path never touches `vault.db` or the
+  keychain. `import` and `doctor` remain out of scope (§6 Out).
 
 ---
 
@@ -718,6 +743,24 @@ A reviewer should be able to check each line without guessing what was intended.
 - [ ] The GUI docs state what the GUI deliberately does not do (curation, import, artifacts) and
       where those live.
 
+**Connect your AI tools (D-P)**
+
+- [ ] The guided connect step calls the existing `install` use case unchanged, through
+      `installer.ts`'s existing backup-and-merge discipline — no new parsing or writing logic
+      for any client's config format is authored in the GUI.
+- [ ] This path never opens `vault.db` and never touches the OS keychain entry; a test proves a
+      connect action leaves the vault's lock state and lineage untouched.
+- [ ] Every failure mode `installer.ts` already surfaces (missing client, malformed existing
+      config, already-configured) is shown in plain language, per D-N — not a raw error.
+
+**Schema migration confirmation (D-J-b)**
+
+- [ ] A vault whose schema is already current never sees the confirmation screen.
+- [ ] A vault whose schema is behind shows the confirmation screen, naming the ciphertext backup
+      migrations 002/003 take, before `migrate()` runs — not after, and not silently.
+- [ ] Declining the confirmation leaves the vault exactly as it was (still locked or still on the
+      unlock screen), with no partial migration.
+
 **Not applicable this advance** *(listed so a reviewer does not look for them)*
 
 - [ ] ~~Curation verbs behave correctly~~ *(not applicable — D-A, D-B)*
@@ -742,18 +785,21 @@ sandboxed renderer over an enumerated IPC surface — that:
 - **browses** projects and items, **searches** full-text, and **previews** a rendered context
   pack byte-identical to `valija export`;
 - **copies** that pack to the clipboard or **exports** it to a user-chosen file;
+- **connects AI tools** via a guided wrapper over the existing `install` use case, with no new
+  config-writing logic of its own (D-P);
+- asks before **migrating** a behind-schema vault, naming the backup migrations 002/003 take,
+  rather than migrating silently (D-J-b);
 
 packaged **unsigned** for macOS, Windows and Linux with published checksums, a documented
-run-from-source path, and per-OS first-launch instructions (D-G); documented for a
-non-technical reader (D-N); with `docs/SPEC.md` §1 and §2 corrected and **no milestone number**
-assigned (D-O).
+run-from-source path, and per-OS first-launch instructions (D-G); living in a `desktop/`
+workspace in this repo (D-L); documented for a non-technical reader (D-N); with `docs/SPEC.md`
+§1 and §2 corrected and **no milestone number** assigned (D-O).
 
-**Not in it:** no curation of any kind, no provider artifacts, no MCP change, no schema or
-format or crypto change, no import/install/doctor (pending D-P), no signing, no auto-update, no
-network call, no localization, no mobile.
+**Not in it:** no curation of any kind, no provider artifacts, no MCP change, no schema or format
+or crypto change, no import, no `doctor`, no signing, no auto-update, no network call, no
+localization, no mobile.
 
-Three questions remain for Gate R: **D-L** (repo home), **D-P** (operation set), **D-J(b)**
-(schema-behind behaviour). Each has a default the planner may assume if Gate R stays silent.
+All decisions are recorded (§7). Nothing remains open for Gate R.
 
 ---
 
