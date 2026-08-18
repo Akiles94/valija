@@ -1,6 +1,315 @@
-Verdict: FAIL
+Verdict: PASS
 
-# MOBILE — review (fourth pass)
+# MOBILE — review (fifth pass)
+
+Reviewed `docs/mobile-poc-MOBILE` @ `2ebf1dc` against `main` (`git diff main...HEAD`, base
+`543d2fe`), working tree clean. Re-reviewed from scratch, not as a diff of `2ebf1dc`. Passes 2–4
+are retained verbatim below; pass 1 survives as pass 2's disposition table, as it has since
+the second pass.
+
+**Line count:** 8 files changed, 578 insertions(+), 14 deletions(-), excluding this `review.md`
+(9 / 1515 / 14 including it). No `src/` line, no `package.json`, no build config, no `.github/`,
+no `.gitignore`.
+
+**What I could check.** `/workspace/valija-mobile` is attached at `feat/poc` @ `644e4e1` — the
+commit `poc.md` §3a cites for run #11 — so I re-verified the PoC tree, its CI workflow and its
+tests against the tree rather than against `poc.md`'s description of them. Run #11's
+`conclusion: success` is still the one assertion I cannot independently confirm from this session.
+
+**Bottom line.** Pass 4's two flip conditions are both met, and both questions I was asked to
+re-check come back clean: the NOT-COMMITTED disclosure is consistent at every place either log is
+mentioned, and the diff is still exactly the four allowed paths plus the two evidence `.txt` files
+that were already tracked. **This passes.** Five acceptance criteria remain unmet, all five
+superseded by Oscar's dated amendment in `refined.md` §7 P-6 or disclosed in the register the spec
+demands — and, for the first time in this advance, none of them is *misdescribed*. What is left is
+one under-claiming sentence, one misattributed reason, and a pile of carried nits, none of which
+holds a merge.
+
+---
+
+## 0. Disposition of pass 4's two flip conditions
+
+| Pass 4 | Now | Verdict |
+|---|---|---|
+| **C1-4** — `poc.md` §4's provenance caveat still said the `WRONG_PASSPHRASE` and no-sidecar checks rested "solely on unreproducible evidence", contradicting §2 and `docs/vault-format.md` | `poc.md:191–198` now reads "…and the `WRONG_PASSPHRASE` and no-sidecar checks via the same emulator/simulator CI runs asserting them directly (see §2's rows for the exact file and line). **Only the Argon2id timing has no independent source**". That agrees with `:54`, `:55` and `docs/vault-format.md:556–557`. I re-verified all four citations in the tree this pass: `AndroidVaultConformanceTest.kt:90–93` (`assertEquals(emptyList(), sidecars, …)`), `:96–103` (`refusesAWrongKeyAsAWrongPassphrase`), `IosVaultConformanceTest.kt:101–108` (same), and `ci.yml` really does run `:vault-interop:connectedAndroidTest` and `:vault-interop:iosSimulatorArm64Test` | **FIXED** |
+| **C2-4** — the two evidence logs are `.gitignore`d, were never committed, and `poc.md` presented them as present-tense files | Fixed via the second of the two routes I named (disclose rather than commit). §8's two rows (`:350`, `:351`) lead with **NOT COMMITTED**, §4's pointer (`:214–218`) carries the disclosure inline, and the "committed Argon2id number" phrasing is gone from both publication sites (`poc.md:53`, `docs/vault-format.md:555`) | **FIXED (disclosure route)** |
+| **W1-4** — "device-class (emulator) timing" drifted toward the register this advance exists to avoid | `poc.md:53` now reads "prints a timing on every green CI run — that measures the emulator's own runner CPU, not phone hardware either" | **FIXED** |
+| **W3-4** — the shipped log would carry "device-equivalent hardware" | Moot under the disclosure route: the log ships nowhere | **MOOT** |
+
+## 0a. The two things I was asked to re-check
+
+**(1) Does the NOT-COMMITTED disclosure read consistently everywhere?** Yes. I grepped the whole
+repo for both filenames, not just `poc.md`:
+
+```
+$ grep -rn "jvm-conformance\|linux-fullstack" --include="*.md" .   # excluding review.md
+advances/MOBILE/poc.md:191   §4  "The log below (evidence/linux-fullstack-interop.log) is real output…"
+advances/MOBILE/poc.md:214   §4  "Full log: … in this working tree — **not committed to valija**…"
+advances/MOBILE/poc.md:350   §8  "**NOT COMMITTED to valija** — *.log is repo-gitignored…"
+advances/MOBILE/poc.md:351   §8  "**NOT COMMITTED**, for the same gitignore/scope reason…"
+advances/MOBILE/plan.md:291,516,1018            (the approved plan's own pre-execution text)
+```
+
+Nothing in `docs/vault-format.md`, `docs/SPEC.md` or `CHANGELOG.md` points at either file, so the
+disclosure only ever had to hold inside `poc.md`, and it does. Of the four `poc.md` references,
+`:214`, `:350` and `:351` state non-commitment explicitly; `:191` names the path but asserts only
+that the run happened and cannot be re-run, and it sits 23 lines above `:214`'s disclosure in the
+same section — a reader is never told the file is present. Three references would read better with
+the same three-word tag (S1-5), but there is no inconsistency to fix. The `plan.md` hits are the
+approved plan's own "Done when"/repo-tree text, i.e. what was planned, not what shipped; `poc.md`
+§8 is the record of what shipped and it now contradicts them deliberately and visibly.
+
+**(2) Is the diff still scoped?**
+
+```
+$ git diff main...HEAD --name-only
+CHANGELOG.md
+advances/MOBILE/evidence/sqlite3c-sha256.txt
+advances/MOBILE/evidence/toolchain-versions.txt
+advances/MOBILE/{plan,poc,refined,review}.md
+docs/SPEC.md
+docs/vault-format.md
+
+$ git diff main...HEAD --stat -- src/ package.json tsup.config.ts 'tsconfig*.json' .github/ .gitignore
+(empty)
+```
+
+Nine paths, all inside `advances/MOBILE/**`, `docs/vault-format.md`, `docs/SPEC.md`,
+`CHANGELOG.md`. The two evidence `.txt` files were already tracked on this branch and only their
+content moved. `.gitignore` is untouched, as declared.
+
+---
+
+## 1. Acceptance criteria (`refined.md` §9)
+
+### Applies under every option
+
+| # | Criterion | Status | Evidence |
+|---|---|---|---|
+| A1 | No `src/`, `package.json`, `tsup.config.ts`, `tsconfig*.json`, `.github/workflows/ci.yml` in the diff | **MET** | The two commands in §0a(2). |
+| A2 | No change to format, crypto, KDF params, key format, SQLCipher config, `vault.json` | **MET** | `docs/vault-format.md`'s hunks touch §8, §9, §13 and the §14 closing note only; §§3–6 (header, KDF, cipher config, schema) are untouched. |
+| A3 | MCP surface byte-for-byte unchanged | **MET** | `git diff main...HEAD -- src/delivery/mcp/` → 0 lines. |
+| A4 | No network/telemetry/analytics/cloud SDK in any app artifact | **MET** | Re-read this pass: `libs.versions.toml` is Kotlin, AGP, Compose MP, serialization, activity-compose, test runner — nothing network-capable; `AndroidManifest.xml` declares only a `tools:node="remove"` of the self-scoped `androidx.core` permission; `Info.plist` has no ATS key; `valija_native.c` opens no socket. |
+| A5 | `typecheck && lint && test` pass unchanged; CI matrix not slowed or gated | **MET** | Ran all three: `tsc --noEmit` clean; biome "Checked 146 files… No fixes applied" (one pre-existing config-migration *info*); vitest **48 files / 241 tests passed**. No workflow file touched. |
+| A6 | Every value from the golden fixture; no real vault/passphrase/key/content anywhere | **MET** | Re-hashed all seven vendored fixture files against `src/testing/__fixtures__/golden-vault/` — zero drift. The only 64-hex string anywhere in `poc.md` is the `sqlite3.c` SHA-256, not `manifest.keyHex`. |
+| A7 | PASS/FAIL/NOT ATTEMPTED per §3 question **with hardware, OS version and toolchain version** | **NOT MET — disclosed, carried** | Every G1–G7 question has a row and each names what the repo can prove; NDK, Xcode, the macOS image and the simulator runtime are still unrecorded and each row says so at the point of claim (`poc.md:56`, `:57`, `:59`). Unchanged since pass 3; never a flip-blocker. |
+| A8 | Explicit claim-scoping section; no claim stated more broadly than its evidence | **MET** | §3 (`:148–180`) is intact, the ⚠ discipline is consistent across both documents, pass 4's two breaches are gone, and I re-read every mobile claim in `poc.md`, `docs/vault-format.md` §13, `docs/SPEC.md:31`/§10b and `CHANGELOG.md`. The one residual (W1-5) under-claims rather than over-claims, so it does not breach this criterion. |
+| A9 | No sentence describes a macOS/Linux/x86_64 run as an iOS/arm64 run | **MET** | Every mobile claim carries "simulator"/"emulator"/"x86_64" inline; `docs/vault-format.md:520–532`'s new §13 lead-in splits Tier C into "simulator, closed" and "device, never" explicitly. |
+
+### The app itself
+
+| # | Criterion | Status | Evidence |
+|---|---|---|---|
+| B1 | Single-screen app per platform, shared Kotlin core, amalgamation only behind one port | **MET** | `:vault-core` has no `expect`/`actual`; `:vault-interop` is the only module naming C; `App.kt` calls `RunGoldenVaultConformance`, never the port. Compiler-enforced by the module graph. |
+| B2 | Sandbox copy; bundled bytes unchanged; no `-wal`/`-shm`/`-journal` | **MET** | Snapshot-before-open in `RunGoldenVaultConformance`; sidecar refusal in `infra/files/FixtureSnapshot`; re-proved on the emulator at `AndroidVaultConformanceTest.kt:90–93`. |
+| B3 | No journal pragma, migration, lineage write or device identity in the PoC source | **MET** | My grep over `vault-core`, `vault-interop`, `composeApp`, `iosApp` returns only comments naming their absence (`valija_native.c:6`, `Sqlite3mcDatabase.kt:15`) and the `SCHEMA_TOO_NEW` refusal paths. |
+| B4 | Derived key never written to keychain/keystore/prefs/file/log | **MET** | Zero hits for `Keychain`/`Keystore`/`UserDefaults`/`SharedPreferences`/`SecItem` outside `vendor/`; the only three `println`s print the Argon2id parameter line and the verdict line. |
+| B5 | Zero network requests, verified by source **and declared capabilities of both binaries** | **MET in substance, unevidenced in this repo** | I verified both declarations myself (A4); `advances/MOBILE/evidence/` still holds no `android-permissions.txt`, and `poc.md:356–357` says so. Carried, non-blocking. |
+
+### Execution evidence (G1, G2, G3, G6)
+
+| # | Criterion | Status | Evidence |
+|---|---|---|---|
+| C1 | Screenshot from a **booted iOS simulator**, committed | **NOT MET — waived by the recorded closure** | `ci.yml` takes no screenshot and launches `:composeApp` nowhere; `poc.md:356` records permanent non-collection with the true reason (never implemented, not "pending"). |
+| C2 | Screenshot from a **booted Android emulator or device** | **NOT MET — same disposition** | Same. |
+| C3 | Interop exercised per platform through its own mechanism, both recorded | **MET** | Hand-written JNI bridge vs. cinterop `.def` with no hand-written C — visibly different paths; `poc.md:58–59` records both. |
+| C4 | Run logs, **including exit codes**, committed | **NOT MET — disclosed, and now accurately** | The device logs are waived with Slice 9; the CI logs were never retrieved (`:357`); the two working-tree logs are declared NOT COMMITTED (`:350`, `:351`, `:214–218`). This is the disclosure route pass 4 named as sufficient. See W2-5 for the one thing wrong with *how* it is justified. |
+| C5 | Android result states arm64 vs x86_64 plainly; x86_64 ⇒ G2 still open | **MET** | `poc.md:56`, `:58`, `:63`, `:161–164`; `docs/vault-format.md:558`; the CI job is literally named "Android build + x86_64 emulator (NOT arm64 evidence)". |
+
+### Conformance (G4, G7)
+
+| # | Criterion | Status | Evidence |
+|---|---|---|---|
+| D1 | JVM byte-compare against `expected-export.md`, passing | **MET** | `GoldenVaultConformanceTest` has exactly 10 `@Test`s; `wc -c` on the two fixtures gives 1887 and 967 — the numbers `poc.md:50` publishes. |
+| D2 | Same comparison on device, shown on screen and in the exit status | **NOT MET (screen half) — waived** | The screen half exists in `App.kt` and was never captured; the exit-status half runs in CI and is not committed here. |
+| D3 | Byte comparison, not a snapshot, not normalised | **MET** | `PackConformance.compareRendered` is a `ByteArray` loop with a first-difference index. |
+| D4 | `estimateTokens` counts UTF-16 code units, asserted by a test | **MET** | The `"𝄞"` assertion; documented at `docs/vault-format.md:309–317`. |
+
+### Argon2id (G5)
+
+| # | Criterion | Status | Evidence |
+|---|---|---|---|
+| E1 | Derived key equals `manifest.keyHex`, asserted in code | **MET off-device; on-device N/A by amendment** | Asserted before opening in all three conformance tests. |
+| E2 | Derivation time reported, labelled with the hardware, marked not-a-device measurement | **MET (documentation half); screen half waived** | `178 ms` matches `linux-fullstack-interop.log:27` and `poc.md:209`'s inline excerpt; labelled "desktop-class silicon; not a phone measurement" in both documents, with the harness caveat attached in both. |
+
+### Contract and roadmap
+
+| # | Criterion | Status | Evidence |
+|---|---|---|---|
+| F1 | Every `docs/vault-format.md` defect fixed or recorded; M4's W5 and W6 addressed | **MET** | I re-checked all five corrections against `src/` this pass, line by line: `addPinned` charges `estimateTokens("Pinned")` before the loop and always keeps the first item; `addLatestHandoff` tests item+label as one sum; `addTypeSections` charges `estimateTokens(type)` — the lowercase wire name — folded into the first candidate; `items.find(type === "handoff" && !included.has(id))` is exactly "newest handoff not already in Pinned"; `header + parts.join("\n")` matches the documented concatenation block. W7 recorded-not-fixed with its reason. |
+| F2 | §13's table gains rows for what executed, with the same scoping precision as its existing rows | **MET** | The lead-in (`:521–530`) plus per-row ⚠ on exactly the four harness-derived rows and on no CI row. |
+| F3 | `docs/SPEC.md` §2 Out line and §10b pointer corrected | **MET** | `:31` splits the fused clause and `§10b` separates what CI proved from what stays permanently unmeasured; both match `poc.md`. No milestone number assigned, per P-4b. |
+| F4 | Kept tree: location stated, non-authoritative scaffolding declared | **MET** | `poc.md:9–11`, `:409–410`; `valija-mobile/README.md` agrees; the runbook clones `-b feat/poc` and says why. |
+| F5 | Amalgamation version, SHA-256, compile flags recorded; licence satisfied; no unauthorised CI/dependency | **MET** | Re-hashed this pass: `node_modules/better-sqlite3-multiple-ciphers/deps/sqlite3/sqlite3.c` and `valija-mobile/vendor/sqlite3mc/sqlite3.c` are both `670d8d05…98b9`, the recorded value. `valija/.github/` untouched. |
+
+**Score: 25 met, 5 not met** — A7, C1, C2, C4 and D2's screen half. C1, C2, D2 and C4's device half
+are superseded by Oscar's amendment recorded in `refined.md:470–488` and `plan.md:5–11`; A7's
+residual and C4's CI/working-tree half are disclosed at the point of claim in the idiom §9's
+claim-scoping criterion demands. **A8 flipped to met this pass**, which is the criterion that
+actually governs an evidence advance: no claim in the shipped prose is now stated more broadly
+than its evidence.
+
+---
+
+## 2. Plan compliance
+
+Slices 1–8 and 10 are evidenced; Slice 9 is skipped by Oscar's recorded amendment. Deviations, all
+disclosed:
+
+- **Slice 7 step 46** — the planned iOS boot/install/launch/screenshot steps were never
+  implemented; `ci.yml`'s `ios` job stops at `linkDebugFrameworkIosArm64`. Named as the cause of
+  the missing screenshots (`:356`) and of G6 (`:64`, `:373–380`, `:401–407`).
+- **Slice 8 step 49** — `evidence/` never received `android-permissions.txt`, any CI log, or the
+  two `.log` files the plan lists in its §9 tree. Now disclosed in `poc.md` §8 rather than left to
+  a reader to discover from `git ls-files`. `plan.md`'s own §9 tree still lists
+  `jvm-conformance.log` as a shipped artifact; the plan is the pre-execution document and `poc.md`
+  §8 is the record, so I do not treat that as a live claim — but see S2-5.
+- **Slice 6 step 45 / Slice 10 step 58** — the read-only greps and the three final gate outputs are
+  still not pasted into `poc.md`. I ran all of them myself this pass and they hold, so no criterion
+  turns on it.
+- **D-2** — `valija-mobile`'s `feat/poc` is still unmerged into its `main`; the runbook clones the
+  branch explicitly and says why.
+
+---
+
+## 3. Hard gates
+
+| Gate | Result |
+|---|---|
+| Security surface weakened (secrets/keys logged, plaintext to disk, KDF/keychain use altered, SQLCipher unkeyed, MCP over-exposed) | **PASS** — re-checked against the trees, not the prose. Zero `src/` change; MCP diff empty; the format contract's crypto sections untouched; no keychain/keystore/prefs API anywhere in the PoC; the only `println`s carry Argon2id parameters and the verdict; `sqlite3_open_v2(…READONLY)` → `PRAGMA cipher='sqlcipher'` → `PRAGMA key` → `SELECT count(*)`; no `journal_mode`, no `wal_checkpoint`, no DDL/INSERT, no migration; zero effective Android permissions, no ATS key on iOS; only published fixture values in every committed file (no `manifest.keyHex` anywhere in `poc.md`). |
+| Tests present for new behaviour; suite passing | **PASS** — no `valija` behaviour changed; 48 files / 241 tests green; typecheck and lint clean. Each new contract rule is backed by an assertion in `GoldenVaultConformanceTest` (10 `@Test`s) and by the pre-existing `vault-format-conformance.test.ts`. |
+| Advance ritual evidenced | **PASS** — `refined.md:3` `Approved: Oscar 2026-07-31`; `plan.md:3` `Approved: Oscar 2026-08-01`; both 2026-08-16 amendments dated, attributed to Oscar and additive; this `review.md`, now five passes deep (2–5 verbatim). |
+| Naming, placement, clean-architecture conventions | **PASS** — `valija`'s diff is documentation and evidence only. In `valija-mobile` the CLAUDE.md mapping holds: kind-named subfolders throughout (`domain/{entities,values,services}`, `application/{ports,use-cases}`, `delivery/`, `infra/{sqlite,argon2,files}`), only `domain/VaultError.kt`, `shared/UseCase.kt` and `shared/Result.kt` at a layer root (the standing exceptions), tech-named adapters (`Sqlite3mcVaultReader`, `Argon2idKeyDeriver`), `parseX → Result` at every file boundary. One carried placement nit at S8-5. |
+
+**No hard gate is breached, and no acceptance criterion is breached that the recorded closure or
+an explicit disclosure does not cover. Verdict: PASS.**
+
+---
+
+## 4. Issues
+
+### Critical
+
+None.
+
+### Warning
+
+**W1-5 — the one sentence in this fix that lost the word it needed.** `poc.md:196–198`:
+
+```
+**Only the Argon2id timing has no independent source** — 178 ms is the sole committed number
+in this advance, and it rests solely on this unreproducible harness.
+```
+
+`poc.md:53` and `docs/vault-format.md:555` both say "the only **Argon2id** number recorded in this
+advance", which is exactly right. §4 dropped the qualifier, so as written it says 1887 and 967 —
+published in §2, in §4's own excerpt and in the contract document's §13 table — are not committed
+numbers. This under-claims rather than over-claims, so it is not an A8 breach and it does not hold
+the merge; but §4 is the section every ⚠ in two documents points a reader to, and it is the third
+consecutive pass in which a single §4 sentence disagreed with the rest of the advance. *Fix (one
+word):* "…is the sole committed **Argon2id** number in this advance".
+
+**W2-5 — the reason given for not committing the logs is wrong on the facts, and it is now written
+into the permanent record.** `poc.md:214–218` (and the commit message) justify the omission as
+scope: the diff is "deliberately scoped to exclude anything outside `advances/MOBILE/**`,
+`docs/vault-format.md`, `docs/SPEC.md`, and `CHANGELOG.md` (**§9's acceptance criteria**)". §9's
+first criterion (`refined.md:664–665`) is a *denylist*, not an allowlist: it forbids `src/`,
+`package.json`, `tsup.config.ts`, `tsconfig*.json` and `.github/workflows/ci.yml`, and says nothing
+about `.gitignore`. The allowlist being cited lives in `plan.md:577–579` (Slice 10 step 58), a
+self-imposed final gate check. So `git add -f` on the two logs, plus a `!advances/**/evidence/*.log`
+negation, would have breached no acceptance criterion — it would have deviated from the plan's own
+closing check, which is a smaller thing and is the kind of deviation §2 above already records
+several of. This does not change the verdict: pass 4 offered disclosure as an equally acceptable
+route, Oscar chose "close with disclosed caveats", and the disclosure that landed is accurate. But
+the citation is wrong and it will be quoted by whoever revisits this. *Fix:* attribute the scope
+limit to `plan.md` step 58, or drop the parenthetical. *And, for the next advance that captures
+evidence:* the `*.log` rule in `.gitignore:4` silently swallowed two artifacts for four review
+passes. A one-line negation is the durable fix and it belongs to whichever advance next touches
+repo config.
+
+**W3-5 (carried W4-4) — `valija-mobile` still points readers at an artifact that does not exist.**
+`composeApp/src/androidMain/AndroidManifest.xml:8` says the `aapt2` output "is committed as
+evidence (`advances/MOBILE/evidence/android-permissions.txt` in valija)". It is not, and `poc.md`
+§8 now says so. Out of this diff, so non-blocking — but it is a two-line comment fix in a repo the
+ship step touches anyway, and it is the same defect class C2-4 was.
+
+**W4-5 (carried W5-4) — a copy-paste artifact in the contract document.**
+`docs/vault-format.md:556`'s `WRONG_PASSPHRASE` row still reads "⚠ number from the unreproducible
+harness, but independently corroborated". That row publishes no number; the phrasing came from
+`poc.md:54`, where "the *number* above" refers to the G5 row directly above it. *Fix:* "result
+from the unreproducible harness".
+
+**W5-5 (carried A7) — the CI toolchain versions are unrecorded and, for the NDK, unrecoverable in
+principle.** `valija-mobile` pins no `ndkVersion`, so AGP took whatever the runner image carried;
+the macOS image, Xcode version and simulator runtime were never pulled down either. Disclosed at
+the point of every affected claim, which is why this is a warning and not a criterion breach — but
+it is the reason A7 cannot be marked met, and one line in §8 saying the NDK version is
+unrecoverable *even in principle* is cheaper than rediscovering it.
+
+### Suggestion
+
+- **S1-5** — `poc.md:191`'s bare "The log below (`evidence/linux-fullstack-interop.log`)" is the
+  one reference of four that does not carry the three-word tag. It asserts nothing false, and the
+  disclosure follows 23 lines later in the same section; adding "(not committed — see §8)" makes
+  the section self-contained.
+- **S2-5** — `plan.md:291`, `:516` and `:1018` still list `jvm-conformance.log` as a shipped
+  evidence file. The plan is the pre-execution document and amending an approved plan is its own
+  sensitivity, so I would not touch it — but the amendment block at `plan.md:5–11` is the natural
+  place for one clause noting that Slice 8 step 49's `.log` artifacts never entered git.
+- **S3-5 (carried S1-4)** — `poc.md:39` "The four bolded rows below say `NOT COLLECTED`": five rows
+  are bolded, and `**G1**` at `:60` says PASS. `:44`'s sentence disambiguates it in prose; the
+  visual cue still disagrees.
+- **S4-5 (carried S3-4)** — §3a is numbered between §2 and §3. Renumber or drop the "a".
+- **S5-5 (carried S4-4)** — `refined.md` §9 fixes the vocabulary as PASS/FAIL/**NOT ATTEMPTED**;
+  `poc.md` uses `NOT COLLECTED`, `NOT RETRIEVED` and `NO`. One mapping line under §2's table makes
+  A7 literally checkable instead of interpretively checkable.
+- **S6-5 (carried S5-4)** — two rows are both labelled `G3a` (`:52` Linux JNI, `:58` Android
+  emulator) at very different strengths; label the first "G3a (partial — same bridge, not the NDK)".
+- **S7-5 (carried S6-4)** — `evidence/toolchain-versions.txt` still carries only the sandbox and
+  `libs.versions.toml` values, while `plan.md` §9 designates it as where toolchain facts live; the
+  repo-derivable CI facts (API 34, `x86_64`, `google_apis`) exist only in `poc.md` §2. Three lines.
+- **S8-5 (carried S7-4)** — `poc.md:59` cites "Compose Multiplatform 1.7.3" as the toolchain behind
+  `:vault-interop:iosSimulatorArm64Test`, which does not depend on Compose at all.
+- **S9-5 (carried S8-4)** — placement nit in `valija-mobile`:
+  `composeApp/src/commonMain/kotlin/dev/valija/poc/GoldenVaultBundleLoader.kt` is bundle-resource IO
+  sitting at the module package root beside `App.kt`, while its sibling `FixtureSnapshot` correctly
+  lives in `infra/files/`. `infra/bundle/GoldenVaultBundleLoader.kt` matches CLAUDE.md's
+  kind-named-subfolder rule; `RunGoldenVaultConformance.GoldenVaultBundle` would read better as
+  `application/dto/GoldenVaultBundle.kt`.
+- **S10-5 (carried S9-4)** — `docs/vault-format.md:7–8` still points a second implementer at "the
+  read-only mobile companion described in `advances/M4/refined.md`", now that no such companion is
+  planned. `docs/SPEC.md` §2 and §10b were updated; this pointer was not.
+
+---
+
+## 5. Why this is a PASS, stated plainly
+
+Five acceptance criteria are unmet and this still passes, so the reasoning should be on the record
+rather than inferred:
+
+1. **C1, C2, D2's screen half and C4's device half** are not gaps in the work — they are gaps the
+   spec itself now declares, in `refined.md:470–488`, an amendment Oscar wrote, dated and signed
+   after Gate R. The spec wins, and the amended spec says those runs will not happen.
+2. **A7's residual and C4's remaining half** are unmet in letter and disclosed in substance. The
+   criterion that exists to police exactly this — A8, "no claim is stated more broadly than its
+   evidence" — is met for the first time in five passes, and I checked it by reading every mobile
+   claim in all four shipped documents and re-verifying the four `valija-mobile` citations, the two
+   byte counts, the amalgamation hash and the seven fixture hashes against the trees.
+3. **No hard gate is near breach.** The security surface is not merely unchanged, it is unchanged
+   in a diff that contains zero lines of code.
+
+What genuinely improved this pass: §4 no longer contradicts §2 or the contract document, and the
+advance stopped describing two files as evidence it does not have. That second fix is the one worth
+naming — for four passes this advance's most-cited non-CI result was read off a working tree nobody
+else will ever have, and the document now says so at every point it matters. The remaining
+warnings are one missing word, one wrong citation, and two stale comments; none of them changes
+what a reader would conclude, and none of them is worth another round. Ship it.
+
+---
+
+# MOBILE — review (fourth pass, retained for history)
+
+(Verdict at the time: FAIL. Reviewed `docs/mobile-poc-MOBILE` @ `848da54`.)
 
 Reviewed `docs/mobile-poc-MOBILE` @ `848da54` against `main` (`git diff main...HEAD`, base
 `543d2fe`), working tree clean. Re-reviewed from scratch, not as a diff of `848da54`. The third and
