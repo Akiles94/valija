@@ -2,6 +2,14 @@
 
 Approved: Oscar 2026-08-01
 
+**Amendment (Oscar, 2026-08-16):** Oscar decided not to pursue a distributable mobile app —
+Apple's Developer Program (99 USD/year) plus ongoing store maintenance aren't justified for a
+project with no monetization. **Slice 9 (the two physical-device runs) is skipped**, and Slice 10
+closes the advance on the CI-only evidence already gathered (Slices 1-8, all green — see
+`advances/MOBILE/poc.md` §3a). This does not reopen or invalidate P-1..P-12; it supersedes P-6's
+device-run outcome specifically, recorded at `refined.md` under P-6. The `docs/vault-format.md`
+and `docs/SPEC.md` corrections (real, independent of any device run) ship as planned.
+
 **Spec:** `advances/MOBILE/refined.md` (Gate R approved — Oscar, 2026-07-31). All twelve `P-n`
 decisions carry a **Decided:** line and are treated here as settled input, not as options:
 P-1 both platforms as equal, non-cuttable deliverables · P-2 rendered pack, byte-compared,

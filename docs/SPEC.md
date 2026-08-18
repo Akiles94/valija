@@ -28,7 +28,8 @@ One npm package. One binary surface: `valija`.
 - GUI, encrypted backup / restore → later (bumped from M3 by M3's redefinition, see §10b)
 - Scoped profiles, per-tool visibility → M4
 - Browser extension → M5
-- A valija-hosted sync service, mobile client → explicitly rejected / not scheduled (see §10b — M3 ships the lower-risk BYO-cloud slice instead)
+- A valija-hosted sync service → explicitly rejected (see §10b — M3 ships the lower-risk BYO-cloud slice instead)
+- Mobile client → no distributable app planned (Oscar decided against it, 2026-08-16 — Apple Developer Program cost isn't proportionate for an unmonetized project). A two-platform proof of concept validated that the format and toolchain work *in CI* (simulator/emulator, not physical hardware — on-device Argon2id latency and Android arm64 execution were never measured); see `advances/MOBILE/poc.md` for the exact scope. No milestone number is assigned
 - Auto-capture (model decides what to save) — explicit saves only
 - Embeddings / semantic search / any AI inside the app — FTS only
 - Remote/HTTP MCP transport — local stdio only
@@ -228,9 +229,15 @@ pairing (rejected, not deferred); automatic conflict merge; telemetry or any "is
 client done yet?" polling; simultaneous multi-device use (the supported model is strictly
 sequential); a background daemon or OS sleep/shutdown hooks (idle auto-lock is deliberately
 lazy instead); `valija init --cloud <path>` (the plain `VALIJA_HOME` mechanism already
-suffices — deferred, not rejected, as a future convenience). Mobile is unscheduled; see
-`advances/M4/idea.md` for the raw idea and the note on why its milestone number is still
-tentative.
+suffices — deferred, not rejected, as a future convenience). Mobile is unscheduled, and no
+distributable app is planned (Oscar decided against it, 2026-08-16 — Apple's Developer Program
+cost isn't proportionate for an unmonetized project). What the interop path can do is no longer
+open, at the CI level: `advances/MOBILE/poc.md` records a Kotlin Multiplatform proof of concept
+that calls the vendored C through both JNI/NDK and Kotlin/Native cinterop and renders a
+byte-identical pack, and `docs/vault-format.md` §13 records exactly what executed where. What
+remains permanently unmeasured, by decision: real on-device Argon2id latency and execution on
+Android's actual arm64 hardware (`advances/MOBILE/poc.md` §2, §10) — no milestone number is
+assigned, and none is planned.
 
 ---
 
