@@ -7,6 +7,11 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
 ### Added
 
 - `docs/vault-format.md` — a written contract documenting the vault's crypto parameters, header schema, encrypted schema, pack-assembly algorithm, markdown rendering, and search query construction, for anyone building a second (non-Node) reader — starting with the mobile companion groundwork in `advances/M4/`. Verified against a committed golden-vault conformance fixture (`src/testing/__fixtures__/golden-vault/`) that proves the desktop implementation matches it byte-for-byte; no behavior change.
+- `advances/MOBILE/` — a Kotlin Multiplatform proof of concept (in the separate `akiles94/valija-mobile` repo) proved the vault format and pack algorithm are portable: a second implementation renders a byte-identical pack, and the vendored SQLite3MultipleCiphers amalgamation plus Argon2id compile and execute through both JNI/NDK and Kotlin/Native cinterop, verified in CI against an Android emulator and an iOS simulator. No distributable mobile app is planned (decided against, 2026-08-16); on-device Argon2id latency and Android arm64 execution were never measured and stay open if mobile is ever reconsidered. No behavior change.
+
+### Fixed
+
+- `docs/vault-format.md` corrected in five places where a real second implementation (the Kotlin proof of concept in `advances/MOBILE/`) proved the contract wrong or under-specified: the markdown concatenation rule, the three distinct section-label budgeting rules, latest-handoff selection, `estimateTokens`'s UTF-16 code-unit semantics, and the preamble's ISO timestamp format. Documentation only — this describes existing behavior; no code, fixture, or output changed.
 
 ## [0.3.0] — 2026-07-25
 

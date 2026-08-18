@@ -306,15 +306,44 @@ catch that.
 - **Token estimate:** `estimateTokens(text) = ceil(text.length / 4)` — a character count, not
   a real tokenizer. `estimateTokens("abcde")` must equal `2` (this exact value is a pinned
   constant in the conformance test).
+- **`text.length` means UTF-16 code units**, because that is what JavaScript's `String.length`
+  is. This matters for any character outside the Basic Multilingual Plane, where the two
+  plausible readings diverge: `"𝄞"` (U+1D11E) is **two** UTF-16 code units but **one**
+  grapheme cluster. Kotlin's `String.length` and Java's `String.length()` match JavaScript.
+  **Swift's `String.count` does not** — it counts grapheme clusters; Swift implementations must
+  use `text.utf16.count`. A second implementation that gets this wrong agrees with valija on
+  all-BMP text (including the fixture's `café ☕`, which is 6 units *and* 6 graphemes) and
+  silently disagrees the first time a user writes an emoji with a skin-tone modifier or a
+  musical symbol.
 - **An item's cost** against the budget is `estimateTokens` of exactly this string:
   ``` `${type} ${YYYY-MM-DD} ${tags.join(" ")}\n\n${content}` ```
   — the type, the `created_at` date truncated to 10 characters (`YYYY-MM-DD`, **not** the
   full ISO timestamp), the tags space-joined, a blank line, then the raw content.
 - **The preamble** (the pack's own overhead) costs
   ``` `Context pack: ${projectName} — ${items.length} items, generated ${generatedAt.toISOString()}` ```
-  — note this uses the **full** ISO timestamp, unlike the per-item date.
-- **Section headings cost their own label's tokens too** (`"Pinned"`, `"Latest handoff"`, or
-  the type name for a by-type section) — added once per section, not per item.
+  — note this uses the **full** ISO timestamp, unlike the per-item date. That timestamp is
+  JavaScript's `Date.toISOString()`: UTC, **always exactly three fractional-second digits**,
+  and a literal trailing `Z` — `2026-07-26T12:00:00.000Z`, never `2026-07-26T12:00:00Z`. Most
+  other languages' default ISO formatters elide zero milliseconds, which produces a token
+  estimate and a rendered header that are each wrong by a few characters. The safest port keeps
+  the stored string and never parses it into a date type at all.
+- **Section headings cost their own label's tokens too, but the three sections charge for them
+  differently.** "Added once per section" is true; *when* it is added is not uniform, and a
+  budgeted pack comes out different if you get this wrong:
+  - **Pinned:** if there is at least one pinned item, `estimateTokens("Pinned")` is added
+    **before any pinned item's own cost is tested against the budget** — the label is
+    unconditional relative to the budget check, not relative to whether the section exists.
+    The section can never end up empty: with zero pinned items the whole step is skipped (no
+    label charged, no section pushed), and with one or more, the newest pinned item is always
+    kept regardless of budget (§8's next bullet), so a "Pinned" heading never appears over an
+    empty list.
+  - **Latest handoff:** the item's own cost **plus** `estimateTokens("Latest handoff")` are
+    tested against the budget **together, as one sum**. The label is charged only if the pair
+    fits; if it does not, neither is charged and the section is omitted.
+  - **By type:** the label is `estimateTokens(<type>)` — the **lowercase wire name**
+    (`"decision"`, 2 tokens), *not* the rendered plural heading (`"Decisions"`) — and it is
+    folded into the **first candidate item's** budget test. So it is charged only if that first
+    item fits, and never charged for a section that ends up omitted.
 - **Order, and what goes in each section:**
   1. **Pinned**, newest first. **The newest pinned item is always included, even if it alone
      exceeds the whole budget** — only starting from the *second* pinned item does the budget
@@ -323,7 +352,11 @@ catch that.
      in the tight-budget pack — see `expected-pack.md`.)
   2. **The single latest handoff**, if one exists and fits the remaining budget. Older
      handoffs are **never** shown, even in an unbudgeted pack — "latest" means exactly one,
-     always.
+     always. Precisely, "latest" is **the newest `handoff` item not already placed in the
+     Pinned section** — not simply the newest handoff in the project. The distinction is
+     invisible in the fixture (no handoff there is pinned) but real: a pinned handoff appears
+     under **Pinned** and this section is then filled by the next-newest handoff, while a
+     pinned handoff that the *budget* pushed out of the Pinned section is still eligible here.
   3. **One section per type, in this fixed order:** `decision → preference → progress →
      fact`. Each section holds items of that type not already included above, newest first,
      until the budget is exhausted; a section with zero eligible items is omitted entirely
@@ -370,6 +403,28 @@ match it exactly, since `expected-pack.md`/`expected-export.md` are byte-compare
 - Tags render as `#tag`, space-separated, only when the item has at least one.
 - The exact worked example is `src/testing/__fixtures__/golden-vault/expected-export.md` —
   when in doubt, that file is more authoritative than this prose.
+
+**The concatenation rule — the part the template above cannot show you.** The blank lines are
+not decoration and they are not uniform: there is **one** blank line between an item and the
+next item, and **two** before a `##` heading that follows an item. That falls out of how the
+pieces are joined, so a second implementation must reproduce the construction, not eyeball the
+spacing:
+
+```
+header      = "# Context pack: <name>\n\n> <N> items in vault · generated <ISO>\n"
+sectionPart = "\n## <Section title>\n"
+itemPart    = "### <type> · <YYYY-MM-DD>[ · #tag …]\n\n<content>\n"
+
+parts  = for each section: [sectionPart] followed by one itemPart per item
+output = header + parts.join("\n")
+```
+
+Note the three separate sources of newlines: the header already ends with one, each section
+part *begins* with one, each item part *ends* with one, and the `join("\n")` adds one more
+between every adjacent pair. Building this with a per-line "append with newline" helper, or
+joining with `""`, yields output that looks correct in a rendered Markdown preview and fails a
+byte comparison. The output ends with a single `\n` after the last item's content — there is no
+trailing blank line.
 
 ## 10. Search
 
@@ -463,8 +518,18 @@ compatibility without a human in the loop. Never reuse these values for a real v
 ## 13. Verified compatibility
 
 Tiers A, B, and C′ are done — see `advances/M4/spike.md` for the full commands and analysis.
-A literal iOS device/simulator run (Tier C) remains open, but is now lower priority: C′
-already answered the core question using the official SPM package on Apple's own toolchain.
+Tier C (a literal iOS device/simulator run) is now **split**: `advances/MOBILE/` later ran a real
+iOS **simulator** execution (the second table below, Kotlin/Native cinterop row, **PASS**) —
+lower priority to begin with since C′ already answered the compatibility question using the
+official SPM package on Apple's own toolchain, and now genuinely closed at the simulator level.
+A literal iOS **device** run never happened and never will under this advance
+(`advances/MOBILE/poc.md` §10); the two Tier-C rows below that are specifically about on-device
+behavior (Argon2id timing, write round-trip) stay `DEFERRED`, unaffected by the simulator result.
+
+Since then, `advances/MOBILE/` built a real second implementation in Kotlin and exercised the
+vendored amalgamation through a real language boundary — the second table below. **No binary
+ever executed on a physical phone**; the advance closed before that run (`advances/MOBILE/poc.md`
+§10), and the row below says so explicitly rather than being omitted.
 
 | Question | Tier | Result |
 |---|---|---|
@@ -474,8 +539,26 @@ already answered the core question using the official SPM package on Apple's own
 | Raw-key open, bidirectional, `legacy=4` (Linux) | B | **PASS** — real data verified, both directions |
 | Raw-key open, official SPM package, `legacy=4` (macOS) | C′ | **FAIL** — identical signature, despite every queryable parameter matching |
 | Argon2id on-device (literal iOS) | C | DEFERRED — low value, B1 already conclusive |
-| Rendered pack / search byte-match (literal iOS) | C | DEFERRED — blocked on a compatible SQLCipher build existing |
 | Write round-trip (literal iOS) | C | DEFERRED — informational only (D-D deferred) |
+
+**A second implementation now exists** (`advances/MOBILE/`, Kotlin), so the rows below are no
+longer hypothetical. Full detail and claim scoping: `advances/MOBILE/poc.md`. **The four rows
+below marked ⚠ were produced by a scratch test harness that was never committed to
+`valija-mobile` and cannot be re-run from either repository as it stands — see `poc.md` §4 for
+the full provenance caveat before citing any of their numbers.**
+
+| Question | Where it ran | Result |
+|---|---|---|
+| Rendered pack byte-match, second implementation (Kotlin, unbudgeted `expected-export.md`) | Linux x86_64, JVM — no SQLite, no C, no device | **PASS** — 1887 bytes |
+| Rendered pack byte-match, second implementation (Kotlin, budgeted `expected-pack.md`) | Same | **PASS** — 967 bytes |
+| Vendored SQLite3MultipleCiphers amalgamation opens a real vault via Kotlin↔C interop | Linux x86_64, JDK 21, the same JNI bridge and vendored C the Android build compiles — **not an Android run** | **PASS** ⚠ unreproducible harness; independently corroborated at a stronger tier by the real-NDK Android CI row below |
+| Argon2id derives the published key through that same interop path | Same | **PASS** — 178 ms on desktop-class silicon, *not a phone measurement* ⚠ unreproducible harness; the only Argon2id number recorded in the advance (quoted inline in `poc.md` §4's committed prose — the underlying `.log` file is not itself committed, see `poc.md` §8) |
+| Wrong key surfaces as `WRONG_PASSPHRASE`, not corruption | Same | **PASS** ⚠ number from the unreproducible harness, but independently corroborated: asserted on both the Android emulator and iOS simulator CI runs |
+| Read-only: fixture unmutated, no `-wal`/`-shm`/`-journal` produced | Same | **PASS** ⚠ independently corroborated on the Android emulator CI run |
+| Vendored amalgamation opens a real vault via JNI, executing on Android | x86_64 **emulator**, GitHub Actions — **not** the arm64 evidence for a physical device | **PASS** |
+| Vendored amalgamation opens a real vault via Kotlin/Native cinterop, executing on iOS | iOS **simulator**, GitHub Actions `macos-latest` — **not** a physical device | **PASS** |
+| Search byte-match (second implementation) | — | DEFERRED — the PoC deliberately omits the search path (`advances/MOBILE/refined.md` P-2), so no second implementation of it exists yet |
+| App execution on a physical iPhone / physical Android arm64 | — | **NOT COLLECTED** — `advances/MOBILE/poc.md` §10: advance closed, no distributable app pursued. Nothing ever ran on a phone |
 
 **Argon2id is a closed question.** The reference C implementation (the same library both the
 npm `argon2` package and, per D-G, the iOS side are meant to link) reproduces valija's
@@ -530,8 +613,10 @@ write too: a row inserted through the same literal amalgamation reads back corre
 the real desktop `openVaultDb` and `SearchContext` code paths — **PASS**. A future
 mobile-companion advance can adopt this with confidence: build/vendor the amalgamation for
 the mobile app rather than depending on the official SQLCipher package, no desktop-side
-migration required. A literal iOS device/simulator execution remains the one genuinely open
-item. See `advances/M4/spike.md` §"Option 2 verification" and §"Write round-trip
+migration required. A literal iOS **simulator** execution of this exact amalgamation later ran
+under `advances/MOBILE/` (see this document's own §13 device-execution row); a **physical**
+device run never happened and, per `advances/MOBILE/poc.md` §10, now never will. See
+`advances/M4/spike.md` §"Option 2 verification" and §"Write round-trip
 verification" for the full detail, including the exact commands and C source, so this can be
 independently re-checked or re-run.
 
