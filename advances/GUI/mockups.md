@@ -28,6 +28,23 @@ that project's item list. This is what `Main.dc.html` and `ProjectView.dc.html` 
 9. `ConnectTools.dc.html` — the `install` guided step (D-P)
 10. `MigrationConfirm.dc.html` — the schema-behind confirmation (D-J-b)
 
+Added after Oscar asked for full CLI parity plus sync (see the corresponding `D-n` in
+`refined.md` for the decision — the refiner names the exact letter):
+
+11. `Import.dc.html` — the `import` flow: pick an export file, preview and select which
+    conversations to bring in, choose a destination project. Modeled on `import-command.ts`'s
+    actual options (`--pick`/`--query`/`--since`/`--all`, list-before-import).
+12. `Doctor.dc.html` — a friendly translation of `doctorCommand`'s real checks
+    (`src/delivery/cli/doctor.ts`): vault/keychain/sqlcipher health, single-file-at-rest, the
+    sync-folder detection this same screen's "Sync" section surfaces, and per-client connection
+    status. No jargon from the CLI's own check names (`sqlcipher`, `journal`, `lineage`) reaches
+    the user-facing copy.
+13. `SyncSetup.dc.html` — the new relocation wizard: move the vault into a folder the user's own
+    sync client already watches, and remember that new location. This is genuinely new
+    capability — nothing in `src/` today lets anything relocate a vault and persist where it
+    moved to across relaunches; see `refined.md`'s new decision for what that implies for the
+    plan.
+
 ## Theme (D-Q)
 
 Every screen except `RecoveryKit.dc.html` carries a manual light/dark toggle (a `dark` prop,
