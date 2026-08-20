@@ -1,6 +1,10 @@
 # GUI — desktop companion for valija · Refined Spec
 
-**Status:** Gate R draft, **revised 2026-08-20** (fourth revision, same day as the third). The
+Approved: Oscar 2026-08-20
+
+**Status:** **Gate R approved** (Oscar, 2026-08-20), on the fourth revision. All `D-n` decisions
+in §7 carry a `Decided:` line; nothing remains open. Planning may begin.
+Revision history below, **revised 2026-08-20** (fourth revision, same day as the third). The
 2026-08-17 revision recorded Oscar's answers to §7 and narrowed the advance to a read-only shell
 plus vault creation. **That framing is obsolete.** After reviewing the visual mockups
 (`advances/GUI/mockups.md`), Oscar expanded the scope three times:
