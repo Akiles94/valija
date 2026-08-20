@@ -593,6 +593,30 @@ planning.
   audience, and add an acceptance criterion that this path never touches `vault.db` or the
   keychain. `import` and `doctor` remain out of scope (§6 Out).
 
+### D-Q. Light/dark theme *(new in this revision)*
+
+Raised after Oscar reviewed the visual mockups (`advances/GUI/mockups.md`) and asked whether
+they covered dark mode. They didn't — no prior draft of this spec mentioned theming at all.
+
+- **Option 1 — follow the OS setting only.** The app reads the system's light/dark preference at
+  launch and has no in-app override. Simplest; zero new UI, zero new state to persist.
+- **Option 2 — follow the OS setting by default, with a manual override.** Same as Option 1, plus
+  a control inside the app (e.g. in a settings/status area) to force light or dark regardless of
+  the OS setting. *Trade-off:* one more piece of state to design, store, and keep in sync with
+  the OS across relaunches.
+- **Option 3 — light only.** No dark theme at all. *Trade-off:* out of step with every other
+  desktop app the audience already uses.
+- **Default: Option 1.** Reason: it is the behavior every modern desktop app already has for
+  free from the OS, with no extra surface to build or maintain.
+- **Decided: Option 2**, overriding the recommended Option 1. Manual override, defaulting to the
+  OS setting. The mockups (`advances/GUI/mockups.md`) demonstrate this per screen with a `dark`
+  toggle; the planner should treat the OS-preference read as the initial value of that same
+  override state, not a separate mechanism, and persist the user's manual choice across
+  relaunches once they've set one explicitly. **Exception, by design:** the recovery-kit screen
+  (§4.2 step 6) stays permanently in its own high-contrast dark treatment regardless of the
+  app's theme — that screen's darkness is a security-emphasis choice made in D-M/§8.2, not a
+  theme, and this decision does not reopen it.
+
 ---
 
 ## 8. Security surfaces that must not weaken
