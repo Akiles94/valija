@@ -2,8 +2,14 @@
 
 Approved: Oscar 2026-08-20
 
-**Status:** **Gate R approved** (Oscar, 2026-08-20), on the fourth revision. All `D-n` decisions
-in §7 carry a `Decided:` line; nothing remains open. Planning may begin.
+**Status:** **Gate R approved** (Oscar, 2026-08-20), on the fourth revision — approval covers the
+advance's *shape*: what it is, what it is not, and every `D-n` that carries a `Decided:` line.
+**Correction (2026-08-20):** this line previously claimed nothing remained open. That was wrong.
+The fourth revision's later additions (D-R, D-S, D-T, D-U, D-V and several sub-decisions) left
+**sixteen `Open — Gate R` entries**, each carrying a written `Default:`. They were never put to
+Oscar individually. Per §7's legend a default stands absent objection, so `plan.md` adopts all of
+them verbatim, cites each, and re-presents them as a single confirm-or-overturn table at **Gate
+P** — which is where they get Oscar's explicit answer. Planning proceeded on that basis.
 Revision history below, **revised 2026-08-20** (fourth revision, same day as the third). The
 2026-08-17 revision recorded Oscar's answers to §7 and narrowed the advance to a read-only shell
 plus vault creation. **That framing is obsolete.** After reviewing the visual mockups
