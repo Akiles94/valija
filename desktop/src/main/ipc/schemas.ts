@@ -10,6 +10,7 @@ import type { Channel } from "../../shared/ipc/channels.js";
  */
 export const SCHEMAS = {
   "vault:init": z.object({ passphrase: z.string() }),
+  "vault:readRecoveryKit": z.void(),
   "vault:unlock": z.object({
     passphrase: z.string().optional(),
     recoveryKeyHex: z.string().optional(),

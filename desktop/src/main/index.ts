@@ -1,12 +1,11 @@
 import { join } from "node:path";
-import { app, ipcMain } from "electron";
+import { app } from "electron";
 import { buildContainer, type Container } from "../../../src/delivery/container.js";
 import { resolveVaultRoot } from "./application/policies/vault-location.js";
 import { ElectronClipboard } from "./infra/electron-clipboard.js";
 import { ElectronFilePicker } from "./infra/electron-file-picker.js";
 import { FileAppPreferencesStore } from "./infra/file-app-preferences-store.js";
 import { registerHandlers } from "./ipc/register-handlers.js";
-import { registerSpikeHandlers } from "./spike/spike-handlers.js";
 import { createMainWindow, preloadFile } from "./windows/main-window.js";
 
 // Bootstrap order is fixed (plan.md §3.A): name the app before any userData
@@ -38,7 +37,6 @@ if (!gotLock) {
     const clipboard = new ElectronClipboard();
 
     registerHandlers({ getContainer, preferencesStore, filePicker, clipboard });
-    registerSpikeHandlers(ipcMain); // temporary — see preload/index.ts's own note
 
     const preload = preloadFile(join(import.meta.dirname, "../preload"));
     const rendererUrl =
