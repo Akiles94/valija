@@ -1,0 +1,30 @@
+appId: com.valija.desktop
+productName: Valija
+directories:
+  output: release
+files:
+  - out/**/*
+  - package.json
+asarUnpack:
+  - "**/node_modules/better-sqlite3-multiple-ciphers/**"
+  - "**/node_modules/argon2/**"
+  - "**/node_modules/@napi-rs/keyring/**"
+npmRebuild: true
+mac:
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+  identity: null
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  signAndEditExecutable: false
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
