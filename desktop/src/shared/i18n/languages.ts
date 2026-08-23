@@ -1,6 +1,4 @@
 export type Language = "en" | "es";
-export const SYSTEM = "system";
-export type SystemOr<T> = typeof SYSTEM | T;
 
 /**
  * Primary-subtag match (D-V(g) Option 1): any `es*` locale — `es`, `es-EC`, `es-419`,
