@@ -1,7 +1,6 @@
 import { writeFileSync } from "node:fs";
-import { type DomainError, ok, type Result } from "../../shared/domain/result.js";
 import type { Container } from "../container.js";
-import { renderContextPackMarkdown } from "../context-pack-markdown.js";
+import { exportProjectJson, exportProjectMarkdown } from "../context-pack-export.js";
 import { fail, formatDate, truncate } from "./render.js";
 
 export function projectsCommand(c: Container): void {
@@ -56,24 +55,13 @@ export function searchCommand(c: Container, query: string, options: { project?: 
   }
 }
 
-/** Export is the everything-escape-hatch: the whole project, no budget. */
-const exportMarkdown = (c: Container, project: string): Result<string, DomainError> => {
-  const pack = c.getContextPack.execute({ project, budgetTokens: Number.POSITIVE_INFINITY });
-  return pack.ok ? ok(renderContextPackMarkdown(pack.value)) : pack;
-};
-
-const exportJson = (c: Container, project: string): Result<string, DomainError> => {
-  const items = c.showProject.execute({ project });
-  return items.ok ? ok(JSON.stringify({ project, items: items.value }, null, 2)) : items;
-};
-
 export function exportCommand(
   c: Container,
   project: string,
   options: { json?: boolean; output?: string },
 ): void {
   const format = options.json ? "json" : "md";
-  const result = options.json ? exportJson(c, project) : exportMarkdown(c, project);
+  const result = options.json ? exportProjectJson(c, project) : exportProjectMarkdown(c, project);
   if (!result.ok) fail(result.error);
   if (options.output !== undefined) {
     writeFileSync(options.output, result.value, "utf8");

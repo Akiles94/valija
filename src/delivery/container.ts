@@ -13,6 +13,8 @@ import type { Clock, IdGenerator } from "../shared/application/ports/clock.js";
 import { resolveStatePaths } from "../shared/infra/state-paths.js";
 import { resolveVaultPaths, type VaultPaths } from "../shared/infra/vault-paths.js";
 import { SessionGuard } from "../vault/application/policies/session-guard.js";
+import type { VaultFolder } from "../vault/application/ports/vault-folder.js";
+import { CheckVaultUpgrade } from "../vault/application/use-cases/check-vault-upgrade.use-case.js";
 import { CreateVault } from "../vault/application/use-cases/create-vault.use-case.js";
 import { LockVault } from "../vault/application/use-cases/lock-vault.use-case.js";
 import { UnlockVault } from "../vault/application/use-cases/unlock-vault.use-case.js";
@@ -29,8 +31,10 @@ const ulidIds: IdGenerator = { next: () => ulid() };
 
 export interface Container {
   paths: VaultPaths;
+  folder: VaultFolder;
   createVault: CreateVault;
   unlockVault: UnlockVault;
+  checkVaultUpgrade: CheckVaultUpgrade;
   lockVault: LockVault;
   vaultStatus: VaultStatus;
   saveContext: SaveContext;
@@ -41,8 +45,8 @@ export interface Container {
   importConversations: ImportConversations;
 }
 
-export function buildContainer(): Container {
-  const paths = resolveVaultPaths();
+export function buildContainer(options?: { vaultRoot?: string }): Container {
+  const paths = resolveVaultPaths(options?.vaultRoot);
   const store = new FileVaultStore(paths, ulidIds, systemClock);
   const crypto = new Argon2VaultCrypto();
   const keychain = new OsKeychain();
@@ -61,8 +65,10 @@ export function buildContainer(): Container {
   const importItems = new ImportItems(sessions, systemClock, ulidIds);
   return {
     paths,
+    folder,
     createVault: new CreateVault(store, crypto, keychain, deviceIdentity, systemClock, ulidIds),
     unlockVault: new UnlockVault(store, crypto, keychain, deviceIdentity, systemClock),
+    checkVaultUpgrade: new CheckVaultUpgrade(store, crypto),
     lockVault: new LockVault(store, keychain, folder, deviceIdentity),
     vaultStatus: new VaultStatus(store, keychain, deviceIdentity, folder, systemClock, ttlMinutes),
     saveContext: new SaveContext(sessions, systemClock, ulidIds),

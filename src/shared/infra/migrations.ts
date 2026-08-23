@@ -17,6 +17,18 @@ const MIGRATIONS: readonly Migration[] = [
   { version: 3, sql: MIGRATION_003, backup: true },
 ];
 
+export const LATEST_SCHEMA_VERSION = Math.max(...MIGRATIONS.map((m) => m.version));
+
+/** Which migrations a vault at `current` still needs, and whether any of them backs up the ciphertext first — for a GUI confirmation screen to name before running `migrate`. */
+export function pendingMigrations(
+  current: number,
+): { version: number; backsUpCiphertext: boolean }[] {
+  return MIGRATIONS.filter((m) => m.version > current).map((m) => ({
+    version: m.version,
+    backsUpCiphertext: m.backup === true,
+  }));
+}
+
 /**
  * Bring the database up to the latest schema. `dbPath` is optional so callers
  * that only need the schema (a fresh init) can omit it; when a backup-flagged
