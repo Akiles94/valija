@@ -1,14 +1,20 @@
 import { join } from "node:path";
 import { app, ipcMain } from "electron";
+import { buildContainer, type Container } from "../../../src/delivery/container.js";
+import { resolveVaultRoot } from "./application/policies/vault-location.js";
+import { ElectronClipboard } from "./infra/electron-clipboard.js";
+import { ElectronFilePicker } from "./infra/electron-file-picker.js";
+import { FileAppPreferencesStore } from "./infra/file-app-preferences-store.js";
+import { registerHandlers } from "./ipc/register-handlers.js";
 import { registerSpikeHandlers } from "./spike/spike-handlers.js";
 import { createMainWindow, preloadFile } from "./windows/main-window.js";
 
-// Bootstrap order is fixed (plan.md §3.A): name the app before any userData path is
-// touched, take the single-instance lock before anything else can race the
-// preferences file, then create the window last, only once everything it can call
-// into is ready. Preferences (Slice 3), vault-root resolution and buildContainer
-// (Slice 4) are not wired yet — this slice only proves the platform, so the window
-// loads the throwaway spike renderer instead of the real app shell.
+// Bootstrap order is fixed (plan.md §3.A): name the app before any userData
+// path is touched, take the single-instance lock before anything else can
+// race the preferences file, read preferences, resolve the vault root,
+// compose the container, register IPC handlers, and only then create the
+// window — nothing renderer-facing exists before everything it can call into
+// is ready.
 app.setName("Valija");
 
 const gotLock = app.requestSingleInstanceLock();
@@ -16,7 +22,23 @@ if (!gotLock) {
   app.quit();
 } else {
   app.whenReady().then(() => {
-    registerSpikeHandlers(ipcMain);
+    const preferencesStore = new FileAppPreferencesStore(app.getPath("userData"));
+    const preferences = preferencesStore.read();
+    const vaultRoot = resolveVaultRoot(process.env, preferences);
+
+    let container: Container = buildContainer(vaultRoot === undefined ? {} : { vaultRoot });
+    const getContainer = (): Container => container;
+    /** Called after a successful relocation (Slice 8) to point every handler at the new root. */
+    const rebuildContainer = (newRoot: string): void => {
+      container = buildContainer({ vaultRoot: newRoot });
+    };
+    void rebuildContainer; // wired to relocation-handlers.ts in Slice 8
+
+    const filePicker = new ElectronFilePicker();
+    const clipboard = new ElectronClipboard();
+
+    registerHandlers({ getContainer, preferencesStore, filePicker, clipboard });
+    registerSpikeHandlers(ipcMain); // temporary — see preload/index.ts's own note
 
     const preload = preloadFile(join(import.meta.dirname, "../preload"));
     const rendererUrl =
