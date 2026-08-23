@@ -16,6 +16,7 @@
 - `openVaultDb(path, keyHex)` opens the SQLCipher database with a raw 32-byte hex key (`PRAGMA key = "x'…'"`), never a passphrase. Malformed key hex is rejected before touching disk.
 - Key is verified on open by touching `sqlite_master`; a wrong key throws `SQLITE_NOTADB`, and the file handle is **closed before rethrowing** (avoids a Windows file lock).
 - **Rollback journal (`DELETE`), not WAL** (M3, D-A): on every open, `wal_checkpoint(TRUNCATE)` folds any pre-existing WAL (from a pre-0.3.0 vault) and then `journal_mode = DELETE` switches modes. This runs *after* the key is verified, so a wrong key never mutates the file. The point: at rest, between commands, `vault.db` is always the single, complete, self-consistent database — no `-wal`/`-shm` sidecar a BYO-cloud sync client could upload out of step with it. `PRAGMA synchronous` stays at its safe default (never `OFF`); a rollback journal exists to survive a crash mid-write, so at-rest integrity is kept, not weakened. Foreign keys ON. `isWrongKeyError(e)` classifies the wrong-key failure.
+- `SQLITE_BUSY_TIMEOUT_MS = 5000` (GUI advance, D-J(a)) — the library's own default when `timeout` is omitted, made explicit in code rather than left as an inherited library default, so a contended write's actual wait is answerable from the source. Behaviour for the CLI and MCP server is unchanged.
 
 ## infra/migrations.ts + migrations/001-init.ts, 002-imported-type.ts, 003-lineage.ts
 
@@ -24,6 +25,7 @@
 - **Schema v2** (M2): widens the `context_items.type` CHECK to accept `imported` (table rebuild + FTS reindex).
 - **Schema v3** (M3, D-G): static SQL seeding `meta.lineage_generation = '0'` (`INSERT OR IGNORE`, `backup: true`). Deliberately does NOT seed a device id or write stamp — those are written by the first real write, via `SqliteLineageStore.bump` (see [vault.md](vault.md)) — keeping this migration free of any runtime device identity. The journal fold/switch (D-A above) already happened when the db was opened, before migration 003 runs.
 - The schema is the shared *physical* kernel: it names context tables, but imports no context code — `shared` stays dependency-free.
+- `LATEST_SCHEMA_VERSION` and `pendingMigrations(current)` (GUI advance, D-J(b)) — the highest migration version, and which migrations a vault at `current` still needs plus whether any backs up the ciphertext, so a GUI confirmation screen can name the upgrade before `migrate` runs rather than hardcoding it.
 
 ## infra/vault-paths.ts
 

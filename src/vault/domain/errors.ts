@@ -12,7 +12,8 @@ export type VaultErrorCode =
   | "INVALID_DEVICE_ID"
   | "INVALID_GENERATION"
   | "INVALID_WRITE_STAMP"
-  | "VAULT_FORK_DETECTED";
+  | "VAULT_FORK_DETECTED"
+  | "VAULT_UPGRADE_REQUIRED";
 
 /** A VAULT DomainError whose code is checked against VaultErrorCode. */
 export const vaultError = (code: VaultErrorCode, message: string): DomainError =>

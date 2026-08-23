@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from "node:fs";
 import type { DomainError, Result } from "../../shared/domain/result.js";
 import type { VaultFolderInspection } from "../../vault/application/ports/vault-folder.js";
 import type { VaultStatusOutput } from "../../vault/application/use-cases/vault-status.use-case.js";
-import { FileVaultFolder } from "../../vault/infra/file-vault-folder.js";
 import { OsKeychain } from "../../vault/infra/keyring.js";
 import type { Container } from "../container.js";
 import { CLIENTS, type ClientId, clientConfigPath } from "./installer.js";
@@ -146,7 +145,7 @@ export async function doctorCommand(c: Container): Promise<void> {
   // Compute the vault status once — each call opens the SQLCipher db (twice) and
   // reads the keychain, so recomputing it per check would multiply that needlessly.
   const status = c.vaultStatus.execute();
-  const inspection = new FileVaultFolder(c.paths).inspect();
+  const inspection = c.folder.inspect();
   const checks: Check[] = [
     checkNode(),
     await checkSqlcipher(),
