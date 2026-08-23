@@ -17,6 +17,7 @@ import type {
   IpcResult,
   PreferencesWriteRequest,
   ProjectListEntryMessage,
+  RecoveryKitResponse,
   ToolsConnectRequest,
   ToolsConnectResponse,
   ToolsStatusEntry,
@@ -39,6 +40,7 @@ import type {
 export interface ValijaBridge {
   vault: {
     init(req: VaultInitRequest): Promise<IpcResult<VaultInitResponse>>;
+    readRecoveryKit(): Promise<RecoveryKitResponse | null>;
     unlock(req: VaultUnlockRequest): Promise<IpcResult<VaultUnlockResponse>>;
     lock(): Promise<IpcResult<VaultLockResponse>>;
     status(): Promise<IpcResult<VaultStatusResponse>>;

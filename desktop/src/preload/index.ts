@@ -1,5 +1,4 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { SpikeResult } from "../main/spike/spike-handlers.js";
 import type {
   AppPreferencesMessage,
   ContentCopyRequest,
@@ -19,6 +18,7 @@ import type {
   IpcResult,
   PreferencesWriteRequest,
   ProjectListEntryMessage,
+  RecoveryKitResponse,
   ToolsConnectRequest,
   ToolsConnectResponse,
   ToolsStatusEntry,
@@ -32,22 +32,22 @@ import type {
   VaultUpgradeCheckResponse,
 } from "../shared/ipc/messages.js";
 
-// Throwaway spike bridge — stays alongside the real API below until D-H's
-// macOS ACL answer and D-R(a)'s client-env spike are both recorded (they need
-// a human on real hardware); deleted once both are answered.
-contextBridge.exposeInMainWorld("spike", {
-  loadSqlcipher: (): Promise<SpikeResult> => ipcRenderer.invoke("spike:load-sqlcipher"),
-  keychainRoundTrip: (): Promise<SpikeResult> => ipcRenderer.invoke("spike:keychain-round-trip"),
-  openGoldenVault: (): Promise<SpikeResult> => ipcRenderer.invoke("spike:open-golden-vault"),
-});
-
 // The real, enumerated API: one method per production IPC channel,
 // hand-written — never a loop over the channel tuple, so no channel is
 // exposed that a reviewer hasn't seen named here explicitly.
+//
+// The Slice 1 spike bridge (window.spike) is retired as of this slice: the
+// real vault:init / vault:unlock / vault:status flow below exercises the
+// exact same OS-keychain read and write paths the spike's buttons proved in
+// isolation, so it is the more faithful — not a weaker — way to answer D-H's
+// still-open macOS ACL question (create a vault, then check status, on a
+// real Mac). See advances/GUI/spike.md.
 contextBridge.exposeInMainWorld("valija", {
   vault: {
     init: (req: VaultInitRequest): Promise<IpcResult<VaultInitResponse>> =>
       ipcRenderer.invoke("vault:init", req),
+    readRecoveryKit: (): Promise<RecoveryKitResponse | null> =>
+      ipcRenderer.invoke("vault:readRecoveryKit"),
     unlock: (req: VaultUnlockRequest): Promise<IpcResult<VaultUnlockResponse>> =>
       ipcRenderer.invoke("vault:unlock", req),
     lock: (): Promise<IpcResult<VaultLockResponse>> => ipcRenderer.invoke("vault:lock"),

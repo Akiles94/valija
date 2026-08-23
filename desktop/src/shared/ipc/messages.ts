@@ -12,10 +12,20 @@ export type IpcResult<T> = { ok: true; value: T } | { ok: false; error: { code: 
 export interface VaultInitRequest {
   passphrase: string;
 }
+/**
+ * Deliberately no `keyHex` — the raw key is one of the two secrets §5.1
+ * allows to cross the boundary, and only as the *rendered recovery-kit
+ * text*, read exactly once through `vault:readRecoveryKit`, never as a
+ * value the renderer could hold onto and re-derive the kit from.
+ */
 export interface VaultInitResponse {
   vaultId: string;
-  keyHex: string;
   createdAt: string;
+}
+
+/** `null` once the kit has already been read once this session — it cannot be re-requested (§8.2). */
+export interface RecoveryKitResponse {
+  text: string;
 }
 
 export interface VaultUnlockRequest {

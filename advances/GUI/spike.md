@@ -160,11 +160,78 @@ is outside a coding sandbox's reach). This — like D-H — is recorded as open,
 | Packaged artifacts for macOS/Windows/Linux, with SHA-256s | **Not produced in this session** — no code-signing identity, no Windows/macOS build hosts available here; this is `desktop.yml`'s job once it runs in CI |
 | macOS ACL answer (D-H) | **Open — needs Oscar on real macOS hardware** |
 | Client-`env` answer (D-R(a)'s spike) | **Open — needs the three real client apps** |
-| Spike renderer deleted | **Not yet** — left in place deliberately; deleting it before the two open items above are answered would remove the tool used to answer them |
+| Spike renderer deleted | **Done, in Slice 6** — see the note below on why that slice, not a later one |
 
-Slice 1 is **partially complete**: the platform-proof code exists, is typechecked, linted, and
-its two headless guard tests (`dependency-parity.test.ts`, `no-network-surface.test.ts`) are
-green; the Linux-reachable half of the native-module question is answered with a real functional
-run, not an assumption; two real bugs surfaced by actually running the app are fixed. The two
-items that can only be answered by a human on real hardware are still open, exactly as the plan
-said they would be.
+Slice 1 is **platform-proof complete**: the code exists, is typechecked, linted, and its two
+headless guard tests (`dependency-parity.test.ts`, `no-network-surface.test.ts`) are green; the
+Linux-reachable half of the native-module question is answered with a real functional run, not an
+assumption; two real bugs surfaced by actually running the app are fixed. The two items that can
+only be answered by a human on real hardware are still open, exactly as the plan said they would
+be — see the note below on how to answer D-H now that the spike UI is gone.
+
+---
+
+## Update, Slice 6 — the spike renderer is retired, deliberately, not deferred
+
+The original plan for this file assumed the spike window (`window.spike`, `spike.tsx`) would stay
+in the tree until D-H's macOS answer and D-R(a)'s client-`env` answer both landed, on the theory
+that deleting it first would remove the tool that answers them. Slice 6 replaces the entire
+renderer with the real first-run and session screens (`no-vault.tsx`, `create-vault.tsx`,
+`recovery-kit.tsx`, `locked.tsx`, `migration-confirm.tsx`), and at that point keeping the spike
+alive stopped being free — it would have meant either a second renderer entry point or a
+dev-only route inside the real one, both of which are exactly the kind of scaffolding this advance
+tries not to accumulate.
+
+**The real flow answers D-H at least as well as the spike did, and more faithfully:**
+
+- The spike's "keychain round-trip" button exercised `OsKeychain` directly against a synthetic
+  `doctor-probe` entry. The real flow now exercises the *same* `OsKeychain` code path through the
+  *actual* product behaviour: `vault:init` writes the session key via `CreateVault`
+  (`this.keychain.setKey`), and `vault:status` reads it back via `VaultStatus`
+  (`this.keychain.getKey`) — the exact read `UnlockVault` created being read by a second binary is
+  D-H's own framing of the question.
+- What the spike covered that the real flow does not yet: the `doctor-probe` entry specifically
+  (diagnostics' own probe, Slice 10) and the "load SQLCipher" / "open the golden vault" checks
+  (superseded by `vault:init`/`vault:status` opening a real, non-golden database).
+
+**To answer D-H now:** on a real macOS desktop session, run `valija init` in a terminal, then open
+the packaged app and let it read that same vault's status (or the reverse: create the vault from
+the app, then run `valija status` in a terminal) — and separately, once Slice 10 lands, run the
+app's diagnostics screen for the `doctor-probe` interaction. Record *prompts once / prompts every
+time / silent / fails* for each interaction, exactly as originally specified.
+
+**D-R(a)'s client-`env` spike is unaffected by this change** — it never depended on Valija's own
+UI; it needs the three real client apps (Claude Code, Claude Desktop, Cursor) and a hand-written
+config, both independent of whether Valija's renderer has a spike screen or not.
+
+---
+
+## Update, Slice 6 — the native-module rebuild gap (from Slice 1) blocks the "Done when" e2e proof
+
+Slice 6's plan.md "Done when" asks for a real vault created and unlocked from the window, cross-
+checked against `valija status` in a terminal. Attempting this for real, via Playwright driving
+the actual packaged Electron build under this container's `xvfb`, reproduces exactly the gap Slice
+1 already found and left open — not a new Slice 6 defect:
+
+- The full renderer flow up through the IPC boundary works correctly, in both languages: no-vault
+  → create-vault → `vault:init` submit → a real IPC round trip to main → a real `STORAGE_ERROR`
+  coming back → `errorCopy()` rendering it correctly in English (*"Something went wrong reading or
+  writing the vault files."*) and in Spanish (*"Algo salió mal al leer o escribir los archivos de
+  la bóveda."*, verified by pre-seeding `preferences.json` with `language: "es"` before launch).
+- The failure itself is `CreateVault` hitting the same wall Slice 1's functional test already
+  proved: `better-sqlite3-multiple-ciphers`'s native binary is built for this sandbox's system
+  Node (v22, `NODE_MODULE_VERSION` 127), not Electron 43.4.1's bundled Node (v24.18.1,
+  `NODE_MODULE_VERSION` 148) — confirmed unchanged by re-checking the built `.node` file and the
+  Electron version in this session. `electron-rebuild` still needs `electronjs.org`, still blocked
+  by this container's egress policy (§ the table above), so no vault file write can succeed inside
+  this sandbox — with or without a spike screen, and regardless of which slice runs it.
+- This means Slice 6's own recovery-kit and locked screens are verified by the DOM-level test
+  (`recovery-kit.dom.test.tsx`, against the golden fixture, per P-D5's reversal) and by headless
+  tests of every pure decision (`session-state.ts`, `unlock-outcome.ts`,
+  `create-vault-validation.ts`) and handler-level hygiene tests (`vault-handlers.hygiene.test.ts`),
+  but **not** by a real create → kit → unlock → `valija status` run end to end — that specific
+  proof stays blocked on the same rebuild this table already lists as open, for the same reason.
+
+Nothing here is new work to do inside this sandbox: it is the same CI/developer-machine dependency
+Slice 1 already named, now confirmed to gate one more thing (Slice 6's "Done when", not just
+packaging).

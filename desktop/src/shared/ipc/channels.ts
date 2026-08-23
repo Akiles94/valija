@@ -17,6 +17,7 @@ import type {
   IpcResult,
   PreferencesWriteRequest,
   ProjectListEntryMessage,
+  RecoveryKitResponse,
   ToolsConnectRequest,
   ToolsConnectResponse,
   ToolsStatusEntry,
@@ -44,6 +45,7 @@ import type {
  */
 export const CHANNELS = [
   "vault:init",
+  "vault:readRecoveryKit",
   "vault:unlock",
   "vault:lock",
   "vault:status",
@@ -70,6 +72,8 @@ export type Channel = (typeof CHANNELS)[number];
 /** One request/response pair per channel — the map every schema, handler and bridge method is checked against. */
 export interface ChannelMap {
   "vault:init": { request: VaultInitRequest; response: IpcResult<VaultInitResponse> };
+  /** `null` once the kit has already been read once (§8.2) — not an IpcResult, there is no DomainError case, only "was there one pending or not." */
+  "vault:readRecoveryKit": { request: undefined; response: RecoveryKitResponse | null };
   "vault:unlock": { request: VaultUnlockRequest; response: IpcResult<VaultUnlockResponse> };
   "vault:lock": { request: undefined; response: IpcResult<VaultLockResponse> };
   "vault:status": { request: undefined; response: IpcResult<VaultStatusResponse> };
