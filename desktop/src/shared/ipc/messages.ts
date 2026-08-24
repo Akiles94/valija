@@ -213,6 +213,59 @@ export interface DialogFileChoiceResponse {
  * icon inherits no shell environment, so a shell-profile override is
  * invisible unless shown). Read-only, never editable (D-U(d)).
  */
+export interface RelocationClientEntry {
+  client: string;
+  /** Has an `mcpServers.valija` entry today — this is who the move will re-point (§4.7 step 30). */
+  currentlyConnected: boolean;
+  /** The config exists but isn't readable/valid JSON — named before the move starts, not discovered after (§9 item 69). */
+  configUnreadable: boolean;
+}
+
+export interface RelocationPreflightRequest {
+  handle: string;
+}
+
+/**
+ * `refusalCode`, not an `IpcResult` failure — a refusal here is advisory
+ * content the wizard renders (D-R(a)), not an unexpected error; `clients`
+ * and `looksLikeCloud` are still meaningful even when a refusal is present.
+ */
+export interface RelocationPreflightResponse {
+  destinationDisplayName: string;
+  looksLikeCloud: boolean;
+  refusalCode: string | null;
+  clients: RelocationClientEntry[];
+}
+
+export interface RelocationClientResult {
+  client: string;
+  outcome: "rewritten" | "notConnected" | "configUnreadable";
+  configPath?: string;
+  manualSnippet?: string;
+}
+
+export interface RelocationMoveRequest {
+  handle: string;
+}
+
+export interface RelocationMoveResponse {
+  root: string;
+  clientResults: RelocationClientResult[];
+}
+
+export interface RelocationRetryClientRequest {
+  client: string;
+}
+
+export interface RelocationPointAtExistingRequest {
+  handle: string;
+}
+
+export interface RelocationPointAtExistingResponse {
+  root: string;
+  clientResults: RelocationClientResult[];
+}
+
 export interface SyncStatusResponse {
   conflictedCopies: string[];
   staleBackups: string[];

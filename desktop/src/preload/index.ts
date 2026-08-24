@@ -19,6 +19,14 @@ import type {
   PreferencesWriteRequest,
   ProjectListEntryMessage,
   RecoveryKitResponse,
+  RelocationClientResult,
+  RelocationMoveRequest,
+  RelocationMoveResponse,
+  RelocationPointAtExistingRequest,
+  RelocationPointAtExistingResponse,
+  RelocationPreflightRequest,
+  RelocationPreflightResponse,
+  RelocationRetryClientRequest,
   SyncStatusResponse,
   ToolsConnectRequest,
   ToolsConnectResponse,
@@ -71,6 +79,18 @@ contextBridge.exposeInMainWorld("valija", {
   },
   sync: {
     status: (): Promise<SyncStatusResponse> => ipcRenderer.invoke("sync:status"),
+  },
+  relocation: {
+    preflight: (req: RelocationPreflightRequest): Promise<IpcResult<RelocationPreflightResponse>> =>
+      ipcRenderer.invoke("relocation:preflight", req),
+    move: (req: RelocationMoveRequest): Promise<IpcResult<RelocationMoveResponse>> =>
+      ipcRenderer.invoke("relocation:move", req),
+    retryClient: (req: RelocationRetryClientRequest): Promise<IpcResult<RelocationClientResult>> =>
+      ipcRenderer.invoke("relocation:retryClient", req),
+    pointAtExisting: (
+      req: RelocationPointAtExistingRequest,
+    ): Promise<IpcResult<RelocationPointAtExistingResponse>> =>
+      ipcRenderer.invoke("relocation:pointAtExisting", req),
   },
   import: {
     list: (req: ImportListRequest): Promise<IpcResult<ImportListResponse>> =>

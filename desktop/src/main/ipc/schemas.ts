@@ -36,6 +36,10 @@ export const SCHEMAS = {
   }),
   "content:copy": z.object({ text: z.string() }),
   "sync:status": z.void(),
+  "relocation:preflight": z.object({ handle: z.string() }),
+  "relocation:move": z.object({ handle: z.string() }),
+  "relocation:retryClient": z.object({ client: z.string() }),
+  "relocation:pointAtExisting": z.object({ handle: z.string() }),
   "import:list": z.object({ handle: z.string() }),
   "import:preview": z.object({
     handle: z.string(),

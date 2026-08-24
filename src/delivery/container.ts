@@ -14,15 +14,18 @@ import { resolveStatePaths } from "../shared/infra/state-paths.js";
 import { resolveVaultPaths, type VaultPaths } from "../shared/infra/vault-paths.js";
 import { SessionGuard } from "../vault/application/policies/session-guard.js";
 import type { VaultFolder } from "../vault/application/ports/vault-folder.js";
+import type { VaultMover } from "../vault/application/ports/vault-mover.js";
 import { CheckVaultUpgrade } from "../vault/application/use-cases/check-vault-upgrade.use-case.js";
 import { CreateVault } from "../vault/application/use-cases/create-vault.use-case.js";
 import { LockVault } from "../vault/application/use-cases/lock-vault.use-case.js";
+import { RelocateVault } from "../vault/application/use-cases/relocate-vault.use-case.js";
 import { UnlockVault } from "../vault/application/use-cases/unlock-vault.use-case.js";
 import { VaultStatus } from "../vault/application/use-cases/vault-status.use-case.js";
 import { parseAutoLockTtl } from "../vault/domain/values/auto-lock-ttl.js";
 import { Argon2VaultCrypto } from "../vault/infra/argon2.js";
 import { FileDeviceIdentity } from "../vault/infra/file-device-identity.js";
 import { FileVaultFolder } from "../vault/infra/file-vault-folder.js";
+import { FileVaultMover } from "../vault/infra/file-vault-mover.js";
 import { FileVaultStore } from "../vault/infra/file-vault-store.js";
 import { OsKeychain } from "../vault/infra/keyring.js";
 
@@ -32,10 +35,12 @@ const ulidIds: IdGenerator = { next: () => ulid() };
 export interface Container {
   paths: VaultPaths;
   folder: VaultFolder;
+  mover: VaultMover;
   createVault: CreateVault;
   unlockVault: UnlockVault;
   checkVaultUpgrade: CheckVaultUpgrade;
   lockVault: LockVault;
+  relocateVault: RelocateVault;
   vaultStatus: VaultStatus;
   saveContext: SaveContext;
   listProjects: ListProjects;
@@ -51,6 +56,7 @@ export function buildContainer(options?: { vaultRoot?: string }): Container {
   const crypto = new Argon2VaultCrypto();
   const keychain = new OsKeychain();
   const folder = new FileVaultFolder(paths);
+  const mover = new FileVaultMover();
   const deviceIdentity = new FileDeviceIdentity(resolveStatePaths(), ulidIds);
   const ttlMinutes = parseAutoLockTtl(process.env.VALIJA_AUTOLOCK_MINUTES);
   const guard = new SessionGuard(deviceIdentity, keychain, systemClock, ttlMinutes);
@@ -66,10 +72,12 @@ export function buildContainer(options?: { vaultRoot?: string }): Container {
   return {
     paths,
     folder,
+    mover,
     createVault: new CreateVault(store, crypto, keychain, deviceIdentity, systemClock, ulidIds),
     unlockVault: new UnlockVault(store, crypto, keychain, deviceIdentity, systemClock),
     checkVaultUpgrade: new CheckVaultUpgrade(store, crypto),
     lockVault: new LockVault(store, keychain, folder, deviceIdentity),
+    relocateVault: new RelocateVault(store, keychain, mover, folder, paths),
     vaultStatus: new VaultStatus(store, keychain, deviceIdentity, folder, systemClock, ttlMinutes),
     saveContext: new SaveContext(sessions, systemClock, ulidIds),
     listProjects: new ListProjects(sessions),

@@ -18,6 +18,14 @@ import type {
   PreferencesWriteRequest,
   ProjectListEntryMessage,
   RecoveryKitResponse,
+  RelocationClientResult,
+  RelocationMoveRequest,
+  RelocationMoveResponse,
+  RelocationPointAtExistingRequest,
+  RelocationPointAtExistingResponse,
+  RelocationPreflightRequest,
+  RelocationPreflightResponse,
+  RelocationRetryClientRequest,
   SyncStatusResponse,
   ToolsConnectRequest,
   ToolsConnectResponse,
@@ -39,10 +47,10 @@ import type {
  * asserts `ipcMain`'s registered set equals this tuple exactly: no extra
  * channel, no missing one, no `invoke("run", …)`-shaped escape hatch.
  *
- * Not yet included: the relocation and diagnostics channels — they land in
- * Slices 8 and 10, once `RelocateVault` and the extracted `runDiagnostics`
- * exist to back them. Declaring a channel before its capability exists would
- * make this tuple a promise the app can't keep yet.
+ * Not yet included: the diagnostics channels — they land in Slice 10, once
+ * the extracted `runDiagnostics` exists to back them. Declaring a channel
+ * before its capability exists would make this tuple a promise the app
+ * can't keep yet.
  */
 export const CHANNELS = [
   "vault:init",
@@ -58,6 +66,10 @@ export const CHANNELS = [
   "content:export",
   "content:copy",
   "sync:status",
+  "relocation:preflight",
+  "relocation:move",
+  "relocation:retryClient",
+  "relocation:pointAtExisting",
   "import:list",
   "import:preview",
   "import:run",
@@ -90,6 +102,22 @@ export interface ChannelMap {
   "content:export": { request: ContentExportRequest; response: IpcResult<ContentExportResponse> };
   "content:copy": { request: ContentCopyRequest; response: undefined };
   "sync:status": { request: undefined; response: SyncStatusResponse };
+  "relocation:preflight": {
+    request: RelocationPreflightRequest;
+    response: IpcResult<RelocationPreflightResponse>;
+  };
+  "relocation:move": {
+    request: RelocationMoveRequest;
+    response: IpcResult<RelocationMoveResponse>;
+  };
+  "relocation:retryClient": {
+    request: RelocationRetryClientRequest;
+    response: IpcResult<RelocationClientResult>;
+  };
+  "relocation:pointAtExisting": {
+    request: RelocationPointAtExistingRequest;
+    response: IpcResult<RelocationPointAtExistingResponse>;
+  };
   "import:list": { request: ImportListRequest; response: IpcResult<ImportListResponse> };
   "import:preview": { request: ImportPreviewRequest; response: IpcResult<ImportOutcomeResponse> };
   "import:run": { request: ImportRunRequest; response: IpcResult<ImportOutcomeResponse> };

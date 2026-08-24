@@ -16,10 +16,12 @@ import { FixedClock, makeUnlockedVault, SeqIds } from "../../testing/test-vault.
 import { CheckVaultUpgrade } from "../../vault/application/use-cases/check-vault-upgrade.use-case.js";
 import { CreateVault } from "../../vault/application/use-cases/create-vault.use-case.js";
 import { LockVault } from "../../vault/application/use-cases/lock-vault.use-case.js";
+import { RelocateVault } from "../../vault/application/use-cases/relocate-vault.use-case.js";
 import { UnlockVault } from "../../vault/application/use-cases/unlock-vault.use-case.js";
 import { VaultStatus } from "../../vault/application/use-cases/vault-status.use-case.js";
 import { Argon2VaultCrypto } from "../../vault/infra/argon2.js";
 import { FileVaultFolder } from "../../vault/infra/file-vault-folder.js";
+import { FileVaultMover } from "../../vault/infra/file-vault-mover.js";
 import type { Container } from "../container.js";
 import { buildMcpServer } from "./server.js";
 
@@ -29,10 +31,12 @@ const ids = new SeqIds();
 const crypto = new Argon2VaultCrypto();
 
 const folder = new FileVaultFolder(vault.paths);
+const mover = new FileVaultMover();
 
 const container: Container = {
   paths: vault.paths,
   folder,
+  mover,
   createVault: new CreateVault(
     vault.store,
     crypto,
@@ -44,6 +48,7 @@ const container: Container = {
   unlockVault: new UnlockVault(vault.store, crypto, vault.keychain, vault.deviceIdentity, clock),
   checkVaultUpgrade: new CheckVaultUpgrade(vault.store, crypto),
   lockVault: new LockVault(vault.store, vault.keychain, folder, vault.deviceIdentity),
+  relocateVault: new RelocateVault(vault.store, vault.keychain, mover, folder, vault.paths),
   vaultStatus: new VaultStatus(
     vault.store,
     vault.keychain,

@@ -8,6 +8,7 @@ import { NoVaultScreen } from "./screens/no-vault.js";
 import { PackPreviewScreen } from "./screens/pack-preview.js";
 import { ProjectScreen } from "./screens/project.js";
 import { RecoveryKitScreen } from "./screens/recovery-kit.js";
+import { RelocateVaultScreen } from "./screens/relocate-vault.js";
 import { SearchScreen } from "./screens/search.js";
 import { SyncScreen } from "./screens/sync.js";
 import { getBridge } from "./state/bridge.js";
@@ -15,6 +16,7 @@ import { I18nProvider } from "./state/i18n-context.js";
 import {
   afterCreateSuccess,
   afterKitAcknowledged,
+  afterLock,
   afterMigrationCancelled,
   afterStatusCheck,
   afterUnlockFailure,
@@ -101,11 +103,9 @@ function Router({
     case "no-vault":
       return (
         <NoVaultScreen
+          bridge={bridge}
           onCreateVault={() => setState(creating())}
-          onPointAtExisting={() => {
-            // Wired to the relocation wizard's mirror flow in Slice 8.
-            void bridge.dialog.chooseVaultFolder();
-          }}
+          onPointedAtExisting={() => setState(afterLock())}
         />
       );
 
@@ -150,15 +150,15 @@ function Router({
       );
 
     case "unlocked":
-      return <Workspace />;
+      return <Workspace onVaultRelocated={() => setState(afterLock())} />;
 
     default:
       return null;
   }
 }
 
-/** Dashboard/search/sync are the nav-bar's three top-level destinations; project and pack-preview are drill-downs, reached from Dashboard, that don't get their own nav entry. */
-function Workspace() {
+/** Dashboard/search/sync are the nav-bar's three top-level destinations; project, pack-preview, and relocate-vault are drill-downs, reached from Dashboard/Sync, that don't get their own nav entry. */
+function Workspace({ onVaultRelocated }: { onVaultRelocated: () => void }) {
   const [view, setView] = useState<WorkspaceView>(INITIAL_WORKSPACE_VIEW);
 
   return (
@@ -193,12 +193,13 @@ function Workspace() {
         />
       )}
       {view.screen === "sync" && (
-        <SyncScreen
-          bridge={bridge}
-          onMoveVault={() => {
-            // Wired to the relocation wizard in Slice 8.
-          }}
-        />
+        <SyncScreen bridge={bridge} onMoveVault={() => setView({ screen: "relocate-vault" })} />
+      )}
+      {view.screen === "relocate-vault" && (
+        // The move locks the vault as its first step (§4.7 step 31) — "Unlock
+        // again" hands control back to the Router's own "locked" screen
+        // rather than staying inside a workspace the vault can no longer back.
+        <RelocateVaultScreen bridge={bridge} onDone={onVaultRelocated} />
       )}
     </div>
   );

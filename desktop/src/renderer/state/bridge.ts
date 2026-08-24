@@ -18,6 +18,14 @@ import type {
   PreferencesWriteRequest,
   ProjectListEntryMessage,
   RecoveryKitResponse,
+  RelocationClientResult,
+  RelocationMoveRequest,
+  RelocationMoveResponse,
+  RelocationPointAtExistingRequest,
+  RelocationPointAtExistingResponse,
+  RelocationPreflightRequest,
+  RelocationPreflightResponse,
+  RelocationRetryClientRequest,
   SyncStatusResponse,
   ToolsConnectRequest,
   ToolsConnectResponse,
@@ -57,6 +65,14 @@ export interface ValijaBridge {
   };
   sync: {
     status(): Promise<SyncStatusResponse>;
+  };
+  relocation: {
+    preflight(req: RelocationPreflightRequest): Promise<IpcResult<RelocationPreflightResponse>>;
+    move(req: RelocationMoveRequest): Promise<IpcResult<RelocationMoveResponse>>;
+    retryClient(req: RelocationRetryClientRequest): Promise<IpcResult<RelocationClientResult>>;
+    pointAtExisting(
+      req: RelocationPointAtExistingRequest,
+    ): Promise<IpcResult<RelocationPointAtExistingResponse>>;
   };
   import: {
     list(req: ImportListRequest): Promise<IpcResult<ImportListResponse>>;
