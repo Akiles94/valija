@@ -8,6 +8,8 @@ import type {
   ContentSearchRequest,
   ContentShowRequest,
   ContextItemMessage,
+  DiagnosticsCopyReportRequest,
+  DiagnosticsRunResponse,
   DialogFileChoiceResponse,
   ImportListRequest,
   ImportListResponse,
@@ -66,6 +68,10 @@ export interface ValijaBridge {
   };
   sync: {
     status(): Promise<SyncStatusResponse>;
+  };
+  diagnostics: {
+    run(): Promise<DiagnosticsRunResponse>;
+    copyReport(req: DiagnosticsCopyReportRequest): Promise<void>;
   };
   relocation: {
     preflight(req: RelocationPreflightRequest): Promise<IpcResult<RelocationPreflightResponse>>;

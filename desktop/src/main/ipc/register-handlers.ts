@@ -6,6 +6,7 @@ import type { ClipboardPort } from "../application/ports/clipboard.js";
 import type { FilePicker } from "../application/ports/file-picker.js";
 import type { NodeProbe } from "../application/ports/node-probe.js";
 import { createContentHandlers } from "./handlers/content-handlers.js";
+import { createDiagnosticsHandlers } from "./handlers/diagnostics-handlers.js";
 import { createDialogHandlers } from "./handlers/dialog-handlers.js";
 import { createImportHandlers } from "./handlers/import-handlers.js";
 import { createPreferencesHandlers } from "./handlers/preferences-handlers.js";
@@ -32,6 +33,7 @@ function buildHandlerMap(deps: RegisterHandlersDeps): Record<string, AnyHandler>
     ...createVaultHandlers(deps.getContainer),
     ...createContentHandlers(deps.getContainer, deps.filePicker, deps.clipboard),
     ...createSyncHandlers(deps.getContainer),
+    ...createDiagnosticsHandlers(deps.getContainer, deps.clipboard),
     ...createRelocationHandlers(
       deps.getContainer,
       deps.rebuildContainer,

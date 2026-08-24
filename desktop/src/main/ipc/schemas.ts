@@ -36,6 +36,18 @@ export const SCHEMAS = {
   }),
   "content:copy": z.object({ text: z.string() }),
   "sync:status": z.void(),
+  "diagnostics:run": z.void(),
+  "diagnostics:copyReport": z.object({
+    checks: z.array(
+      z.object({
+        name: z.string(),
+        ok: z.boolean(),
+        detail: z.string(),
+        fatal: z.boolean().optional(),
+        errorCode: z.string().optional(),
+      }),
+    ),
+  }),
   "relocation:preflight": z.object({ handle: z.string() }),
   "relocation:move": z.object({ handle: z.string() }),
   "relocation:retryClient": z.object({ client: z.string() }),

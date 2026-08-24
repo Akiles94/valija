@@ -3,6 +3,7 @@ import { NavBar } from "./components/nav-bar.js";
 import { ConnectToolsScreen } from "./screens/connect-tools.js";
 import { CreateVaultScreen } from "./screens/create-vault.js";
 import { DashboardScreen } from "./screens/dashboard.js";
+import { DiagnosticsScreen } from "./screens/diagnostics.js";
 import { ImportScreen } from "./screens/import.js";
 import { LockedScreen, type UnlockCredential } from "./screens/locked.js";
 import { MigrationConfirmScreen } from "./screens/migration-confirm.js";
@@ -159,7 +160,7 @@ function Router({
   }
 }
 
-/** Dashboard/search/sync are the nav-bar's three top-level destinations; project, pack-preview, and relocate-vault are drill-downs, reached from Dashboard/Sync, that don't get their own nav entry. */
+/** Dashboard/search/sync are the nav-bar's three top-level destinations; project, pack-preview, relocate-vault, connect-tools, import, and diagnostics are drill-downs, reached from Dashboard/Sync, that don't get their own nav entry. */
 function Workspace({ onVaultRelocated }: { onVaultRelocated: () => void }) {
   const [view, setView] = useState<WorkspaceView>(INITIAL_WORKSPACE_VIEW);
 
@@ -193,8 +194,13 @@ function Workspace({ onVaultRelocated }: { onVaultRelocated: () => void }) {
         />
       )}
       {view.screen === "sync" && (
-        <SyncScreen bridge={bridge} onMoveVault={() => setView({ screen: "relocate-vault" })} />
+        <SyncScreen
+          bridge={bridge}
+          onMoveVault={() => setView({ screen: "relocate-vault" })}
+          onCheckSetup={() => setView({ screen: "diagnostics" })}
+        />
       )}
+      {view.screen === "diagnostics" && <DiagnosticsScreen bridge={bridge} />}
       {view.screen === "relocate-vault" && (
         // The move locks the vault as its first step (§4.7 step 31) — "Unlock
         // again" hands control back to the Router's own "locked" screen

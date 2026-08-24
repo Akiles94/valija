@@ -9,6 +9,8 @@ import type {
   ContentSearchRequest,
   ContentShowRequest,
   ContextItemMessage,
+  DiagnosticsCopyReportRequest,
+  DiagnosticsRunResponse,
   DialogFileChoiceResponse,
   ImportListRequest,
   ImportListResponse,
@@ -80,6 +82,11 @@ contextBridge.exposeInMainWorld("valija", {
   },
   sync: {
     status: (): Promise<SyncStatusResponse> => ipcRenderer.invoke("sync:status"),
+  },
+  diagnostics: {
+    run: (): Promise<DiagnosticsRunResponse> => ipcRenderer.invoke("diagnostics:run"),
+    copyReport: (req: DiagnosticsCopyReportRequest): Promise<void> =>
+      ipcRenderer.invoke("diagnostics:copyReport", req),
   },
   relocation: {
     preflight: (req: RelocationPreflightRequest): Promise<IpcResult<RelocationPreflightResponse>> =>

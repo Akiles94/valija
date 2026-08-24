@@ -178,14 +178,41 @@ export const es: Catalog = {
     run: "Ejecutar comprobaciones",
     keychainProbeNotice:
       "La comprobación del llavero escribe y elimina de inmediato una entrada de prueba en el llavero de tu sistema operativo. En macOS esto puede mostrarte un aviso.",
+    nodeProbeNotice:
+      'Comprobar el Node.js de tus herramientas de IA también ejecuta "node --version" y "npm --version" en este equipo.',
     copyReport: "Copiar informe",
     copyReportNotice:
-      "El informe se mantiene en inglés y puede incluir uno de los mensajes de error propios de Valija, con fines de soporte técnico.",
+      "El informe se mantiene en inglés y puede incluir uno de los mensajes de error propios de Valija, la ruta de la carpeta de tu bóveda, y cualquier nombre de archivo en conflicto que encuentre — con fines de soporte técnico.",
     appNodeRow: "Node.js (esta aplicación)",
     toolNodeRow: "Node.js (tus herramientas de IA)",
+    toolNodeOk: "Ejecutable — tus herramientas de IA pueden usar Node.js y npm.",
+    toolNodeMissing:
+      "No ejecutable — tus herramientas de IA podrían no poder acceder a tu bóveda hasta que lo sea.",
     fatal: "Problema",
     warning: "Advertencia",
     ok: "Correcto",
+    clientVaultPath: "Apunta a {vaultPath}",
+    clientVaultPathDefault: "Apunta a la ubicación predeterminada (~/.valija)",
+    rowName: {
+      sqlcipher: "Motor de cifrado",
+      keychain: "Llavero del sistema",
+      vault: "Bóveda",
+      journal: "Archivo de base de datos",
+      sync: "Carpeta de sincronización",
+      lineage: "Historial de escritura",
+      autoLock: "Bloqueo automático",
+    },
+    checkNode: "Si el propio motor Node.js de esta aplicación es suficientemente reciente.",
+    checkSqlcipher: "Si el motor de base de datos cifrada carga correctamente.",
+    checkKeychain: "Si Valija puede leer y escribir en el llavero seguro de tu sistema operativo.",
+    checkVault: "Si existe una bóveda en este equipo, y si está desbloqueada.",
+    checkJournal:
+      "Si la base de datos de la bóveda quedó completamente escrita, sin nada pendiente de un guardado interrumpido.",
+    checkSync:
+      "Si la carpeta de la bóveda parece una carpeta sincronizada en la nube, y si algo ahí necesita tu atención.",
+    checkLineage: "Qué dispositivo escribió en la bóveda por última vez, y en qué generación está.",
+    checkAutoLock: "Cuánto tiempo permanece desbloqueada la bóveda antes de bloquearse sola.",
+    checkClient: "Si {client} está configurado para acceder a esta bóveda.",
   },
 
   sync: {
