@@ -66,6 +66,7 @@ export interface Translator {
  */
 export function createTranslator(language: Language): Translator {
   const pluralRules = new Intl.PluralRules(language);
+  const numberFormat = new Intl.NumberFormat(language);
 
   function t(key: TranslationKey, params?: Params & { count?: number }): string {
     const value = resolvePath(CATALOGS[language], key) ?? resolvePath(en, key);
@@ -77,9 +78,12 @@ export function createTranslator(language: Language): Translator {
 
     if (isPluralForm(value)) {
       const count = params?.count ?? 0;
+      // The category is selected from the raw count (Intl.PluralRules needs
+      // the number itself); the `{count}` placeholder is rendered through
+      // Intl.NumberFormat so a large count gets locale-correct grouping.
       const category = pluralRules.select(count);
       const template = category === "one" ? value.one : value.other;
-      return interpolate(template, { ...params, count });
+      return interpolate(template, { ...params, count: numberFormat.format(count) });
     }
 
     return interpolate(value, params);

@@ -49,3 +49,8 @@ export function useErrorCopy() {
   const { language } = useI18n();
   return (code: string) => copyForErrorCode(code, language);
 }
+
+/** The active UI language, for `Intl`-backed date/count formatting (D-V(e) Option 1). */
+export function useLanguage(): Language {
+  return useI18n().language;
+}

@@ -35,6 +35,7 @@ export const SCHEMAS = {
     format: z.enum(["markdown", "json"]),
   }),
   "content:copy": z.object({ text: z.string() }),
+  "sync:status": z.void(),
   "import:list": z.object({ handle: z.string() }),
   "import:preview": z.object({
     handle: z.string(),

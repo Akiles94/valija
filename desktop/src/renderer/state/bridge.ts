@@ -18,6 +18,7 @@ import type {
   PreferencesWriteRequest,
   ProjectListEntryMessage,
   RecoveryKitResponse,
+  SyncStatusResponse,
   ToolsConnectRequest,
   ToolsConnectResponse,
   ToolsStatusEntry,
@@ -53,6 +54,9 @@ export interface ValijaBridge {
     pack(req: ContentPackRequest): Promise<IpcResult<ContentPackResponse>>;
     export(req: ContentExportRequest): Promise<IpcResult<ContentExportResponse>>;
     copy(req: ContentCopyRequest): Promise<void>;
+  };
+  sync: {
+    status(): Promise<SyncStatusResponse>;
   };
   import: {
     list(req: ImportListRequest): Promise<IpcResult<ImportListResponse>>;

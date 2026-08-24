@@ -19,6 +19,7 @@ import type {
   PreferencesWriteRequest,
   ProjectListEntryMessage,
   RecoveryKitResponse,
+  SyncStatusResponse,
   ToolsConnectRequest,
   ToolsConnectResponse,
   ToolsStatusEntry,
@@ -67,6 +68,9 @@ contextBridge.exposeInMainWorld("valija", {
     export: (req: ContentExportRequest): Promise<IpcResult<ContentExportResponse>> =>
       ipcRenderer.invoke("content:export", req),
     copy: (req: ContentCopyRequest): Promise<void> => ipcRenderer.invoke("content:copy", req),
+  },
+  sync: {
+    status: (): Promise<SyncStatusResponse> => ipcRenderer.invoke("sync:status"),
   },
   import: {
     list: (req: ImportListRequest): Promise<IpcResult<ImportListResponse>> =>

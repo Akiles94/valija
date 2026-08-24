@@ -87,6 +87,7 @@ export const en = {
   },
 
   dashboard: {
+    title: "Dashboard",
     emptyTitle: "No context saved yet.",
     connectATool: "Connect an AI tool",
     importHistory: "Import your chat history",
@@ -105,6 +106,7 @@ export const en = {
   },
 
   search: {
+    title: "Search",
     placeholder: "Search your vault",
     scopeAllProjects: "All projects",
     resultCount: {
@@ -120,6 +122,7 @@ export const en = {
     export: "Export…",
     exportFormatMarkdown: "Markdown",
     exportFormatJson: "JSON",
+    exportedTo: "Saved to {path}",
     notTranslatedNotice:
       "This is your saved content, shown exactly as it will be exported — never translated.",
   },
@@ -184,6 +187,7 @@ export const en = {
   sync: {
     title: "Sync & safety",
     vaultFolder: "Vault folder",
+    stateHome: "Device state folder",
     looksLikeCloud: "This folder looks like it's synced by another app.",
     notRecognizedAsCloud: "Valija can't tell whether this folder is synced.",
     conflictedCopiesFound: {
@@ -200,6 +204,7 @@ export const en = {
     lastWriterThisDevice: "This device wrote it last",
     lastWriterOtherDevice: "Another device wrote it last",
     autoLock: "Auto-locks after {minutes} minutes idle",
+    autoLockDisabled: "Auto-lock disabled",
     conflictGuidance:
       "Valija hasn't deleted anything. Both files open with the same passphrase. There is no automatic merge — open each one and decide which to keep.",
     moveVault: "Move my vault…",
