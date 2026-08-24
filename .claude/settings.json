@@ -9,6 +9,15 @@
             "command": ".claude/hooks/guard-implementation.sh"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/filter-test-output.sh"
+          }
+        ]
       }
     ]
   }
