@@ -16,6 +16,7 @@ import type {
   ImportPreviewRequest,
   ImportRunRequest,
   IpcResult,
+  NodeStatusResponse,
   PreferencesWriteRequest,
   ProjectListEntryMessage,
   RecoveryKitResponse,
@@ -104,6 +105,7 @@ contextBridge.exposeInMainWorld("valija", {
     status: (): Promise<ToolsStatusEntry[]> => ipcRenderer.invoke("tools:status"),
     connect: (req: ToolsConnectRequest): Promise<IpcResult<ToolsConnectResponse>> =>
       ipcRenderer.invoke("tools:connect", req),
+    nodeStatus: (): Promise<NodeStatusResponse> => ipcRenderer.invoke("tools:nodeStatus"),
   },
   preferences: {
     read: (): Promise<AppPreferencesMessage> => ipcRenderer.invoke("preferences:read"),

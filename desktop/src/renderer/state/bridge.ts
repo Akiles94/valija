@@ -15,6 +15,7 @@ import type {
   ImportPreviewRequest,
   ImportRunRequest,
   IpcResult,
+  NodeStatusResponse,
   PreferencesWriteRequest,
   ProjectListEntryMessage,
   RecoveryKitResponse,
@@ -82,6 +83,7 @@ export interface ValijaBridge {
   tools: {
     status(): Promise<ToolsStatusEntry[]>;
     connect(req: ToolsConnectRequest): Promise<IpcResult<ToolsConnectResponse>>;
+    nodeStatus(): Promise<NodeStatusResponse>;
   };
   preferences: {
     read(): Promise<AppPreferencesMessage>;

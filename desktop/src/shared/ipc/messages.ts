@@ -131,8 +131,18 @@ export interface ImportListingRow {
   estimatedChunks: number;
 }
 
+/**
+ * A manual override for auto-detection — offered only after `import:list`
+ * fails with `UNSUPPORTED_SOURCE` (§9 item 72). Duplicated here rather than
+ * imported from `src/importers/domain/values/import-source.ts`: `shared/`
+ * stays pure of the root `src/` tree, matching every other wire type in this
+ * file.
+ */
+export type ImportFormatOverride = "chatgpt" | "claude" | "generic";
+
 export interface ImportListRequest {
   handle: string;
+  from?: ImportFormatOverride;
 }
 export interface ImportListResponse {
   source: string;
@@ -144,6 +154,7 @@ export interface ImportSelection {
   query?: string;
   since?: string;
   all?: boolean;
+  from?: ImportFormatOverride;
 }
 
 export interface ImportPreviewRequest extends ImportSelection {
@@ -175,9 +186,26 @@ export interface ToolsStatusEntry {
 export interface ToolsConnectRequest {
   client: string;
 }
+
+/**
+ * `configUnreadable`, not an `IpcResult` failure — a client whose config file
+ * isn't valid JSON is expected, recoverable content the screen renders
+ * (mirroring `RelocationClientResult`, §9 item 71): `manualSnippet` (built
+ * from `installer.ts`'s own `manualInstructions`, never a caught error's
+ * `.message`) is what the fallback block shows. An unknown client id is
+ * still a real `IpcResult` failure — that is a caller mistake, not a client
+ * config problem.
+ */
 export interface ToolsConnectResponse {
-  configPath: string;
-  backupPath: string | null;
+  outcome: "connected" | "configUnreadable";
+  configPath?: string;
+  backupPath?: string;
+  manualSnippet?: string;
+}
+
+export interface NodeStatusResponse {
+  nodeRunnable: boolean;
+  npmRunnable: boolean;
 }
 
 export interface AppPreferencesMessage {

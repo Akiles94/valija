@@ -134,6 +134,8 @@ export const es: Catalog = {
     connectButton: "Conectar",
     connectedDetail:
       "Se agregó valija a {configPath}. Hay una copia de seguridad de tu configuración anterior en {backupPath}. Reinicia {client} para que lo detecte.",
+    connectedDetailNoBackup:
+      "Se agregó valija a {configPath}. Reinicia {client} para que lo detecte.",
     nodeMissingTitle: "Node.js no está instalado en este equipo",
     nodeMissingBody:
       "Tus herramientas de IA usan valija a través de Node.js, que no está instalado en este equipo. Conectar ahora guardará el ajuste, pero la herramienta no podrá acceder a tu bóveda hasta que instales Node.js.",

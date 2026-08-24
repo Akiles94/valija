@@ -133,6 +133,7 @@ export const en = {
     connectButton: "Connect",
     connectedDetail:
       "valija added to {configPath}. A backup of your previous config is at {backupPath}. Restart {client} to pick it up.",
+    connectedDetailNoBackup: "valija added to {configPath}. Restart {client} to pick it up.",
     nodeMissingTitle: "Node.js isn't installed on this machine",
     nodeMissingBody:
       "Your AI tools run valija through Node.js, which isn't installed on this machine. Connecting now will write the setting, but the tool won't be able to reach your vault until you install it.",
