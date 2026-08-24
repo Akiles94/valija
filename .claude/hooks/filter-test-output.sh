@@ -11,6 +11,18 @@ command -v jq >/dev/null 2>&1 || { echo '{}'; exit 0; }
 input=$(cat)
 cmd=$(echo "$input" | jq -r '.tool_input.command // empty')
 
+# Safety net first: the checks below are a plain text scan, not a real shell
+# parse, so a command carrying a heredoc, command substitution, or a newline
+# could contain the phrase "npm run test" as prose (e.g. a commit message)
+# rather than as an actual invocation. Any of those shapes is excluded
+# outright, even if a test-runner pattern also matches somewhere in it —
+# false-negative (missing an optimization) is fine; false-positive (mangling
+# an unrelated command) is not.
+if [[ "$cmd" == *$'\n'* || "$cmd" == *'<<'* || "$cmd" == *'$('* || "$cmd" == *'`'* ]]; then
+  echo '{}'
+  exit 0
+fi
+
 is_test_cmd=0
 if [[ "$cmd" =~ (^|[\&\;\|[:space:]])npm[[:space:]]+run[[:space:]]+test([[:space:]]|$) ]]; then
   is_test_cmd=1
