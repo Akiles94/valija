@@ -88,6 +88,7 @@ export const es: Catalog = {
   },
 
   dashboard: {
+    title: "Panel",
     emptyTitle: "Todavía no hay contexto guardado.",
     connectATool: "Conectar una herramienta de IA",
     importHistory: "Importar tu historial de chats",
@@ -106,6 +107,7 @@ export const es: Catalog = {
   },
 
   search: {
+    title: "Buscar",
     placeholder: "Busca en tu bóveda",
     scopeAllProjects: "Todos los proyectos",
     resultCount: {
@@ -121,6 +123,7 @@ export const es: Catalog = {
     export: "Exportar…",
     exportFormatMarkdown: "Markdown",
     exportFormatJson: "JSON",
+    exportedTo: "Guardado en {path}",
     notTranslatedNotice:
       "Este es tu contenido guardado, mostrado exactamente como se exportará; nunca se traduce.",
   },
@@ -186,6 +189,7 @@ export const es: Catalog = {
   sync: {
     title: "Sincronización y seguridad",
     vaultFolder: "Carpeta de la bóveda",
+    stateHome: "Carpeta de estado del dispositivo",
     looksLikeCloud: "Esta carpeta parece estar sincronizada por otra aplicación.",
     notRecognizedAsCloud: "Valija no puede determinar si esta carpeta se sincroniza.",
     conflictedCopiesFound: {
@@ -202,6 +206,7 @@ export const es: Catalog = {
     lastWriterThisDevice: "Este dispositivo escribió por última vez",
     lastWriterOtherDevice: "Otro dispositivo escribió por última vez",
     autoLock: "Se bloquea automáticamente tras {minutes} minutos de inactividad",
+    autoLockDisabled: "Bloqueo automático desactivado",
     conflictGuidance:
       "Valija no ha eliminado nada. Ambos archivos se abren con la misma frase de contraseña. No hay fusión automática: abre cada uno y decide cuál conservar.",
     moveVault: "Mover mi bóveda…",

@@ -205,3 +205,17 @@ export interface DialogFileChoiceResponse {
   handle: string;
   displayName: string;
 }
+
+/**
+ * The half of the Sync panel `vault:status` doesn't already carry —
+ * `VaultFolderInspection`'s other three fields, plus the resolved
+ * `VALIJA_STATE_HOME` path (A6's honest gap: an app launched from a dock
+ * icon inherits no shell environment, so a shell-profile override is
+ * invisible unless shown). Read-only, never editable (D-U(d)).
+ */
+export interface SyncStatusResponse {
+  conflictedCopies: string[];
+  staleBackups: string[];
+  looksLikeCloud: boolean;
+  resolvedStateHome: string;
+}

@@ -18,6 +18,7 @@ import type {
   PreferencesWriteRequest,
   ProjectListEntryMessage,
   RecoveryKitResponse,
+  SyncStatusResponse,
   ToolsConnectRequest,
   ToolsConnectResponse,
   ToolsStatusEntry,
@@ -56,6 +57,7 @@ export const CHANNELS = [
   "content:pack",
   "content:export",
   "content:copy",
+  "sync:status",
   "import:list",
   "import:preview",
   "import:run",
@@ -87,6 +89,7 @@ export interface ChannelMap {
   "content:pack": { request: ContentPackRequest; response: IpcResult<ContentPackResponse> };
   "content:export": { request: ContentExportRequest; response: IpcResult<ContentExportResponse> };
   "content:copy": { request: ContentCopyRequest; response: undefined };
+  "sync:status": { request: undefined; response: SyncStatusResponse };
   "import:list": { request: ImportListRequest; response: IpcResult<ImportListResponse> };
   "import:preview": { request: ImportPreviewRequest; response: IpcResult<ImportOutcomeResponse> };
   "import:run": { request: ImportRunRequest; response: IpcResult<ImportOutcomeResponse> };

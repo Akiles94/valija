@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
+import { NavBar } from "./components/nav-bar.js";
 import { CreateVaultScreen } from "./screens/create-vault.js";
+import { DashboardScreen } from "./screens/dashboard.js";
 import { LockedScreen, type UnlockCredential } from "./screens/locked.js";
 import { MigrationConfirmScreen } from "./screens/migration-confirm.js";
 import { NoVaultScreen } from "./screens/no-vault.js";
+import { PackPreviewScreen } from "./screens/pack-preview.js";
+import { ProjectScreen } from "./screens/project.js";
 import { RecoveryKitScreen } from "./screens/recovery-kit.js";
+import { SearchScreen } from "./screens/search.js";
+import { SyncScreen } from "./screens/sync.js";
 import { getBridge } from "./state/bridge.js";
 import { I18nProvider } from "./state/i18n-context.js";
 import {
@@ -20,6 +26,7 @@ import {
   type SessionState,
 } from "./state/session-state.js";
 import { ThemeProvider } from "./state/theme-context.js";
+import { INITIAL_WORKSPACE_VIEW, type WorkspaceView } from "./state/workspace-nav.js";
 
 const bridge = getBridge();
 
@@ -143,10 +150,56 @@ function Router({
       );
 
     case "unlocked":
-      // Slice 7 builds the dashboard; a minimal placeholder until then.
-      return <div className="screen">{"unlocked"}</div>;
+      return <Workspace />;
 
     default:
       return null;
   }
+}
+
+/** Dashboard/search/sync are the nav-bar's three top-level destinations; project and pack-preview are drill-downs, reached from Dashboard, that don't get their own nav entry. */
+function Workspace() {
+  const [view, setView] = useState<WorkspaceView>(INITIAL_WORKSPACE_VIEW);
+
+  return (
+    <div className="workspace">
+      <NavBar active={view.screen} onNavigate={(screen) => setView({ screen })} />
+      {view.screen === "dashboard" && (
+        <DashboardScreen
+          bridge={bridge}
+          onSelectProject={(project) => setView({ screen: "project", project })}
+          onConnectTool={() => {
+            // Wired to the connect-tools screen in Slice 9.
+          }}
+          onImportHistory={() => {
+            // Wired to the import screen in Slice 9.
+          }}
+        />
+      )}
+      {view.screen === "project" && (
+        <ProjectScreen
+          bridge={bridge}
+          project={view.project}
+          onBack={() => setView({ screen: "dashboard" })}
+          onViewPack={(project) => setView({ screen: "pack-preview", project })}
+        />
+      )}
+      {view.screen === "search" && <SearchScreen bridge={bridge} />}
+      {view.screen === "pack-preview" && (
+        <PackPreviewScreen
+          bridge={bridge}
+          project={view.project}
+          onBack={() => setView({ screen: "project", project: view.project })}
+        />
+      )}
+      {view.screen === "sync" && (
+        <SyncScreen
+          bridge={bridge}
+          onMoveVault={() => {
+            // Wired to the relocation wizard in Slice 8.
+          }}
+        />
+      )}
+    </div>
+  );
 }
