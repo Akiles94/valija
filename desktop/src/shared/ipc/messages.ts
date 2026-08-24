@@ -300,3 +300,37 @@ export interface SyncStatusResponse {
   looksLikeCloud: boolean;
   resolvedStateHome: string;
 }
+
+/**
+ * Mirrors `src/delivery/diagnostics.ts`'s `DiagnosticCheck` — duplicated here
+ * rather than imported, matching every other wire type in this file (`shared/`
+ * stays pure of the root `src/` tree). `detail` is shown close to verbatim on
+ * the Diagnostics screen (D-T Option 3): it is the one row-level text in this
+ * app that is not run through the translation catalog, because it already is
+ * the same technical detail `valija doctor` prints today — **except** when
+ * `errorCode` is set: that means `detail` is a raw `DomainError.message`
+ * (a `VaultStatus` read failed), and the screen must localize from
+ * `errorCode` instead (D-V(d)) — the Copy report is the only place `detail`'s
+ * raw text may still surface.
+ */
+export interface DiagnosticCheckMessage {
+  name: string;
+  ok: boolean;
+  detail: string;
+  fatal?: boolean;
+  errorCode?: string;
+}
+
+export interface DiagnosticsRunResponse {
+  checks: DiagnosticCheckMessage[];
+}
+
+/**
+ * The renderer sends back the check rows it already fetched from
+ * `diagnostics:run` rather than main recomputing them — recomputing would
+ * silently re-run the disclosed keychain probe a second time on every
+ * Copy-report click (§4.6 step 26'/26'').
+ */
+export interface DiagnosticsCopyReportRequest {
+  checks: DiagnosticCheckMessage[];
+}

@@ -23,9 +23,11 @@ interface SyncData {
 export function SyncScreen({
   bridge,
   onMoveVault,
+  onCheckSetup,
 }: {
   bridge: ValijaBridge;
   onMoveVault: () => void;
+  onCheckSetup: () => void;
 }) {
   const t = useT();
   const language = useLanguage();
@@ -125,6 +127,9 @@ export function SyncScreen({
 
       <button type="button" onClick={onMoveVault}>
         {t("sync.moveVault")}
+      </button>
+      <button type="button" onClick={onCheckSetup}>
+        {t("diagnostics.title")}
       </button>
     </div>
   );
