@@ -3,6 +3,7 @@ import { CHANNELS } from "../../shared/ipc/channels.js";
 import type { AppPreferences, AppPreferencesStore } from "../application/ports/app-preferences.js";
 import type { ClipboardPort } from "../application/ports/clipboard.js";
 import type { FilePicker } from "../application/ports/file-picker.js";
+import type { NodeProbe } from "../application/ports/node-probe.js";
 
 const registeredHandlers = new Map<string, (...args: unknown[]) => unknown>();
 
@@ -34,6 +35,7 @@ function fakeDeps() {
     resolveHandle: () => undefined,
   };
   const clipboard: ClipboardPort = { writeText: () => {} };
+  const nodeProbe: NodeProbe = { check: async () => ({ nodeRunnable: true, npmRunnable: true }) };
   return {
     getContainer: () => {
       throw new Error("not needed for these tests");
@@ -44,6 +46,7 @@ function fakeDeps() {
     preferencesStore,
     filePicker,
     clipboard,
+    nodeProbe,
   };
 }
 

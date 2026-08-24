@@ -15,6 +15,7 @@ import type {
   ImportPreviewRequest,
   ImportRunRequest,
   IpcResult,
+  NodeStatusResponse,
   PreferencesWriteRequest,
   ProjectListEntryMessage,
   RecoveryKitResponse,
@@ -75,6 +76,7 @@ export const CHANNELS = [
   "import:run",
   "tools:status",
   "tools:connect",
+  "tools:nodeStatus",
   "preferences:read",
   "preferences:write",
   "dialog:chooseImportFile",
@@ -123,6 +125,7 @@ export interface ChannelMap {
   "import:run": { request: ImportRunRequest; response: IpcResult<ImportOutcomeResponse> };
   "tools:status": { request: undefined; response: ToolsStatusEntry[] };
   "tools:connect": { request: ToolsConnectRequest; response: IpcResult<ToolsConnectResponse> };
+  "tools:nodeStatus": { request: undefined; response: NodeStatusResponse };
   "preferences:read": { request: undefined; response: AppPreferencesMessage };
   "preferences:write": { request: PreferencesWriteRequest; response: undefined };
   "dialog:chooseImportFile": { request: undefined; response: DialogFileChoiceResponse | null };

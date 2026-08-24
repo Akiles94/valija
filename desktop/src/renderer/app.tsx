@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { NavBar } from "./components/nav-bar.js";
+import { ConnectToolsScreen } from "./screens/connect-tools.js";
 import { CreateVaultScreen } from "./screens/create-vault.js";
 import { DashboardScreen } from "./screens/dashboard.js";
+import { ImportScreen } from "./screens/import.js";
 import { LockedScreen, type UnlockCredential } from "./screens/locked.js";
 import { MigrationConfirmScreen } from "./screens/migration-confirm.js";
 import { NoVaultScreen } from "./screens/no-vault.js";
@@ -168,14 +170,12 @@ function Workspace({ onVaultRelocated }: { onVaultRelocated: () => void }) {
         <DashboardScreen
           bridge={bridge}
           onSelectProject={(project) => setView({ screen: "project", project })}
-          onConnectTool={() => {
-            // Wired to the connect-tools screen in Slice 9.
-          }}
-          onImportHistory={() => {
-            // Wired to the import screen in Slice 9.
-          }}
+          onConnectTool={() => setView({ screen: "connect-tools" })}
+          onImportHistory={() => setView({ screen: "import" })}
         />
       )}
+      {view.screen === "connect-tools" && <ConnectToolsScreen bridge={bridge} />}
+      {view.screen === "import" && <ImportScreen bridge={bridge} />}
       {view.screen === "project" && (
         <ProjectScreen
           bridge={bridge}
