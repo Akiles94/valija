@@ -38,6 +38,9 @@ function fakeDeps() {
     getContainer: () => {
       throw new Error("not needed for these tests");
     },
+    rebuildContainer: () => {
+      throw new Error("not needed for these tests");
+    },
     preferencesStore,
     filePicker,
     clipboard,

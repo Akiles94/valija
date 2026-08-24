@@ -13,7 +13,15 @@ export type VaultErrorCode =
   | "INVALID_GENERATION"
   | "INVALID_WRITE_STAMP"
   | "VAULT_FORK_DETECTED"
-  | "VAULT_UPGRADE_REQUIRED";
+  | "VAULT_UPGRADE_REQUIRED"
+  | "RELOCATION_DESTINATION_OCCUPIED"
+  | "RELOCATION_DESTINATION_UNUSABLE"
+  | "RELOCATION_DESTINATION_NESTED"
+  | "RELOCATION_SOURCE_UNSETTLED"
+  | "RELOCATION_COPY_FAILED"
+  | "RELOCATION_VERIFY_FAILED"
+  | "RELOCATION_ROLLBACK_FAILED"
+  | "VAULT_MUST_BE_LOCKED";
 
 /** A VAULT DomainError whose code is checked against VaultErrorCode. */
 export const vaultError = (code: VaultErrorCode, message: string): DomainError =>

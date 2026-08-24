@@ -8,6 +8,7 @@ import { createContentHandlers } from "./handlers/content-handlers.js";
 import { createDialogHandlers } from "./handlers/dialog-handlers.js";
 import { createImportHandlers } from "./handlers/import-handlers.js";
 import { createPreferencesHandlers } from "./handlers/preferences-handlers.js";
+import { createRelocationHandlers } from "./handlers/relocation-handlers.js";
 import { createSyncHandlers } from "./handlers/sync-handlers.js";
 import { createToolsHandlers } from "./handlers/tools-handlers.js";
 import { createVaultHandlers } from "./handlers/vault-handlers.js";
@@ -15,6 +16,7 @@ import { SCHEMAS } from "./schemas.js";
 
 export interface RegisterHandlersDeps {
   getContainer: () => Container;
+  rebuildContainer: (newRoot: string) => void;
   preferencesStore: AppPreferencesStore;
   filePicker: FilePicker;
   clipboard: ClipboardPort;
@@ -28,6 +30,12 @@ function buildHandlerMap(deps: RegisterHandlersDeps): Record<string, AnyHandler>
     ...createVaultHandlers(deps.getContainer),
     ...createContentHandlers(deps.getContainer, deps.filePicker, deps.clipboard),
     ...createSyncHandlers(deps.getContainer),
+    ...createRelocationHandlers(
+      deps.getContainer,
+      deps.rebuildContainer,
+      deps.preferencesStore,
+      deps.filePicker,
+    ),
     ...createImportHandlers(deps.getContainer, deps.filePicker),
     ...createToolsHandlers(deps.getContainer),
     ...createPreferencesHandlers(deps.preferencesStore),

@@ -27,16 +27,15 @@ if (!gotLock) {
 
     let container: Container = buildContainer(vaultRoot === undefined ? {} : { vaultRoot });
     const getContainer = (): Container => container;
-    /** Called after a successful relocation (Slice 8) to point every handler at the new root. */
+    /** Called after a successful relocation to point every handler at the new root. */
     const rebuildContainer = (newRoot: string): void => {
       container = buildContainer({ vaultRoot: newRoot });
     };
-    void rebuildContainer; // wired to relocation-handlers.ts in Slice 8
 
     const filePicker = new ElectronFilePicker();
     const clipboard = new ElectronClipboard();
 
-    registerHandlers({ getContainer, preferencesStore, filePicker, clipboard });
+    registerHandlers({ getContainer, rebuildContainer, preferencesStore, filePicker, clipboard });
 
     const preload = preloadFile(join(import.meta.dirname, "../preload"));
     const rendererUrl =
