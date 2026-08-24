@@ -1,0 +1,43 @@
+appId: com.valija.app
+productName: Valija
+
+directories:
+  output: release
+  buildResources: assets
+
+files:
+  - out/**/*
+
+asarUnpack:
+  - "node_modules/better-sqlite3-multiple-ciphers/**/*"
+  - "node_modules/argon2/**/*"
+  - "node_modules/@napi-rs/keyring/**/*"
+
+npmRebuild: true
+
+mac:
+  target:
+    - dmg
+    - zip
+  arch:
+    - arm64
+    - x64
+  certificateFile: null
+  certificatePassword: null
+  signingIdentity: null
+
+win:
+  target:
+    - nsis
+  arch:
+    - x64
+
+linux:
+  target:
+    - AppImage
+  arch:
+    - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

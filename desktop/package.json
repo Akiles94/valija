@@ -1,0 +1,41 @@
+{
+  "private": true,
+  "name": "valija-desktop",
+  "version": "0.3.0",
+  "type": "module",
+  "description": "Desktop companion app for Valija context vault",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "package": "electron-builder",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "better-sqlite3-multiple-ciphers": "^12.11.1",
+    "argon2": "^0.44.0",
+    "@napi-rs/keyring": "^1.3.0",
+    "ulid": "^3.0.2",
+    "zod": "^4.4.3",
+    "fflate": "^0.8.3"
+  },
+  "devDependencies": {
+    "electron": "^34.0.0",
+    "electron-vite": "^2.5.0",
+    "electron-builder": "^25.1.1",
+    "vite": "^6.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10",
+    "@electron/rebuild": "^3.8.0"
+  }
+}

@@ -1,0 +1,37 @@
+name: Desktop
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "desktop/**"
+      - ".github/workflows/desktop.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "desktop/**"
+      - ".github/workflows/desktop.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - run: npm --prefix desktop ci
+
+      - run: npm --prefix desktop run typecheck
+
+      - run: npm --prefix desktop run lint
+
+      - run: npm --prefix desktop run test
+
+      - run: npm --prefix desktop run build
