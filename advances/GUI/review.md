@@ -1,70 +1,58 @@
-Verdict: PASS
+Verdict: FAIL
 
-# GUI · Slice 11 — The welcome tour, the Settings screen, and the shell they need — Review
+# GUI · Slice 12 — Documentation, `docs/SPEC.md` corrections, and the bilingual screenshots — Review
 
-**Branch:** `feat/desktop-GUI` · **Commits:** `8cc7f01` + `200f432` (reviewed together as one slice) ·
-**Base:** `ad85718` (Slice 10, merged and reviewed) · **Plan:** third revision,
-`Approved: Oscar 2026-08-25`.
-**Reviewed:** the diff `ad85718..200f432` read in full, independently of either commit message. Both
-suites run by hand, not taken on trust. This is the **second pass**; it re-derives every finding
-rather than accepting the fix-up commit's account of itself.
+**Branch:** `feat/desktop-GUI` · **Commit:** `522a952` · **Base:** `200f432` (Slice 11, reviewed
+`Verdict: PASS`) · **Plan:** third revision, `Approved: Oscar 2026-08-25`.
+**Reviewed:** the diff `200f432..522a952` read in full, then every load-bearing claim in
+`docs/gui.md` and `specs/desktop.md` re-derived against the actual `desktop/src` tree, the i18n
+catalogs and `src/delivery/diagnostics.ts` — not against the commit message, which asserts several
+things the files do not. Both suites run by hand.
 
-The three blockers from the first pass are genuinely closed, and each was verified the same way it
-was raised — by tracing, not by reading the claim:
-
-- **C1** the cascade was traced by hand, element by element. `base.css:32-35`'s `[data-theme]` rule
-  paints on the attribute itself, so the recovery kit's nested `data-theme="dark"` now computes its
-  **own** `color`/`background` from the dark set and its descendants inherit *that* computed colour.
-  The raw key goes from ≈1.05:1 to ≈13:1; §8.17's clipboard warning from ≈1.7:1 to legible amber on
-  dark. **Closed.**
-- **C2** `relocationFinished` (`app.tsx:117-123`) resets the view *and* locks, and it is wired end to
-  end (`app.tsx:157` → `Router`'s `onVaultRelocated` prop `:175,185` → `:261` → `Workspace` `:280` →
-  `RelocateVaultScreen onDone` `:328`). I grepped every path back into `unlocked` and every `onDone`
-  call site in the wizard: there is exactly one, and it is covered. **Closed.**
-- **C3** `state/overlay-nav.ts` + `state/preferences-write.ts` (+ `workspace-nav.ts`) are plain-TS
-  modules with 122 lines of headless tests, running under the default `node` environment;
-  `__dom-tests__/` was **not** touched and still holds exactly the two P-D5 screens. The
-  `{header}`-count assertion is a real strengthening, not a re-worded grep. **Closed.**
-
-What remains are three warnings and six suggestions, none of which touches a hard gate.
+This is a documentation-only slice, so **accuracy is the deliverable**. The verdict turns entirely
+on that: four `refined.md` §9 criteria this slice owns are not met, and one new spec document
+miscounts the closed surface it exists to pin. Nothing here is a security regression, nothing is
+untested code, and the parts that are right — the Settings section, the clipboard inventory, the
+Diagnostics/Connect vocabulary note, the four `SPEC.md` edits' placement — are right in a way that
+survived line-by-line checking against the code.
 
 ---
 
-## 1. Acceptance criteria (`refined.md` §9, "Onboarding tour and Settings" 1768–1792, "Language"
-1794–1799, plus D-Q's theme criterion at §4.8 step 38)
+## 1. Acceptance criteria (`refined.md` §9, the lines this slice owns)
 
-| # | Criterion | Verdict | Evidence |
+| # | Criterion (§9 line) | Verdict | Evidence |
 |---|---|---|---|
-| 1 | Tour shown automatically **exactly once per installation**, first time this installation reaches the dashboard, on **both** branches, **driven in tests by the persisted flag** | **Met** | `overlay-nav.ts:23-31` is branch-agnostic by construction — the entry branch is not a parameter — and `app.tsx:87-90` is its only caller. The criterion's own clause is now satisfied: `overlay-nav.test.ts:24-41` drives all four cases from `PREFS(tourSeen)` alone (locked → no tour; unlocked + `false` → tour; unlocked + `true` → no tour; an overlay already open is never interrupted) |
-| 2 | **Skip** on every slide, sets the seen-flag, returns the user where the tour interrupted them; dots, **Back**, **Next**, **Get started** behave | **Met** | `onboarding.tsx:52-63`: Skip renders unconditionally, Back is suppressed on slide 1 via `previousSlide`, Get started replaces Next on the last slide, four dots at `:44-48`. Both exits route to `onDone` → `finishTour`, which writes through `tourSeenWrite` (`preferences-write.ts:19-22`, tested at `preferences-write.test.ts:39-46`). "Returns the user where they were" is now the module's `returnTo` field, tested both ways (`overlay-nav.test.ts:44-54`) |
-| 3 | Seen-flag is **per installation, not per vault** | **Met** | `tourSeenWrite` emits exactly `{theme, language, tourSeen}` and `preferences-handlers.ts:14` merges over the device-local file; no vault id is involved anywhere |
-| 4 | Tour opens **no vault session**, reads no vault content, no network, does not touch the idle-lock clock, writes nothing but its boolean | **Met** | `onboarding.tsx:1-8` imports only the policy, a type and `useT`; `onboarding-settings.no-session.test.ts:26-28` asserts the absence of a `state/bridge.js` import structurally. `no-network-surface.test.ts` covers the file, and now the stylesheets too |
-| 5 | Tour **never appears before the recovery-kit acknowledgement**; four slides satisfy D-U(c)'s three guardrails **in both languages** | **Met** | Two independent guards: `overlay-nav.ts:29` refuses any phase but `unlocked` (so `kit-pending` can never open it), and `app.tsx:129,131` additionally gate on `canNavigateAwayFrom(state)`; `Router` returns the kit before the switch (`:189-199`). Copy re-read line by line in both catalogs: slide 2 *"not from this window"* / *"no desde esta ventana"*; slide 3 *browse/search/carry* — *"Explora, busca y llévalo contigo"*, no curation verb; slide 4 *"There is no password reset"* / *"No existe un restablecimiento de contraseña"*, no marketing adjective |
-| 6 | **Show the welcome tour again** replays the same slides, any number of times, and **changes no other state** | **Met** | `settings.tsx:111-113` → `onReplayTour` → `replayTourFromSettings()` (`app.tsx:137`), same component, unbounded. "Changes no other state" is now literally true: `finishTour` (`app.tsx:107-115`) skips the write entirely when `shouldPlayTour(prefs)` is false, and `finishTourOverlay` returns the user to Settings (`overlay-nav.ts:43-45`, `overlay-nav.test.ts:50-53`) |
-| 7 | Settings reachable **while the vault is locked**; opening it opens no session and touches no vault file | **Met** | Gear at `locked.tsx:65-70`; the overlay lives above the phase switch (`app.tsx:131`) exactly as P-D15 requires; `canNavigateAwayFrom` is true for `locked` (`session-state.ts:70-72`); `onboarding-settings.no-session.test.ts:30-32` asserts no bridge import |
-| 8 | Settings contains **exactly the four sections D-U names**; Vault & sync **navigates to the existing** Diagnostics screen and relocation wizard; **no editable field** for `VALIJA_HOME` / `VALIJA_STATE_HOME` / `VALIJA_AUTOLOCK_MINUTES` | **Met (narrowing now disclosed)** | Four `<section>`s at `settings.tsx:41,62,83,109` and no fifth; the two buttons set an existing `WorkspaceView` (`app.tsx:138-145`); the only inputs are six radios bound to `theme` and `language`. The locked-state narrowing is unchanged in behaviour but is no longer silent — see W3 |
-| 9 | Settings offers no path to destroying, re-keying or re-initializing a vault | **Met** | No such callback exists in the component's props, and the no-bridge-import scan makes it structurally impossible for the screen to reach one |
-| 10 | Switching language applies **live** — no restart, no re-unlock | **Met** | `updatePreferences` (`app.tsx:95-98`) writes then re-reads and replaces `App`'s `preferences`; `I18nProvider`'s memo is keyed on `preferences.language` (`i18n-context.tsx:28-32`), so every `t()` consumer re-renders. The vault session is untouched. `preferences-write.test.ts:29-35` pins the merge that makes it safe |
-| 11 | Both catalogs have identical key sets; no hardcoded user-facing string in a component | **Met** | Three keys added to each of `en.ts` / `es.ts`; `catalogs.test.ts` walks both directions and is green. Every string in `onboarding.tsx` / `settings.tsx` goes through `t()` |
-| 12 | **The window re-themes immediately** on an Appearance change, and the recovery-kit screen stays permanently high-contrast dark (§4.8 step 38, D-Q) | **Met** | First half: `ThemedRoot` (`app.tsx:57-64`) sets `data-theme` from `useTheme()`; `theme-context.tsx:16-18` recomputes on every `preferences` change; `tokens.css` rebinds the custom properties. Second half, traced by hand: `[data-theme] {background; color}` (`base.css:32-35`) applies to the recovery kit's own div (`recovery-kit.tsx:51`), which also matches `[data-theme="dark"]`, so `var(--color-bg)`/`var(--color-text)` resolve **against its own** declarations → `#17181c` / `#f2f2f3`; descendants inherit that computed colour, `.kit-text`'s `var(--color-surface)` resolves to `#1f2126`, `.warning` to `#f5c451` on dark. `.recovery-kit {min-height:100vh}` (`screens.css:29-31`) makes it fill the window vertically. Cosmetic remainder in W1 |
-| 13 | The app-preferences file still contains exactly four keys (§8.4) | **Met** | Every renderer write now funnels through `mergePreferencesWrite` (`preferences-write.ts:11-16`), which drops `vaultPath` by construction and is tested for it (`preferences-write.test.ts:14-21`); `preferences-handlers.ts:14` carries `vaultPath` forward. §8.6 holds: no path originates in the renderer |
+| 1 | `SPEC.md` §1's "one binary surface" sentence corrected (1603) | **Met** | `docs/SPEC.md:12-16` — names `desktop/`, links `docs/gui.md` and `advances/GUI/`, states it adds no MCP tool, no CLI command, no published-package change |
+| 2 | `SPEC.md` §2's "GUI … → later" Out line split; **no milestone number** (1603, 1606) | **Met** | `docs/SPEC.md:32-33` — backup/restore keeps "later"; `~~GUI~~ — **shipped**` with both links and the explicit "No milestone number is assigned", matching the existing Mobile-client idiom two lines down |
+| 3 | `SPEC.md` §10a's "import is CLI-only" corrected (1603) | **Met** | `docs/SPEC.md:186` — verbatim what plan item 93 specifies: *"No new MCP tool or argument — **import has no MCP surface**; it is available from the CLI and the desktop app."* No other sentence in that paragraph moved |
+| 4 | **D11** gains the preferences sentence: UI preferences + location hint, not configuration, `VALIJA_HOME` always precedes — **and notes that relocation also records the vault path in connected clients' MCP configuration** (1603–1606) | **Not met** | `docs/SPEC.md:66` carries the first three clauses exactly. The fourth — relocation writing the vault path into connected clients' `mcpServers.valija` entries — is **absent**. Plan item 93 dropped that half of the criterion; the spec wins. See **C3** |
+| 5 | GUI docs state `mcp` is the one deliberately absent CLI surface (1610–1611) | **Met** | `docs/gui.md:293-295` — *"the server your AI tools talk to is the same separate process `npx -y valija mcp` always was; this app never embeds one"* |
+| 6 | Behind-schema behaviour documented (1635–1637) | **Met** | `docs/gui.md:118-121` — names the ciphertext backup, the confirmation, and that a fresh vault never sees it. Matches `migration-confirm.tsx` and the `vault:upgradeCheck` channel |
+| 7 | GUI docs explain the CLI is **not** re-pointed and does not read the app's preferences (1763–1764) | **Met** | `docs/gui.md:202-211`, including the literal `export VALIJA_HOME="…"` line and the copy action, matching `relocate-vault.tsx:92` |
+| 8 | GUI docs state Settings has no CLI counterpart, and why (1792) | **Met** | `docs/gui.md:229-234`. Checked against `settings.tsx` line by line: four sections and no fifth (`:41,62,83,109`), radios only, no destroy/re-key path |
+| 9 | The docs record that `docs/` itself stays English (1821) | **Met** | `docs/gui.md:257-258` — states it for `docs/` **and** `specs/`, unhedged |
+| 10 | Every clipboard affordance named individually (§8.7; §6 In 18) | **Met** | `docs/gui.md:275-280` names exactly five. Cross-checked against every call site in the tree: `recovery-kit.tsx:43`, `pack-preview.tsx:47`, `relocate-vault.tsx:92`, `connect-tools.tsx:47`, `diagnostics.tsx:87`. No sixth exists; none is missing |
+| 11 | GUI docs state the **Node/npm prerequisite** for connected AI tools (D-W) and that this advance does not remove it (1702–1704, 1857–1858; §6 In 18) | **Not met** | `grep -i "node\|npm" docs/gui.md` returns five hits: two `npm` lines inside the build recipe (`:66-67`), the Diagnostics check list (`:162`), the Node-probe disclosure (`:166-167`), and the `npx -y valija mcp` aside (`:294`). The **Connecting your AI tools** section (`:136-144`) says nothing about Node at all — not that it is required, not that the app doesn't provide it, not that the Connect screen warns when it's missing (which `tools-handlers.ts:78` and `connect-tools.tsx` actually implement). See **C1** |
+| 12 | First-launch friction documented per OS **in the OS's own words**, with the exact bypass (1854–1856) | **Met** | `docs/gui.md:31-57` — Gatekeeper's sentence verbatim, right-click → Open → Open, the `xattr -d com.apple.quarantine` equivalent; SmartScreen's *"Windows protected your PC"* → More info → Run anyway; `chmod +x` for the AppImage |
+| 13 | …plus the run-from-source alternative, **verified, not assumed** (1854–1856) | **Not met** | `docs/gui.md:59` titles the section *"(verified, not assumed)"* and `:70-71` claims *"This runs the exact same code the packaged builds ship"*. `spike.md:35-66` records the opposite: `better-sqlite3-multiple-ciphers` **fails to load under Electron** (`NODE_MODULE_VERSION 127` vs `148`) and `electron-rebuild` is blocked by egress policy in this container. Neither `desktop/package.json` (no `postinstall`) nor `.github/workflows/desktop.yml` runs a rebuild, so the four documented commands produce an app that cannot open a vault. See **C2** |
+| 14 | GUI docs state what the GUI deliberately does not do **and where those live** (1859–1861) | **Partially met** | `docs/gui.md:284-300` covers curation, fork resolution, destruction, running an MCP server, provider artifacts, environment-resolved config, third language — seven of the eight named items (re-pointing the CLI is covered at `:202-211` instead). But no bullet says *where* any of them lives (no future-advance reference anywhere), and the provider-artifact bullet describes the wrong thing entirely. See **W3** |
+| 15 | The environment gap stated honestly — dock-launched app inherits no shell environment, including the `VALIJA_STATE_HOME` device-identity consequence (plan item 92, §5 A6) | **Met** | `docs/gui.md:302-309`, naming all three variables and the device-identity consequence, and pointing at the Sync panel — which does display `sync.stateHome` (`sync.tsx:117-120`, `sync-handlers.ts:19`) |
+| 16 | macOS keychain-ACL answer appears in the GUI docs, with the exact version (1662–1664) | **Open at advance level, honestly flagged here** | `docs/gui.md:262-271` states plainly that it is **not yet verified on real hardware** and why CI cannot answer it. That is D-H's human gate (Slice 1), not a Slice 12 regression — but the criterion remains unclosed for the advance |
+| 17 | Screenshots and docs use only the golden fixture, in both languages (1838–1839; plan item 96) | **Deferred, honestly** | `docs/gui.md:313-321` + `spike.md:248-266`. Not fabricated, not silently dropped, reason traced to a confirmed egress denial. Correctly a human gate to schedule, per plan §5 A13 — but the criterion is not met by this slice |
+| 18 | Suites still green, no production code moved (Slice 12 "Done when", plan:1027-1031) | **Met** | `git show 522a952 --stat`: seven files, **all `.md`**. No `.ts`, `.tsx`, `.css`, `package.json`, lockfile or config. Root **57 files / 301 tests**, desktop **44 files / 623 tests**, both green, typecheck and lint clean in both trees — counts identical to Slice 11's second pass |
 
-### Plan items (`plan.md:844-950`)
+### Plan items (`plan.md:954-1031`)
 
 | Item | Verdict | Evidence |
 |---|---|---|
-| 84 — `onboarding.tsx` renders from `policies/onboarding-tour.ts`'s slide list; opens no session, writes nothing itself | **Met** | `onboarding.tsx:2-7` (P-D14's sanctioned import); the component holds only `useState<SlideId>` |
-| 85 — the four slides' copy guardrails, reviewed as content | **Met** | See criterion 5. Read in both languages, line by line, including a search for `organiza / edita / fija / elimina / etiqueta` — none present |
-| 86 — **the ordering invariant, with the test that drives it from the persisted flag** | **Met** | The invariant is doubly enforced (criterion 5) and `overlay-nav.test.ts:24-41` is the test the item asks for, driven by `PREFS(tourSeen)` and nothing else. See S3 for the one case worth adding |
-| 87 — `settings.tsx`, four sections, live language, Vault & sync links to the existing screens (P-D12) | **Met** | See criterion 8; P-D12 followed exactly — no read-only environment block is duplicated |
-| 88 — "what Settings is not", **asserted by tests** | **Met (structurally)** | The no-bridge-import scan is stronger than it looks: a screen that cannot reach IPC cannot re-key, destroy or re-initialize anything, and cannot persist an environment override. The literal "no `VALIJA_HOME` field" assertion is still absent — S4 |
-| 89 — the gear reaches the locked screen | **Met** | `locked.tsx:65-70`, plus `nav-bar.tsx:38-40` for every workspace screen |
-| 89a — Diagnostics gains its dashboard entry point; header in **every** branch; exactly one `<DiagnosticsScreen` mount; two catalog keys | **Met** | `dashboard.tsx:58-66` builds `header` once and all four returns render it (`:70,79,88,104`); `diagnostics-entry-points.test.ts:27-35` now counts `{header}` occurrences and requires exactly 4, which is the item's distinguishing requirement made mechanical. `app.tsx:295` / `:138-141` wire both callbacks to the single mount at `:323` |
-| 89b — `tokens.css` / `base.css` / `screens.css`; theme applied once on the shell root; `no-network-surface.test.ts` glob extended to `.css` | **Met** | Files exist, imported from `app-main.tsx:3-5`, P-D6 system font stack with no `@font-face`; `app.theme.test.ts` pins the single application point and the kit's hardcoded `dark`; the glob change (`no-network-surface.test.ts:21-33`) is correct and green over the three stylesheets. `.sr-only` is now defined (`base.css:129-138`), closing the first pass's W3 |
-| 90 — five named tests | **Met (four of five directly, one by mechanism)** | (1) auto-play driven by the flag — `overlay-nav.test.ts:24-41`; (2) Skip sets the flag and returns the user where they were — `:44-53` + `preferences-write.test.ts:39-46`; (3) replay changes nothing else — `finishTourOverlay` + the `shouldPlayTour` write guard; (4) no idle-clock effect — the no-bridge-import scan; (5) live language — `preferences-write.test.ts:29-35` pins the merge, `i18n-context.tsx`'s key does the rest, but nothing asserts the re-render itself, which P-D5 forbids testing in a DOM. See S5 |
-| P-D15 — overlays in `app.tsx`, guarded by `canNavigateAwayFrom` | **Met** | `app.tsx:71,129-146`, with the decision itself extracted to `overlay-nav.ts` |
-| P-D11 — source-scan test rather than a third jsdom screen | **Met** | `diagnostics-entry-points.test.ts` in the named idiom; `__dom-tests__/` still holds exactly `recovery-kit.dom.test.tsx` and `relocate-vault.dom.test.tsx`, and no new `@vitest-environment jsdom` pragma appears anywhere in the diff (checked by grepping added lines) |
-| P-D20 — `.css` in the glob | **Met** | `no-network-surface.test.ts:21-33` |
+| 91 — `docs/gui.md`, non-technical reader, the full topic list | **Met with three gaps** | Everything in the list is present except the Node/npm prerequisite (C1); the run-from-source path is present but falsely labelled verified (C2); "where those live" is missing from the deliberately-does-not-do list (W3). The checksum table carries the literal `pending — filled by Slice 13's tagged build` four times, greppable exactly as Slice 13's Done-when expects (`docs/gui.md:22-25`) |
+| 91 sub-bullet — one sentence closing Slice 10's W1: the diagnostics **`detail` column** stays English, a **fourth** verbatim-English surface | **Not met as specified** | The docs say **five** (`:242-255`), reaching five by splitting the Copy report from "one row's detail text" and adding a fifth item that contradicts the code. `diagnostic-detail.ts:15` localizes any `errorCode`-bearing detail **on screen**; `src/delivery/diagnostics.ts:18-25` says the same. And it is the whole `detail` column, not "one row's" — every doctor check's `detail` is an English literal (`diagnostics.ts:32,43,55,68,86,110,131,148,166`). See **W1** |
+| 91 sub-bullet — one sentence closing Slice 10's W3's second half (Diagnostics vs Connect vocabulary) | **Met, and accurate** | `docs/gui.md:172-177`. Verified in both directions: `tools-handlers.ts:76-80` sets `connected` only when `mcpServers.valija.env.VALIJA_HOME` exists, while `diagnostics.ts:165-170` reports `ok` on the entry's mere presence, and `diagnostic-rows.ts:81-83` then renders *"Points at the default location (~/.valija)"* (`en.ts:193`). The docs' description of the mismatch is exactly right |
+| 92 — the environment gap | **Met** | See criterion 15 |
+| 93 — the four `SPEC.md` corrections | **Three of four met** | See criteria 1–4. The full `docs/SPEC.md` diff is 9 insertions / 4 deletions across four hunks; I read all four in context — no adjacent sentence's meaning shifted, and §2's Out list keeps its existing strikethrough-plus-resolution idiom |
+| 94 — `specs/desktop.md` + a `specs/README.md` row | **Met with one factual error** | The row and the "not a `src/` module" note land at `specs/README.md:17,32`. The document itself is accurate on preferences (`app-preferences.ts:9-30`, `file-app-preferences-store.ts:19-53`, `preferences-handlers.ts:13-15`), `resolveVaultRoot` (`vault-location.ts:11-15`, quoted character-for-character), the tour policy (`onboarding-tour.ts:3-29`), `overlay-nav.ts`, `workspace-nav.ts`, and every test it names (`register-handlers.test.ts:61` asserts set equality; `schemas.test.ts:72-83` is the path-shaped-field scan; `no-network-surface.test.ts:10-25` includes `setInterval` and `.css`). But **"27 channels"** is wrong — `channels.ts:53-83` has **29**, and the document's own table lists 29. See **C4** |
+| 96 — bilingual screenshots | **Deferred** | See criterion 17 |
+| 97 — `CHANGELOG.md` `[Unreleased]` entry | **Met with one omission** | `CHANGELOG.md:9-28`. Every technical claim verified against the tree (`src/delivery/context-pack-export.ts`, `src/delivery/diagnostics.ts`, `check-vault-upgrade.use-case.ts`, `relocate-vault.use-case.ts` all exist and behave as described). The item's fourth requirement — "the corrected contract lines" — is not mentioned. See **W6** |
 
 ---
 
@@ -72,27 +60,32 @@ What remains are three warnings and six suggestions, none of which touches a har
 
 | Gate | Result |
 |---|---|
-| Security surface | **Clean.** No secret, key or passphrase is logged, written or newly crossed over IPC; no `console.*` in any new file (added lines grepped for `console.`, `passphrase`, `secret`, `fetch(`, `http`, `localStorage` — the only hits are the words "key" in `Record` keys and prose). Key derivation, keychain use and SQLCipher keying are untouched: **no file under the repo's `src/` is modified at all**, no IPC channel, no zod schema, no preload method. Every renderer write goes through `mergePreferencesWrite`, which cannot emit `vaultPath` (§8.6), and `preferences-handlers.ts` carries it forward. CSP (`windows/main-window.ts:4-13`) unchanged and already permitted `style-src 'self' 'unsafe-inline'`. No MCP change. **The one security-copy consequence of the first pass is repaired**: §8.17's clipboard warning and the one-time raw key are now high-contrast on the kit's own dark subtree |
-| Tests for new behaviour, suite green | **Met.** Root **57 files / 301 tests**, desktop **44 files / 623 tests** — both counts exactly as claimed, both green, typecheck and lint clean in both trees, all six commands run by hand. Nothing is skipped, `.todo`'d or `xit`'d (grepped; the single "skip" hit in the tree is an `import-handlers` fixture field named `skipped`). The three previously-missing test items are now real headless unit tests over pure modules. One residual, judged below the gate rather than at it — W2 |
-| Advance ritual | **Met.** `refined.md:3` `Approved: Oscar 2026-08-20` (Gate R closed); `plan.md:3` `Approved: Oscar 2026-08-25` (third revision, Gate P re-closed); this `review.md` closes the trail. No `package.json`, lockfile, `electron.vite.config.ts` or `electron-builder.yml` edit in the diff |
-| Conventions, naming, placement | **Met.** `screens/onboarding.tsx`, `screens/settings.tsx`, `renderer/styles/{tokens,base,screens}.css` and the two source-scan tests land where `plan.md` §9's approved tree puts them. The first pass's one placement objection is resolved: the overlay decision and the preferences-write narrowing now live in `renderer/state/` as plain-TS modules beside `session-state.ts` / `workspace-nav.ts` / `unlock-outcome.ts`, which is what `plan.md:1898` ("plain TS view state … all `.test.ts`'d"), `plan.md:1411` and `refined.md:489-492` require. `overlay-nav.ts` names itself after `workspace-nav.ts`; `preferences-write.ts` sits with the other derivation modules. `renderer/` is not a `domain/application/infra` layer root, so `app.theme.test.ts` beside `app.tsx` is not a bare-file breach, and it follows the `no-network-surface.test.ts` idiom. The renderer → `main/application/policies` imports (`shouldPlayTour`, `markTourSeen`, `resolveTheme`, `resolveSystemOrOverride`) are P-D14's confirmed shape |
+| Security surface | **Clean.** Seven `.md` files. No secret, key or passphrase appears anywhere in the diff; no plaintext is written to disk by anything this slice adds; key derivation, keychain use and SQLCipher keying are untouched (no `src/` or `desktop/src/` file modified at all); no IPC channel, schema, preload method or MCP tool changed. The one OS-level instruction added (`xattr -d com.apple.quarantine`, `docs/gui.md:42`) is exactly what `refined.md` §4.1 step 1 requires the docs to print, framed correctly as a Gatekeeper bypass for an unsigned build rather than as a routine step. The checksum table teaches verification before running (`:17-18`) |
+| Tests for new behaviour, suite green | **Met.** No behaviour is added, so no test is owed. Run by hand in both trees: root `typecheck` clean, `lint` clean (one pre-existing biome-migrate info), `test` **57 files / 301 tests** green; desktop `typecheck` clean, `lint` clean over 124 files, `test` **44 files / 623 tests** green. Both counts identical to Slice 11's second pass, which is exactly what this slice's Done-when demands |
+| Advance ritual | **Met.** `refined.md:3` `Approved: Oscar 2026-08-20` (Gate R closed, fifth revision); `plan.md:3` `Approved: Oscar 2026-08-25` (third revision, Gate P re-closed); this `review.md` closes the trail. One bookkeeping oddity, not a breach: `522a952` also carries the Slice 11 second-pass `review.md` (209/−253), i.e. the reviewer's file was swept into the implementer's next commit rather than committed with Slice 11's fix-up. Verdict, content and authorship are unaffected |
+| Conventions, naming, placement | **Met.** No code file is added, so no layer-root or kind-folder rule is at stake. `docs/gui.md` sits beside `docs/sync.md` / `docs/vault-format.md`; `specs/desktop.md` sits beside the four module specs with its `specs/README.md` row and an explicit note explaining why it is the one spec without a `src/` module. `specs/desktop.md`'s own description of the desktop tree matches the tree: kind-named folders throughout (`application/policies`, `application/ports`, `application/services`, `infra`, `ipc/handlers`, `renderer/state`, `renderer/screens`, `shared/i18n/catalogs`), tech-named adapters (`FileAppPreferencesStore`, `ElectronClipboard`, `ChildProcessNodeProbe`, `OsKeychain`). One placement opinion the new spec now blesses is raised as **S8**, not as a breach |
 
-**No gate breached.**
+**No gate is breached.** The FAIL is on §9 criteria 4, 11 and 13, plus the factual error in the new
+spec (C4) — all in the one artifact this slice exists to produce.
 
 ---
 
-## 3. Line count (`desktop/src` only; `advances/**` excluded)
+## 3. Line count (`advances/GUI/review.md` excluded)
 
 | | Lines |
 |---|---|
-| Production — `settings.tsx` 121 · `base.css` 139 · `app.tsx` +139/−19 · `screens.css` 89 · `onboarding.tsx` 66 · `overlay-nav.ts` 49 · `tokens.css` 33 · `preferences-write.ts` 22 · `dashboard.tsx` +17/−4 · `workspace-nav.ts` +10 · `diagnostic-rows.ts` +9 · `locked.tsx` +8 · `nav-bar.tsx` +6/−1 · `diagnostics.tsx` +5/−1 · `app-main.tsx` +3 · catalogs +8 | **724 added / 25 removed** |
-| Of which CSS | 261 (budget was ~320 — `plan.md:1640`) |
-| Tests — `overlay-nav.test.ts` 66 · `diagnostics-entry-points.test.ts` 50 · `preferences-write.test.ts` 47 · `onboarding-settings.no-session.test.ts` 33 · `app.theme.test.ts` 27 · `workspace-nav.test.ts` 9 · glob edit 7 | **239 added / 1 removed** |
-| Test : production ratio | **0.33** overall; **0.52** against the 463 non-CSS production lines (was 0.19) |
+| `docs/gui.md` (new) | 321 |
+| `specs/desktop.md` (new) | 142 |
+| `advances/GUI/spike.md` | +29 |
+| `CHANGELOG.md` | +20 |
+| `docs/SPEC.md` | +9 / −4 |
+| `specs/README.md` | +3 |
+| **Total (excluding `review.md`)** | **524 added / 4 removed** |
+| Production code | **0** — no `.ts`, `.tsx`, `.css`, config or lockfile line touched |
 
-Proportionate. The two new screens are still the right size (66 and 121 lines, one render each), the
-three extracted state modules are 81 lines carrying 122 lines of tests, and no file in the diff is
-oversized.
+Against `plan.md:1654-1660`'s estimate of ≈630 documentation lines for this slice: under budget, and
+the shortfall is visible in the two thinnest sections (Import at 8 lines, Connect at 9) — which is
+where C1 and S10 land.
 
 ---
 
@@ -100,164 +93,239 @@ oversized.
 
 ### Critical
 
-**None.** C1, C2 and C3 are closed; the verification is in §5.
+**C1 — `docs/gui.md` never states the Node/npm prerequisite (D-W).** Three separate places in the
+spec require it: §9's Connect bullet (*"it warns without blocking, and the GUI docs state the
+prerequisite"*, 1702–1704), §9's Packaging-and-docs bullet (*"The GUI docs state the Node/npm
+prerequisite for connected AI tools (D-W) and that this advance does not remove it"*, 1857–1858),
+and §6 In item 18, which lists it in bold inside the docs deliverable. The **Connecting your AI
+tools** section (`docs/gui.md:136-144`) — the one place a reader deciding whether to click
+**Connect** will look — does not mention Node once. The nearest thing in the file is the Diagnostics
+row (`:166-167`) and an aside inside the does-not-do list (`:294`), and neither tells the reader that
+the connection they just made will silently fail without a Node runtime the app does not provide.
+This is the exact silent-failure mode `refined.md` §3 fact 6 and D-W exist to prevent, and the app
+already implements the warning (`tools:nodeStatus`, `connect-tools.tsx`) — only the docs half is
+missing. **Fix:** two sentences in the Connect section saying that connected tools launch valija
+through `npx -y valija mcp`, that this needs Node and npm installed on the machine, that Valija does
+not bundle them, and that the Connect screen warns (without blocking) when they aren't runnable.
 
-### Warning (does not by itself hold the merge)
+**C2 — the run-from-source path is labelled "(verified, not assumed)" and is neither.**
+`docs/gui.md:59-71` gives `git clone` → `cd valija/desktop` → `npm ci` → `npm run dev` and asserts
+*"This runs the exact same code the packaged builds ship."* `spike.md:35-66` — this advance's own
+record — says `better-sqlite3-multiple-ciphers` **fails to load under Electron** without
+`@electron/rebuild` (`NODE_MODULE_VERSION 127` vs `148`, confirmed by running it, not predicted), and
+that the rebuild could not be completed in this container. There is no `postinstall` in
+`desktop/package.json` and no rebuild step in `.github/workflows/desktop.yml`, so nothing performs it
+implicitly. A reader following these four commands gets a window that cannot open a vault. §9's
+criterion is specifically *"the run-from-source path is verified, not assumed"* (1854–1856), and
+`plan.md:1282` assigns it to this slice. This is also the one place the slice's otherwise-exemplary
+honesty (see §5) inverts: the checksums and the screenshots are flagged as gaps in the same file
+where this one is asserted as done. **Fix:** either add the `npx electron-rebuild -f -w
+better-sqlite3-multiple-ciphers` step and drop the "verified" claim to what was actually verified, or
+mark the section as unverified with the same wording the screenshots section uses and carry the
+verification into Slice 13 alongside the packaged-artifact checks.
 
-**W1 — the recovery kit is now a dark 720px column on a light 1100px window, not a dark screen.**
-The contrast defect is genuinely fixed, which is what mattered, but D-Q's wording is *"the
-recovery-kit screen stays permanently high-contrast dark"* and only the content column is. The div
-that carries `data-theme="dark"` is the same div that carries `.screen`
-(`recovery-kit.tsx:51`), and `.screen` is `max-width: 720px; margin: 0 auto` (`base.css:41-45`); the
-window defaults to 1100×720 (`windows/main-window.ts:16-17`), so in **light** theme the exempt screen
-renders with ~190px of white gutter on each side. Harmless for legibility, wrong for a screen whose
-whole point is to look unmistakably different, and Slice 12 photographs it. Two-line fix: split the
-wrapper so the attribute is on a full-bleed element —
-`<div className="recovery-kit" data-theme="dark"><div className="screen">…</div></div>` — and drop
-`recovery-kit` from the `.screen` class list. Not charged against criterion 12 because the fix
-shipped is precisely the one the first pass prescribed, and the binding half (the one-time key and
-the §8.17 warning being readable) is met.
+**C3 — the D11 correction is missing the second half of its criterion.** `docs/SPEC.md:66` reads
+*"The desktop app additionally remembers a vault location in its own preferences file; `VALIJA_HOME`
+always takes precedence over it, and that file holds **UI preferences and a location hint only — it
+is not configuration.**"* §9's criterion (1603–1606) requires that sentence **and** that it "notes
+that relocation also records the vault path in connected clients' MCP configuration (D-O)." That
+clause is absent. It is the single most load-bearing consequence of D-R(a) — the reason a reader of
+`SPEC.md` alone would otherwise still believe a moved vault is remembered in exactly one place.
+Plan item 93 restated the criterion without this half; the spec wins. **Fix:** one trailing clause,
+e.g. *"…; relocating the vault also rewrites the vault path into every connected client's
+`mcpServers.valija` entry."*
 
-**W2 — S4's new `fatal` field is the one piece of new behaviour in this diff with no assertion on
-it.** `DiagnosticRow.fatal` (`diagnostic-rows.ts:18`), `isFatal` (`:61-63`) and the hardcoded
-`fatal: false` on the tool-Node row (`:95`) ship untested, and `diagnostics.tsx:29`'s
-`ok ? "ok" : fatal ? "fatal" : "warning"` is inside a component P-D5 forbids rendering in a test.
-I re-read `diagnostic-rows.test.ts` in full: it is still green and still meaningfully tests what it
-claims — every assertion uses optional-property access (`rows.find(...)?.status`), not a whole-row
-`toEqual`, so the new required field breaks nothing and hides nothing, and Slice 10's own criterion 3
-is *improved* rather than regressed (a non-fatal warning no longer paints with `--color-danger`).
-But `it("labels ok / warning / fatal correctly for a regular check")` at `:52-68` already feeds the
-exact three inputs — `{ok:true}`, `{ok:false}`, `{ok:false,fatal:true}` — and asserts only `status`.
-Three added lines (`expect(rows.find((r) => r.key === "node")?.fatal).toBe(true)` and the two
-`false` cases) would close it. Judged below the tests-for-new-behaviour gate rather than at it,
-deliberately and on the record: it is one derived boolean whose branch condition is character-for-
-character the already-tested `statusLabel` condition (`:56-59`), in a module whose every other
-derivation is covered. It is the closest call in the slice; add the assertions in Slice 12's pass.
+**C4 — `specs/desktop.md:12` says "27 channels"; the surface has 29.** `channels.ts:53-83`
+enumerates 29 entries, and `specs/desktop.md`'s own area table (`:22-30`) lists 29 when summed
+(6+6+1+2+4+3+3+2+2). "Nine areas" is right; the count is not. This is a spec whose stated purpose is
+to pin a *closed, enumerated* surface — a wrong count is the one error it cannot afford, because the
+next reader will use it to check whether a channel was added. The commit message repeats the wrong
+figure. **Fix:** 27 → 29.
 
-**W3 — the locked-state narrowing of Vault & sync is disclosed but not yet recorded where a user or
-a future maintainer will find it.** W1 of the first pass offered two honest exits; the slice took
-(b), and the comment at `settings.tsx:84-93` is exactly the clearly-flagged narrowing that option
-required — it names the affected user ("someone who cannot unlock has no route to *Check my
-setup*"), names the reason, and names where the record is owed. The locked branch now renders
-`settings.vaultAndSyncLocked` in both catalogs (`en.ts:293`, `es.ts:301`) rather than an empty
-section, so nothing vanishes silently on screen either. The debt itself is still open: `docs/gui.md`
-(Slice 12) and a `refined.md` amendment. Carry it as a named Slice 12 obligation, the way W4 was
-carried, or it will be forgotten the way W4 nearly was.
+### Warning
+
+**W1 — the "five strings that stay English" list conflates two surfaces, miscounts, and item 5
+contradicts the code.** `docs/gui.md:242-255`. `refined.md` D-V(d)/§3 fact 5 names **three**
+`src/`-pinned strings; Slice 10's review added the diagnostics `detail` column as a genuine fourth;
+`plan.md:984-988` (P-D17) says exactly that — *"a **fourth** verbatim-English surface"*. The doc
+reaches five by (a) fusing the Copy report and "one row's detail text" into item 4 and (b) adding
+item 5, *"Any internal error message that reaches the Diagnostics screen at all"* — which is false.
+`diagnostic-detail.ts:15` returns `errorCopy(check.errorCode)` whenever `errorCode` is set, so a raw
+`DomainError.message` **never** reaches the screen; `src/delivery/diagnostics.ts:18-25` documents the
+same intent, and `refined.md` §9 (1726–1727) makes the Copy report *"the only place a raw
+`DomainError.message` may appear."* `docs/gui.md:168` itself says so correctly, so the file
+contradicts itself eight lines apart. Item 4's *"one row's detail text"* also understates: every
+doctor-derived row's `detail` is an English literal (`diagnostics.ts:32,43,55,68,86,110,131,148,166`),
+which is why the plan calls it a *column*. **Fix:** make it four — (1) recovery-kit body, (2) manual
+install snippet, (3) context pack, (4) the Diagnostics screen's whole `detail` column plus the Copy
+report payload — and replace item 5 with the accurate statement: everywhere in the app, including
+Diagnostics rows, an error is rendered from its code; the Copy report payload is the one place the
+raw message can still appear.
+
+**W2 — the checksum table names artifacts that will not exist.** `docs/gui.md:22-25` lists
+`Valija-<version>-arm64.dmg`, `Valija-<version>-x64.dmg`, `Valija-<version>-Setup.exe`,
+`Valija-<version>.AppImage`. `refined.md` §4.1 step 0 names a third set
+(`Valija-<version>-mac-arm64.dmg`, `-win-x64.exe`, `-linux-x86_64.AppImage`), and
+`desktop/electron-builder.yml` sets **no `artifactName`**, so electron-builder's defaults apply —
+`Valija Setup <version>.exe` for nsis, and no `-x64` suffix on the default-arch dmg. Three
+descriptions of the same four files, none of which agree. The install page is the first thing the
+target user reads. **Fix:** set `artifactName` explicitly in `electron-builder.yml` (Slice 13) and
+make this table quote it, or write the defaults electron-builder actually emits.
+
+**W3 — the "does not do" list never says where those things live, and one bullet describes the
+wrong thing.** §9 (1859–1861) and plan item 91 both require "and where each of those lives."
+`docs/gui.md:284-300` names no future advance for any of the seven items. Worse, *"Produce a
+provider-specific artifact"* (`:296-297`) is explained as *"nothing here talks to ChatGPT's or
+Claude's API, or any network endpoint at all"* — but provider artifacts (D-D, D-E) are **skills,
+agents, rules files and generated `CLAUDE.md`**, and D-E already fixes their delivery shape (live
+over MCP plus a copy button). The bullet answers a question nobody asked and leaves the real one
+unanswered. **Fix:** name the artifacts, and add "→ a future advance" pointers to the curation,
+provider-artifact and third-language bullets.
+
+**W4 — the relocation section documents one of the wizard's two consequences.** §6 In item 18
+requires "the relocation wizard **and both of its consequences** — the `VALIJA_HOME` line for
+terminal users and the automatic re-pointing of connected tools." `docs/gui.md:192-211` covers the
+first in detail and omits the second entirely; the re-pointing appears only inside a does-not-do
+bullet 80 lines later (`:294`). For a reader following the wizard, "your connected AI tools are
+re-pointed automatically, and any that couldn't be are named individually with a manual snippet" is
+the more reassuring half and the one that changes what they need to do afterwards. **Fix:** one
+paragraph in the wizard section, alongside the `VALIJA_HOME` line.
+
+**W5 — Slice 11's standing obligations are half-paid, and the unpaid ones need re-carrying.**
+Obligation 1 (record the locked-state Vault & sync narrowing in `docs/gui.md` **and** as a
+`refined.md` amendment): the docs half landed and landed well — `docs/gui.md:222-226` matches
+`settings.tsx:94-106`'s `unlocked` gate exactly, names the affected user, offers `valija doctor` as
+the interim route, and calls it a known limitation rather than a feature. The `refined.md` amendment
+did not land; `refined.md` is untouched in `522a952`. Obligations 2 (full-bleed the recovery kit
+before screenshots) and 3 (three `DiagnosticRow.fatal` assertions) are code and correctly out of
+scope for a documentation-only slice — but they are now unowned. **Fix:** amend `refined.md` §4.8
+step 40 (or record the narrowing in this advance's decision log), and re-list obligations 2 and 3 in
+Slice 13's plan text so they are not lost between two slices that each declined them.
+
+**W6 — the `CHANGELOG.md` entry omits the corrected contract lines.** Plan item 97 asks for four
+things in the `[Unreleased]` entry: the desktop app, the relocation capability, the schema-upgrade
+consent gate, **and the corrected contract lines**. `CHANGELOG.md:9-28` covers the first three plus
+the `src/delivery` extraction; the `SPEC.md` §1/§2/§10a/D11 corrections are not mentioned. Every
+other claim in the entry was checked against the tree and is accurate. **Fix:** one sub-bullet.
 
 ### Suggestion
 
-**S1 — `.check-row.warning` accidentally inherits the global `.warning` colour, inverting the
-emphasis between warnings and failures.** `base.css:101-103` paints any `.warning` element with
-`--color-warning`, and `diagnostics.tsx:29` now puts that same class name on the whole `<li>`, so a
-warning row's *entire* text — name, status, explanation, detail — turns amber, while a **fatal** row
-gets only a red border and ordinary text. Legibility is fine in both themes (`#8a5a00` on white,
-`#f5c451` on `#17181c`), but the louder treatment is on the less severe row. Either scope the base
-rule (`p.warning`) or name the severity classes so they cannot collide —
-`.check-row--warning` / `.check-row--fatal` — and give the fatal row's status the danger colour.
+**S1 — `specs/desktop.md:26` states the relocation orchestration in the wrong order.** It says
+`LockVault` → `RelocateVault` → per-client re-pointing → container rebuild. `relocation-handlers.ts`
+does `lockVault` (`:149`) → `relocateVault` (`:154`) → preferences write (`:162`) → `rebuildContainer`
+(`:163`) → `repointAllClients` (`:168`). The re-point is **after** the rebuild, and the preferences
+write is a step the spec omits from the sequence even though it discusses it two sentences later.
+Worth fixing because the ordering is the whole safety argument.
 
-**S2 — `resetWorkspaceView()` is a named alias for a constant, and the invariant it exists to
-express still lives only in a comment.** `workspace-nav.ts:22-24` returns `INITIAL_WORKSPACE_VIEW`,
-and its test (`workspace-nav.test.ts:5-8`) is close to tautological. The real rule — *the view is
-reset at every transition out of `unlocked`* — is enforced by `app.tsx:117-123` pairing two setters
-and by a comment asking future callers to do the same. Today that is airtight (I grepped: `afterLock`
-has exactly two call sites, and the other is the `no-vault` → `locked` transition where the view is
-already initial), but it is one careless `setState(afterLock())` away from regressing to C2. A
-combined transition — `lockFromWorkspace(): { state: SessionState; view: WorkspaceView }`, or folding
-the view into the session state — makes the pairing impossible to forget and gives the test something
-non-trivial to assert.
+**S2 — `specs/desktop.md:15-16`'s "Every handler is four lines" is not true.**
+`relocation-handlers.ts` is 202 lines, `import-handlers.ts` 134, `tools-handlers.ts` 87. The claim
+reads as a structural guarantee and isn't one. Say what is actually guaranteed: every handler
+validates at the boundary, calls existing use cases, maps `Result` to a wire shape, and holds no
+session beyond the action.
 
-**S3 — `overlay-nav.test.ts` covers `locked` but never `kit-pending`, which is the phase item 86 is
-actually about.** `autoTourOverlay`'s `state.phase !== "unlocked"` guard covers both, and the
-`locked` case exercises the same branch, so this is not a hole in the code — but the test that
-*names* the ordering invariant should assert the state the invariant is about. One line:
-`expect(autoTourOverlay(CLOSED_OVERLAY, { phase: "kit-pending" }, PREFS(false))).toEqual(CLOSED_OVERLAY)`.
+**S3 — `specs/desktop.md:86-91` inverts `mergePreferencesWrite`'s guarantee.** It says the merge
+means "a write can never carry a key the renderer didn't explicitly set"; `preferences-write.ts:11-16`
+does the opposite — it deliberately carries all three current keys forward so a partial patch can't
+blank the others. The real guarantee, which the same paragraph states correctly one sentence later,
+is that `vaultPath` is structurally absent from the request type.
 
-**S4 — item 88's two negative claims are still proven only by implication.** The no-bridge-import
-scan makes them true, but `onboarding-settings.no-session.test.ts` could say so directly, in the same
-source-scan idiom and for the same cost: `expect(SETTINGS).not.toMatch(/VALIJA_(HOME|STATE_HOME|AUTOLOCK_MINUTES)/)`
-and an assertion that the file contains no `<input` whose `type` is `text`. Cheap, and it makes the
-guarantee legible to the next reader instead of requiring the inference.
+**S4 — `diagnostic-detail.ts` is missing from `specs/desktop.md`'s renderer-state list** (`:71-105`),
+though `diagnostic-rows.ts` is there. It is the module that decides the English-vs-localized rule
+both `docs/gui.md` and `refined.md` §9 care about, and W1 above is exactly the kind of error that
+having it in the spec would have prevented.
 
-**S5 — a rejected `preferences:write` is still an unhandled promise rejection.** `finishTour`
-(`app.tsx:107-115`) now closes in a `finally`, which is the right fix for the trap — but the
-rejection is re-thrown out of the `try` into `void finishTour()` (`:130`), and the same holds for
-`void updatePreferences(patch)` (`:135`). Nothing is logged that shouldn't be (preferences only), and
-no state is corrupted, but the user gets no signal at all when a radio silently does nothing. A
-`catch` that surfaces one localized sentence — or, at minimum, `.catch(() => {})` at the two call
-sites to keep the rejection deliberate rather than accidental — closes it.
+**S5 — `docs/gui.md:92-93` says the clipboard warning is "the button's own label."** It is a sibling
+paragraph: `recovery-kit.tsx:55-59` renders the button (`recoveryKit.copyKey` = "Copy key") and then
+`<p className="warning">{t("recoveryKit.copyKeyWarning")}</p>`. Small, but this is §8.17 security
+copy and the docs should describe it as it appears.
 
-**S6 — `updatePreferences` closes over the render's `prefs`, so two fast successive changes can
-clobber each other.** `app.tsx:93,95-98`: the base of the merge is the value captured at render
-time, not the latest. Click *Dark* and then *Español* before the first write's re-read resolves and
-the second write reverts the theme. The window is milliseconds wide and the pre-existing code had the
-same shape, so this is not new — but the fix is small (merge inside a `setPreferences` updater, or
-serialize writes through a single in-flight promise) and this is the slice that made preference
-writes a user-facing control.
+**S6 — `docs/gui.md:163` says Diagnostics shows "one row per connected AI tool."** It shows one row
+per **supported** client, connected or not — `diagnostics.ts:198` maps all of `CLIENTS`, and a
+missing config yields `ok: false, detail: "config not found"`. A user with no clients installed will
+see three rows and wonder what they did wrong.
 
-**S7 — an OS theme change mid-session is still not followed** (carried from the first pass, still
-within spec). `theme-context.tsx:16-18` reads `matchMedia(...).matches` inside a `useMemo` keyed on
-`preferences`, so with Appearance on *Follow system* the window picks up an OS switch only on
-relaunch. D-Q's binding criterion is the *user's* Appearance change, which works — and now that the
-theme is actually painted, a `matchMedia` change listener is ~5 lines and adds no timer.
+**S7 — `docs/gui.md` is not linked from `README.md`.** `docs/SPEC.md` links it twice; the README —
+the actual front door — never mentions the desktop app. One line under the README's install section
+would close it.
 
-**S8 — no gear on `no-vault.tsx` / `create-vault.tsx`** (carried, still within spec). §4.8 step 37
-names "dashboard, project view, or the locked screen". Noting it once more because a Spanish speaker
-on an English-locale OS meets the §8.17 passphrase warning before any surface offers the language
-switch.
+**S8 — `specs/desktop.md:64-66` blesses the renderer importing `main/application/policies/*`.** The
+tour and `system-or-override.ts` are genuinely shared between the trusted process and the renderer,
+and `desktop/src/shared/` already exists for exactly that (it holds `i18n/` and `ipc/`). Naming the
+main tree as the home for renderer-imported policy is the sort of thing a spec makes permanent.
+`desktop/src/shared/policies/` would match the tree's own convention. Pre-existing (P-D14), raised
+here only because this is the commit that turns it into written contract.
+
+**S9 — the `CHANGELOG.md` insertion leaves a blank line mid-list**, splitting `### Added` into two
+paragraphs (`CHANGELOG.md:28-29`). Renders as a loose list; trivially fixed by dropping the blank
+line.
+
+**S10 — the Import section (`docs/gui.md:148-155`) omits the three things a non-technical reader
+meets first**: that a target project is required before anything can be imported, that conversations
+are chosen with checkboxes and a filter box, and that a format override appears only when detection
+fails. The `imported`-items-excluded-from-packs sentence — the one that prevents a user concluding
+the import failed — is there and is well written, which makes the omissions more noticeable.
 
 ---
 
 ## 5. What was verified by hand rather than taken on trust
 
-- `npm run typecheck && npm run lint && npm run test` in `desktop/` **and** at the repo root. All six
-  green. **Desktop: 44 files / 623 tests. Root: 57 files / 301 tests** — both counts as claimed. Root
-  lint prints the same pre-existing `biome migrate` info as last pass, unrelated to this diff.
-- **C1 re-derived, not assumed.** `[data-theme]` is `(0,1,0)`, the same specificity as
-  `[data-theme="light"]`, but they set disjoint properties, so there is no conflict to resolve. On
-  the kit's div both selectors match: the custom properties resolve from the **dark** block and the
-  `var()`s in the paint rule resolve against that element's own computed values, so it repaints
-  itself rather than inheriting the shell's already-computed `color`. Descendants then inherit
-  `#f2f2f3`; `.kit-text`'s `var(--color-surface)` → `#1f2126` (≈13:1); `.warning` → `#f5c451` on
-  `#17181c`; `.explainer` → `#a2a6ad`; `button` → dark surface, light text. `resolveTheme` can only
-  return `"light" | "dark"` (`theme-resolution.ts` via `theme-context.tsx:16-18`), so `[data-theme]`
-  never matches a third value. `box-sizing: border-box` is global, so `min-height: 100vh` plus 24px
-  padding does not produce a second scrollbar against `.app-shell`'s own `100vh`.
-- **C2 re-derived.** `relocationFinished` traced through all four hops to `RelocateVaultScreen`'s
-  `onDone`; `grep -n onDone src/renderer/screens/relocate-vault.tsx` returns three lines — the prop,
-  its type and `onUnlockAgain={onDone}` at `:131`, reachable only from `stage.step === "done"`. So
-  there is exactly one path back and it resets. `afterLock` has two call sites in `app.tsx` (`:122`
-  and `:210`); the second is `no-vault` → `locked`, where the view is already initial and no
-  workspace has existed. No idle-lock or session-expiry subscription exists in the renderer yet
-  (grepped), so no third path.
-- **C3 re-derived.** `vitest.config.ts` sets `environment: "node"` globally and jsdom is opted into
-  per file by the `// @vitest-environment jsdom` pragma; grepping the added lines for that pragma
-  returns nothing, and `screens/__dom-tests__/` still contains exactly the two P-D5 files. The new
-  tests are therefore genuinely headless. `diagnostics-entry-points.test.ts:33` counts `{header}` and
-  requires exactly 4; `dashboard.tsx` has exactly four returns (`:68,77,86,102`), each rendering `{header}` (`:70,79,88,104`) —
-  the count would fail if a branch dropped the header, which is what the old presence-only assertion
-  could not do.
-- **W2 checked against Slice 10.** `diagnostic-rows.test.ts` re-read end to end: all nine cases use
-  `?.` property access, none does a whole-row `toEqual`, so the new required field cannot silently
-  satisfy a stale assertion. Green, and still testing what it claims.
-- Both tour catalogs re-read in English and Spanish against D-U(c)'s three guardrails, including the
-  search for `organiza / edita / fija / elimina / etiqueta` — none present.
-- `preferences-handlers.ts` re-read: unchanged by this slice, and the renderer's three-key write
-  still cannot clobber `vaultPath` (§8.6). `windows/main-window.ts` re-read: CSP unchanged, and the
-  bundled stylesheets need no relaxation of `style-src 'self' 'unsafe-inline'`.
-- `git diff --numstat ad85718..200f432`: the only non-`advances/` paths are under `desktop/src`. No
-  `package.json`, no lockfile, no build config, and no file under the repo's `src/` — the "root suite
-  unchanged" claim is structural, not incidental.
-- `exactOptionalPropertyTypes: true` is inherited by both desktop tsconfigs, so
-  `Partial<PreferencesWriteRequest>` cannot smuggle an explicit `undefined` through
-  `mergePreferencesWrite`'s spread.
+- **The whole diff**, read in full, independently of the commit message — which claims "the
+  27-channel IPC surface" (it is 29) and "the five strings that stay English" (there are four
+  surfaces, one of them described backwards).
+- **Settings.** `docs/gui.md:220-227`'s four sub-bullets read against `settings.tsx:41-114`: four
+  `<section>`s, Appearance and Language as three radios each, Vault & sync's two buttons rendered
+  **only** when `unlocked` (`:94-106`) with `settings.vaultAndSyncLocked` in the else branch
+  (`en.ts:293`, `es.ts:301`), Help always present. The docs' "only work while your vault is unlocked"
+  matches the gate exactly, including that Help and the language switch keep working while locked
+  (`app.tsx:131-146`, `locked.tsx`'s gear).
+- **The tour.** `docs/gui.md:101-110` read against `en.ts:61-75`'s four slides: slide 1 is what the
+  vault is, slide 2 is *"Saving happens from inside an AI tool you've connected — not from this
+  window"*, slide 3 browse/search/carry, slide 4 *"There is no password reset."* The docs' summary is
+  faithful, and the replay-from-locked-Settings claim holds (`app.tsx:131`, `canNavigateAwayFrom`).
+- **The five English exceptions**, traced to `error-copy.ts:17-31` (always from the code),
+  `diagnostic-detail.ts:15` (screen localizes an `errorCode` detail), `diagnostics.ts:18-25` (the
+  Copy report is the only raw-message path) and every `detail` literal in `runDiagnostics`. This is
+  where W1 came from.
+- **Every clipboard call site** in `desktop/src/renderer`, grepped for `content.copy` /
+  `copyReport`: five, and the docs name exactly those five.
+- **The Diagnostics/Connect vocabulary claim**, traced through both code paths
+  (`tools-handlers.ts:76-80` vs `diagnostics.ts:158-172` + `diagnostic-rows.ts:73-84`) before
+  accepting the docs' account of it.
+- **`specs/desktop.md`'s testable claims**: `register-handlers.test.ts:61` (set equality),
+  `schemas.test.ts:58,72-83` (`vaultPath` stripped; no path-shaped field),
+  `no-network-surface.test.ts:10-25` (`setInterval`, `fetch(`, `crashReporter`, `.css` in the glob),
+  `sync-panel.no-write.test.ts`, the two `__dom-tests__` files, `preferences-handlers.ts:14`'s
+  carry-forward, `file-app-preferences-store.ts:39-53`'s temp-file-plus-rename and four-key
+  spelling-out, and `vault-location.ts:11-15` against the quoted one-liner. All accurate.
+- **The two deferred items' honesty.** The checksum markers are one literal string repeated four
+  times (`docs/gui.md:22-25`), greppable exactly as `plan.md:1083` expects Slice 13 to grep it. The
+  screenshots section (`:313-321`) states that they are not included, why, that the blocker is an
+  egress policy on `electronjs.org`, and where it can be resolved — cross-referenced to
+  `spike.md:248-266`, which itself distinguishes what was confirmed by running from what was
+  inferred. Neither could be mistaken for complete by a casual reader. This is the standard R9 and
+  A13 ask for, and it is met — which is precisely why C2's "(verified, not assumed)" stands out.
+- **Both suites**, both trees, all six commands, plus `git show --stat` to confirm no `.ts`/`.tsx`/
+  `.css` line moved.
 
 ---
 
-## 6. Standing obligations for Slice 12
+## 6. What would flip this to PASS
 
-Not merge gates; named here so they are not lost:
+Five edits, all in documentation, none of them code:
 
-1. **W3** — record the locked-state Vault & sync narrowing in `docs/gui.md` **and** as a `refined.md`
-   amendment. The code comment is the promise; these are the payment.
-2. **W1** — full-bleed the recovery kit before the bilingual screenshots are taken.
-3. **W2** — three assertions on `DiagnosticRow.fatal`.
+1. **C1** — state the Node/npm prerequisite in `docs/gui.md`'s Connect section: connected tools run
+   `npx -y valija mcp`, that needs Node and npm on the machine, this app does not provide them, and
+   the Connect screen warns without blocking when they aren't runnable.
+2. **C2** — either add the `npx electron-rebuild -f -w better-sqlite3-multiple-ciphers` step to the
+   run-from-source recipe and re-title the section to claim only what was verified, or mark it
+   unverified in the same honest register as the screenshots section and carry the verification into
+   Slice 13.
+3. **C3** — append the relocation/MCP-config clause to `docs/SPEC.md`'s D11 sentence.
+4. **C4** — `specs/desktop.md:12`: 27 → 29.
+5. **W1** — rewrite `docs/gui.md:242-255` as four exceptions, with item 4 covering the whole
+   Diagnostics `detail` column plus the Copy report, and drop the claim that raw internal errors
+   reach the Diagnostics screen.
+
+W2–W6 and S1–S10 are not merge gates. W5's `refined.md` amendment and the re-carrying of Slice 11's
+obligations 2 and 3 into Slice 13 should be done in the same pass, because there is no later slice
+that will notice them.
