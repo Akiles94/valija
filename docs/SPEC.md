@@ -63,7 +63,7 @@ Key property of MCP to keep in mind: **the server never sees the conversation**.
 | D8 | Libraries | `@modelcontextprotocol/sdk`, `commander`, `zod`, `ulid`, `vitest`, `biome`, `tsup`. |
 | D9 | Project auto-create | `save_context` creates the project if it doesn't exist. |
 | D10 | Token budget for `get_context` | Default 4000 tokens, estimated as `chars / 4`. Per-call override via `budget` argument. |
-| D11 | Single vault per machine | Yes, at `~/.valija/` (override with `VALIJA_HOME` env var). The desktop app additionally remembers a vault location in its own preferences file; `VALIJA_HOME` always takes precedence over it, and that file holds **UI preferences and a location hint only — it is not configuration.** |
+| D11 | Single vault per machine | Yes, at `~/.valija/` (override with `VALIJA_HOME` env var). The desktop app additionally remembers a vault location in its own preferences file; `VALIJA_HOME` always takes precedence over it, and that file holds **UI preferences and a location hint only — it is not configuration.** Relocating a vault from the desktop app also records the new path in the MCP configuration of every AI tool already connected, so moving a vault is expected to edit those third-party config files too. |
 | D12 | Commits / versioning | Conventional Commits, SemVer starting `0.1.0`, schema_version `1`. |
 
 ---
