@@ -235,3 +235,32 @@ the actual packaged Electron build under this container's `xvfb`, reproduces exa
 Nothing here is new work to do inside this sandbox: it is the same CI/developer-machine dependency
 Slice 1 already named, now confirmed to gate one more thing (Slice 6's "Done when", not just
 packaging).
+
+---
+
+## Update, Slice 11 — Electron itself downloads fine; only the native-module rebuild is blocked
+
+Worth separating, since it changes what a future session should try first: **Electron's own binary
+downloads successfully in this container** (`node_modules/electron/dist`, 314 MB, via `install.js` —
+that traffic is not the `www.electronjs.org` host `node-gyp` needs), and `xvfb-run`/`Xvfb` are both
+present. So `electron-vite dev`/`build` and a headless-display launch are *not* blocked by policy —
+only `node-gyp`'s fetch of Node/Electron headers is (`electron-rebuild -f -w
+better-sqlite3-multiple-ciphers` still fails with the same `403` on `www.electronjs.org` this
+container's egress policy already recorded). A vault-backed screenshot therefore still can't be
+taken here, for the same reason Slice 6 hit. **Confirmed again, not newly found** — recorded here so
+whoever picks up Slice 12's screenshots (item 96) doesn't have to re-derive it: the golden fixture's
+plaintext (`seed.json`, `manifest.json`, `expected-*`) is real and usable without SQLCipher at all,
+so a fake `window.valija` bridge serving that plaintext could drive the real renderer under
+Playwright for screenshots *without* needing the blocked rebuild — untried here, kept out of this
+slice's scope on purpose (Oscar's own token-economy instruction for this advance's tail), but a
+cheaper path than waiting for a developer machine if it's wanted before Slice 13.
+
+## Update, Slice 12 — screenshots deferred, per item 96 and A13, honestly rather than silently
+
+`docs/gui.md` ships in this slice with its screenshot section stating plainly that the images are
+not yet included and why (the same rebuild gap above), rather than fabricating them or quietly
+dropping the section. This is a human gate to schedule with Oscar, exactly like D-H's macOS ACL
+answer — on a developer machine or in `desktop.yml`'s CI (which already runs `npm run test`/`build`
+on three OSes with no egress restriction), the rebuild succeeds and the golden-vault screenshots
+(or the mock-bridge shortcut above) can be taken in both languages and dropped into
+`docs/images/gui/` without touching `docs/gui.md`'s prose.

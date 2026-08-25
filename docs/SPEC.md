@@ -9,7 +9,11 @@
 
 An **open source, end-to-end encrypted context vault for developers who use several AI tools**. The vault runs locally, is unlocked with a passphrase, and exposes its content to AI tools (Claude Code, Claude Desktop, Cursor, and any MCP client) through a **local MCP server**. A developer saves distilled context ("we chose SQLCipher, next step is the restore flow") from inside any tool and loads it later from any other tool. A small CLI manages the vault. No cloud, no accounts, no telemetry.
 
-One npm package. One binary surface: `valija`.
+One npm package. One binary surface: `valija`. A separate, unpublished Electron companion app
+(`desktop/`, see [`docs/gui.md`](gui.md) and [`advances/GUI/`](../advances/GUI/)) gives the same
+vault a window for the parts a terminal doesn't reach — it composes the existing container through
+an enumerated IPC surface and adds no MCP tool, no CLI command, and no change to the published
+package.
 
 ---
 
@@ -25,7 +29,8 @@ One npm package. One binary surface: `valija`.
 - Importers (ChatGPT/Claude export files) → M2
 - File watchers (Claude Code sessions) → M2
 - Bring-your-own-cloud vault sync → M3
-- GUI, encrypted backup / restore → later (bumped from M3 by M3's redefinition, see §10b)
+- Encrypted backup / restore → later (bumped from M3 by M3's redefinition, see §10b)
+- ~~GUI~~ — **shipped**, see [`advances/GUI/`](../advances/GUI/) and [`docs/gui.md`](gui.md). No milestone number is assigned.
 - Scoped profiles, per-tool visibility → M4
 - Browser extension → M5
 - A valija-hosted sync service → explicitly rejected (see §10b — M3 ships the lower-risk BYO-cloud slice instead)
@@ -58,7 +63,7 @@ Key property of MCP to keep in mind: **the server never sees the conversation**.
 | D8 | Libraries | `@modelcontextprotocol/sdk`, `commander`, `zod`, `ulid`, `vitest`, `biome`, `tsup`. |
 | D9 | Project auto-create | `save_context` creates the project if it doesn't exist. |
 | D10 | Token budget for `get_context` | Default 4000 tokens, estimated as `chars / 4`. Per-call override via `budget` argument. |
-| D11 | Single vault per machine | Yes, at `~/.valija/` (override with `VALIJA_HOME` env var). |
+| D11 | Single vault per machine | Yes, at `~/.valija/` (override with `VALIJA_HOME` env var). The desktop app additionally remembers a vault location in its own preferences file; `VALIJA_HOME` always takes precedence over it, and that file holds **UI preferences and a location hint only — it is not configuration.** |
 | D12 | Commits / versioning | Conventional Commits, SemVer starting `0.1.0`, schema_version `1`. |
 
 ---
@@ -178,7 +183,7 @@ Every vault starts empty — the biggest adoption gap. M2 lets users load existi
 - Schema migration 002 (extend the type CHECK): transactional table rebuild + FTS reindex, with a ciphertext backup on first upgrade of a populated vault.
 - Documented the **MCP distillation path**: any connected AI can turn an arbitrary export into real, pack-eligible context via `save_context`.
 
-**Deferred (0.2.x+):** Gemini / Google Takeout parser (messy format), Claude Code session import, a live watcher/daemon. No new MCP tool or argument — import is CLI-only. Also deferred: **conversation reassembly by name** — imported chunks carry a title/date/part-n-of-m header in their body, but there is no lookup that returns one imported conversation's chunks, in order, as a single reassembled document; today that requires manually searching/browsing and ordering by the part header.
+**Deferred (0.2.x+):** Gemini / Google Takeout parser (messy format), Claude Code session import, a live watcher/daemon. No new MCP tool or argument — **import has no MCP surface**; it is available from the CLI and the desktop app. Also deferred: **conversation reassembly by name** — imported chunks carry a title/date/part-n-of-m header in their body, but there is no lookup that returns one imported conversation's chunks, in order, as a single reassembled document; today that requires manually searching/browsing and ordering by the part header.
 
 ---
 
