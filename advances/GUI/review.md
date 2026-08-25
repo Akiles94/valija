@@ -1,22 +1,32 @@
-Verdict: FAIL
+Verdict: PASS
 
 # GUI · Slice 11 — The welcome tour, the Settings screen, and the shell they need — Review
 
-**Branch:** `feat/desktop-GUI` · **Commit:** `8cc7f01` · **Base:** `ad85718` (Slice 10, merged and
-reviewed) · **Plan:** third revision, `Approved: Oscar 2026-08-25`.
-**Reviewed:** the diff `ad85718..8cc7f01` read in full, independently of the commit message. Both
-suites run by hand, not taken on trust.
+**Branch:** `feat/desktop-GUI` · **Commits:** `8cc7f01` + `200f432` (reviewed together as one slice) ·
+**Base:** `ad85718` (Slice 10, merged and reviewed) · **Plan:** third revision,
+`Approved: Oscar 2026-08-25`.
+**Reviewed:** the diff `ad85718..200f432` read in full, independently of either commit message. Both
+suites run by hand, not taken on trust. This is the **second pass**; it re-derives every finding
+rather than accepting the fix-up commit's account of itself.
 
-Three things hold this slice: a stylesheet that **breaks the recovery-kit screen in light theme**
-(the raw key renders dark-on-dark and the clipboard warning yellow-on-white), a **navigation
-regression** introduced by lifting `WorkspaceView` into `App` (a user who relocates their vault and
-unlocks again lands back inside the relocation wizard), and **item 86's and item 90's tests, none of
-which were written** — the three new test files are text greps that would pass on a materially
-broken implementation.
+The three blockers from the first pass are genuinely closed, and each was verified the same way it
+was raised — by tracing, not by reading the claim:
 
-The rest of the slice is good: the tour copy meets D-U(c) in both languages, neither new screen
-imports the bridge, Settings has exactly four sections and no editable environment field, P-D12 and
-P-D14 and P-D15 are followed as approved, and W4 is genuinely closed for the unlocked case.
+- **C1** the cascade was traced by hand, element by element. `base.css:32-35`'s `[data-theme]` rule
+  paints on the attribute itself, so the recovery kit's nested `data-theme="dark"` now computes its
+  **own** `color`/`background` from the dark set and its descendants inherit *that* computed colour.
+  The raw key goes from ≈1.05:1 to ≈13:1; §8.17's clipboard warning from ≈1.7:1 to legible amber on
+  dark. **Closed.**
+- **C2** `relocationFinished` (`app.tsx:117-123`) resets the view *and* locks, and it is wired end to
+  end (`app.tsx:157` → `Router`'s `onVaultRelocated` prop `:175,185` → `:261` → `Workspace` `:280` →
+  `RelocateVaultScreen onDone` `:328`). I grepped every path back into `unlocked` and every `onDone`
+  call site in the wizard: there is exactly one, and it is covered. **Closed.**
+- **C3** `state/overlay-nav.ts` + `state/preferences-write.ts` (+ `workspace-nav.ts`) are plain-TS
+  modules with 122 lines of headless tests, running under the default `node` environment;
+  `__dom-tests__/` was **not** touched and still holds exactly the two P-D5 screens. The
+  `{header}`-count assertion is a real strengthening, not a re-worded grep. **Closed.**
+
+What remains are three warnings and six suggestions, none of which touches a hard gate.
 
 ---
 
@@ -25,36 +35,36 @@ P-D14 and P-D15 are followed as approved, and W4 is genuinely closed for the unl
 
 | # | Criterion | Verdict | Evidence |
 |---|---|---|---|
-| 1 | Tour shown automatically **exactly once per installation**, first time this installation reaches the dashboard, on **both** branches, **driven in tests by the persisted flag** | **Not met** | The wiring exists and is correct by reading — `app.tsx:75-79` triggers on `state.phase === "unlocked" && shouldPlayTour(preferences)`, which is branch-agnostic, and `finishTour` (`app.tsx:99-102`) writes before clearing. But the criterion's own clause — *"driven in tests by the persisted flag rather than by manual observation"* — has **no test**. `onboarding-tour.test.ts` (Slice 3) tests the policy function; nothing tests that the app opens the overlay, that finishing writes the flag, or that it never re-opens. See C3 |
-| 2 | **Skip** on every slide, sets the seen-flag, returns the user where the tour interrupted them; dots, **Back**, **Next**, **Get started** behave | **Met (auto-play), narrowed (replay)** | `onboarding.tsx:52-63`: Skip is unconditional, Back is suppressed on slide 1 via `previousSlide`, Get started replaces Next on the last slide, four dots at `:44-48`. Both exits route to `onDone` → `finishTour`. Replayed from Settings, the exit returns to the **workspace**, not to Settings — see W4 |
-| 3 | Seen-flag is **per installation, not per vault** | **Met** | `finishTour` writes only `tourSeen` through `preferences:write`, whose handler (`preferences-handlers.ts:13-15`) merges over the device-local file; no vault id is involved anywhere |
-| 4 | Tour opens **no vault session**, reads no vault content, no network, does not touch the idle-lock clock, writes nothing but its boolean | **Met** | `onboarding.tsx` imports only the policy, a type, and `useT` — `onboarding-settings.no-session.test.ts:26-28` asserts the absence of a `state/bridge.js` import structurally. `no-network-surface.test.ts` covers the file |
-| 5 | Tour **never appears before the recovery-kit acknowledgement**; four slides satisfy D-U(c)'s three guardrails **in both languages** | **Met** | Guard: `app.tsx:108,110` gate both overlays on `canNavigateAwayFrom(state)`, and `Router` returns the kit before the switch (`:165-175`). Copy: `en.ts`/`es.ts` `onboarding.*` — slide 2 says saving happens *"from inside an AI tool you've connected — not from this window"* / *"no desde esta ventana"*; slide 3 uses *browse/search/carry* and *"Explora, busca y llévalo contigo"*, no curation verb, no *"organiza"*; slide 4 states *"There is no password reset"* / *"No existe un restablecimiento de contraseña"* with no marketing adjective |
-| 6 | **Show the welcome tour again** replays the same slides, any number of times, and **changes no other state** | **Met (with a caveat)** | `settings.tsx:100-102` → `onReplayTour` → `setOverlay("tour")` (`app.tsx:116`), same component, unbounded. Caveat: each replay's exit re-writes the preferences file (`finishTour` always calls `updatePreferences`), and drops the user in the workspace rather than back in Settings — W4 |
-| 7 | Settings reachable **while the vault is locked**; opening it opens no session and touches no vault file | **Met** | Gear at `locked.tsx:65-70`; the overlay lives above the phase switch (`app.tsx:110`) exactly as P-D15 requires; `onboarding-settings.no-session.test.ts:30-32` asserts no bridge import |
-| 8 | Settings contains **exactly the four sections D-U names**; Vault & sync **navigates to the existing** Diagnostics screen and relocation wizard; **no editable field** for `VALIJA_HOME` / `VALIJA_STATE_HOME` / `VALIJA_AUTOLOCK_MINUTES` | **Met (narrowed)** | Four `<section>`s at `settings.tsx:42,64,86,98` and no fifth; the two buttons set an existing `WorkspaceView` rather than mounting anything new (`app.tsx:117-124`); the only inputs on the screen are six radios bound to `theme` and `language`. **Narrowing:** both entries render only when `unlocked === true` (`settings.tsx:88`), so from the locked screen — the one reachability the criterion above singles out — Vault & sync is a sentence and nothing else. See W1 |
-| 9 | Settings offers no path to destroying, re-keying or re-initializing a vault | **Met** | No such callback exists in the component's props |
-| 10 | Switching language applies **live** — no restart, no re-unlock | **Met** | `updatePreferences` (`app.tsx:83-93`) writes then re-reads and replaces `App`'s `preferences`, which is the prop `I18nProvider` keys off; the vault session is untouched |
+| 1 | Tour shown automatically **exactly once per installation**, first time this installation reaches the dashboard, on **both** branches, **driven in tests by the persisted flag** | **Met** | `overlay-nav.ts:23-31` is branch-agnostic by construction — the entry branch is not a parameter — and `app.tsx:87-90` is its only caller. The criterion's own clause is now satisfied: `overlay-nav.test.ts:24-41` drives all four cases from `PREFS(tourSeen)` alone (locked → no tour; unlocked + `false` → tour; unlocked + `true` → no tour; an overlay already open is never interrupted) |
+| 2 | **Skip** on every slide, sets the seen-flag, returns the user where the tour interrupted them; dots, **Back**, **Next**, **Get started** behave | **Met** | `onboarding.tsx:52-63`: Skip renders unconditionally, Back is suppressed on slide 1 via `previousSlide`, Get started replaces Next on the last slide, four dots at `:44-48`. Both exits route to `onDone` → `finishTour`, which writes through `tourSeenWrite` (`preferences-write.ts:19-22`, tested at `preferences-write.test.ts:39-46`). "Returns the user where they were" is now the module's `returnTo` field, tested both ways (`overlay-nav.test.ts:44-54`) |
+| 3 | Seen-flag is **per installation, not per vault** | **Met** | `tourSeenWrite` emits exactly `{theme, language, tourSeen}` and `preferences-handlers.ts:14` merges over the device-local file; no vault id is involved anywhere |
+| 4 | Tour opens **no vault session**, reads no vault content, no network, does not touch the idle-lock clock, writes nothing but its boolean | **Met** | `onboarding.tsx:1-8` imports only the policy, a type and `useT`; `onboarding-settings.no-session.test.ts:26-28` asserts the absence of a `state/bridge.js` import structurally. `no-network-surface.test.ts` covers the file, and now the stylesheets too |
+| 5 | Tour **never appears before the recovery-kit acknowledgement**; four slides satisfy D-U(c)'s three guardrails **in both languages** | **Met** | Two independent guards: `overlay-nav.ts:29` refuses any phase but `unlocked` (so `kit-pending` can never open it), and `app.tsx:129,131` additionally gate on `canNavigateAwayFrom(state)`; `Router` returns the kit before the switch (`:189-199`). Copy re-read line by line in both catalogs: slide 2 *"not from this window"* / *"no desde esta ventana"*; slide 3 *browse/search/carry* — *"Explora, busca y llévalo contigo"*, no curation verb; slide 4 *"There is no password reset"* / *"No existe un restablecimiento de contraseña"*, no marketing adjective |
+| 6 | **Show the welcome tour again** replays the same slides, any number of times, and **changes no other state** | **Met** | `settings.tsx:111-113` → `onReplayTour` → `replayTourFromSettings()` (`app.tsx:137`), same component, unbounded. "Changes no other state" is now literally true: `finishTour` (`app.tsx:107-115`) skips the write entirely when `shouldPlayTour(prefs)` is false, and `finishTourOverlay` returns the user to Settings (`overlay-nav.ts:43-45`, `overlay-nav.test.ts:50-53`) |
+| 7 | Settings reachable **while the vault is locked**; opening it opens no session and touches no vault file | **Met** | Gear at `locked.tsx:65-70`; the overlay lives above the phase switch (`app.tsx:131`) exactly as P-D15 requires; `canNavigateAwayFrom` is true for `locked` (`session-state.ts:70-72`); `onboarding-settings.no-session.test.ts:30-32` asserts no bridge import |
+| 8 | Settings contains **exactly the four sections D-U names**; Vault & sync **navigates to the existing** Diagnostics screen and relocation wizard; **no editable field** for `VALIJA_HOME` / `VALIJA_STATE_HOME` / `VALIJA_AUTOLOCK_MINUTES` | **Met (narrowing now disclosed)** | Four `<section>`s at `settings.tsx:41,62,83,109` and no fifth; the two buttons set an existing `WorkspaceView` (`app.tsx:138-145`); the only inputs are six radios bound to `theme` and `language`. The locked-state narrowing is unchanged in behaviour but is no longer silent — see W3 |
+| 9 | Settings offers no path to destroying, re-keying or re-initializing a vault | **Met** | No such callback exists in the component's props, and the no-bridge-import scan makes it structurally impossible for the screen to reach one |
+| 10 | Switching language applies **live** — no restart, no re-unlock | **Met** | `updatePreferences` (`app.tsx:95-98`) writes then re-reads and replaces `App`'s `preferences`; `I18nProvider`'s memo is keyed on `preferences.language` (`i18n-context.tsx:28-32`), so every `t()` consumer re-renders. The vault session is untouched. `preferences-write.test.ts:29-35` pins the merge that makes it safe |
 | 11 | Both catalogs have identical key sets; no hardcoded user-facing string in a component | **Met** | Three keys added to each of `en.ts` / `es.ts`; `catalogs.test.ts` walks both directions and is green. Every string in `onboarding.tsx` / `settings.tsx` goes through `t()` |
-| 12 | **The window re-themes immediately** on an Appearance change, and the recovery-kit screen stays permanently high-contrast dark (§4.8 step 38, D-Q) | **Not met** | The first half works: `ThemedRoot` (`app.tsx:43-50`) sets `data-theme` from `useTheme()` and `tokens.css` rebinds the custom properties, so an Appearance change re-themes without a reload. The second half does not: `recovery-kit.tsx:52`'s nested `data-theme="dark"` **cannot** repaint that screen, because the only rules that set `background`/`color` for a screen body are on `.app-shell` (`base.css:29-33`), and an inherited computed `color` is not recomputed when a descendant redefines the variable. See C1 |
-| 13 | The app-preferences file still contains exactly four keys (§8.4) | **Met** | The renderer sends `PreferencesWriteRequest` (three keys, no `vaultPath` — `app.tsx:85-90`), and `preferences-handlers.ts:14` carries `vaultPath` forward from the file. §8.6 holds: no path originates in the renderer |
+| 12 | **The window re-themes immediately** on an Appearance change, and the recovery-kit screen stays permanently high-contrast dark (§4.8 step 38, D-Q) | **Met** | First half: `ThemedRoot` (`app.tsx:57-64`) sets `data-theme` from `useTheme()`; `theme-context.tsx:16-18` recomputes on every `preferences` change; `tokens.css` rebinds the custom properties. Second half, traced by hand: `[data-theme] {background; color}` (`base.css:32-35`) applies to the recovery kit's own div (`recovery-kit.tsx:51`), which also matches `[data-theme="dark"]`, so `var(--color-bg)`/`var(--color-text)` resolve **against its own** declarations → `#17181c` / `#f2f2f3`; descendants inherit that computed colour, `.kit-text`'s `var(--color-surface)` resolves to `#1f2126`, `.warning` to `#f5c451` on dark. `.recovery-kit {min-height:100vh}` (`screens.css:29-31`) makes it fill the window vertically. Cosmetic remainder in W1 |
+| 13 | The app-preferences file still contains exactly four keys (§8.4) | **Met** | Every renderer write now funnels through `mergePreferencesWrite` (`preferences-write.ts:11-16`), which drops `vaultPath` by construction and is tested for it (`preferences-write.test.ts:14-21`); `preferences-handlers.ts:14` carries `vaultPath` forward. §8.6 holds: no path originates in the renderer |
 
 ### Plan items (`plan.md:844-950`)
 
 | Item | Verdict | Evidence |
 |---|---|---|
-| 84 — `onboarding.tsx` renders from `policies/onboarding-tour.ts`'s slide list; opens no session, writes nothing itself | **Met** | `onboarding.tsx:2-7` imports `SLIDE_IDS` / `nextSlide` / `previousSlide` (P-D14's sanctioned `main/application/policies` import, same as `theme-context.tsx`); the component holds only `useState<SlideId>` |
-| 85 — the four slides' copy guardrails, reviewed as content | **Met** | See criterion 5. Read in both languages, line by line |
-| 86 — **the ordering invariant, with the test that drives it from the persisted flag** | **Not met** | The invariant is enforced (criterion 5). The **test item 86 asks for was not written** — no file in the diff exercises the ordering at all. `session-state.test.ts:67-75` (Slice 6) tests `canNavigateAwayFrom` in isolation, which is the pre-existing half |
-| 87 — `settings.tsx`, four sections, live language, Vault & sync links to the existing screens (P-D12) | **Met (narrowed)** | See criterion 8; P-D12 followed exactly — no read-only environment block is duplicated, the section is two links plus `settings.vaultAndSyncSeeSync` |
-| 88 — "what Settings is not", **asserted by tests** | **Partially met** | The no-bridge-import scan asserts "opens no session, touches no vault file". Nothing asserts "no editable field for the environment-resolved settings" or "no path to re-initializing a vault" — both are true by reading, neither is guarded |
+| 84 — `onboarding.tsx` renders from `policies/onboarding-tour.ts`'s slide list; opens no session, writes nothing itself | **Met** | `onboarding.tsx:2-7` (P-D14's sanctioned import); the component holds only `useState<SlideId>` |
+| 85 — the four slides' copy guardrails, reviewed as content | **Met** | See criterion 5. Read in both languages, line by line, including a search for `organiza / edita / fija / elimina / etiqueta` — none present |
+| 86 — **the ordering invariant, with the test that drives it from the persisted flag** | **Met** | The invariant is doubly enforced (criterion 5) and `overlay-nav.test.ts:24-41` is the test the item asks for, driven by `PREFS(tourSeen)` and nothing else. See S3 for the one case worth adding |
+| 87 — `settings.tsx`, four sections, live language, Vault & sync links to the existing screens (P-D12) | **Met** | See criterion 8; P-D12 followed exactly — no read-only environment block is duplicated |
+| 88 — "what Settings is not", **asserted by tests** | **Met (structurally)** | The no-bridge-import scan is stronger than it looks: a screen that cannot reach IPC cannot re-key, destroy or re-initialize anything, and cannot persist an environment override. The literal "no `VALIJA_HOME` field" assertion is still absent — S4 |
 | 89 — the gear reaches the locked screen | **Met** | `locked.tsx:65-70`, plus `nav-bar.tsx:38-40` for every workspace screen |
-| 89a — Diagnostics gains its dashboard entry point; header in **every** branch; exactly one `<DiagnosticsScreen` mount; two catalog keys | **Met (weakly tested)** | `dashboard.tsx:58-66` builds `header` once and all four branches render it (`:71,81,91,104`) — verified by reading. `app.tsx:271` and `:117-120` wire both callbacks to the single mount at `:299`. `dashboard.checkMySetup` present in both catalogs. The test does **not** prove the item's distinguishing requirement — see C3 |
-| 89b — `tokens.css` / `base.css` / `screens.css`; theme applied once on the shell root; `no-network-surface.test.ts` glob extended to `.css` | **Partially met** | Files exist, are imported from `app-main.tsx:3-5`, use the P-D6 system font stack with no `@font-face`, and the glob change (`no-network-surface.test.ts:25`) is correct and green over the three new files. But the per-screen half covers 5 of 16 screens, `.sr-only` is used by `locked.tsx:112` and defined nowhere (W3), and the recovery-kit exemption the item explicitly claims to preserve is broken (C1) |
-| 90 — five named tests | **Not met** | Nothing tests "shown automatically exactly once, on both branches, driven by the flag", "Skip sets the flag and returns the user where they were", "replay changes nothing else", or "switching language re-renders every visible string". Only "opening Settings / watching the tour do not extend the idle-lock clock" is covered, and indirectly, by the no-bridge-import scan |
-| P-D15 — overlays in `app.tsx`, guarded by `canNavigateAwayFrom` | **Met** | `app.tsx:57,108-137`, exactly as approved |
-| P-D11 — source-scan test rather than a third jsdom screen | **Met in form** | `diagnostics-entry-points.test.ts` exists in the named idiom; P-D5's boundary is untouched (`__dom-tests__/` still holds exactly `recovery-kit.dom.test.tsx` and `relocate-vault.dom.test.tsx`). Its assertions are weaker than the idiom it copies — see C3 |
-| P-D20 — `.css` in the glob | **Met** | `no-network-surface.test.ts:21-25,33` |
+| 89a — Diagnostics gains its dashboard entry point; header in **every** branch; exactly one `<DiagnosticsScreen` mount; two catalog keys | **Met** | `dashboard.tsx:58-66` builds `header` once and all four returns render it (`:70,79,88,104`); `diagnostics-entry-points.test.ts:27-35` now counts `{header}` occurrences and requires exactly 4, which is the item's distinguishing requirement made mechanical. `app.tsx:295` / `:138-141` wire both callbacks to the single mount at `:323` |
+| 89b — `tokens.css` / `base.css` / `screens.css`; theme applied once on the shell root; `no-network-surface.test.ts` glob extended to `.css` | **Met** | Files exist, imported from `app-main.tsx:3-5`, P-D6 system font stack with no `@font-face`; `app.theme.test.ts` pins the single application point and the kit's hardcoded `dark`; the glob change (`no-network-surface.test.ts:21-33`) is correct and green over the three stylesheets. `.sr-only` is now defined (`base.css:129-138`), closing the first pass's W3 |
+| 90 — five named tests | **Met (four of five directly, one by mechanism)** | (1) auto-play driven by the flag — `overlay-nav.test.ts:24-41`; (2) Skip sets the flag and returns the user where they were — `:44-53` + `preferences-write.test.ts:39-46`; (3) replay changes nothing else — `finishTourOverlay` + the `shouldPlayTour` write guard; (4) no idle-clock effect — the no-bridge-import scan; (5) live language — `preferences-write.test.ts:29-35` pins the merge, `i18n-context.tsx`'s key does the rest, but nothing asserts the re-render itself, which P-D5 forbids testing in a DOM. See S5 |
+| P-D15 — overlays in `app.tsx`, guarded by `canNavigateAwayFrom` | **Met** | `app.tsx:71,129-146`, with the decision itself extracted to `overlay-nav.ts` |
+| P-D11 — source-scan test rather than a third jsdom screen | **Met** | `diagnostics-entry-points.test.ts` in the named idiom; `__dom-tests__/` still holds exactly `recovery-kit.dom.test.tsx` and `relocate-vault.dom.test.tsx`, and no new `@vitest-environment jsdom` pragma appears anywhere in the diff (checked by grepping added lines) |
+| P-D20 — `.css` in the glob | **Met** | `no-network-surface.test.ts:21-33` |
 
 ---
 
@@ -62,246 +72,192 @@ P-D14 and P-D15 are followed as approved, and W4 is genuinely closed for the unl
 
 | Gate | Result |
 |---|---|
-| Security surface | **Clean.** No secret, key or passphrase is logged, written or newly crossed over IPC; no `console.*` in any new file. Key derivation, keychain use and SQLCipher keying are untouched — this slice touches no `src/` file and adds **no IPC channel, no zod schema, no preload method**. `updatePreferences` sends exactly `{theme, language, tourSeen}`, so §8.6's "filesystem paths never originate in the renderer" still holds structurally, and `preferences-handlers.ts:14` carries `vaultPath` forward. CSP (`main-window.ts:4-13`) is unchanged and already permitted `style-src 'self' 'unsafe-inline'`, so the new stylesheets need no relaxation. No MCP change. **One security-copy consequence, not a surface change but named here on purpose:** C1 renders §8.17's clipboard warning at ~1.7:1 contrast on the recovery-kit screen |
-| Tests for new behaviour, suite green | **Breached.** The suites pass — root **57 files / 301 tests**, desktop **41 files / 604 tests**, typecheck and lint clean in both, all six run by hand. But **item 86's named test and four of item 90's five named tests do not exist**, and the 108 new test lines against 559 new production lines are entirely `String.includes` greps. See C3 |
-| Advance ritual | **Met.** `refined.md:3` `Approved: Oscar 2026-08-20` (Gate R closed); `plan.md:3` `Approved: Oscar 2026-08-25` (third revision, Gate P re-closed); this `review.md` closes the trail. No `package.json`, lockfile or build-config edit in the diff |
-| Conventions, naming, placement | **Met.** `screens/onboarding.tsx`, `screens/settings.tsx`, `renderer/styles/{tokens,base,screens}.css` and `screens/diagnostics-entry-points.test.ts` land exactly where `plan.md` §9's approved tree puts them. `renderer/` is not a `domain/application/infra` layer root, so `app.theme.test.ts` beside `app.tsx` is not a bare-file breach, and it follows the `no-network-surface.test.ts` / `diagnostics.no-auto-run.test.ts` naming idiom. The renderer→`main/application/policies` import is P-D14's confirmed shape and is type-only at the port boundary. **One placement objection, and it is the root of C3:** the new overlay view state is inline `useState` in `app.tsx` rather than a plain-TS module in `renderer/state/`, where `session-state.ts`, `workspace-nav.ts`, `import-selection.ts`, `unlock-outcome.ts` and `diagnostic-rows.ts` all live and where `plan.md` §9 says view state goes ("plain TS view state … all `.test.ts`'d"), and where `refined.md:489-492` requires it ("View state … the tour's play/skip logic … plain TypeScript, unit-tested headlessly") |
+| Security surface | **Clean.** No secret, key or passphrase is logged, written or newly crossed over IPC; no `console.*` in any new file (added lines grepped for `console.`, `passphrase`, `secret`, `fetch(`, `http`, `localStorage` — the only hits are the words "key" in `Record` keys and prose). Key derivation, keychain use and SQLCipher keying are untouched: **no file under the repo's `src/` is modified at all**, no IPC channel, no zod schema, no preload method. Every renderer write goes through `mergePreferencesWrite`, which cannot emit `vaultPath` (§8.6), and `preferences-handlers.ts` carries it forward. CSP (`windows/main-window.ts:4-13`) unchanged and already permitted `style-src 'self' 'unsafe-inline'`. No MCP change. **The one security-copy consequence of the first pass is repaired**: §8.17's clipboard warning and the one-time raw key are now high-contrast on the kit's own dark subtree |
+| Tests for new behaviour, suite green | **Met.** Root **57 files / 301 tests**, desktop **44 files / 623 tests** — both counts exactly as claimed, both green, typecheck and lint clean in both trees, all six commands run by hand. Nothing is skipped, `.todo`'d or `xit`'d (grepped; the single "skip" hit in the tree is an `import-handlers` fixture field named `skipped`). The three previously-missing test items are now real headless unit tests over pure modules. One residual, judged below the gate rather than at it — W2 |
+| Advance ritual | **Met.** `refined.md:3` `Approved: Oscar 2026-08-20` (Gate R closed); `plan.md:3` `Approved: Oscar 2026-08-25` (third revision, Gate P re-closed); this `review.md` closes the trail. No `package.json`, lockfile, `electron.vite.config.ts` or `electron-builder.yml` edit in the diff |
+| Conventions, naming, placement | **Met.** `screens/onboarding.tsx`, `screens/settings.tsx`, `renderer/styles/{tokens,base,screens}.css` and the two source-scan tests land where `plan.md` §9's approved tree puts them. The first pass's one placement objection is resolved: the overlay decision and the preferences-write narrowing now live in `renderer/state/` as plain-TS modules beside `session-state.ts` / `workspace-nav.ts` / `unlock-outcome.ts`, which is what `plan.md:1898` ("plain TS view state … all `.test.ts`'d"), `plan.md:1411` and `refined.md:489-492` require. `overlay-nav.ts` names itself after `workspace-nav.ts`; `preferences-write.ts` sits with the other derivation modules. `renderer/` is not a `domain/application/infra` layer root, so `app.theme.test.ts` beside `app.tsx` is not a bare-file breach, and it follows the `no-network-surface.test.ts` idiom. The renderer → `main/application/policies` imports (`shouldPlayTour`, `markTourSeen`, `resolveTheme`, `resolveSystemOrOverride`) are P-D14's confirmed shape |
 
-**Two gates breached: tests for new behaviour, and — through C1 — a shipped screen that no longer
-meets the decision it claims to preserve.**
+**No gate breached.**
 
 ---
 
-## 3. Line count
+## 3. Line count (`desktop/src` only; `advances/**` excluded)
 
 | | Lines |
 |---|---|
-| New production — `settings.tsx` 113 · `onboarding.tsx` 66 · `base.css` 114 · `screens.css` 77 · `tokens.css` 33 · `app.tsx` +114/−18 · `dashboard.tsx` +17/−4 · `locked.tsx` +8 · `nav-bar.tsx` +6/−1 · `app-main.tsx` +3 · catalogs +8 | **559 added / 23 removed** |
-| Of which CSS | 224 (budget was ~320 — `plan.md:1640`) |
-| New tests (3 files + 1 glob edit) | **108** |
-| Test : production ratio | **0.19** (Slice 10's was 1.34 — 767:573) |
+| Production — `settings.tsx` 121 · `base.css` 139 · `app.tsx` +139/−19 · `screens.css` 89 · `onboarding.tsx` 66 · `overlay-nav.ts` 49 · `tokens.css` 33 · `preferences-write.ts` 22 · `dashboard.tsx` +17/−4 · `workspace-nav.ts` +10 · `diagnostic-rows.ts` +9 · `locked.tsx` +8 · `nav-bar.tsx` +6/−1 · `diagnostics.tsx` +5/−1 · `app-main.tsx` +3 · catalogs +8 | **724 added / 25 removed** |
+| Of which CSS | 261 (budget was ~320 — `plan.md:1640`) |
+| Tests — `overlay-nav.test.ts` 66 · `diagnostics-entry-points.test.ts` 50 · `preferences-write.test.ts` 47 · `onboarding-settings.no-session.test.ts` 33 · `app.theme.test.ts` 27 · `workspace-nav.test.ts` 9 · glob edit 7 | **239 added / 1 removed** |
+| Test : production ratio | **0.33** overall; **0.52** against the 463 non-CSS production lines (was 0.19) |
 
-The production side is proportionate and the two new screens are the right size (66 and 113 lines,
-each one render). The test side is not: nine `String.includes` assertions over four source files.
+Proportionate. The two new screens are still the right size (66 and 121 lines, one render each), the
+three extracted state modules are 81 lines carrying 122 lines of tests, and no file in the diff is
+oversized.
 
 ---
 
 ## 4. Issues
 
-### Critical (each one holds the merge)
+### Critical
 
-**C1 — the stylesheet breaks the recovery-kit screen in light theme; the raw key is rendered
-dark-on-dark and the clipboard warning yellow-on-white.** `tokens.css:1-8` claims the recovery
-kit's own `data-theme="dark"` is *"re-applied through the normal cascade — no separate mechanism
-needed"*. That is false for **inherited** properties. The only rule that sets a screen body's
-`background`/`color` is `base.css:29-33` on `.app-shell`, which `ThemedRoot` renders with the
-**app's** theme. In light theme:
-
-- `.app-shell` computes `color: #1a1a1a` and children inherit that **computed value**;
-  re-declaring `--color-text` on the nested `.recovery-kit` cannot change it.
-- `screens.css:26-34` gives `.recovery-kit .kit-text` `background: var(--color-surface)`, which
-  **does** re-resolve inside the nested `[data-theme="dark"]` → `#1f2126`.
-- Net effect: `recovery-kit.tsx:55`'s `<pre className="kit-text">` — **the raw 32-byte key, shown
-  exactly once and never retrievable again (§8.2)** — is `#1a1a1a` text on a `#1f2126` box.
-  Contrast ≈ 1.05:1. It is invisible.
-- `base.css:88-90`'s `.warning` resolves `--color-warning` to the dark set's `#f5c451` while the
-  page behind it is still white: §8.17's *"the clipboard is readable by other apps"* warning lands
-  at ≈1.7:1. `.explainer` (the D-V(d) English-notice sentence) lands at ≈2.2:1.
-- The screen's background stays light throughout, so D-Q's *"the recovery-kit screen is exempt and
-  stays permanently high-contrast dark"* is not implemented at all — only a handful of variables
-  are rebound, and the ones that matter are inherited.
-
-Nothing in the suite can catch this: `recovery-kit.dom.test.tsx` asserts `textContent`, and jsdom
-does not resolve `var()`. **What flips it:** one rule that makes the attribute carry the paint
-rather than only the palette — e.g. in `base.css`, `[data-theme] { background: var(--color-bg);
-color: var(--color-text); }` (with `.app-shell` keeping `min-height: 100vh`), plus
-`.recovery-kit { min-height: 100vh; }` so the exempt screen actually fills the window. Then the
-nested `data-theme="dark"` repaints its subtree, which is what item 89b says it does. Add a
-`__dom-tests__` assertion only if P-D5's boundary permits it; otherwise a comment in `tokens.css`
-that no longer claims something untrue is the minimum.
-
-**C2 — lifting `WorkspaceView` into `App` without resetting it on lock drops a user back into the
-relocation wizard after a successful move.** Before this slice, `Workspace` owned `view` locally
-(`app.tsx` at `ad85718`), so locking unmounted it and re-unlocking started at
-`INITIAL_WORKSPACE_VIEW`. Now `workspaceView` lives at `app.tsx:58` and is never reset. The
-concrete path, straight out of `refined.md` §4.7:
-
-1. The user completes a relocation. `RelocateVaultScreen` calls `onDone` → `onVaultRelocated` →
-   `setState(afterLock())` (`app.tsx:237`) — the move locks the vault as its first step (§4.7 step
-   31), so this is the normal, successful ending.
-2. `workspaceView` is still `{ screen: "relocate-vault" }`.
-3. The user unlocks again (§4.7 step 36) and lands **back on "Move my vault…", stage `choose`**,
-   instead of the Sync panel step 36 describes — one click away from starting a second move on a
-   vault that just moved.
-
-The comment this slice left in place at `app.tsx:301-304` now describes behaviour the code no
-longer has ("hands control back to the Router's own 'locked' screen rather than staying inside a
-workspace the vault can no longer back" — it does stay). The same staleness applies to `import`
-and `diagnostics` across any lock/unlock. **What flips it:** reset the view when the session leaves
-`unlocked` — either `onVaultRelocated={() => { setWorkspaceView(INITIAL_WORKSPACE_VIEW);
-setState(afterLock()); }}` plus the same at every other transition out of `unlocked`, or, better and
-testable, fold the reset into the view state itself (see C3) so `afterLock()` and
-`{screen:"relocate-vault"}` cannot drift apart again.
-
-**C3 — item 86's test and four of item 90's five tests were not written, and the three tests that
-were written cannot fail on the defects that matter.** This is the tests-for-new-behaviour gate.
-
-- Untested: the tour opening at all (`app.tsx:75-79`), `finishTour`'s write-before-close ordering
-  (`:99-102`) — which is the entire reason the tour does not loop — the Skip/Get-started
-  equivalence, the replay path, `updatePreferences`'s patch merge (the function that decides which
-  three keys the renderer is allowed to send, §8.6), and the overlay precedence including the
-  kit-pending guard.
-- `diagnostics-entry-points.test.ts:26-27` is `expect(DASHBOARD).toContain("onCheckSetup")` — it
-  passes if the prop is destructured and never rendered, and it says nothing about item 89a's
-  actual requirement, *"a header that shows in every branch it already has"*. The four branches do
-  render it (`dashboard.tsx:71,81,91,104`), by reading; a `(DASHBOARD.match(/\{header\}/g) ?? [])`
-  length assertion would have made that mechanical, in the same spirit as the file's own
-  `<DiagnosticsScreen` count.
-- `onboarding-settings.no-session.test.ts` and `app.theme.test.ts` are sound structural guards and
-  should stay. They are not substitutes for item 90.
-
-This is not a request to widen P-D5. It is the codebase's own established alternative: extract the
-overlay decision into `renderer/state/overlay-nav.ts` — `type Overlay = "tour" | "settings" | null`,
-`openSettings`, `openTour`, `closeOverlay`, `tourOverlayFor(state, preferences)`, and the
-`afterLock`-resets-the-workspace-view rule C2 needs — and unit-test it headlessly beside
-`session-state.test.ts`. That is exactly what `refined.md:489-492` and `plan.md` §9's `state/` row
-already require of view state, and it is how Slice 10 fixed its own second-pass blocker (pull the
-derivation out of the component, test the module). **What flips it:** that module plus tests
-covering item 86 and item 90's four missing bullets.
+**None.** C1, C2 and C3 are closed; the verification is in §5.
 
 ### Warning (does not by itself hold the merge)
 
-**W1 — Settings' Vault & sync silently disappears while the vault is locked, which is the one
-reachability `refined.md` singles out.** `settings.tsx:88` gates both entries on `unlocked`, and
-`app.tsx:113` supplies it. The judgement is defensible at the code level — `DiagnosticsScreen` and
-`RelocateVaultScreen` are only mounted inside `Workspace` (`app.tsx:299-305`), which exists only at
-`phase === "unlocked"` — and the slice's "Done when" is satisfied for the unlocked case, so this is
-not charged as a criterion failure. But it is a real narrowing of §4.8: step 37 makes Settings
-reachable from the locked screen, step 40 lists Vault & sync unconditionally, and P-D12 describes
-the section as "two links plus a sentence" with no lock condition. The user this hurts is precise
-and important: someone who *cannot unlock* and wants **Check my setup** — the screen whose whole
-audience is "something is wrong" — now has no route to it anywhere in the app. `doctor` itself runs
-fine on a locked vault. Two honest exits: (a) hoist Diagnostics (and, if it is safe, the wizard —
-it locks first anyway) to overlay level so Settings can reach them in any phase; or (b) keep the
-narrowing and record it explicitly in `docs/gui.md` (Slice 12) **and** as a `refined.md` amendment,
-the way W4 was carried rather than dropped. Silently is the one option that is not available.
+**W1 — the recovery kit is now a dark 720px column on a light 1100px window, not a dark screen.**
+The contrast defect is genuinely fixed, which is what mattered, but D-Q's wording is *"the
+recovery-kit screen stays permanently high-contrast dark"* and only the content column is. The div
+that carries `data-theme="dark"` is the same div that carries `.screen`
+(`recovery-kit.tsx:51`), and `.screen` is `max-width: 720px; margin: 0 auto` (`base.css:41-45`); the
+window defaults to 1100×720 (`windows/main-window.ts:16-17`), so in **light** theme the exempt screen
+renders with ~190px of white gutter on each side. Harmless for legibility, wrong for a screen whose
+whole point is to look unmistakably different, and Slice 12 photographs it. Two-line fix: split the
+wrapper so the attribute is on a full-bleed element —
+`<div className="recovery-kit" data-theme="dark"><div className="screen">…</div></div>` — and drop
+`recovery-kit` from the `.screen` class list. Not charged against criterion 12 because the fix
+shipped is precisely the one the first pass prescribed, and the binding half (the one-time key and
+the §8.17 warning being readable) is met.
 
-**W2 — a failed preferences write traps the user inside the tour with no exit.** `finishTour`
-(`app.tsx:99-102`) awaits `updatePreferences` and only then calls `setOverlay(null)`; the call site
-is `void finishTour()` (`:109`), so a rejected `preferences:write` (disk full, permission, a
-corrupted file the store refuses) is swallowed and the overlay never closes. Both Skip and Get
-started route through it, so there is no second way out and no message. Write-before-close is the
-right ordering for the no-loop invariant — keep it, but close in a `finally`, or catch and close
-anyway: a tour that replays next launch is a far smaller failure than an app that cannot be
-dismissed. The same swallow applies to Settings' radios (`:114`), where the cost is only a control
-that silently does nothing.
+**W2 — S4's new `fatal` field is the one piece of new behaviour in this diff with no assertion on
+it.** `DiagnosticRow.fatal` (`diagnostic-rows.ts:18`), `isFatal` (`:61-63`) and the hardcoded
+`fatal: false` on the tool-Node row (`:95`) ship untested, and `diagnostics.tsx:29`'s
+`ok ? "ok" : fatal ? "fatal" : "warning"` is inside a component P-D5 forbids rendering in a test.
+I re-read `diagnostic-rows.test.ts` in full: it is still green and still meaningfully tests what it
+claims — every assertion uses optional-property access (`rows.find(...)?.status`), not a whole-row
+`toEqual`, so the new required field breaks nothing and hides nothing, and Slice 10's own criterion 3
+is *improved* rather than regressed (a non-fatal warning no longer paints with `--color-danger`).
+But `it("labels ok / warning / fatal correctly for a regular check")` at `:52-68` already feeds the
+exact three inputs — `{ok:true}`, `{ok:false}`, `{ok:false,fatal:true}` — and asserts only `status`.
+Three added lines (`expect(rows.find((r) => r.key === "node")?.fatal).toBe(true)` and the two
+`false` cases) would close it. Judged below the tests-for-new-behaviour gate rather than at it,
+deliberately and on the record: it is one derived boolean whose branch condition is character-for-
+character the already-tested `statusLabel` condition (`:56-59`), in a module whose every other
+derivation is covered. It is the closest call in the slice; add the assertions in Slice 12's pass.
 
-**W3 — `.sr-only` is used by the markup and defined by no stylesheet, so a raw device id is now
-visible on the fork banner.** `locked.tsx:112` renders `<span className="sr-only">{writer}</span>`;
-`base.css`/`screens.css` define no `.sr-only` rule. Before this slice there was no CSS at all and
-the whole app was unstyled, so nothing regressed *relative to nothing* — but shipping a stylesheet
-that omits a class the markup depends on leaves an unlabeled writer identifier sitting next to the
-"Go to sync" button on the `VAULT_FORK_DETECTED` screen. Add the standard
-`.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
-clip: rect(0 0 0 0); white-space: nowrap; border: 0; }`. A grep of `className` literals against the
-stylesheet also shows 11 of the 16 screens have no per-screen rules at all (`client-card`,
-`conversation-row`, `item-row`, `preflight`, `fork-notice`, `pack-text`, …); item 89b asked for
-rules "sized to what the sixteen screens already render", and Slice 12 photographs whatever this
-leaves on screen.
-
-**W4 — replaying the tour from Settings does not return the user to Settings, and re-writes the
-preferences file on the way out.** §4.8 step 41 and criterion 6 say a replay "changes nothing except
-which slide is on screen — no state". `finishTour` always calls `updatePreferences({tourSeen:true})`
-even when the flag is already `true` (an idempotent value, but a real file write), and `setOverlay(null)`
-returns the user to the Router, not to the Settings screen they launched it from — the same
-sentence in criterion 2 that says Skip "returns the user to where the tour interrupted them".
-Cheapest fix: remember the overlay to restore (`"settings"` when replayed, `null` when auto-played)
-and skip the write when `preferences.tourSeen` is already true — both fall out naturally from the
-`overlay-nav.ts` module C3 asks for.
+**W3 — the locked-state narrowing of Vault & sync is disclosed but not yet recorded where a user or
+a future maintainer will find it.** W1 of the first pass offered two honest exits; the slice took
+(b), and the comment at `settings.tsx:84-93` is exactly the clearly-flagged narrowing that option
+required — it names the affected user ("someone who cannot unlock has no route to *Check my
+setup*"), names the reason, and names where the record is owed. The locked branch now renders
+`settings.vaultAndSyncLocked` in both catalogs (`en.ts:293`, `es.ts:301`) rather than an empty
+section, so nothing vanishes silently on screen either. The debt itself is still open: `docs/gui.md`
+(Slice 12) and a `refined.md` amendment. Carry it as a named Slice 12 obligation, the way W4 was
+carried, or it will be forgotten the way W4 nearly was.
 
 ### Suggestion
 
-**S1 — `markTourSeen` is now dead code and its intent was re-implemented inline.**
-`onboarding-tour.ts:27` exists precisely to express "sets `tourSeen` without touching any other
-preference" and is tested for it (`onboarding-tour.test.ts:39-52`), but the only importer is that
-test — `finishTour` hand-builds the payload instead. `plan.md:861` lists it among the things "this
-slice needs on the main side [that] already exist". Either build the write from
-`markTourSeen(preferences)` or delete the function and its tests; a policy that only its own test
-calls is worse than either.
+**S1 — `.check-row.warning` accidentally inherits the global `.warning` colour, inverting the
+emphasis between warnings and failures.** `base.css:101-103` paints any `.warning` element with
+`--color-warning`, and `diagnostics.tsx:29` now puts that same class name on the whole `<li>`, so a
+warning row's *entire* text — name, status, explanation, detail — turns amber, while a **fatal** row
+gets only a red border and ordinary text. Legibility is fine in both themes (`#8a5a00` on white,
+`#f5c451` on `#17181c`), but the louder treatment is on the less severe row. Either scope the base
+rule (`p.warning`) or name the severity classes so they cannot collide —
+`.check-row--warning` / `.check-row--fatal` — and give the fatal row's status the danger colour.
 
-**S2 — `value as Language` in `settings.tsx:80` is an unsound cast that buys nothing.** `value` is
-`"system" | "en" | "es"` and the parameter type is already `SystemOr<Language>`, so the assertion is
-pure noise that also lies about `"system"`. Dropping it also drops the file's only `Language`
-import. The Appearance block eight lines above does the same thing correctly, without a cast.
+**S2 — `resetWorkspaceView()` is a named alias for a constant, and the invariant it exists to
+express still lives only in a comment.** `workspace-nav.ts:22-24` returns `INITIAL_WORKSPACE_VIEW`,
+and its test (`workspace-nav.test.ts:5-8`) is close to tautological. The real rule — *the view is
+reset at every transition out of `unlocked`* — is enforced by `app.tsx:117-123` pairing two setters
+and by a comment asking future callers to do the same. Today that is airtight (I grepped: `afterLock`
+has exactly two call sites, and the other is the `no-vault` → `locked` transition where the view is
+already initial), but it is one careless `setState(afterLock())` away from regressing to C2. A
+combined transition — `lockFromWorkspace(): { state: SessionState; view: WorkspaceView }`, or folding
+the view into the session state — makes the pairing impossible to forget and gives the test something
+non-trivial to assert.
 
-**S3 — the `preferences === null` guard inside `updatePreferences` (`app.tsx:84`) is unreachable**;
-the component returned at `:81` when it was null, and TypeScript narrows the captured `const` in the
-closure. It reads as if the invariant were uncertain. (Same class as Slice 10's S5.)
+**S3 — `overlay-nav.test.ts` covers `locked` but never `kit-pending`, which is the phase item 86 is
+actually about.** `autoTourOverlay`'s `state.phase !== "unlocked"` guard covers both, and the
+`locked` case exercises the same branch, so this is not a hole in the code — but the test that
+*names* the ordering invariant should assert the state the invariant is about. One line:
+`expect(autoTourOverlay(CLOSED_OVERLAY, { phase: "kit-pending" }, PREFS(false))).toEqual(CLOSED_OVERLAY)`.
 
-**S4 — Slice 10's S3 is now visible rather than latent.** `diagnostics.tsx:27` collapses fatal and
-warning into `className="problem"`, and `screens.css:69-71` paints `.check-row.problem` with
-`--color-danger`. A non-fatal warning row now looks identical to a fatal failure — the exact
-distinction criterion 3 of Slice 10 required the screen to make, preserved in the status word only.
-Emitting `ok | warning | fatal` costs two lines in the pure module that already computes it.
+**S4 — item 88's two negative claims are still proven only by implication.** The no-bridge-import
+scan makes them true, but `onboarding-settings.no-session.test.ts` could say so directly, in the same
+source-scan idiom and for the same cost: `expect(SETTINGS).not.toMatch(/VALIJA_(HOME|STATE_HOME|AUTOLOCK_MINUTES)/)`
+and an assertion that the file contains no `<input` whose `type` is `text`. Cheap, and it makes the
+guarantee legible to the next reader instead of requiring the inference.
 
-**S5 — `.pack-text` has no wrapping rule.** `pack-preview.tsx:71` renders the context pack in a
-`<pre>`; `.kit-text` got `white-space: pre-wrap; word-break: break-word` and `.pack-text` got
-nothing, so a pack with long lines overflows the 720px `.screen` container. One rule, and Slice 12's
-screenshots improve with it.
+**S5 — a rejected `preferences:write` is still an unhandled promise rejection.** `finishTour`
+(`app.tsx:107-115`) now closes in a `finally`, which is the right fix for the trap — but the
+rejection is re-thrown out of the `try` into `void finishTour()` (`:130`), and the same holds for
+`void updatePreferences(patch)` (`:135`). Nothing is logged that shouldn't be (preferences only), and
+no state is corrupted, but the user gets no signal at all when a radio silently does nothing. A
+`catch` that surfaces one localized sentence — or, at minimum, `.catch(() => {})` at the two call
+sites to keep the rejection deliberate rather than accidental — closes it.
 
-**S6 — an OS theme change mid-session is not followed.** `theme-context.tsx:15-18` computes
-`window.matchMedia("(prefers-color-scheme: dark)").matches` inside a `useMemo` keyed on
-`preferences`, so with Appearance on *Follow system* the window only picks up an OS switch on
-relaunch. D-Q's binding criterion is the *user's* Appearance change, which works — but now that the
-theme is actually painted, a `matchMedia` change listener is ~5 lines and adds no timer
-(`setInterval` stays forbidden).
+**S6 — `updatePreferences` closes over the render's `prefs`, so two fast successive changes can
+clobber each other.** `app.tsx:93,95-98`: the base of the merge is the value captured at render
+time, not the latest. Click *Dark* and then *Español* before the first write's re-read resolves and
+the second write reverts the theme. The window is milliseconds wide and the pre-existing code had the
+same shape, so this is not new — but the fix is small (merge inside a `setPreferences` updater, or
+serialize writes through a single in-flight promise) and this is the slice that made preference
+writes a user-facing control.
 
-**S7 — no gear on `no-vault.tsx` / `create-vault.tsx`.** §4.8 step 37 names "dashboard, project
-view, or the locked screen", so this is within spec; noting it because a Spanish speaker on an
-English-locale OS meets the passphrase warning (§8.17 security copy) before any surface offers them
-the language switch.
+**S7 — an OS theme change mid-session is still not followed** (carried from the first pass, still
+within spec). `theme-context.tsx:16-18` reads `matchMedia(...).matches` inside a `useMemo` keyed on
+`preferences`, so with Appearance on *Follow system* the window picks up an OS switch only on
+relaunch. D-Q's binding criterion is the *user's* Appearance change, which works — and now that the
+theme is actually painted, a `matchMedia` change listener is ~5 lines and adds no timer.
+
+**S8 — no gear on `no-vault.tsx` / `create-vault.tsx`** (carried, still within spec). §4.8 step 37
+names "dashboard, project view, or the locked screen". Noting it once more because a Spanish speaker
+on an English-locale OS meets the §8.17 passphrase warning before any surface offers the language
+switch.
 
 ---
 
 ## 5. What was verified by hand rather than taken on trust
 
-- `npm run typecheck && npm run lint && npm run test` at the repo root **and** in `desktop/`. All
-  six green. **Root: 57 files / 301 tests. Desktop: 41 files / 604 tests** — both counts exactly as
-  claimed. Root lint prints one pre-existing `biome migrate` info, unrelated to this diff.
-- `git show 8cc7f01 --numstat`: no `package.json`, no lockfile, no `electron.vite.config.ts`, no
-  `electron-builder.yml`, and **no file under `src/`** is touched — the "root suite unchanged"
-  claim is structural, not incidental.
-- C1 was derived by reading the cascade, not assumed: `base.css` is the only file that sets
-  `background`/`color` for a screen body, `screens.css:26-34` is the only rule that touches
-  `.kit-text`, and `recovery-kit.tsx:52` is the only other `data-theme` in the tree. `index.html`
-  carries no inline style and there is no other stylesheet in the repo.
-- C2 was derived by diffing the old `Workspace` against the new one: `useState<WorkspaceView>` moved
-  from the component that unmounts on lock to the component that does not, and no reset was added at
-  any transition.
-- Both tour catalogs read end to end in English and Spanish against D-U(c)'s three guardrails,
-  including a search for "organiza", "edita", "fija", "elimina", "etiqueta" — none present.
-- `screens/__dom-tests__/` still contains exactly `recovery-kit.dom.test.tsx` and
-  `relocate-vault.dom.test.tsx`: P-D5's boundary was not widened, as P-D11 requires.
-- The `.css` glob genuinely scans the new files (`no-network-surface.test.ts` runs `it.each` over
-  every collected path, and the three stylesheets appear as their own test cases); the comment-skip
-  filter only skips `//` lines, so CSS `/* */` comments are scanned too — the guard is real.
-- `preferences-handlers.ts:14` re-read to confirm the renderer's three-key write cannot clobber
-  `vaultPath` (§8.6).
-- `main-window.ts` CSP re-read: unchanged by this slice, and the new stylesheets need no relaxation
-  of it.
+- `npm run typecheck && npm run lint && npm run test` in `desktop/` **and** at the repo root. All six
+  green. **Desktop: 44 files / 623 tests. Root: 57 files / 301 tests** — both counts as claimed. Root
+  lint prints the same pre-existing `biome migrate` info as last pass, unrelated to this diff.
+- **C1 re-derived, not assumed.** `[data-theme]` is `(0,1,0)`, the same specificity as
+  `[data-theme="light"]`, but they set disjoint properties, so there is no conflict to resolve. On
+  the kit's div both selectors match: the custom properties resolve from the **dark** block and the
+  `var()`s in the paint rule resolve against that element's own computed values, so it repaints
+  itself rather than inheriting the shell's already-computed `color`. Descendants then inherit
+  `#f2f2f3`; `.kit-text`'s `var(--color-surface)` → `#1f2126` (≈13:1); `.warning` → `#f5c451` on
+  `#17181c`; `.explainer` → `#a2a6ad`; `button` → dark surface, light text. `resolveTheme` can only
+  return `"light" | "dark"` (`theme-resolution.ts` via `theme-context.tsx:16-18`), so `[data-theme]`
+  never matches a third value. `box-sizing: border-box` is global, so `min-height: 100vh` plus 24px
+  padding does not produce a second scrollbar against `.app-shell`'s own `100vh`.
+- **C2 re-derived.** `relocationFinished` traced through all four hops to `RelocateVaultScreen`'s
+  `onDone`; `grep -n onDone src/renderer/screens/relocate-vault.tsx` returns three lines — the prop,
+  its type and `onUnlockAgain={onDone}` at `:131`, reachable only from `stage.step === "done"`. So
+  there is exactly one path back and it resets. `afterLock` has two call sites in `app.tsx` (`:122`
+  and `:210`); the second is `no-vault` → `locked`, where the view is already initial and no
+  workspace has existed. No idle-lock or session-expiry subscription exists in the renderer yet
+  (grepped), so no third path.
+- **C3 re-derived.** `vitest.config.ts` sets `environment: "node"` globally and jsdom is opted into
+  per file by the `// @vitest-environment jsdom` pragma; grepping the added lines for that pragma
+  returns nothing, and `screens/__dom-tests__/` still contains exactly the two P-D5 files. The new
+  tests are therefore genuinely headless. `diagnostics-entry-points.test.ts:33` counts `{header}` and
+  requires exactly 4; `dashboard.tsx` has exactly four returns (`:68,77,86,102`), each rendering `{header}` (`:70,79,88,104`) —
+  the count would fail if a branch dropped the header, which is what the old presence-only assertion
+  could not do.
+- **W2 checked against Slice 10.** `diagnostic-rows.test.ts` re-read end to end: all nine cases use
+  `?.` property access, none does a whole-row `toEqual`, so the new required field cannot silently
+  satisfy a stale assertion. Green, and still testing what it claims.
+- Both tour catalogs re-read in English and Spanish against D-U(c)'s three guardrails, including the
+  search for `organiza / edita / fija / elimina / etiqueta` — none present.
+- `preferences-handlers.ts` re-read: unchanged by this slice, and the renderer's three-key write
+  still cannot clobber `vaultPath` (§8.6). `windows/main-window.ts` re-read: CSP unchanged, and the
+  bundled stylesheets need no relaxation of `style-src 'self' 'unsafe-inline'`.
+- `git diff --numstat ad85718..200f432`: the only non-`advances/` paths are under `desktop/src`. No
+  `package.json`, no lockfile, no build config, and no file under the repo's `src/` — the "root suite
+  unchanged" claim is structural, not incidental.
+- `exactOptionalPropertyTypes: true` is inherited by both desktop tsconfigs, so
+  `Partial<PreferencesWriteRequest>` cannot smuggle an explicit `undefined` through
+  `mergePreferencesWrite`'s spread.
 
 ---
 
-## 6. What would flip this to PASS
+## 6. Standing obligations for Slice 12
 
-1. **C1** — a rule that makes `data-theme` paint its subtree (`background` + `color`), so the
-   recovery kit is actually the high-contrast dark screen D-Q exempts, and the key and the clipboard
-   warning are legible in light theme.
-2. **C2** — reset `workspaceView` when the session leaves `unlocked`, so a completed relocation does
-   not re-open the relocation wizard.
-3. **C3** — item 86's test and item 90's four missing tests, on a plain-TS `renderer/state/`
-   overlay module rather than inline in `app.tsx`; plus the `{header}`-in-every-branch assertion in
-   `diagnostics-entry-points.test.ts`.
+Not merge gates; named here so they are not lost:
 
-W1 needs a decision recorded (fix or amend), not necessarily code. W2–W4 and every S are welcome in
-the same pass but do not gate it.
+1. **W3** — record the locked-state Vault & sync narrowing in `docs/gui.md` **and** as a `refined.md`
+   amendment. The code comment is the promise; these are the payment.
+2. **W1** — full-bleed the recovery kit before the bilingual screenshots are taken.
+3. **W2** — three assertions on `DiagnosticRow.fatal`.
