@@ -14,6 +14,8 @@ export interface DiagnosticRow {
   detail: string;
   extra?: string | undefined;
   ok: boolean;
+  /** Mirrors `doctor.ts`'s own `!check.ok && check.fatal` distinction (Slice 10 criterion 3) — carried onto the row so a stylesheet can tell a warning from a failure without reopening this module (S4, `review.md`). */
+  fatal: boolean;
 }
 
 type Translate = Translator["t"];
@@ -56,6 +58,10 @@ function statusLabel(check: DiagnosticCheckMessage, t: Translate): string {
   return check.fatal === true ? t("diagnostics.fatal") : t("diagnostics.warning");
 }
 
+function isFatal(check: DiagnosticCheckMessage): boolean {
+  return !check.ok && check.fatal === true;
+}
+
 /**
  * A client row's `extra` line: the vault path it points at, the default
  * location when it's installed with no explicit one (a `valija install`
@@ -86,6 +92,7 @@ function toolNodeRow(nodeStatus: NodeStatusResponse, t: Translate): DiagnosticRo
     explanation: "",
     detail: ok ? t("diagnostics.toolNodeOk") : t("diagnostics.toolNodeMissing"),
     ok,
+    fatal: false, // D-W: the tool-Node probe warns, it never fails the screen
   };
 }
 
@@ -117,6 +124,7 @@ export function diagnosticRows(input: {
       explanation: explanationFor("node", knownClients, t),
       detail: checkRowDetail(appNodeCheck, errorCopy),
       ok: appNodeCheck.ok,
+      fatal: isFatal(appNodeCheck),
     });
   }
 
@@ -132,6 +140,7 @@ export function diagnosticRows(input: {
       detail: checkRowDetail(check, errorCopy),
       extra: clientExtra(check, knownClients, toolsStatus, t),
       ok: check.ok,
+      fatal: isFatal(check),
     });
   }
 

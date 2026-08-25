@@ -20,10 +20,22 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-.app-shell {
-  min-height: 100vh;
+/*
+ * `background`/`color` are painted on the `data-theme` attribute itself,
+ * never only on `.app-shell` — `color` is inherited, so a nested element
+ * that only *redeclares* the custom properties (the recovery kit's own
+ * permanent `data-theme="dark"`, item 89b) would otherwise never repaint:
+ * children would keep the ancestor's already-computed `color`. Painting
+ * here means the nested attribute genuinely repaints its own subtree
+ * through the ordinary cascade, which is what D-Q's exemption requires.
+ */
+[data-theme] {
   background: var(--color-bg);
   color: var(--color-text);
+}
+
+.app-shell {
+  min-height: 100vh;
 }
 
 .screen {
@@ -111,4 +123,17 @@ label {
 
 .nav-bar .settings-gear {
   margin-left: auto;
+}
+
+/* Standard visually-hidden pattern — used by locked.tsx's fork banner to keep the writer device id available to assistive tech without showing it as plain text. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }

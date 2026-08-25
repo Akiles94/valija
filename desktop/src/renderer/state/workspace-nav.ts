@@ -11,3 +11,13 @@ export type WorkspaceView =
   | { screen: "diagnostics" };
 
 export const INITIAL_WORKSPACE_VIEW: WorkspaceView = { screen: "dashboard" };
+
+/**
+ * A workspace view must not survive the session leaving "unlocked" — call
+ * this at every transition out of it (relocation's `onVaultRelocated`
+ * today), paired with the `SessionState` transition, so a completed
+ * relocation cannot land the next unlock back inside the relocation wizard.
+ */
+export function resetWorkspaceView(): WorkspaceView {
+  return INITIAL_WORKSPACE_VIEW;
+}

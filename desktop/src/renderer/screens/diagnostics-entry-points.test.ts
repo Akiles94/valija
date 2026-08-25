@@ -24,6 +24,15 @@ describe("Diagnostics has exactly one entry point, reached two ways", () => {
     expect(DASHBOARD).toContain("dashboard.checkMySetup");
   });
 
+  it("dashboard.tsx renders the header in every one of its four return branches (item 89a)", () => {
+    // A count assertion, not just presence, because the item's own distinguishing
+    // requirement is "a header that shows in every branch it already has" — error,
+    // loading, empty, and populated (review.md's C3, sharpening a weaker assertion
+    // this test previously made).
+    const headerUses = DASHBOARD.match(/\{header\}/g) ?? [];
+    expect(headerUses).toHaveLength(4);
+  });
+
   it("settings.tsx renders an open-Diagnostics action wired to onOpenDiagnostics", () => {
     expect(SETTINGS).toContain("onOpenDiagnostics");
     expect(SETTINGS).toContain("settings.openDiagnostics");
