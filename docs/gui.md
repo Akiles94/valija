@@ -56,7 +56,7 @@ chmod +x Valija-<version>.AppImage
 ./Valija-<version>.AppImage
 ```
 
-### Running from source (verified, not assumed)
+### Running from source
 
 If you'd rather build it yourself:
 
@@ -64,11 +64,21 @@ If you'd rather build it yourself:
 git clone https://github.com/akiles94/valija.git
 cd valija/desktop
 npm ci
+npx electron-rebuild -f -w better-sqlite3-multiple-ciphers
 npm run dev
 ```
 
-This runs the exact same code the packaged builds ship — `electron-vite dev` builds and launches
-the app from source, against the same `src/` the CLI uses.
+`npm run dev` (`electron-vite dev`) runs the exact same code the packaged builds ship, against the
+same `src/` the CLI uses. The `electron-rebuild` step matters and isn't optional: `npm ci` installs
+`better-sqlite3-multiple-ciphers` built for your system's own Node.js, not the different Node
+version Electron bundles, and the vault won't open without this step — the same rebuild
+`npm run package`'s `electron-builder` step already does automatically when producing a packaged
+artifact. **This exact sequence could not be run end-to-end while writing this page** — the
+environment that wrote it has its network access to `electronjs.org` blocked by policy, which is
+what `electron-rebuild` itself needs (`advances/GUI/spike.md` records the failure directly, not
+guessed at). The commands are correct, they're just unverified from *this* environment; they match
+what a normal developer machine or `desktop.yml`'s own CI environment can run without that
+restriction.
 
 ---
 
@@ -143,6 +153,12 @@ explains that in plain language and offers the same manual instructions the CLI'
 `manualInstructions()` would print, with a copy button — that block stays in English, since it's a
 JSON snippet and file paths meant to be pasted somewhere, not prose meant to be read.
 
+**Your AI tools reach the vault through Node.js**, separately from whether Node is installed for
+this app itself — every client's config points at `npx -y valija mcp`, which needs a working
+`node`/`npm` on your machine. If the app can't find them, Connect still writes the config (so it's
+ready the moment Node is installed) but tells you plainly that the tool won't be able to reach your
+vault until then, with a link explaining how to install Node.js.
+
 ---
 
 ## Importing your chat history
@@ -166,8 +182,7 @@ check writes and immediately deletes a harmless test entry (on macOS this may pr
 [below](#the-macos-keychain-prompt)), and checking whether your AI tools' own Node.js works runs
 `node --version`/`npm --version` on your machine. **Copy report** builds a support artifact for a
 GitHub issue; it stays in English in either language, and it's the only place in the app a raw
-internal error message may appear, alongside one row's detail text — the same close-to-verbatim
-check output `valija doctor` already prints, for the same reason (see [Language](#language)).
+internal error message may appear (see [Language](#language)).
 
 One thing that can look like a contradiction and isn't: a client the CLI installed with `valija
 install` (no explicit folder recorded) shows as **OK, points at the default location** here, while
@@ -197,7 +212,9 @@ Syncthing…) already keeps up to date. The wizard is explicit that valija itsel
 of those services: moving your vault folder into one is what makes the *sync client* carry it, the
 same as any other file. It locks your vault first, copies both files to the new location, verifies
 the copy is byte-identical before touching the original, and only then removes the old copy — if
-anything goes wrong partway, the original is left exactly as it was.
+anything goes wrong partway, the original is left exactly as it was. It also updates the config of
+every AI tool you've already connected, so they keep finding your vault at its new location without
+you having to redo the Connect step for each one.
 
 **The one consequence worth knowing if you also use the CLI:** this app remembers the new location
 in its own preferences file, but a terminal has no way to read that file. After a move, the wizard
@@ -239,8 +256,8 @@ destroy, re-key, or re-initialize a vault — this app creates and moves vaults,
 
 The app follows your OS language on first launch (matching Spanish generally, English otherwise)
 and lets you override it from Settings or from the locked screen, live, with no restart. Coverage is
-complete — every visible string exists in both catalogs, checked by the test suite — except for five
-places that stay in English on purpose, everywhere in the app:
+complete — every visible string exists in both catalogs, checked by the test suite — except for a
+few places that stay in English on purpose, everywhere in the app:
 
 1. **Your recovery kit's body** — so it reads identically on any machine, in any language, years
    from now. One localized sentence above it explains why.
@@ -248,11 +265,13 @@ places that stay in English on purpose, everywhere in the app:
    file paths meant to be pasted, not prose meant to be read.
 3. **A context pack's contents** — it's your saved content, not app copy; translating it would mean
    rewriting what you actually wrote.
-4. **The Diagnostics report and one row's detail text** — a support artifact and a close-to-verbatim
-   copy of what `valija doctor` already prints in a terminal, kept recognizably the same in both
-   places.
-5. **Any internal error message that reaches the Diagnostics screen at all** — everywhere else, an
-   error is shown as a plain-language sentence chosen from its error code, never the raw message.
+4. **Diagnostics' check details, and its Copy report.** Most check rows show their detail close to
+   verbatim to what `valija doctor` already prints in a terminal (on purpose, so a support
+   conversation about one matches the other) — a healthy check's detail is a short technical phrase
+   like "native module loads," left untranslated. A row that failed with a real internal error *is*
+   localized on screen, from its error code; the raw message behind it never shows there. **Copy
+   report** is the one exception to that: it's a support artifact built for pasting into a GitHub
+   issue, so it stays in English and is the one place a raw internal error message may appear.
 
 **A known, deliberate gap:** these docs, and the rest of `docs/` and `specs/`, are English-only for
 now. The in-app experience is fully bilingual; the written documentation isn't yet.

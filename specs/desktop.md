@@ -9,7 +9,7 @@ surface below; the renderer never imports `src/` directly (`contextIsolation: tr
 
 ## The IPC surface (`shared/ipc/channels.ts`, `main/ipc/schemas.ts`, `main/ipc/handlers/`)
 
-A **closed, enumerated set** — 27 channels across nine areas, each with a zod schema in the same
+A **closed, enumerated set** — 29 channels across nine areas, each with a zod schema in the same
 idiom `src/delivery/mcp/server.ts` uses. `register-handlers.test.ts` asserts the registered channel
 set **equals** the tuple: no extra channel, no missing one, no generic `invoke("run", …)` escape
 hatch. Every handler is four lines — validate, call the use case, map `Result` to a wire shape,
