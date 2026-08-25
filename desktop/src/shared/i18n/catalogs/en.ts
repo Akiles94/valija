@@ -91,6 +91,7 @@ export const en = {
     emptyTitle: "No context saved yet.",
     connectATool: "Connect an AI tool",
     importHistory: "Import your chat history",
+    checkMySetup: "Check my setup",
     itemCount: {
       one: "{count} item",
       other: "{count} items",
@@ -287,6 +288,9 @@ export const en = {
     vaultAndSync: "Vault & sync",
     openDiagnostics: "Check my setup",
     openRelocate: "Move my vault…",
+    vaultAndSyncSeeSync:
+      "See the Sync & safety panel for your vault's folder and connection details.",
+    vaultAndSyncLocked: "Unlock your vault to check diagnostics or move it.",
     help: "Help",
     replayTour: "Show the welcome tour again",
   },

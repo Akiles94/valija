@@ -17,11 +17,13 @@ export function DashboardScreen({
   onSelectProject,
   onConnectTool,
   onImportHistory,
+  onCheckSetup,
 }: {
   bridge: ValijaBridge;
   onSelectProject: (project: string) => void;
   onConnectTool: () => void;
   onImportHistory: () => void;
+  onCheckSetup: () => void;
 }) {
   const t = useT();
   const language = useLanguage();
@@ -51,10 +53,21 @@ export function DashboardScreen({
     };
   }, []);
 
+  // Rendered in every branch (§9's item 89a) — the empty first-run dashboard
+  // is exactly when a user needs this most.
+  const header = (
+    <div className="dashboard-header">
+      <h1>{t("dashboard.title")}</h1>
+      <button type="button" onClick={onCheckSetup}>
+        {t("dashboard.checkMySetup")}
+      </button>
+    </div>
+  );
+
   if (error !== null) {
     return (
       <div className="screen dashboard">
-        <h1>{t("dashboard.title")}</h1>
+        {header}
         <p className="error">{error}</p>
       </div>
     );
@@ -63,7 +76,7 @@ export function DashboardScreen({
   if (projects === null) {
     return (
       <div className="screen dashboard">
-        <h1>{t("dashboard.title")}</h1>
+        {header}
         <p>{t("common.loading")}</p>
       </div>
     );
@@ -72,7 +85,7 @@ export function DashboardScreen({
   if (projects.length === 0) {
     return (
       <div className="screen dashboard">
-        <h1>{t("dashboard.title")}</h1>
+        {header}
         <p className="empty-title">{t("dashboard.emptyTitle")}</p>
         <div className="actions">
           <button type="button" onClick={onConnectTool}>
@@ -88,7 +101,7 @@ export function DashboardScreen({
 
   return (
     <div className="screen dashboard">
-      <h1>{t("dashboard.title")}</h1>
+      {header}
       <ul className="project-cards">
         {projects.map((project) => (
           <li key={project.name}>
