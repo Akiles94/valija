@@ -33,3 +33,58 @@ jobs:
       - name: Package (tag only)
         if: startsWith(github.ref, 'refs/tags/v')
         run: npm run package
+      # Slice 13, item 95: the tag job computes and publishes each artifact's
+      # SHA-256 so docs/gui.md's checksum table is filled from this build,
+      # never from a developer's laptop.
+      - name: Checksum artifacts (tag only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        working-directory: desktop/release
+        run: |
+          shopt -s nullglob
+          artifacts=(*.dmg *.exe *.AppImage)
+          if [ ${#artifacts[@]} -eq 0 ]; then
+            echo "::error::no packaged artifact found in desktop/release" >&2
+            exit 1
+          fi
+          sha256sum "${artifacts[@]}" > checksums-${{ matrix.os }}.txt
+          cat checksums-${{ matrix.os }}.txt
+      - name: Upload artifacts (tag only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: valija-desktop-${{ matrix.os }}
+          path: |
+            desktop/release/*.dmg
+            desktop/release/*.exe
+            desktop/release/*.AppImage
+            desktop/release/checksums-*.txt
+          if-no-files-found: error
+
+  release:
+    # Runs once, after all three OSes have packaged and checksummed successfully — never partial.
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: valija-desktop-*
+          path: release-artifacts
+          merge-multiple: true
+      - name: Combine checksums
+        run: cat release-artifacts/checksums-*.txt | sort > release-artifacts/checksums.txt
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-artifacts/*.dmg
+            release-artifacts/*.exe
+            release-artifacts/*.AppImage
+            release-artifacts/checksums.txt
+          draft: true
+          # Unsigned builds (§8.1) — a maintainer reviews and publishes manually,
+          # never an automatic, unattended release.
+          generate_release_notes: true
