@@ -64,6 +64,26 @@ describe("diagnosticRows", () => {
     expect(rows.find((r) => r.key === "node")?.status).toBe(t("diagnostics.fatal"));
   });
 
+  it("carries `fatal` on the row itself — the stylesheet's own signal, mirroring doctor.ts's !ok && fatal (Slice 10 criterion 3, review.md W5)", () => {
+    const rows = diagnosticRows({
+      checks: [
+        check({ name: "sqlcipher", ok: true }),
+        check({ name: "keychain", ok: false }),
+        check({ name: "node", ok: false, fatal: true }),
+      ],
+      toolsStatus: [],
+      nodeStatus: { nodeRunnable: false, npmRunnable: true },
+      t,
+      errorCopy,
+    });
+    expect(rows.find((r) => r.key === "sqlcipher")?.fatal).toBe(false);
+    expect(rows.find((r) => r.key === "keychain")?.fatal).toBe(false);
+    expect(rows.find((r) => r.key === "node")?.fatal).toBe(true);
+    // The tool-Node probe warns, it never fails the screen (D-W) — fatal is
+    // always false there regardless of ok.
+    expect(rows.find((r) => r.key === "tool-node")?.fatal).toBe(false);
+  });
+
   it("puts the app-Node row first, from the 'node' check, distinct from the tool-Node row", () => {
     const rows = diagnosticRows({
       checks: [check({ name: "node", ok: true, detail: "v22.0.0" })],

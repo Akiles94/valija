@@ -20,14 +20,18 @@ const PACKAGE_JSON = JSON.parse(
  * that checks one.
  */
 describe("no auto-update configuration anywhere in the desktop build", () => {
-  it("electron-builder.yml has no top-level publish key", () => {
-    const lines = BUILDER_CONFIG.split("\n");
-    const topLevelKeys = lines.filter((line) => /^[a-zA-Z]/.test(line));
-    expect(topLevelKeys.some((line) => line.startsWith("publish:"))).toBe(false);
+  it("electron-builder.yml has no publish key, at any indentation or quoting", () => {
+    // Not just a top-level key: electron-builder honours a platform-scoped
+    // `mac:`/`win:`/`linux:` `publish:` too, and YAML allows a quoted key
+    // (`"publish":`) — both turn on auto-update just as a top-level one would.
+    expect(BUILDER_CONFIG).not.toMatch(/^\s*["']?publish["']?\s*:/m);
   });
 
-  it("desktop/package.json has no electron-updater dependency", () => {
+  it("desktop/package.json has no updater-shaped dependency", () => {
+    // Not just the literal name `electron-updater` — `update-electron-app`,
+    // `electron-differential-updater` and similar packages are the same shape.
     const allDeps = { ...PACKAGE_JSON.dependencies, ...PACKAGE_JSON.devDependencies };
-    expect(Object.keys(allDeps)).not.toContain("electron-updater");
+    const updaterLike = Object.keys(allDeps).filter((name) => /updat(e|er)/i.test(name));
+    expect(updaterLike).toEqual([]);
   });
 });

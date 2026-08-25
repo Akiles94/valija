@@ -1,228 +1,378 @@
-Verdict: PASS
+Verdict: FAIL
 
-# GUI · Slice 12 — Documentation, `docs/SPEC.md` corrections, and the bilingual screenshots — Review (third pass)
+# GUI · Slice 13 — Packaging, release, and the final gates — Review (first pass)
 
-**Branch:** `feat/desktop-GUI` · **Commits under review:** `522a952` (slice) + `9349ff4` (first fix)
-+ `12e5fb6` (second fix) · **Base:** `200f432` (Slice 11, `Verdict: PASS`) ·
-**Plan:** third revision, `Approved: Oscar 2026-08-25`.
-**Reviewed:** `git show 12e5fb6` read hunk by hunk, then the *current* `docs/gui.md`, `docs/SPEC.md`
-and `specs/desktop.md` re-read end to end and re-derived against the code they describe
-(`connect-tools.tsx`, `en.ts`/`es.ts`, `diagnostic-detail.ts`, `diagnostic-rows.ts`,
-`diagnostics.tsx`, `diagnostics-report.ts`, `src/delivery/diagnostics.ts`, `channels.ts`,
-`dialog-handlers.ts`, `preferences-handlers.ts`, `preferences-write.ts`, `relocation-handlers.ts`,
-`vault-location.ts`, `src/delivery/mcp/server.ts`, `electron-builder.yml`) — not against the commit
-message. Both suites run by hand.
+Commit under review: `7380a4a` on `feat/desktop-GUI`, base `dfb0298` (Slice 12, `Verdict: PASS`).
+Diff: three files, `+146 −0` — `.github/workflows/desktop.yml` (+55), `advances/GUI/spike.md` (+58),
+`desktop/src/main/infra/no-auto-update.test.ts` (+33, new).
 
-**Both second-pass defects are closed, verified against code rather than against the commit
-message, and neither fix introduced a new one.** The remaining findings are the same carried
-warnings and suggestions the first two passes already ruled non-gates (W2–W5, S1–S7), plus one new
-quantifier imprecision in the paragraph that was rewritten (W1 below) which is *not* a false claim
-about an affordance and defeats no acceptance criterion. Every criterion this slice owns is met;
-three criteria remain open **at advance level**, honestly flagged in the docs themselves, and are
-Slice 13's gate — see §7. No hard gate is breached.
+**This is the last slice in the plan, so this review is also the advance's exit gate.** It does not
+pass. One defect in the workflow this slice exists to write will stop the release job from ever
+running, and one obligation Slice 12's PASS explicitly assigned to Slice 13 was skipped in silence.
+Both fixes are small and mechanical; §7 says exactly what flips this to PASS.
+
+The three environment-blocked checks (native modules in the packaged app, cross-OS packaging, the
+zero-network walkthrough against a real artifact) are **not** why this fails. They are correctly
+recorded as open in `spike.md`, in the plan's own sanctioned human-gate pattern, and I independently
+reproduced the blocker (§6).
 
 ---
 
-## 1. The two second-pass blockers — verified individually
+## 1. Acceptance criteria (`refined.md` §9, the lines this slice owns)
 
-| # | Second-pass blocker | Now | Evidence (read, not trusted) |
+| # | Criterion (`refined.md`) | Verdict | Evidence |
 |---|---|---|---|
-| **C1** | `docs/gui.md:160` promised "a link explaining how to install Node.js"; the app renders that catalog string as plain text with no `href`, deliberately (§8.3) | **Fixed, and accurate** | `docs/gui.md:160-161` now reads *"…with a short pointer reading \"How to install Node.js\" — plain text, not a clickable link, since this app never opens a URL or makes a network request of any kind."* The quoted string is byte-exact against `desktop/src/shared/i18n/catalogs/en.ts:141` (`nodeMissingDocsLink: "How to install Node.js"`; `es.ts:143` is its Spanish twin). The render site is `connect-tools.tsx:62-64` — a comment (*"Plain text, not a link: the app never opens a URL or makes a network request of any kind (§8.3), so there is no href here"*) sitting above `<p className="docs-hint">{t("connect.nodeMissingDocsLink")}</p>`. Grepped `desktop/src` for `openExternal`, `href=` and `<a `: **zero hits**. The surrounding claims re-verified too: `nodeWarningNeeded` (`connect-tools.tsx:55-56`) never disables Connect, so "Connect still writes the config" holds; the doc's `npx -y valija mcp` matches `installer.ts`'s entry |
-| **W1 (old)** | The docs claimed Copy report is *the only* place a raw internal error may appear; `diagnostics.ts`'s sqlcipher and keychain checks set no `errorCode`, so `checkRowDetail` renders their raw message on the screen row too | **Fixed in both places, and consistent between them** | **Diagnostics section**, `docs/gui.md:184-189`: Copy report *"is the one place a raw internal error is **guaranteed** to appear — a check that fails with a recognized error is localized on screen but kept verbatim in the report — and it's also possible… to see a raw native-library error message directly on screen for the encryption-engine or keychain checks specifically."* **Language section**, `:275-281`: same two facts, same direction. Both track the code: `checkRowDetail` (`diagnostic-detail.ts:11-15`) localizes **only** when `errorCode !== undefined`; `src/delivery/diagnostics.ts` sets `errorCode` at `:64, :81, :125, :145` (the four `!status.ok` branches) and **never** in `checkSqlcipher` (`:46`, `detail: (e as Error).message`) or `checkKeychain` (`:58`, same); `buildDiagnosticsReport` (`diagnostics-report.ts:37`) prints `check.detail` verbatim for every row. "Encryption-engine" is the same label `:179` already uses for the sqlcipher row, so the two sections use one vocabulary. **No contradiction between them:** screen = *possible*, for those two checks; report = *guaranteed*, for every raw detail |
+| 1 | Unsigned artifacts build for macOS, Windows, Linux, **each with a published SHA-256** (`:1852`) | **NOT MET** | `.github/workflows/desktop.yml:39-51` uses `sha256sum`, which does not exist on `macos-latest` (C1). The macOS leg fails → `release` (`:66 needs: build`) never runs → no SHA-256 is published for any OS. |
+| 2 | Native modules load in the packaged app on every target (`:1852-1853`) | **OPEN — sanctioned** | Not verifiable here; packaging blocked by egress policy, reproduced independently (§6). Recorded honestly at `spike.md:317`. |
+| 3 | MCP surface byte-for-byte unchanged (`:1592-1593`) | **MET** | `git diff origin/main...7380a4a -- src/delivery/mcp/server.ts` → **0 lines**. Only `server.test.ts` changed (+19/−…), a fixture widened for `Container`'s Slice-4/8 shape. `spike.md:312`'s wording is accurate and does not overclaim. |
+| 4 | Published npm package unchanged (`:1601-1602`) | **MET** | `git diff origin/main...7380a4a -- package.json` → **0 lines**. |
+| 5 | CI matrix neither slowed nor gated by desktop packaging (`:1598-1600`) | **MET** | `git diff origin/main...7380a4a -- .github/workflows/ci.yml` → **0 lines**. All new steps carry `if: startsWith(github.ref, 'refs/tags/v')`; `release` is a separate tag-gated job. |
+| 6 | Root `typecheck && lint && test && build` green, count up (`plan.md:1071-1072`) | **MET** | Ran by hand: 57 files / **301 tests** passed, `tsup` build success. |
+| 7 | Desktop suite green (`plan.md:1073`) | **MET on Linux; OPEN cross-OS** | Ran by hand: 45 files / **625 tests** passed (623 + the 2 new cases). Windows/macOS legs are `desktop.yml`'s job. `spike.md:316` says exactly this. |
+| 8 | `src/` changes confined to Slices 4/8's files (`plan.md:1066`) | **MET** | 31 `src/` files, all in the Slice-4 (`container.ts`, `installer.ts`, `context-pack-export.ts`, `diagnostics.ts`, `migrations.ts`, `sqlite.ts`, `doctor.ts`, `content-commands.ts`, `vault-commands.ts`) and Slice-8 (vault relocation + upgrade gate) sets. See S6 for one nuance. |
+| 9 | No `publish`/auto-update configuration of any kind (`plan.md:1051-1052`, `:1058-1061`) | **PARTIALLY MET** | `no-auto-update.test.ts` exists and passes; but it catches only an unquoted **top-level** `publish:` and only the literal name `electron-updater` (W3). |
+| 10 | Zero network verified against the **built artifact**, both languages (`:1832-1835`, `plan.md:1074-1080`) | **OPEN — sanctioned** | No artifact exists here. `spike.md:318` records it. |
+| 11 | `grep -c "pending — filled by Slice 13" docs/gui.md` returns **0** (`plan.md:1083-1084`) | **NOT MET — and not recorded as open** | Returns **4** (`docs/gui.md:22-25`). Downstream of the same packaging blocker, so not a fail on its own — but `spike.md:320-324`'s open-items list names three things and omits this one (W4). |
+| 12 | Run-from-source path verified, not assumed (`:1854-1856`) | **OPEN — sanctioned** | Same rebuild blocker; §6. Slice 12's S1 asked for a named owner; still none. |
+| 13 | macOS keychain-ACL answer with named OS version (`:1662-1664`, D-H) | **OPEN — sanctioned** | Human gate, unchanged from Slice 12. |
+| 14 | Bilingual screenshots from the golden fixture (`:1838-1839`) | **OPEN — sanctioned** | Deferred through plan item 96's own human-gate clause; `spike.md:260-266`. |
 
-Both fixes are also consistent with the acceptance criterion they answer to: `refined.md` §9's
-*"the **Copy report** payload … is the only place a raw `DomainError.message` may appear"* is a claim
-about `DomainError`, and it still holds in code — a native `Error.message` from a failed
-`dlopen`/keyring probe is not a `DomainError`. The docs now describe both facts instead of
-generalizing one into the other, which is exactly the gap the second pass named.
-
----
-
-## 2. Acceptance criteria (`refined.md` §9, the lines this slice owns)
-
-| # | Criterion (§9 line) | Verdict | Evidence |
-|---|---|---|---|
-| 1 | §1's "one binary surface" sentence corrected (1603) | **Met** | `docs/SPEC.md:12-16` |
-| 2 | §2's "GUI … → later" Out line split; no milestone number (1603, 1606) | **Met** | `docs/SPEC.md:33` |
-| 3 | §10a's "import is CLI-only" corrected (1603) | **Met** | `docs/SPEC.md:186` — *"import has no MCP surface; it is available from the CLI and the desktop app."* |
-| 4 | **D11** gains the preferences sentence **and** the connected-clients MCP-config clause (1603–1606) | **Met** | `docs/SPEC.md:66`, all four clauses. Re-verified against code this pass: *"`VALIJA_HOME` always takes precedence over it"* is literally `vault-location.ts:14` (`env.VALIJA_HOME ?? preferences.vaultPath ?? undefined`), asserted at `vault-location.test.ts:6-13`; the re-pointing clause matches `relocation-handlers.ts:167` (`repointAllClients` after the move succeeds) |
-| 5 | GUI docs state `mcp` is the one deliberately absent CLI surface (1610–1611) | **Met** | `docs/gui.md:319-321` |
-| 6 | Behind-schema behaviour documented (1635–1637) | **Met** | `docs/gui.md:129-131` |
-| 7 | GUI docs explain the CLI is **not** re-pointed (1763–1764) | **Met** | `docs/gui.md:223-232`, `export VALIJA_HOME="…"` verbatim |
-| 8 | Settings has no CLI counterpart, and why (1792) | **Met** | `docs/gui.md:250-255` |
-| 9 | `docs/` itself stays English (1821) | **Met** | `docs/gui.md:283-284` |
-| 10 | Every clipboard affordance named individually (§8.7; §6 In 18) | **Met** | `docs/gui.md:303-306` — five, matching the five call sites |
-| 11 | GUI docs state the **Node/npm prerequisite** and that this advance does not remove it (1702–1704, 1857–1858) | **Met** (was C1) | `docs/gui.md:156-161`; prerequisite, non-removal, warn-without-blocking and the plain-text pointer all now match `connect-tools.tsx` |
-| 12 | First-launch friction per OS, in the OS's own words (1854–1856) | **Met** | `docs/gui.md:31-57` |
-| 13 | …plus the run-from-source alternative, **verified, not assumed** (1854–1856) | **Recipe correct; verification open at advance level, honestly flagged** | `docs/gui.md:59-81`. `npx electron-rebuild -f -w better-sqlite3-multiple-ciphers` matches `spike.md:60-61`; `electron-builder.yml:14` `npmRebuild: true` backs the "packaging already does this" claim. The page no longer claims a verification it doesn't have. **Slice 13's gate — see §7** |
-| 14 | What the GUI deliberately does not do **and where those live** (1859–1861) | **Met, with one weak bullet** | `docs/gui.md:310-326` covers all eight named topics (re-pointing the CLI is answered at `:223-232` instead of in the list, with the exact remedy). "Where those live" is answered for curation, forks, destruction, the MCP server, env config and the CLI; the provider-artifact bullet names the right topic but justifies it with an unrelated fact — see **W2** |
-| 15 | The environment gap stated honestly, incl. `VALIJA_STATE_HOME` device identity (plan 92) | **Met** | `docs/gui.md:328-335` |
-| 16 | macOS keychain-ACL answer with the exact version (1662–1664) | **Open at advance level, honestly flagged** | `docs/gui.md:288-297` + `spike.md`. **Slice 13's gate — see §7** |
-| 17 | Screenshots from the golden fixture, both languages (1838–1839; plan 96) | **Deferred through the plan's own escape hatch** | `docs/gui.md:339-347` + `spike.md:248-266`; plan item 96 makes this "a human gate to schedule with Oscar… recorded honestly, never quietly skipped", which is what happened. **Slice 13's gate — see §7** |
-| 18 | Suites green, no production code moved (Slice 12 "Done when", plan:1027-1031) | **Met** | `git show 12e5fb6 --numstat`: `docs/gui.md` 14/7 and `advances/GUI/review.md` only. Slice total `200f432..HEAD` excluding `review.md`: **6 files, all `.md`**. Root **57 files / 301 tests**, desktop **44 files / 623 tests**, both green; typecheck and lint clean in both trees. Counts identical to both prior passes |
-
-### Plan items (`plan.md:954-1031`)
+### Plan items (`plan.md:1035-1089`)
 
 | Item | Verdict | Evidence |
 |---|---|---|
-| 91 — `docs/gui.md` for a non-technical reader | **Met with residual imprecision** | Node/npm prerequisite now accurate; run-from-source correct and honestly framed; W1/W2 below are the residue |
-| 91 sub-bullet — the diagnostics `detail` **column** as a **fourth** verbatim-English surface | **Met** | `docs/gui.md:272-281` is item **4** and describes the column plus the report, with the real literal `"native module loads"` (`src/delivery/diagnostics.ts:44`) |
-| 91 sub-bullet — Diagnostics vs Connect vocabulary | **Met, and accurate** | `docs/gui.md:191-196`, re-checked against `tools-handlers.ts:25-27` (reads `mcpServers.valija.env.VALIJA_HOME`) vs `diagnostics.ts:158-167` (entry-exists only) |
-| 92 — the environment gap | **Met** | Criterion 15 |
-| 93 — the four `SPEC.md` corrections | **Four of four met** | Criteria 1–4 |
-| 94 — `specs/desktop.md` + a `specs/README.md` row | **Met** | Row at `specs/README.md:17` + the note at `:32`. Channel count re-counted programmatically from `channels.ts` this pass: **29**, matching `specs/desktop.md:12` and its nine-area table. S2–S5 remain |
-| 96 — bilingual screenshots | **Deferred per the plan's own human-gate clause** | Criterion 17 |
-| 97 — `CHANGELOG.md` `[Unreleased]` entry | **Met with one omission** | `CHANGELOG.md:9-28`; the `SPEC.md` contract corrections are still unmentioned (**W3**) |
+| 95 — tag job computes and publishes each artifact's SHA-256 | **NOT MET** | Structure is right; the command is not portable to one of the three legs (C1). |
+| 95 — guard test, no `publish` key / no `electron-updater`-shaped dep (P-D19) | **MET, weakly** | `no-auto-update.test.ts:22-33`. Path arithmetic verified correct (§6). Coverage gaps in W3. |
+| 95 — Slice 1's `electron-builder.yml` not re-derived | **MET** | `electron-builder.yml` untouched by this commit — but see C2, which needs it touched for a different reason. |
+| 98 — the six runnable gate checks | **MET** (see table rows 3–8) | All six run by hand, all reproduce `spike.md`'s claims. |
+| Done-when — pending markers greppd away | **NOT MET** | Row 11. |
+| Done-when — anything still unanswerable written down in `spike.md` | **MOSTLY MET** | Three of four open items written down; the fourth (row 11) is not (W4). |
 
 ---
 
-## 3. Hard gates
+## 2. Hard gates
 
 | Gate | Result |
 |---|---|
-| Security surface | **Clean.** The fix commit is two `.md` files (`docs/gui.md` +14/−7 and this `review.md`); the whole slice is six `.md` files, **zero** `.ts`/`.tsx`/`.css`/config/lockfile lines. No secret, key or passphrase in the diff; no plaintext written; key derivation, keychain use and SQLCipher keying untouched; no IPC channel, preload method, schema or MCP tool changed (`CHANNELS` still 29; MCP still `save_context · save_handoff · get_context · search_context · list_projects`). The one *documentation* claim about a security property that was wrong last pass — that the app offers a link — now matches the code's deliberate refusal to offer one |
-| Tests for new behaviour, suite green | **Met.** No behaviour added, none owed. Run by hand this pass: root `typecheck` clean, `lint` clean, `test` 57 files / **301** passed; desktop `typecheck` clean, `lint` clean over 124 files, `test` 44 files / **623** passed. Both counts unchanged from the first pass, as a docs-only slice requires |
-| Advance ritual | **Met.** `refined.md:3` `Approved: Oscar 2026-08-20`; `plan.md:3` `Approved: Oscar 2026-08-25` (third revision); this `review.md` closes the trail. `12e5fb6` touches no implementation file, so the implementation gate is not in play |
-| Conventions, naming, placement | **Met.** No code file added, moved or renamed in this slice, so no layer-root or kind-folder rule is at stake. Re-checked anyway that `specs/desktop.md`'s description of the tree still matches it: `renderer/state/`, `renderer/screens/`, `main/application/{ports,policies,services}/`, `main/infra/` tech-named adapters, `main/ipc/handlers/` — every file sits in a kind-named folder |
+| Security surface weakened (secrets/keys logged, plaintext to disk, KDF/keychain altered, SQLCipher unkeyed, MCP over-exposed) | **No breach.** No `src/` or `desktop/src` production code touched. `cat checksums-*.txt` prints public digests only. `contents: write` is scoped to the `release` job (`desktop.yml:69-70`) and nowhere else. `draft: true` (`:87`) is present — an unsigned build cannot go out unattended, which is §8.1's spirit. |
+| Tests missing for new behaviour / suite not passing | **No breach.** Both suites green at their claimed counts (301 / 625). The new behaviour that *can* be tested in-suite is tested; CI shell logic is not unit-testable and is not expected to be. |
+| Advance ritual evidenced | **No breach.** `refined.md` → `plan.md` carrying `Approved: Oscar 2026-08-25 (third revision …)` at line 3 → this `review.md`. |
+| Naming, clean-architecture placement, conventions | **No breach for this slice.** `no-auto-update.test.ts` sits at `desktop/src/main/infra/` root beside `no-network-surface.test.ts` and `dependency-parity.test.ts`, both landed and reviewed-PASS in earlier slices; it uses the identical `join(import.meta.dirname, "../../../package.json")` idiom as `dependency-parity.test.ts:20`. Consistent with the established pattern. See S1 for the standing tension with `CLAUDE.md`'s "no bare files at a layer's root". |
 
-**No hard gate is breached.**
+**No hard gate is breached.** The FAIL is on acceptance criterion 1 (and the criterion-11 disclosure
+gap), not on a gate.
 
 ---
 
-## 4. Line count
+## 3. Line count
 
-| | Lines |
+| File | Added |
 |---|---|
-| Second fix pass `12e5fb6` (`docs/gui.md` only; `review.md` excluded) | **+14 / −7** |
-| Slice total `200f432..HEAD`, excluding `review.md` | **+550 / −4** across 6 files — `docs/gui.md` 347 new, `specs/desktop.md` 142 new, `CHANGELOG.md` +20, `spike.md` +29, `docs/SPEC.md` +9/−4, `specs/README.md` +3 |
-| Production code | **0** — no `.ts`, `.tsx`, `.css`, config or lockfile line touched in any of the three commits |
+| `.github/workflows/desktop.yml` | 55 (49 config + 6 comment) |
+| `desktop/src/main/infra/no-auto-update.test.ts` | 33 (new) |
+| `advances/GUI/spike.md` | 58 |
+| **Total** | **146, zero deleted** |
+
+Plan estimated "≈30 lines of CI/release config" (`plan.md:1661`); actual config is 49 lines plus
+6 of comment. The overrun is the `release` job, which the plan describes but did not count. Fine.
+
+Diff scope is exactly the three files, as claimed. Nothing else touched.
 
 ---
 
-## 5. Issues
+## 4. Issues
 
 ### Critical
 
-**None.** Both second-pass criticals are closed; nothing new rises to that level.
+**C1 — `sha256sum` does not exist on `macos-latest`; the macOS leg fails and the release job never
+runs.** `.github/workflows/desktop.yml:50`:
+
+```bash
+sha256sum "${artifacts[@]}" > checksums-${{ matrix.os }}.txt
+```
+
+`sha256sum` is GNU coreutils. macOS ships a BSD userland: `shasum`, `openssl dgst`, `md5` — no
+`sha256sum`. The GitHub `macos-latest` runner image does not install coreutils; its utilities list
+documents GNU tools individually *and by alias* when present (`GNU Tar 1.35 — available by 'gtar'
+alias`, `GNU Wget`, `GNU Fortran`) and coreutils appears nowhere. Even if it were brew-installed, the
+binary would be `gsha256sum`, not `sha256sum`. Linux and Windows are fine (Git Bash bundles MSYS2
+coreutils), so this is macOS-only — but the blast radius is total, because `release` is
+`needs: build` (`:66`) with the implicit `success()` on all three matrix legs. One failing leg means
+**no release, no published checksums, on any OS** — the entire deliverable of item 95.
+
+This is not in the environment-blocked bucket: it is statically determinable from the runner image,
+which is precisely the "mistake that only surfaces on a real run" this review was asked to catch.
+`spike.md:298-301` says the workflow was "verified by reading the workflow's own logic and by the
+local `sha256sum` step succeeding against a hand-built file in this container" — a Linux container,
+which establishes nothing about the macOS leg. The reading missed it.
+
+**Fix (portable, output-format-identical, no new dependency):**
+
+```yaml
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "${artifacts[@]}" > "checksums-${{ matrix.os }}.txt"
+          else
+            shasum -a 256 "${artifacts[@]}" > "checksums-${{ matrix.os }}.txt"
+          fi
+          cat "checksums-${{ matrix.os }}.txt"
+```
+
+`shasum -a 256` emits the same `<hash>  <filename>` two-space format, so the combined
+`checksums.txt` stays verifiable with `sha256sum -c` / `shasum -a 256 -c`. `shasum` is present on
+macOS (Perl core), on `ubuntu-latest`, and in Git Bash, so the fallback is safe on all three.
+Alternative, if you'd rather not depend on either: a `node -e` one-liner over `crypto.createHash`,
+since Node 22 is already set up on every leg by `:24-28`.
+
+**C2 — `electron-builder.yml` still sets no `artifactName`, so two of the four rows in
+`docs/gui.md`'s checksum table name files that will never be produced.** This is Slice 12's **W4**,
+verbatim, which that review handed to this slice: *"Slice 13 fills the checksums; it should set
+`artifactName` explicitly at the same time, or the table should quote the defaults"*
+(`review.md@dfb0298:140-145`). Slice 13 touched neither `electron-builder.yml` nor `docs/gui.md`, and
+says nothing about the obligation.
+
+Re-verified this pass against `desktop/electron-builder.yml` (no `artifactName` at any level):
+- nsis default → `Valija Setup <version>.exe`; `docs/gui.md:24` says `Valija-<version>-Setup.exe`.
+- x64 dmg default omits the arch suffix → `Valija-<version>.dmg`; `docs/gui.md:23` says
+  `Valija-<version>-x64.dmg`.
+- arm64 dmg and the AppImage happen to match.
+
+The user-facing instruction is *"check it against the file you downloaded before running anything"*
+(`docs/gui.md:15-17`). Half that table pointing at filenames that do not exist in the release is a
+security-instruction defect, not a typo — a user who cannot match a row to a file either skips the
+check or checks the wrong row. It also makes the slice's own Done-when unsatisfiable as written: you
+cannot fill those rows with real digests without first changing the names.
+
+**Fix — pin the names rather than chase the defaults**, which also makes the checksum globs and the
+docs table deterministic across `electron-builder` upgrades:
+
+```yaml
+mac:
+  artifactName: ${productName}-${version}-${arch}.dmg
+win:
+  artifactName: ${productName}-${version}-Setup.${ext}
+linux:
+  artifactName: ${productName}-${version}.${ext}
+```
+
+(or correct `docs/gui.md:22-25` to the defaults — either closes it, but pinning is the one that keeps
+the docs true next year.)
 
 ### Warning
 
-**W1 (new, minor, in the rewritten paragraph) — `docs/gui.md:275-276`'s "Most failures" is true only
-under a narrow reading.** *"Most failures are localized on screen from a recognized error code
-instead of showing their raw message"* holds if "failures" is scoped to failures whose detail **is**
-a raw error message (four of six such paths carry `errorCode`). Read plainly, it is wrong: the
-commonest failures on that screen carry no `errorCode` and render their English detail verbatim —
-`checkClient`'s `"config not found"` / `"config found, valija not installed"` /
-`"config exists but is not valid JSON"` (`src/delivery/diagnostics.ts:154-165`, one row per
-*supported* client, so a user with one client installed sees two of these every run),
-`checkVault`'s `not initialized — run "valija init"` (`:69`), `checkJournal`'s stray-sidecar string
-(`:87`), `checkSyncFolder`'s conflict strings (`:95-102`), and `checkNode`'s `v20.x (need >=22)`
-(`:32`). **Suggested rewrite, which also shortens the paragraph:** *"A failure the vault itself
-reported is localized on screen from its error code, with the raw text kept only in the Copy report.
-Every other failure — including the encryption-engine and keychain checks' raw native-library
-messages — shows the same English detail `valija doctor` prints."* Not a gate: it defeats no
-acceptance criterion (§9's guarantee is about `DomainError.message`, which the paragraph now states
-correctly), and unlike the two defects just closed it invents no affordance and denies no real
-behaviour. It is flagged because this is the third round on this one paragraph.
+**W1 — no least-privilege `permissions` floor; the `build` job inherits the repository default.**
+`desktop.yml` has no top-level `permissions:` block, so `build` — which runs `npm ci` and therefore
+arbitrary package lifecycle scripts on three OSes — gets whatever the repo/org default is, which can
+be read/write on all scopes. This slice introduces the repository's first `contents: write`
+(`:69-70`), which is the moment to establish the floor. **Fix:** add above `jobs:`
 
-**W2 (carried, unchanged) — the provider-artifact bullet answers the wrong question.**
-`docs/gui.md:322-323`: *"**Produce a provider-specific artifact** — nothing here talks to ChatGPT's
-or Claude's API, or any network endpoint at all."* Every sentence in it is true, but provider
-artifacts (D-D, D-E) are skills, agents, rules files and a generated `CLAUDE.md` — not network
-access — and no future-advance pointer appears for it, which is the half of criterion 14 ("where
-those live") it misses. **Fix:** *"**Generate files for your AI tools** — skills, agents, rules
-files, a `CLAUDE.md`. Planned for a later release; this app writes none of them today."*
+```yaml
+permissions:
+  contents: read
+```
 
-**W3 (carried) — `CHANGELOG.md` omits the corrected contract lines.** Plan item 97 asks for four
-things; `CHANGELOG.md:9-28` covers three plus the `src/delivery` extraction. The `SPEC.md`
-§1/§2/§10a/D11 corrections are still unmentioned. One sub-bullet.
+The `release` job's own `permissions: contents: write` still overrides it correctly. Scoping of the
+write itself is right; it's the absent default that's the gap. (`ci.yml` has the same omission, but
+it never holds a write token — fix it there too if you like, out of scope here.)
 
-**W4 (carried) — the checksum table names artifacts `electron-builder` will not emit.**
-`docs/gui.md:22-25` vs `electron-builder.yml`, re-read this pass: it sets **no `artifactName`**, so
-nsis defaults to `Valija Setup <version>.exe` (not `Valija-<version>-Setup.exe`) and the x64 dmg
-defaults to `Valija-<version>.dmg` (not `Valija-<version>-x64.dmg`). Two of the four rows are wrong
-names attached to `pending` checksums. Slice 13 fills the checksums; it should set `artifactName`
-explicitly at the same time, or the table should quote the defaults.
+**W2 — `softprops/action-gh-release@v2` is a third-party action pinned to a mutable tag while
+holding `contents: write`.** `:80`. Every other action in this repo is first-party `actions/*`; this
+is the first third-party one, and a tag can be repointed by whoever controls the upstream repo (the
+`tj-actions/changed-files` compromise is the canonical example, and it was exactly this shape: a
+mutable ref plus a write token). For a project whose whole premise is a local-first encrypted vault,
+publishing the artifacts users are told to trust through an unpinned third-party action is the wrong
+default. **Fix:** pin to the full commit SHA with the version in a trailing comment —
+`uses: softprops/action-gh-release@<40-hex-sha> # v2.x.y`.
 
-**W5 (carried, now three slices old) — Slice 11's `refined.md` amendment and its obligations 2 and 3
-are still unowned.** `refined.md` is untouched by `522a952`, `9349ff4` and `12e5fb6`. Obligation 3
-re-verified today and still open: `diagnostic-rows.test.ts:50-65` asserts the three **status labels**
-(`diagnostics.ok` / `warning` / `fatal`) but never asserts `row.fatal`, the boolean the stylesheet
-and `specs/desktop.md:98-101` both lean on. Slice 13 must either land these or Oscar must drop them
-explicitly; a fourth silent deferral is how they disappear.
+**W3 — the no-auto-update guard is narrower than the rule it stands for.**
+`no-auto-update.test.ts:23-27` filters to lines matching `/^[a-zA-Z]/` and then checks
+`startsWith("publish:")`. I ran the mutants: a **top-level** `publish:` is caught; a nested
+`mac:\n  publish:\n    - provider: github` is **not** (it's indented, so the filter drops it); a
+quoted `"publish":` is **not**. Platform-scoped `publish` is legal `electron-builder` configuration
+and turns on exactly the auto-update behaviour item 95 forbids. Likewise `:31` checks the literal
+string `electron-updater` only, while the plan asks for no *"`electron-updater`-shaped
+dependency"* (`plan.md:1058-1059`) — `update-electron-app`, `electron-differential-updater` and
+friends pass today. **Fix, still ~15 lines:**
+
+```ts
+expect(BUILDER_CONFIG).not.toMatch(/^\s*["']?publish["']?\s*:/m);
+expect(Object.keys(allDeps).filter((n) => /updat(e|er)/i.test(n))).toEqual([]);
+```
+
+The first catches `publish` at any indentation and quoted; the second catches the shape, not one
+name. Keep the existing two `it` blocks and their titles — the titles are good.
+
+**W4 — `spike.md`'s open-items list omits an explicit Done-when it does not satisfy.**
+`spike.md:320-324` names three open items (native modules, cross-OS packaging, zero-network
+walkthrough). `docs/gui.md` still carries **4** `pending — filled by Slice 13's tagged build` markers
+(`:22-25`), and `plan.md:1083-1084` makes `grep -c … == 0` a first-class Done-when condition, tracked
+since the third revision as P-D16. It is obviously downstream of the same blocker, which is why this
+is a Warning and not a Critical — but `spike.md`'s stated standard is *"anything still unanswerable
+in the implementation environment is written down as still open … rather than reported as done"*
+(`plan.md:1087-1089`), and this one is written down nowhere. Silence here is how P-D16's whole
+straddle mechanism gets forgotten. **Fix:** a fourth bullet, and a fourth table row — *"`docs/gui.md`
+checksum table: 4 `pending` markers remain; they can only be filled from the tagged build (P-D16),
+together with the `artifactName` correction C2 requires."*
+
+**W5 — Slice 12's W5 is now a fourth silent deferral, in the slice that was named as its deadline.**
+`review.md@dfb0298:147-152`: *"Slice 13 must either land these or Oscar must drop them explicitly; a
+fourth silent deferral is how they disappear."* Re-verified: `refined.md` is untouched by `7380a4a`,
+and `diagnostic-rows.test.ts` still asserts the three status labels without ever asserting
+`row.fatal` — the boolean `specs/desktop.md:98-101` and the stylesheet both lean on. This is a real
+(small) test-coverage hole in shipped renderer state, and this is the last slice. It does not by
+itself flip the verdict — it is not a Slice-13 acceptance criterion — but since the FAIL already
+requires another commit, land it or get it dropped on the record in that commit rather than letting
+the advance close over it.
+
+**W6 — the combined `checksums.txt` is sorted by digest, not by filename.** `:78`,
+`cat … | sort`. `sha256sum` output is `<hash>  <name>`, so a plain `sort` orders by hash — i.e.
+pseudo-randomly, and differently on every release. The file users read to find their artifact should
+be stable and scannable. **Fix:** `sort -k2` (sorts on the filename field, keeps the format intact).
 
 ### Suggestion
 
-**S1 — the run-from-source verification still has no named owner.** `docs/gui.md:76-81` is honest
-but, unlike the screenshots section (`:339-347`), never says the verification is recorded as an open
-item or where it will happen. One clause pointing at Slice 13 (which packages on tag and therefore
-exercises `npmRebuild`) keeps it from evaporating.
+**S1 — three guard tests now sit bare at `desktop/src/main/infra/`.** `no-network-surface.test.ts`,
+`dependency-parity.test.ts` and now `no-auto-update.test.ts` are not tech-named infra adapters; they
+are repo-invariant guards that happen to live in `infra/`. `CLAUDE.md`'s Conventions say a new *kind*
+of thing gets its own named subfolder. A `desktop/src/main/infra/guards/` folder holding all three
+would make opening `infra/` tell you what's in it. **Not held against this slice** — the pattern was
+set two slices ago and passed review twice; moving the other two is a separate, mechanical change.
+Noted so the third one doesn't silently become the precedent for a fourth.
 
-**S2 — `specs/desktop.md:26` and `:123-124` state the relocation ordering wrong.** The handler does
-`lockVault` → `relocateVault` → **preferences write** → `rebuildContainer` → `repointAllClients`
-(`relocation-handlers.ts:147-167`); the spec puts re-pointing before the rebuild and omits the
-preferences write from `:26`. The real order is the *more* conservative one, and the ordering is the
-safety argument, so it should be exact.
+**S2 — the `release` job publishes checksums it never verifies.** A single step before
+`Publish GitHub release` would prove the downloaded artifacts still match the digests computed on the
+build runners, and would have caught C1's format divergence too:
 
-**S3 — `specs/desktop.md:15` "Every handler is four lines" is false.** `relocation-handlers.ts` is
-202 lines and its `relocation:move` handler alone is ~30. State the guarantee that actually holds:
-validate at the boundary, call an existing use case, map `Result` to a wire shape, hold no session
-beyond the action.
+```yaml
+      - name: Verify checksums
+        working-directory: release-artifacts
+        run: sha256sum -c checksums.txt
+```
 
-**S4 — `specs/desktop.md:86-88` still inverts `mergePreferencesWrite`'s guarantee.**
-`preferences-write.ts:11-15` fills **all three** keys from `current` and then spreads the patch, so a
-write always carries every key; the real guarantee is that `vaultPath` is structurally absent from
-`PreferencesWriteRequest` — which the next sentence already says correctly.
+Cheap, runs on `ubuntu-latest` where `sha256sum` exists, and turns "we computed a hash somewhere"
+into "the bytes we are attaching hash to this".
 
-**S5 — `diagnostic-detail.ts` is still missing from `specs/desktop.md`'s renderer-state list**
-(`:71-105`). It owns the localized-vs-verbatim rule that has now produced two review findings;
-naming it in the spec is the cheapest way to stop a fourth round.
+**S3 — the `Checksum artifacts` step's error message duplicates its own directory.**
+`:47` echoes `"::error::no packaged artifact found in desktop/release"` from a step whose
+`working-directory` is already `desktop/release`. Harmless, but `${{ matrix.os }}` in the message
+would be worth more than the path, since the message's whole job is telling you *which leg* produced
+nothing.
 
-**S6 (code, a later slice) — `connect.nodeMissingDocsLink` is a dangling label.** It reads "How to
-install Node.js" and then explains nothing, because §8.3 rightly forbids opening a URL. Better: make
-the string carry the instruction (*"Install Node.js 22 or newer from nodejs.org, then reopen this
-screen"*), so the label pays off without a link. Out of scope here; noted so W1's predecessor is
-never "fixed" by adding a link to the app.
+**S4 — `checksums-${{ matrix.os }}.txt` is unquoted at `:50`.** No current matrix value contains a
+space or a glob character, so it is safe today; quoting it costs nothing and makes it safe if the
+matrix ever grows a value like `macos-latest-large` (fine) or anything odder (not). Folded into C1's
+fix above.
 
-**S7 (carried, re-verified) —** `docs/gui.md:102` says the clipboard warning is "the button's own
-label"; it is a sibling `<p className="warning">` (`recovery-kit.tsx:57-59`). `:180` says Diagnostics
-shows "one row per connected AI tool"; it is one row per **supported** client, connected or not
-(`src/delivery/diagnostics.ts:198`, `CLIENTS.map(checkClient)`). `:312-314` says curation-style
-"shaping context happens from inside the AI tools you connect" — `save_context` accepts `type` and
-`tags` at save time only (`src/delivery/mcp/server.ts:44-71`); nothing anywhere in the product pins,
-edits or deletes, so "shaping" over-promises the MCP surface. The relocation paragraph (`:219-221`)
-still doesn't mention that a client which *couldn't* be re-pointed is named individually with a
-manual snippet and a **Try again** action (`relocate-vault.tsx:81, 234`). `docs/gui.md` is still not
-linked from `README.md`. `CHANGELOG.md:27-28` still has a blank line splitting `### Added`.
+**S5 — the `release` job has no explicit `timeout-minutes` and no `concurrency` group.** Two tags
+pushed in quick succession would race two release jobs against the same tag. `concurrency:
+group: release-${{ github.ref }}` is one line. Low likelihood, trivial guard.
+
+**S6 — `spike.md:311` gestures where item 98 asks it to enumerate.** *"every changed `src/` path is
+one `context-pack-export.ts`/`diagnostics.ts`/the vault-relocation-and-upgrade-gate set names"* is
+true — I checked all 31 paths — but `src/vault/application/services/resolve-unlock-key.ts` is a new
+file that appears nowhere in `plan.md` by name (it's the shared key-resolution extraction that
+`check-vault-upgrade.use-case.ts` needed, landed and reviewed in Slice 4). Since item 98's output is
+*"pasted into the PR description"*, the row should carry the actual `--name-only` list rather than a
+summary, so the reader can check it instead of trusting it. Substance is correct; presentation isn't
+what the item asked for.
 
 ---
 
-## 6. Why this is PASS
+## 5. What I verified by hand
 
-The two defects the second pass gated on are fixed, precisely, against the code and not against the
-commit message: the Connect section now describes a plain-text pointer that exists (byte-exact
-against `en.ts:141`, with zero `href`/`openExternal`/`<a>` in `desktop/src`), and both places that
-over-claimed about raw error text now name the sqlcipher and keychain checks as on-screen exceptions
-while keeping the Copy report as the guaranteed carrier — agreeing with each other and with
-`checkRowDetail`. Every acceptance criterion this slice owns is met, both suites are green at their
-expected counts, the diff is six markdown files with zero production lines, and the ritual trail is
-complete. W1–W5 and S1–S7 are real but none is a merge gate, and W2–W5/S1–S7 were already ruled
-non-gates by the two prior passes; escalating them now would be moving the goalposts, not reviewing.
+- `git show 7380a4a --stat` — exactly three files, `+146 −0`. No fourth file, no `src/` touched.
+- **Root suite:** `npm run typecheck && npm run lint && npm test && npm run build` → clean, 57 files /
+  **301 tests** passed, `tsup` build success. Matches `spike.md:315`.
+- **Desktop suite:** `npm run typecheck && npm run lint && npm test` → clean, 45 files /
+  **625 tests** passed. 623 + 2 = 625, exactly as claimed at `spike.md:304`.
+- **YAML parse:** `python3 -c "import yaml; yaml.safe_load(...)"` on `desktop.yml` — parses; two jobs,
+  `build` and `release`; step and job structure sound.
+- **Workflow semantics, read for real-run mistakes:** step-level `working-directory: desktop/release`
+  (`:42`) is workspace-relative and correctly *replaces* the job default `desktop` — not appended, so
+  no `desktop/desktop/release`. `upload-artifact`'s `path` globs (`:57-61`) are workspace-relative
+  and correctly written as `desktop/release/*` rather than inheriting `defaults.run`, which only
+  applies to `run` steps — the classic mistake, avoided. `needs: build` (`:66`) gates on **all
+  three** matrix legs: a plain non-status `if:` does not displace the implicit `success()`, so a
+  partial release is impossible. `if: startsWith(github.ref, 'refs/tags/v')` on the `release` job
+  (`:67`) is necessary, not redundant — without it, every push to `main` would reach
+  `download-artifact` with nothing to download. Artifact names are unique per leg (v4 requires it).
+  `merge-multiple: true` is safe: the three legs' file sets are disjoint and the per-OS checksum
+  files carry the OS in their names. `checksums.txt` does not match `checksums-*.txt`, so the
+  combine step cannot eat its own output. `shopt -s nullglob` + the empty-array check (`:44-49`) is
+  correct under GitHub's `bash -eo pipefail`, and `sha256sum "${artifacts[@]}"` is properly quoted
+  for the space in `Valija Setup <version>.exe`. `draft: true` present. **The one thing wrong is
+  C1.**
+- **`no-auto-update.test.ts` path arithmetic:** resolved `join(import.meta.dirname, "../../../…")`
+  from `desktop/src/main/infra/` in Node and printed the results —
+  `/home/user/valija/desktop/electron-builder.yml` and `/home/user/valija/desktop/package.json`.
+  Exactly right, three levels (`infra`→`main`→`src`→`desktop`), not off by one; identical to the
+  already-proven idiom in `dependency-parity.test.ts:20`. Not a repeat of the earlier path bug.
+- **Guard-test strength:** ran the assertion logic against three mutants of the real
+  `electron-builder.yml` — top-level `publish:` **caught**; `mac:`-nested `publish:` **missed**;
+  quoted `"publish":` **missed**. Basis for W3.
+- **`spike.md:312`'s MCP claim, not taken on its word:**
+  `git diff origin/main...7380a4a -- src/delivery/mcp/server.ts` → **0 lines**;
+  `-- src/delivery/mcp/server.test.ts` → **56 lines**; `--name-only -- src/delivery/mcp/` → the test
+  file only. The claim is exactly true as stated.
+- **`spike.md`'s other gate rows:** `-- package.json` → 0 lines. `-- .github/workflows/ci.yml` →
+  0 lines. All 31 changed `src/` paths inspected against Slice 4's item list (`plan.md:1035-1078`)
+  and Slice 8's relocation set.
+- **No scope creep:** `desktop/package.json` read in full — scripts are `dev`, `build`, `package`,
+  `typecheck`, `test`, `test:watch`, `lint`. **No `postinstall`.** The `spike.md:281-288` claim that
+  `electron-builder`'s suggested `"postinstall": "electron-builder install-app-deps"` was
+  *deliberately not added* is true; nothing was quietly added while claiming otherwise. The file is
+  not in the diff at all.
+- **The egress blocker, reproduced independently:** ran `npm run package -- --linux` in
+  `desktop/`. It fails exactly as `spike.md:272-279` describes — `electron-builder 26.15.3` →
+  `executing @electron/rebuild electronVersion=43.4.1` → `preparing moduleName=argon2` →
+  `RequestAbortedError: Proxy response (403) !== 200 when HTTP Tunneling` →
+  `node-gyp failed to rebuild '…/node_modules/argon2'`, exit 1. The run also printed verbatim the
+  `postinstall` suggestion `spike.md:282-284` quotes. **The claim is accurate at the level it
+  claims** — the packaging command itself, not merely a diagnostic around it. Working tree left
+  clean (`git status --porcelain` empty; `desktop/release/` is gitignored).
+- `grep -c "pending — filled by Slice 13" docs/gui.md` → **4** (`:22-25`). Basis for criterion 11 and
+  W4.
+- `docs/gui.md:22-25` compared against `desktop/electron-builder.yml`'s (absent) `artifactName`.
+  Basis for C2.
+- **Ritual:** `plan.md:3` carries `Approved: Oscar 2026-08-25 (third revision — Gate P re-closed on
+  the 12→13 split; second revision approved 2026-08-20)`. `refined.md` present. Trail complete.
 
-## 7. What this PASS does **not** close
+---
 
-Slice 12 ships. **The advance does not close here**, and Slice 13's review should gate on all three
-of these, because each is an acceptance criterion in `refined.md` §9 that this slice could only flag,
-not satisfy:
+## 6. On the three environment-blocked checks
 
-1. **Criterion 13** — the run-from-source path is *"verified, not assumed"* (§9 1854–1856). Currently
-   correct-but-unverified (`docs/gui.md:76-81`).
-2. **Criterion 16** — the macOS keychain-ACL answer *with the named macOS version* (§9 1662–1664,
-   D-H's mandatory spike). Currently an honest placeholder (`docs/gui.md:288-297`).
-3. **Criterion 17** — bilingual screenshots from the golden fixture (§9 1838–1839). Deferred through
-   plan item 96's own human-gate clause; it needs scheduling with Oscar, not a fourth mention.
+I reproduced the blocker myself rather than accepting it (above). Native modules loading in the
+packaged app, cross-OS packaging, and the zero-network walkthrough against a real artifact in both
+languages are **structurally unverifiable in this container** and are correctly recorded as open at
+`spike.md:317-324` rather than reported as done. That is the plan's sanctioned human-gate pattern
+(`plan.md:1087-1089`), the same one D-H's macOS ACL answer uses, and **none of it is why this slice
+fails.** The disclosure writing is honest on those three: it does not claim a tagged CI run happened,
+it does not claim macOS or Windows suites ran, and `:298-301` explicitly qualifies what "verified"
+means for the workflow. Its one gap is the omission in W4 — and, in hindsight, "verified working in
+this environment" (`:290`) is a stronger section heading than a workflow that cannot execute here
+deserves; C1 is what that overstatement cost.
 
-Plus the carried bookkeeping: **W5**'s `refined.md` amendment and Slice 11's obligations 2 and 3,
-**W3**'s `CHANGELOG` sub-bullet, and **W4**'s `artifactName` (which Slice 13 must set anyway to fill
-the checksum table with real names). **W1** and **W2** are two-sentence edits to `docs/gui.md` worth
-folding into whatever commit Slice 13 makes to that file.
+---
+
+## 7. What would flip this to PASS
+
+Small and mechanical. In one commit:
+
+1. **C1** — make the checksum command portable to `macos-latest` (`command -v sha256sum` with a
+   `shasum -a 256` fallback, or a Node `crypto` one-liner). This is the blocker: without it the
+   release job can never run, and item 95 ships zero published checksums.
+2. **C2** — set `artifactName` in `desktop/electron-builder.yml` for the three targets (or correct
+   `docs/gui.md:22-25` to `electron-builder`'s defaults), closing Slice 12's W4 so the checksum table
+   names files that will actually exist.
+3. **W4** — add the fourth open item to `spike.md`: the 4 remaining `pending` markers and P-D16's
+   straddle, stated as open rather than left unmentioned.
+
+W1, W2, W3 and W6 are one- or two-line changes I'd want in the same commit — W2 and W3 in particular,
+since an unpinned third-party action holding `contents: write` and a guard that misses nested
+`publish:` are both weaker than the security posture this repo argues for everywhere else — but none
+of them is what I'm gating on. W5 is a call for Oscar, not for me: land it or drop it on the record.
+
+Once C1, C2 and W4 land, every criterion in §1 is either met or a sanctioned, written-down human
+gate, and I'd expect to pass this on the next read.
+
+**The advance does not close here.** Slice 13 is the last slice in `plan.md`, so its PASS is the
+advance's PASS — and this is not it yet.

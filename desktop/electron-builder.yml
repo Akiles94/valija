@@ -17,14 +17,20 @@ mac:
         - arm64
         - x64
   identity: null
+  # Pinned rather than left to electron-builder's default (which omits the
+  # arch suffix for a single-arch build and would collide between arm64/x64
+  # otherwise) — docs/gui.md's checksum table names these exact files.
+  artifactName: ${productName}-${version}-${arch}.dmg
 win:
   target:
     - target: nsis
       arch:
         - x64
   signAndEditExecutable: false
+  artifactName: ${productName}-${version}-Setup.${ext}
 linux:
   target:
     - target: AppImage
       arch:
         - x64
+  artifactName: ${productName}-${version}.${ext}
