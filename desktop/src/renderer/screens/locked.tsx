@@ -23,10 +23,12 @@ export function LockedScreen({
   bridge,
   onUnlocked,
   onUpgradeRequired,
+  onOpenSettings,
 }: {
   bridge: ValijaBridge;
   onUnlocked: (result: UnlockSuccess) => void;
   onUpgradeRequired: (credential: UnlockCredential) => void;
+  onOpenSettings: () => void;
 }) {
   const t = useT();
   const errorCopy = useErrorCopy();
@@ -60,6 +62,12 @@ export function LockedScreen({
 
   return (
     <div className="screen">
+      {/* The gear reaches the locked screen too (§4.8 step 37, item 89) — it's
+          one of the screens that has to be readable in the user's language
+          and theme. */}
+      <button type="button" className="settings-gear" onClick={onOpenSettings}>
+        {t("common.settings")}
+      </button>
       <h1>{t("locked.title")}</h1>
       <form onSubmit={handleSubmit}>
         <label>

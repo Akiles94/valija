@@ -92,6 +92,7 @@ export const es: Catalog = {
     emptyTitle: "Todavía no hay contexto guardado.",
     connectATool: "Conectar una herramienta de IA",
     importHistory: "Importar tu historial de chats",
+    checkMySetup: "Revisar mi configuración",
     itemCount: {
       one: "{count} elemento",
       other: "{count} elementos",
@@ -295,6 +296,9 @@ export const es: Catalog = {
     vaultAndSync: "Bóveda y sincronización",
     openDiagnostics: "Revisar mi configuración",
     openRelocate: "Mover mi bóveda…",
+    vaultAndSyncSeeSync:
+      "Consulta el panel de Sincronización y seguridad para ver la carpeta de tu bóveda y los detalles de conexión.",
+    vaultAndSyncLocked: "Desbloquea tu bóveda para revisar el diagnóstico o moverla.",
     help: "Ayuda",
     replayTour: "Ver de nuevo el recorrido de bienvenida",
   },

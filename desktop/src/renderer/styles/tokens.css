@@ -1,0 +1,33 @@
+/*
+ * D-Q's light/dark custom-property sets. `resolveTheme` always resolves to
+ * exactly "light" or "dark" before this ever runs (there is no "system"
+ * value at render time), so this file only needs the two concrete states —
+ * no `prefers-color-scheme` query duplicated here. The recovery-kit screen
+ * sets `data-theme="dark"` on its own subtree (item 89b), which these
+ * attribute selectors already re-apply through the normal cascade — no
+ * separate mechanism needed.
+ */
+
+[data-theme="light"] {
+  --color-bg: #ffffff;
+  --color-surface: #f5f5f7;
+  --color-text: #1a1a1a;
+  --color-text-muted: #5f6368;
+  --color-border: #d8d8dc;
+  --color-accent: #2f6fed;
+  --color-accent-text: #ffffff;
+  --color-danger: #b3261e;
+  --color-warning: #8a5a00;
+}
+
+[data-theme="dark"] {
+  --color-bg: #17181c;
+  --color-surface: #1f2126;
+  --color-text: #f2f2f3;
+  --color-text-muted: #a2a6ad;
+  --color-border: #34363c;
+  --color-accent: #6ea8ff;
+  --color-accent-text: #0b1220;
+  --color-danger: #ff6b6b;
+  --color-warning: #f5c451;
+}
