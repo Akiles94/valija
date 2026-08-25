@@ -287,38 +287,64 @@ manually. **Deliberately not added here** — it's a dev-workflow change outside
 (packaging, release, final gates), and this environment cannot verify it does what it claims for the
 same rebuild-is-blocked reason. Left as a note for whoever next touches `desktop/package.json`.
 
-**What this slice adds, verified working in this environment:**
+**What this slice adds — corrected once, after a first-pass review caught two mechanical defects a
+Linux-only container couldn't see (below), now fixed and re-checked:**
 
 - `.github/workflows/desktop.yml` — the tag-gated `Package` step gains a `Checksum artifacts` step
-  (`sha256sum` over whatever `*.dmg`/`*.exe`/`*.AppImage` files `electron-builder` produced, one file
-  per OS matrix leg) and an `Upload artifacts` step. A new `release` job, gated on all three `build`
-  matrix legs succeeding, downloads every OS's artifacts + checksums, combines them into one
-  `checksums.txt`, and publishes a **draft** GitHub release via `softprops/action-gh-release` — draft
-  on purpose, so a maintainer reviews and publishes it manually rather than an unsigned build going
-  out unattended. This closes item 95's "computes and publishes each artifact's SHA-256" — verified
-  by reading the workflow's own logic and by the local `sha256sum` step succeeding against a
-  hand-built file in this container, not by an actual tagged CI run (this environment cannot push a
-  tag or trigger CI itself).
-- `desktop/src/main/infra/no-auto-update.test.ts` (new) — P-D19's guard test: `electron-builder.yml`
-  has no top-level `publish:` key, `desktop/package.json` has no `electron-updater` dependency. Green
-  in this environment (625 desktop tests, up from 623).
+  and an `Upload artifacts` step. **First-pass defect, fixed:** the checksum step used
+  `sha256sum` unconditionally, which is GNU coreutils and does not exist on `macos-latest`'s BSD
+  userland — that leg would have failed, and since `release` needs all three `build` legs, *no*
+  release would ever have published, on any OS. It now tries `sha256sum` and falls back to
+  `shasum -a 256` (identical `<hash>  <name>` output), present on all three runners. A new `release`
+  job, gated on all three `build` matrix legs succeeding, downloads every OS's artifacts + checksums,
+  combines and **verifies** them (`sha256sum -c`, sorted by filename rather than hash for a scannable
+  list), and publishes a **draft** GitHub release via `softprops/action-gh-release`, pinned to its
+  `v2.6.2` tag's commit SHA rather than the mutable `v2` tag — the first third-party action in this
+  repo, and the first step in it holding `contents: write`, so it doesn't get the same trust a
+  first-party `actions/*` step does. A repo-wide `permissions: contents: read` floor is added above
+  `jobs:`, so `build` (which runs arbitrary `npm ci` lifecycle scripts on three OSes) no longer
+  inherits whatever the repository/org default happens to be. Verified by reading the workflow's own
+  logic and by the local checksum step succeeding against a hand-built file in this container, not by
+  an actual tagged CI run (this environment cannot push a tag or trigger CI itself).
+- `desktop/electron-builder.yml` — **first-pass defect, fixed:** no target had an explicit
+  `artifactName`, so `electron-builder`'s defaults (`Valija-<version>.dmg` losing the arch suffix on
+  a two-arch mac build, `Valija Setup <version>.exe` for nsis) would not have matched two of the four
+  rows `docs/gui.md`'s checksum table already named — a user told to "check it against the file you
+  downloaded" would have found no file to check. `artifactName` is now pinned per platform to exactly
+  what `docs/gui.md` says, so the two stay in lockstep across `electron-builder` version bumps rather
+  than by coincidence.
+- `desktop/src/main/infra/no-auto-update.test.ts` (P-D19's guard test) — **first-pass defect, fixed:**
+  the original check matched only an unindented `publish:` and only the literal dependency name
+  `electron-updater`; running it against a `mac:`-nested `publish:` or a quoted `"publish":` showed
+  neither was caught, and `update-electron-app`/`electron-differential-updater`-shaped dependencies
+  passed too. Both assertions are now shape-based (an indentation- and quote-agnostic `publish:`
+  regex; a dependency-name pattern matching `updat(e|er)`) rather than one literal string each.
+- `desktop/src/renderer/state/diagnostic-rows.test.ts` — Slice 10's `review.md` W5 (carried through
+  Slices 11 and 12 as "still needs an owner"): `DiagnosticRow.fatal` — the field `specs/desktop.md`
+  and the Slice-11 stylesheet both lean on — had no test of its own. Added, closing the carried item
+  rather than letting the advance's last slice close over it silently.
+- Desktop suite: **626 tests** (625 after the first-pass guard test, +1 for the new `fatal` test —
+  the guard test's rewrite kept its two `it` blocks, only strengthening their assertions).
 
 **Item 98's final gate checks, run against `origin/main` — what could be checked here, and what
 couldn't:**
 
 | Check | Result |
 |---|---|
-| `git diff main...HEAD --name-only` — `src/` confined to Slices 4/8's files | **Confirmed** — every changed `src/` path is one `context-pack-export.ts`/`diagnostics.ts`/the vault-relocation-and-upgrade-gate set names |
-| `git diff main...HEAD -- src/delivery/mcp/` empty | **`server.ts` itself: byte-for-byte unchanged.** `server.test.ts` changed — mechanically, because `Container`'s shape grew the `folder`/`mover`/`checkVaultUpgrade`/`relocateVault` fields Slices 4 and 8 added, so the test's fixture needed the same fields to satisfy the type. No MCP tool, prompt, or behavior changed; the literal directory-wide diff is not empty, the production file is |
+| `git diff main...HEAD --name-only` — `src/` confined to Slices 4/8's files | **Confirmed.** All 31 changed paths: `src/delivery/{cli/content-commands.ts, cli/doctor.ts, cli/doctor.test.ts, cli/installer.ts, cli/installer.test.ts, cli/vault-commands.ts, cli/vault-commands.test.ts, container.ts, context-pack-export.ts, context-pack-export.test.ts, diagnostics.ts, diagnostics.test.ts, mcp/server.test.ts}`, `src/shared/infra/{migrations.ts, migrations.test.ts, sqlite.ts, sqlite.test.ts}`, `src/vault/{application/ports/vault-mover.ts, application/ports/vault-store.ts, application/services/resolve-unlock-key.ts, application/use-cases/check-vault-upgrade.use-case.ts, application/use-cases/relocate-vault.use-case.ts, application/use-cases/relocate-vault.use-case.test.ts, application/use-cases/unlock-vault.use-case.ts, application/use-cases/unlock-vault.upgrade-gate.test.ts, domain/errors.ts, domain/services/vault-relocation.ts, domain/services/vault-relocation.test.ts, infra/file-vault-mover.ts, infra/file-vault-mover.test.ts, infra/file-vault-store.ts}`. `resolve-unlock-key.ts` isn't named by number in `plan.md`'s prose — it's the shared key-resolution extraction `check-vault-upgrade.use-case.ts` needed, landed and reviewed as part of Slice 4 |
+| `git diff main...HEAD -- src/delivery/mcp/` empty | **`server.ts` itself: byte-for-byte unchanged** (0 lines). Only `server.test.ts` changed — mechanically, because `Container`'s shape grew the `folder`/`mover`/`checkVaultUpgrade`/`relocateVault` fields Slices 4 and 8 added, so the test's fixture needed the same fields to satisfy the type. No MCP tool, prompt, or behavior changed; the literal directory-wide diff is not empty, the production file is |
 | `git diff main...HEAD -- package.json` empty | **Confirmed empty** (root `package.json`) |
 | `.github/workflows/ci.yml` unchanged | **Confirmed empty diff** |
 | root `typecheck && lint && test && build` green, test count up | **Green** — 301 tests (main has none of this advance's tests, so this is "up" by construction) |
-| desktop suite green | **Green on this container's OS (Linux x86_64) only** — 625 tests. Windows and macOS are `desktop.yml`'s job, not reachable from here |
+| desktop suite green | **Green on this container's OS (Linux x86_64) only** — 626 tests. Windows and macOS are `desktop.yml`'s job, not reachable from here |
 | native modules load in the packaged app, every target | **Not verified** — packaging itself fails here (above); no packaged artifact exists to check |
 | zero-network walkthrough against the **packaged** artifact, both languages | **Not verified** — same reason; there is no packaged artifact in this environment to walk through |
+| `docs/gui.md`'s `pending — filled by Slice 13's tagged build` markers, `grep -c` → 0 (P-D16, `plan.md`'s Done-when) | **Not closeable here.** `grep -c "pending — filled by Slice 13" docs/gui.md` still returns **4** — every row in the checksum table. These can only become real digests from an actual tagged `desktop.yml` run (same blocker as the row above), now that `artifactName` (this update) guarantees the table's four rows name files that build will actually produce |
 
 **What remains open for Slice 13, honestly, not silently:** the native-module-loads-in-packaged-app
-half of A3, the actual cross-OS packaging run, and the zero-network walkthrough in both languages
-against a real packaged artifact all need `desktop.yml`'s own CI run (unrestricted egress, three real
-OS runners) or a developer machine. The workflow changes that make that CI run produce checksummed,
-published artifacts once it does run are in this commit and are what this environment could verify.
+half of A3, the actual cross-OS packaging run, the zero-network walkthrough in both languages against
+a real packaged artifact, and `docs/gui.md`'s four `pending` checksum markers all need `desktop.yml`'s
+own CI run (unrestricted egress, three real OS runners) or a developer machine. The workflow and
+packaging-config changes that make that CI run produce checksummed, correctly-named, published
+artifacts once it does run — and that make the docs table fillable rather than pointing at files that
+don't exist — are in this commit and are what this environment could verify.
