@@ -1,6 +1,6 @@
 # GUI — desktop companion for valija · Implementation Plan
 
-Approved: Oscar 2026-08-20
+Approved: Oscar 2026-08-25 (third revision — Gate P re-closed on the 12→13 split; second revision approved 2026-08-20)
 
 **Spec:** `advances/GUI/refined.md` (Gate R **closed** — Oscar, 2026-08-20, fifth revision; all
 eighteen items §0 originally flagged as open now carry `Decided:` lines).
@@ -24,8 +24,8 @@ new D-W); this revision closes it at the plan level — Slice 1 gains a mandator
 Slice 4 gains a shared client-config-writer change, and Slice 8 gains the re-pointing step itself.
 See the marginal **(2026-08-20)** notes throughout for exactly what moved.
 
-**Third revision, 2026-08-25 — the tail re-grouped into three slices, at Oscar's request. No scope
-change.** Slices 1–10 are implemented on `feat/desktop-GUI` and each passed its own per-slice
+**Third revision, 2026-08-25 — Gate P re-closed. The tail re-grouped into three slices, at Oscar's
+request. No scope change.** Slices 1–10 are implemented on `feat/desktop-GUI` and each passed its own per-slice
 review; not one line of them changes here, and **no plan item is added, softened, cut or deferred**.
 What changed is the *shape* of the work left, for one reason Oscar named directly: the old Slice 12
 bundled ≈840 lines of documentation prose with cross-OS unsigned packaging **and** the final-gate
@@ -52,20 +52,19 @@ complete, so **Slice 13 runs after Slice 12**; but `docs/gui.md`'s published SHA
 only come from Slice 13's tagged build, so **Slice 12 ships that one table with `pending` markers and
 Slice 13's Done-when greps them away** (R9 in §8, P-D16 in §6).
 
-**This is a structural change to an approved plan, and it needs Oscar's fresh call.** The
-`Approved: Oscar 2026-08-20` line at the top records Gate P for the **second** revision; it stays
-there as the historical record and it does **not** cover this regrouping. **Gate P must be
-re-confirmed on this third revision before Slice 11 begins.** P-D10 is not reopened by any of this:
+**This was a structural change to an approved plan, and it needed Oscar's fresh call — given,
+2026-08-25.** Oscar confirmed, through an interactive prompt: the 12→13 split exactly as presented
+(item 89b's stylesheet stays in Slice 11, per P-D13's recommended default — Slice 11 is the largest
+of the three, which is the accepted trade); and, individually, all ten Group C decisions (§6),
+each exactly as recommended — **P-D11** through **P-D20**. P-D10 is not reopened by any of this:
 all **thirteen** slices ship, "todo junto, sin retirada" — the count changed, the scope did not.
 
 > **Implementation must NOT begin until Oscar has reviewed this file and recorded an `Approved:`
 > line at its top.** The gate is live and real for this advance: `guard-implementation.sh` matches
 > `*/src/*`, `*/package.json`, `*/tsconfig*.json` — which already covers `desktop/src/**`,
 > `desktop/package.json` and `desktop/tsconfig*.json` today, before the D-L hook change of Slice 1.
-> Do not work around it. **That line is now recorded above — for the second revision.** The third
-> revision (2026-08-25) re-groups the remaining work into Slices 11, 12 and 13 without changing what
-> ships; **it needs Oscar's fresh confirmation at Gate P before Slice 11 starts.** Slices 1–10 are
-> already implemented and reviewed and are untouched by it.
+> Do not work around it. **That line is now recorded above — updated for the third revision,
+> 2026-08-25.** Slices 1–10 are already implemented and reviewed and are untouched by this revision.
 
 ---
 
@@ -1473,11 +1472,11 @@ marked below.
   genuinely unshippable for a reason discovered during implementation, that is an escalation back to
   Oscar, not a decision this plan pre-authorizes the implementer to make alone.
 
-### Group C — the third revision's open decisions (2026-08-25, **not** yet confirmed)
+### Group C — the third revision's decisions, all confirmed 2026-08-25
 
 These come from the 12→13 re-grouping and from the two carried-forward findings it picks up. None of
-them changes what ships; each changes *how*. Every one has a recommended default, so Slice 11 can
-start the moment Oscar confirms the regrouping itself.
+them changes what ships; each changes *how*. **Oscar confirmed all ten, individually, through an
+interactive prompt — every one exactly as recommended below.**
 
 - **P-D11 — how item 89a's dashboard entry point is tested.** *Recommend:* the source-scanning test
   named in 89a, in `diagnostics.no-auto-run.test.ts`'s established idiom, asserting exactly one
@@ -1925,20 +1924,21 @@ parameter) and ≈ 5,090 under `desktop/` — plus ≈ 1,570 test lines (includi
 tests for exactly two screens), ≈ 840 documentation lines, and bilingual screenshots drawn only
 from the published golden-vault fixture.
 
-**Gate P was closed for the second revision, and is re-opened by the third.** Oscar reviewed the
-second revision and confirmed, item by item through an interactive
+**Gate P closed for the second revision on 2026-08-20, and re-closed for the third on 2026-08-25.**
+For the second revision, Oscar reviewed it and confirmed, item by item through an interactive
 prompt: all 18 Group A items (§6) — seventeen exactly as written, and A-2/D-R(a) as rewritten to
 require re-pointing every connected client's MCP config during relocation; **P-D3** (the change to
 `UnlockVault` that D-J(b) forces); **P-D5 reversed** (DOM-level tests for the recovery-kit and
-relocation-wizard screens); and **P-D10 rejected** (no de-scope lever — all slices ship). That
-`Approved:` line is recorded at the top of this file and covers the second revision.
+relocation-wizard screens); and **P-D10 rejected** (no de-scope lever — all slices ship).
 
 **The third revision (2026-08-25) re-groups the remaining work into Slices 11, 12 and 13 — thirteen
-slices, the same scope — and needs Oscar's fresh confirmation at Gate P before Slice 11 begins.** It
-changes no decision in Group A or B, adds no item, and removes none; it folds `review.md`'s W4 into
-Slice 11 as item 89a, gives the long-unassigned stylesheet a home as item 89b, and splits the old
-Slice 12 into a documentation slice (91, 92, 93, 94, 96, 97) and a packaging/final-gate slice (95,
-98). Its ten open decisions are Group C in §6. Two mid-implementation human gates remain,
+slices, the same scope.** It changes no decision in Group A or B, adds no item, and removes none; it
+folds `review.md`'s W4 into Slice 11 as item 89a, gives the long-unassigned stylesheet a home as item
+89b, and splits the old Slice 12 into a documentation slice (91, 92, 93, 94, 96, 97) and a
+packaging/final-gate slice (95, 98). Oscar confirmed the split exactly as presented (89b stays in
+Slice 11, per P-D13's default) and, individually, all ten Group C decisions (§6) — **P-D11** through
+**P-D20**, every one exactly as recommended. The `Approved:` line at the top of this file now covers
+this revision. Two mid-implementation human gates remain,
 neither performable by an agent: **Slice 1 step 11** (the macOS keychain-ACL answer, D-H) and
 **Slice 1 step 11a** (the per-client `env`-block-honouring answer, D-R(a)'s mandatory spike) —
 both block Slice 8 and both should be scheduled together, on the same real macOS desktop session
