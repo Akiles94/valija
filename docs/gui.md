@@ -157,7 +157,8 @@ JSON snippet and file paths meant to be pasted somewhere, not prose meant to be 
 this app itself — every client's config points at `npx -y valija mcp`, which needs a working
 `node`/`npm` on your machine. If the app can't find them, Connect still writes the config (so it's
 ready the moment Node is installed) but tells you plainly that the tool won't be able to reach your
-vault until then, with a link explaining how to install Node.js.
+vault until then, with a short pointer reading "How to install Node.js" — plain text, not a
+clickable link, since this app never opens a URL or makes a network request of any kind.
 
 ---
 
@@ -181,8 +182,11 @@ explanation instead of the CLI's short names. Two things it discloses before run
 check writes and immediately deletes a harmless test entry (on macOS this may prompt you — see
 [below](#the-macos-keychain-prompt)), and checking whether your AI tools' own Node.js works runs
 `node --version`/`npm --version` on your machine. **Copy report** builds a support artifact for a
-GitHub issue; it stays in English in either language, and it's the only place in the app a raw
-internal error message may appear (see [Language](#language)).
+GitHub issue; it stays in English in either language. It's the one place a raw internal error is
+guaranteed to appear — a check that fails with a recognized error is localized on screen but kept
+verbatim in the report — and it's also possible, though rarer, to see a raw native-library error
+message directly on screen for the encryption-engine or keychain checks specifically, the same way
+`valija doctor` already prints it in a terminal (see [Language](#language)).
 
 One thing that can look like a contradiction and isn't: a client the CLI installed with `valija
 install` (no explicit folder recorded) shows as **OK, points at the default location** here, while
@@ -268,10 +272,13 @@ few places that stay in English on purpose, everywhere in the app:
 4. **Diagnostics' check details, and its Copy report.** Most check rows show their detail close to
    verbatim to what `valija doctor` already prints in a terminal (on purpose, so a support
    conversation about one matches the other) — a healthy check's detail is a short technical phrase
-   like "native module loads," left untranslated. A row that failed with a real internal error *is*
-   localized on screen, from its error code; the raw message behind it never shows there. **Copy
-   report** is the one exception to that: it's a support artifact built for pasting into a GitHub
-   issue, so it stays in English and is the one place a raw internal error message may appear.
+   like "native module loads," left untranslated. Most failures are localized on screen from a
+   recognized error code instead of showing their raw message — but the encryption-engine and
+   keychain checks specifically can still surface a raw native-library error message directly on
+   screen, the same one `valija doctor` would print, if the failure isn't one of the recognized
+   codes. **Copy report** always carries the verbatim detail regardless: it's a support artifact
+   built for pasting into a GitHub issue, so it stays in English and is where a raw internal error
+   message is guaranteed to appear, even for the failures that do get localized on screen.
 
 **A known, deliberate gap:** these docs, and the rest of `docs/` and `specs/`, are English-only for
 now. The in-app experience is fully bilingual; the written documentation isn't yet.
