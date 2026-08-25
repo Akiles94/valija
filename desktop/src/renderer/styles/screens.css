@@ -25,7 +25,10 @@
   text-align: left;
 }
 
-/* recovery-kit.tsx — permanently dark regardless of app theme (D-Q's exception) */
+/* recovery-kit.tsx — permanently dark regardless of app theme (D-Q's exception). min-height fills the window with its own repainted subtree, not just the .kit-text box. */
+.recovery-kit {
+  min-height: 100vh;
+}
 .recovery-kit .kit-text {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -56,6 +59,12 @@
   margin-bottom: 20px;
 }
 
+/* pack-preview.tsx */
+.pack-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* diagnostics.tsx */
 .diagnostic-checks {
   list-style: none;
@@ -68,7 +77,10 @@
   border-radius: 6px;
   padding: 12px;
 }
-.check-row.problem {
+.check-row.warning {
+  border-color: var(--color-warning);
+}
+.check-row.fatal {
   border-color: var(--color-danger);
 }
 .check-name {

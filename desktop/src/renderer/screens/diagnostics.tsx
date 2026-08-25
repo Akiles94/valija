@@ -15,6 +15,7 @@ function CheckRow({
   detail,
   extra,
   ok,
+  fatal,
 }: {
   name: string;
   status: string;
@@ -22,9 +23,11 @@ function CheckRow({
   detail: string;
   extra?: string | undefined;
   ok: boolean;
+  fatal: boolean;
 }) {
+  const severity = ok ? "ok" : fatal ? "fatal" : "warning";
   return (
-    <li className={`check-row ${ok ? "ok" : "problem"}`}>
+    <li className={`check-row ${severity}`}>
       <span className="check-name">{name}</span>
       <span className="check-status">{status}</span>
       {explanation !== "" && <p className="check-explanation">{explanation}</p>}
@@ -116,6 +119,7 @@ export function DiagnosticsScreen({ bridge }: { bridge: ValijaBridge }) {
                 detail={row.detail}
                 extra={row.extra}
                 ok={row.ok}
+                fatal={row.fatal}
               />
             ))}
           </ul>

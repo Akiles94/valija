@@ -1,4 +1,3 @@
-import type { Language } from "../../shared/i18n/languages.js";
 import type { AppPreferencesMessage } from "../../shared/ipc/messages.js";
 import { useT } from "../state/i18n-context.js";
 
@@ -74,7 +73,7 @@ export function SettingsScreen({
               type="radio"
               name="language"
               checked={preferences.language === value}
-              onChange={() => onUpdatePreferences({ language: value as Language })}
+              onChange={() => onUpdatePreferences({ language: value })}
             />
             {t(key)}
           </label>
@@ -82,6 +81,15 @@ export function SettingsScreen({
       </section>
 
       <section>
+        {/* Both actions mount an existing, already-reviewed screen inside
+            `Workspace`, which exists only while unlocked — so they're
+            hidden rather than reachable-but-broken while locked. This is a
+            known narrowing of refined.md §4.8 step 40 (recorded per
+            review.md's W1, not silently shipped): it leaves someone who
+            cannot unlock with no route to "Check my setup", even though
+            diagnostics itself runs fine on a locked vault. Carried forward
+            for Slice 12 (docs.gui.md) and a refined.md amendment, rather
+            than hoisting either screen to overlay level in this slice. */}
         <h2>{t("settings.vaultAndSync")}</h2>
         {unlocked ? (
           <>
