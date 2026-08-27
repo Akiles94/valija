@@ -8,6 +8,8 @@ import type {
   ContentSearchRequest,
   ContentShowRequest,
   ContextItemMessage,
+  DiagnosticsCopyReportRequest,
+  DiagnosticsRunResponse,
   DialogFileChoiceResponse,
   ImportListRequest,
   ImportListResponse,
@@ -15,6 +17,7 @@ import type {
   ImportPreviewRequest,
   ImportRunRequest,
   IpcResult,
+  NodeStatusResponse,
   PreferencesWriteRequest,
   ProjectListEntryMessage,
   RecoveryKitResponse,
@@ -46,11 +49,6 @@ import type {
  * from a native dialog the main process opens and keeps. `register-handlers.ts`
  * asserts `ipcMain`'s registered set equals this tuple exactly: no extra
  * channel, no missing one, no `invoke("run", …)`-shaped escape hatch.
- *
- * Not yet included: the diagnostics channels — they land in Slice 10, once
- * the extracted `runDiagnostics` exists to back them. Declaring a channel
- * before its capability exists would make this tuple a promise the app
- * can't keep yet.
  */
 export const CHANNELS = [
   "vault:init",
@@ -66,6 +64,8 @@ export const CHANNELS = [
   "content:export",
   "content:copy",
   "sync:status",
+  "diagnostics:run",
+  "diagnostics:copyReport",
   "relocation:preflight",
   "relocation:move",
   "relocation:retryClient",
@@ -75,6 +75,7 @@ export const CHANNELS = [
   "import:run",
   "tools:status",
   "tools:connect",
+  "tools:nodeStatus",
   "preferences:read",
   "preferences:write",
   "dialog:chooseImportFile",
@@ -102,6 +103,8 @@ export interface ChannelMap {
   "content:export": { request: ContentExportRequest; response: IpcResult<ContentExportResponse> };
   "content:copy": { request: ContentCopyRequest; response: undefined };
   "sync:status": { request: undefined; response: SyncStatusResponse };
+  "diagnostics:run": { request: undefined; response: DiagnosticsRunResponse };
+  "diagnostics:copyReport": { request: DiagnosticsCopyReportRequest; response: undefined };
   "relocation:preflight": {
     request: RelocationPreflightRequest;
     response: IpcResult<RelocationPreflightResponse>;
@@ -123,6 +126,7 @@ export interface ChannelMap {
   "import:run": { request: ImportRunRequest; response: IpcResult<ImportOutcomeResponse> };
   "tools:status": { request: undefined; response: ToolsStatusEntry[] };
   "tools:connect": { request: ToolsConnectRequest; response: IpcResult<ToolsConnectResponse> };
+  "tools:nodeStatus": { request: undefined; response: NodeStatusResponse };
   "preferences:read": { request: undefined; response: AppPreferencesMessage };
   "preferences:write": { request: PreferencesWriteRequest; response: undefined };
   "dialog:chooseImportFile": { request: undefined; response: DialogFileChoiceResponse | null };

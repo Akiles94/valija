@@ -131,8 +131,18 @@ export interface ImportListingRow {
   estimatedChunks: number;
 }
 
+/**
+ * A manual override for auto-detection — offered only after `import:list`
+ * fails with `UNSUPPORTED_SOURCE` (§9 item 72). Duplicated here rather than
+ * imported from `src/importers/domain/values/import-source.ts`: `shared/`
+ * stays pure of the root `src/` tree, matching every other wire type in this
+ * file.
+ */
+export type ImportFormatOverride = "chatgpt" | "claude" | "generic";
+
 export interface ImportListRequest {
   handle: string;
+  from?: ImportFormatOverride;
 }
 export interface ImportListResponse {
   source: string;
@@ -144,6 +154,7 @@ export interface ImportSelection {
   query?: string;
   since?: string;
   all?: boolean;
+  from?: ImportFormatOverride;
 }
 
 export interface ImportPreviewRequest extends ImportSelection {
@@ -175,9 +186,26 @@ export interface ToolsStatusEntry {
 export interface ToolsConnectRequest {
   client: string;
 }
+
+/**
+ * `configUnreadable`, not an `IpcResult` failure — a client whose config file
+ * isn't valid JSON is expected, recoverable content the screen renders
+ * (mirroring `RelocationClientResult`, §9 item 71): `manualSnippet` (built
+ * from `installer.ts`'s own `manualInstructions`, never a caught error's
+ * `.message`) is what the fallback block shows. An unknown client id is
+ * still a real `IpcResult` failure — that is a caller mistake, not a client
+ * config problem.
+ */
 export interface ToolsConnectResponse {
-  configPath: string;
-  backupPath: string | null;
+  outcome: "connected" | "configUnreadable";
+  configPath?: string;
+  backupPath?: string;
+  manualSnippet?: string;
+}
+
+export interface NodeStatusResponse {
+  nodeRunnable: boolean;
+  npmRunnable: boolean;
 }
 
 export interface AppPreferencesMessage {
@@ -271,4 +299,38 @@ export interface SyncStatusResponse {
   staleBackups: string[];
   looksLikeCloud: boolean;
   resolvedStateHome: string;
+}
+
+/**
+ * Mirrors `src/delivery/diagnostics.ts`'s `DiagnosticCheck` — duplicated here
+ * rather than imported, matching every other wire type in this file (`shared/`
+ * stays pure of the root `src/` tree). `detail` is shown close to verbatim on
+ * the Diagnostics screen (D-T Option 3): it is the one row-level text in this
+ * app that is not run through the translation catalog, because it already is
+ * the same technical detail `valija doctor` prints today — **except** when
+ * `errorCode` is set: that means `detail` is a raw `DomainError.message`
+ * (a `VaultStatus` read failed), and the screen must localize from
+ * `errorCode` instead (D-V(d)) — the Copy report is the only place `detail`'s
+ * raw text may still surface.
+ */
+export interface DiagnosticCheckMessage {
+  name: string;
+  ok: boolean;
+  detail: string;
+  fatal?: boolean;
+  errorCode?: string;
+}
+
+export interface DiagnosticsRunResponse {
+  checks: DiagnosticCheckMessage[];
+}
+
+/**
+ * The renderer sends back the check rows it already fetched from
+ * `diagnostics:run` rather than main recomputing them — recomputing would
+ * silently re-run the disclosed keychain probe a second time on every
+ * Copy-report click (§4.6 step 26'/26'').
+ */
+export interface DiagnosticsCopyReportRequest {
+  checks: DiagnosticCheckMessage[];
 }

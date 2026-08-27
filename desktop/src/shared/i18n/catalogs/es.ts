@@ -92,6 +92,7 @@ export const es: Catalog = {
     emptyTitle: "Todavía no hay contexto guardado.",
     connectATool: "Conectar una herramienta de IA",
     importHistory: "Importar tu historial de chats",
+    checkMySetup: "Revisar mi configuración",
     itemCount: {
       one: "{count} elemento",
       other: "{count} elementos",
@@ -134,6 +135,8 @@ export const es: Catalog = {
     connectButton: "Conectar",
     connectedDetail:
       "Se agregó valija a {configPath}. Hay una copia de seguridad de tu configuración anterior en {backupPath}. Reinicia {client} para que lo detecte.",
+    connectedDetailNoBackup:
+      "Se agregó valija a {configPath}. Reinicia {client} para que lo detecte.",
     nodeMissingTitle: "Node.js no está instalado en este equipo",
     nodeMissingBody:
       "Tus herramientas de IA usan valija a través de Node.js, que no está instalado en este equipo. Conectar ahora guardará el ajuste, pero la herramienta no podrá acceder a tu bóveda hasta que instales Node.js.",
@@ -176,14 +179,41 @@ export const es: Catalog = {
     run: "Ejecutar comprobaciones",
     keychainProbeNotice:
       "La comprobación del llavero escribe y elimina de inmediato una entrada de prueba en el llavero de tu sistema operativo. En macOS esto puede mostrarte un aviso.",
+    nodeProbeNotice:
+      'Comprobar el Node.js de tus herramientas de IA también ejecuta "node --version" y "npm --version" en este equipo.',
     copyReport: "Copiar informe",
     copyReportNotice:
-      "El informe se mantiene en inglés y puede incluir uno de los mensajes de error propios de Valija, con fines de soporte técnico.",
+      "El informe se mantiene en inglés y puede incluir uno de los mensajes de error propios de Valija, la ruta de la carpeta de tu bóveda, y cualquier nombre de archivo en conflicto que encuentre — con fines de soporte técnico.",
     appNodeRow: "Node.js (esta aplicación)",
     toolNodeRow: "Node.js (tus herramientas de IA)",
+    toolNodeOk: "Ejecutable — tus herramientas de IA pueden usar Node.js y npm.",
+    toolNodeMissing:
+      "No ejecutable — tus herramientas de IA podrían no poder acceder a tu bóveda hasta que lo sea.",
     fatal: "Problema",
     warning: "Advertencia",
     ok: "Correcto",
+    clientVaultPath: "Apunta a {vaultPath}",
+    clientVaultPathDefault: "Apunta a la ubicación predeterminada (~/.valija)",
+    rowName: {
+      sqlcipher: "Motor de cifrado",
+      keychain: "Llavero del sistema",
+      vault: "Bóveda",
+      journal: "Archivo de base de datos",
+      sync: "Carpeta de sincronización",
+      lineage: "Historial de escritura",
+      autoLock: "Bloqueo automático",
+    },
+    checkNode: "Si el propio motor Node.js de esta aplicación es suficientemente reciente.",
+    checkSqlcipher: "Si el motor de base de datos cifrada carga correctamente.",
+    checkKeychain: "Si Valija puede leer y escribir en el llavero seguro de tu sistema operativo.",
+    checkVault: "Si existe una bóveda en este equipo, y si está desbloqueada.",
+    checkJournal:
+      "Si la base de datos de la bóveda quedó completamente escrita, sin nada pendiente de un guardado interrumpido.",
+    checkSync:
+      "Si la carpeta de la bóveda parece una carpeta sincronizada en la nube, y si algo ahí necesita tu atención.",
+    checkLineage: "Qué dispositivo escribió en la bóveda por última vez, y en qué generación está.",
+    checkAutoLock: "Cuánto tiempo permanece desbloqueada la bóveda antes de bloquearse sola.",
+    checkClient: "Si {client} está configurado para acceder a esta bóveda.",
   },
 
   sync: {
@@ -266,6 +296,9 @@ export const es: Catalog = {
     vaultAndSync: "Bóveda y sincronización",
     openDiagnostics: "Revisar mi configuración",
     openRelocate: "Mover mi bóveda…",
+    vaultAndSyncSeeSync:
+      "Consulta el panel de Sincronización y seguridad para ver la carpeta de tu bóveda y los detalles de conexión.",
+    vaultAndSyncLocked: "Desbloquea tu bóveda para revisar el diagnóstico o moverla.",
     help: "Ayuda",
     replayTour: "Ver de nuevo el recorrido de bienvenida",
   },

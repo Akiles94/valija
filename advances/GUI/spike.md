@@ -235,3 +235,116 @@ the actual packaged Electron build under this container's `xvfb`, reproduces exa
 Nothing here is new work to do inside this sandbox: it is the same CI/developer-machine dependency
 Slice 1 already named, now confirmed to gate one more thing (Slice 6's "Done when", not just
 packaging).
+
+---
+
+## Update, Slice 11 — Electron itself downloads fine; only the native-module rebuild is blocked
+
+Worth separating, since it changes what a future session should try first: **Electron's own binary
+downloads successfully in this container** (`node_modules/electron/dist`, 314 MB, via `install.js` —
+that traffic is not the `www.electronjs.org` host `node-gyp` needs), and `xvfb-run`/`Xvfb` are both
+present. So `electron-vite dev`/`build` and a headless-display launch are *not* blocked by policy —
+only `node-gyp`'s fetch of Node/Electron headers is (`electron-rebuild -f -w
+better-sqlite3-multiple-ciphers` still fails with the same `403` on `www.electronjs.org` this
+container's egress policy already recorded). A vault-backed screenshot therefore still can't be
+taken here, for the same reason Slice 6 hit. **Confirmed again, not newly found** — recorded here so
+whoever picks up Slice 12's screenshots (item 96) doesn't have to re-derive it: the golden fixture's
+plaintext (`seed.json`, `manifest.json`, `expected-*`) is real and usable without SQLCipher at all,
+so a fake `window.valija` bridge serving that plaintext could drive the real renderer under
+Playwright for screenshots *without* needing the blocked rebuild — untried here, kept out of this
+slice's scope on purpose (Oscar's own token-economy instruction for this advance's tail), but a
+cheaper path than waiting for a developer machine if it's wanted before Slice 13.
+
+## Update, Slice 12 — screenshots deferred, per item 96 and A13, honestly rather than silently
+
+`docs/gui.md` ships in this slice with its screenshot section stating plainly that the images are
+not yet included and why (the same rebuild gap above), rather than fabricating them or quietly
+dropping the section. This is a human gate to schedule with Oscar, exactly like D-H's macOS ACL
+answer — on a developer machine or in `desktop.yml`'s CI (which already runs `npm run test`/`build`
+on three OSes with no egress restriction), the rebuild succeeds and the golden-vault screenshots
+(or the mock-bridge shortcut above) can be taken in both languages and dropped into
+`docs/images/gui/` without touching `docs/gui.md`'s prose.
+
+---
+
+## Update, Slice 13 — packaging config, the release job, and the final gates this environment can run
+
+**Confirmed a third time, this time at the level that actually matters: `npm run package` itself
+fails, not just a standalone `electron-rebuild` call.** `npm run package -- --linux` was run in
+this container. `electron-builder` starts its own `npmRebuild: true` step, calls `@electron/rebuild`
+internally exactly as `electron-rebuild -f -w …` does by hand, and hits the identical `403` on
+`www.electronjs.org` node-gyp needs for `argon2` (the smaller, N-API-adjacent module, hit here
+before it would have reached `better-sqlite3-multiple-ciphers`). Same root cause as Slices 1, 11 and
+12 already recorded — the packaging command itself, not just a diagnostic tool around it, is
+egress-blocked in this environment.
+
+One incidental finding from that run, worth a line since it explains a gap Slice 12's `docs/gui.md`
+had to work around by hand: `electron-builder` printed its own suggestion — *"consider to remove
+excess dependency... simply add script `\"postinstall\": \"electron-builder install-app-deps\"` to
+your `package.json`."* That would make `npm ci` alone rebuild native modules for Electron
+automatically, closing the exact gap `docs/gui.md`'s "Running from source" section documents
+manually. **Deliberately not added here** — it's a dev-workflow change outside this slice's scope
+(packaging, release, final gates), and this environment cannot verify it does what it claims for the
+same rebuild-is-blocked reason. Left as a note for whoever next touches `desktop/package.json`.
+
+**What this slice adds — corrected once, after a first-pass review caught two mechanical defects a
+Linux-only container couldn't see (below), now fixed and re-checked:**
+
+- `.github/workflows/desktop.yml` — the tag-gated `Package` step gains a `Checksum artifacts` step
+  and an `Upload artifacts` step. **First-pass defect, fixed:** the checksum step used
+  `sha256sum` unconditionally, which is GNU coreutils and does not exist on `macos-latest`'s BSD
+  userland — that leg would have failed, and since `release` needs all three `build` legs, *no*
+  release would ever have published, on any OS. It now tries `sha256sum` and falls back to
+  `shasum -a 256` (identical `<hash>  <name>` output), present on all three runners. A new `release`
+  job, gated on all three `build` matrix legs succeeding, downloads every OS's artifacts + checksums,
+  combines and **verifies** them (`sha256sum -c`, sorted by filename rather than hash for a scannable
+  list), and publishes a **draft** GitHub release via `softprops/action-gh-release`, pinned to its
+  `v2.6.2` tag's commit SHA rather than the mutable `v2` tag — the first third-party action in this
+  repo, and the first step in it holding `contents: write`, so it doesn't get the same trust a
+  first-party `actions/*` step does. A repo-wide `permissions: contents: read` floor is added above
+  `jobs:`, so `build` (which runs arbitrary `npm ci` lifecycle scripts on three OSes) no longer
+  inherits whatever the repository/org default happens to be. Verified by reading the workflow's own
+  logic and by the local checksum step succeeding against a hand-built file in this container, not by
+  an actual tagged CI run (this environment cannot push a tag or trigger CI itself).
+- `desktop/electron-builder.yml` — **first-pass defect, fixed:** no target had an explicit
+  `artifactName`, so `electron-builder`'s defaults (`Valija-<version>.dmg` losing the arch suffix on
+  a two-arch mac build, `Valija Setup <version>.exe` for nsis) would not have matched two of the four
+  rows `docs/gui.md`'s checksum table already named — a user told to "check it against the file you
+  downloaded" would have found no file to check. `artifactName` is now pinned per platform to exactly
+  what `docs/gui.md` says, so the two stay in lockstep across `electron-builder` version bumps rather
+  than by coincidence.
+- `desktop/src/main/infra/no-auto-update.test.ts` (P-D19's guard test) — **first-pass defect, fixed:**
+  the original check matched only an unindented `publish:` and only the literal dependency name
+  `electron-updater`; running it against a `mac:`-nested `publish:` or a quoted `"publish":` showed
+  neither was caught, and `update-electron-app`/`electron-differential-updater`-shaped dependencies
+  passed too. Both assertions are now shape-based (an indentation- and quote-agnostic `publish:`
+  regex; a dependency-name pattern matching `updat(e|er)`) rather than one literal string each.
+- `desktop/src/renderer/state/diagnostic-rows.test.ts` — Slice 10's `review.md` W5 (carried through
+  Slices 11 and 12 as "still needs an owner"): `DiagnosticRow.fatal` — the field `specs/desktop.md`
+  and the Slice-11 stylesheet both lean on — had no test of its own. Added, closing the carried item
+  rather than letting the advance's last slice close over it silently.
+- Desktop suite: **626 tests** (625 after the first-pass guard test, +1 for the new `fatal` test —
+  the guard test's rewrite kept its two `it` blocks, only strengthening their assertions).
+
+**Item 98's final gate checks, run against `origin/main` — what could be checked here, and what
+couldn't:**
+
+| Check | Result |
+|---|---|
+| `git diff main...HEAD --name-only` — `src/` confined to Slices 4/8's files | **Confirmed.** All 31 changed paths: `src/delivery/{cli/content-commands.ts, cli/doctor.ts, cli/doctor.test.ts, cli/installer.ts, cli/installer.test.ts, cli/vault-commands.ts, cli/vault-commands.test.ts, container.ts, context-pack-export.ts, context-pack-export.test.ts, diagnostics.ts, diagnostics.test.ts, mcp/server.test.ts}`, `src/shared/infra/{migrations.ts, migrations.test.ts, sqlite.ts, sqlite.test.ts}`, `src/vault/{application/ports/vault-mover.ts, application/ports/vault-store.ts, application/services/resolve-unlock-key.ts, application/use-cases/check-vault-upgrade.use-case.ts, application/use-cases/relocate-vault.use-case.ts, application/use-cases/relocate-vault.use-case.test.ts, application/use-cases/unlock-vault.use-case.ts, application/use-cases/unlock-vault.upgrade-gate.test.ts, domain/errors.ts, domain/services/vault-relocation.ts, domain/services/vault-relocation.test.ts, infra/file-vault-mover.ts, infra/file-vault-mover.test.ts, infra/file-vault-store.ts}`. `resolve-unlock-key.ts` isn't named by number in `plan.md`'s prose — it's the shared key-resolution extraction `check-vault-upgrade.use-case.ts` needed, landed and reviewed as part of Slice 4 |
+| `git diff main...HEAD -- src/delivery/mcp/` empty | **`server.ts` itself: byte-for-byte unchanged** (0 lines). Only `server.test.ts` changed — mechanically, because `Container`'s shape grew the `folder`/`mover`/`checkVaultUpgrade`/`relocateVault` fields Slices 4 and 8 added, so the test's fixture needed the same fields to satisfy the type. No MCP tool, prompt, or behavior changed; the literal directory-wide diff is not empty, the production file is |
+| `git diff main...HEAD -- package.json` empty | **Confirmed empty** (root `package.json`) |
+| `.github/workflows/ci.yml` unchanged | **Confirmed empty diff** |
+| root `typecheck && lint && test && build` green, test count up | **Green** — 301 tests (main has none of this advance's tests, so this is "up" by construction) |
+| desktop suite green | **Green on this container's OS (Linux x86_64) only** — 626 tests. Windows and macOS are `desktop.yml`'s job, not reachable from here |
+| native modules load in the packaged app, every target | **Not verified** — packaging itself fails here (above); no packaged artifact exists to check |
+| zero-network walkthrough against the **packaged** artifact, both languages | **Not verified** — same reason; there is no packaged artifact in this environment to walk through |
+| `docs/gui.md`'s `pending — filled by Slice 13's tagged build` markers, `grep -c` → 0 (P-D16, `plan.md`'s Done-when) | **Not closeable here.** `grep -c "pending — filled by Slice 13" docs/gui.md` still returns **4** — every row in the checksum table. These can only become real digests from an actual tagged `desktop.yml` run (same blocker as the row above), now that `artifactName` (this update) guarantees the table's four rows name files that build will actually produce |
+
+**What remains open for Slice 13, honestly, not silently:** the native-module-loads-in-packaged-app
+half of A3, the actual cross-OS packaging run, the zero-network walkthrough in both languages against
+a real packaged artifact, and `docs/gui.md`'s four `pending` checksum markers all need `desktop.yml`'s
+own CI run (unrestricted egress, three real OS runners) or a developer machine. The workflow and
+packaging-config changes that make that CI run produce checksummed, correctly-named, published
+artifacts once it does run — and that make the docs table fillable rather than pointing at files that
+don't exist — are in this commit and are what this environment could verify.

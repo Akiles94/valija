@@ -36,11 +36,26 @@ export const SCHEMAS = {
   }),
   "content:copy": z.object({ text: z.string() }),
   "sync:status": z.void(),
+  "diagnostics:run": z.void(),
+  "diagnostics:copyReport": z.object({
+    checks: z.array(
+      z.object({
+        name: z.string(),
+        ok: z.boolean(),
+        detail: z.string(),
+        fatal: z.boolean().optional(),
+        errorCode: z.string().optional(),
+      }),
+    ),
+  }),
   "relocation:preflight": z.object({ handle: z.string() }),
   "relocation:move": z.object({ handle: z.string() }),
   "relocation:retryClient": z.object({ client: z.string() }),
   "relocation:pointAtExisting": z.object({ handle: z.string() }),
-  "import:list": z.object({ handle: z.string() }),
+  "import:list": z.object({
+    handle: z.string(),
+    from: z.enum(["chatgpt", "claude", "generic"]).optional(),
+  }),
   "import:preview": z.object({
     handle: z.string(),
     projectName: z.string(),
@@ -48,6 +63,7 @@ export const SCHEMAS = {
     query: z.string().optional(),
     since: z.string().optional(),
     all: z.boolean().optional(),
+    from: z.enum(["chatgpt", "claude", "generic"]).optional(),
   }),
   "import:run": z.object({
     handle: z.string(),
@@ -56,9 +72,11 @@ export const SCHEMAS = {
     query: z.string().optional(),
     since: z.string().optional(),
     all: z.boolean().optional(),
+    from: z.enum(["chatgpt", "claude", "generic"]).optional(),
   }),
   "tools:status": z.void(),
   "tools:connect": z.object({ client: z.string() }),
+  "tools:nodeStatus": z.void(),
   "preferences:read": z.void(),
   // Deliberately no vaultPath field (§8.6) — see PreferencesWriteRequest's own comment.
   "preferences:write": z.object({
