@@ -18,13 +18,19 @@ const FORBIDDEN_PATTERNS = [
 const SRC_ROOT = join(import.meta.dirname, "../../../src");
 const THIS_FILE = import.meta.url.replace("file://", "");
 
+// .css joins .ts/.tsx from item 89b (Slice 11) on: the first stylesheet in
+// the tree is the first place a remote `@font-face` or background URL could
+// enter (P-D20) — the same forbidden patterns apply, since none of them is
+// valid CSS either.
+const SCANNED_EXTENSIONS = [".ts", ".tsx", ".css"];
+
 function collectSourceFiles(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     const info = statSync(full);
     if (info.isDirectory()) {
       collectSourceFiles(full, out);
-    } else if ([".ts", ".tsx"].includes(extname(full)) && !full.endsWith(".test.ts")) {
+    } else if (SCANNED_EXTENSIONS.includes(extname(full)) && !full.endsWith(".test.ts")) {
       out.push(full);
     }
   }

@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { app } from "electron";
 import { buildContainer, type Container } from "../../../src/delivery/container.js";
 import { resolveVaultRoot } from "./application/policies/vault-location.js";
+import { ChildProcessNodeProbe } from "./infra/child-process-node-probe.js";
 import { ElectronClipboard } from "./infra/electron-clipboard.js";
 import { ElectronFilePicker } from "./infra/electron-file-picker.js";
 import { FileAppPreferencesStore } from "./infra/file-app-preferences-store.js";
@@ -34,8 +35,16 @@ if (!gotLock) {
 
     const filePicker = new ElectronFilePicker();
     const clipboard = new ElectronClipboard();
+    const nodeProbe = new ChildProcessNodeProbe();
 
-    registerHandlers({ getContainer, rebuildContainer, preferencesStore, filePicker, clipboard });
+    registerHandlers({
+      getContainer,
+      rebuildContainer,
+      preferencesStore,
+      filePicker,
+      clipboard,
+      nodeProbe,
+    });
 
     const preload = preloadFile(join(import.meta.dirname, "../preload"));
     const rendererUrl =

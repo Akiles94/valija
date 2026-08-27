@@ -91,6 +91,7 @@ export const en = {
     emptyTitle: "No context saved yet.",
     connectATool: "Connect an AI tool",
     importHistory: "Import your chat history",
+    checkMySetup: "Check my setup",
     itemCount: {
       one: "{count} item",
       other: "{count} items",
@@ -133,6 +134,7 @@ export const en = {
     connectButton: "Connect",
     connectedDetail:
       "valija added to {configPath}. A backup of your previous config is at {backupPath}. Restart {client} to pick it up.",
+    connectedDetailNoBackup: "valija added to {configPath}. Restart {client} to pick it up.",
     nodeMissingTitle: "Node.js isn't installed on this machine",
     nodeMissingBody:
       "Your AI tools run valija through Node.js, which isn't installed on this machine. Connecting now will write the setting, but the tool won't be able to reach your vault until you install it.",
@@ -174,14 +176,41 @@ export const en = {
     run: "Run checks",
     keychainProbeNotice:
       "The keychain check writes and immediately deletes a test entry in your OS keychain. On macOS this may prompt you.",
+    nodeProbeNotice:
+      'Checking the Node.js your AI tools use also runs "node --version" and "npm --version" on this machine.',
     copyReport: "Copy report",
     copyReportNotice:
-      "The report stays in English and may include one of Valija's own error messages, for support purposes.",
+      "The report stays in English and may include one of Valija's own error messages, your vault's folder path, and any conflicted-copy filenames it finds — for support purposes.",
     appNodeRow: "Node.js (this app)",
     toolNodeRow: "Node.js (your AI tools)",
+    toolNodeOk: "Runnable — your AI tools can reach Node.js and npm.",
+    toolNodeMissing:
+      "Not runnable — your AI tools may not be able to reach your vault until it is.",
     fatal: "Problem",
     warning: "Warning",
     ok: "OK",
+    clientVaultPath: "Points at {vaultPath}",
+    clientVaultPathDefault: "Points at the default location (~/.valija)",
+    rowName: {
+      sqlcipher: "Encryption engine",
+      keychain: "OS keychain",
+      vault: "Vault",
+      journal: "Database file",
+      sync: "Cloud sync folder",
+      lineage: "Write history",
+      autoLock: "Auto-lock",
+    },
+    checkNode: "Whether this app's own Node.js runtime is new enough.",
+    checkSqlcipher: "Whether the encrypted database engine loads correctly.",
+    checkKeychain: "Whether Valija can read and write your OS's secure keychain.",
+    checkVault: "Whether a vault exists on this machine, and whether it's unlocked.",
+    checkJournal:
+      "Whether the vault database is fully written, with nothing left over from an interrupted save.",
+    checkSync:
+      "Whether the vault's folder looks like a cloud-sync folder, and whether anything there needs your attention.",
+    checkLineage: "Which device wrote the vault last, and what generation it's on.",
+    checkAutoLock: "How long the vault stays unlocked before it locks itself again.",
+    checkClient: "Whether {client} is set up to reach this vault.",
   },
 
   sync: {
@@ -259,6 +288,9 @@ export const en = {
     vaultAndSync: "Vault & sync",
     openDiagnostics: "Check my setup",
     openRelocate: "Move my vault…",
+    vaultAndSyncSeeSync:
+      "See the Sync & safety panel for your vault's folder and connection details.",
+    vaultAndSyncLocked: "Unlock your vault to check diagnostics or move it.",
     help: "Help",
     replayTour: "Show the welcome tour again",
   },

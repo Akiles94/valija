@@ -1,0 +1,89 @@
+/* Per-screen rules, one section per screen (item 89b) — sized to what each screen already renders, not a design system of its own. */
+
+/* dashboard.tsx */
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.dashboard-header h1 {
+  margin: 0;
+}
+.project-cards {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.project-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+}
+
+/* recovery-kit.tsx — permanently dark regardless of app theme (D-Q's exception). min-height fills the window with its own repainted subtree, not just the .kit-text box. */
+.recovery-kit {
+  min-height: 100vh;
+}
+.recovery-kit .kit-text {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 16px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* onboarding.tsx */
+.onboarding .slide-dots {
+  display: flex;
+  gap: 6px;
+  margin: 16px 0;
+}
+.onboarding .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-border);
+}
+.onboarding .dot.active {
+  background: var(--color-accent);
+}
+
+/* settings.tsx */
+.settings section {
+  margin-bottom: 20px;
+}
+
+/* pack-preview.tsx */
+.pack-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* diagnostics.tsx */
+.diagnostic-checks {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.check-row {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 12px;
+}
+.check-row.warning {
+  border-color: var(--color-warning);
+}
+.check-row.fatal {
+  border-color: var(--color-danger);
+}
+.check-name {
+  font-weight: 600;
+  margin-right: 8px;
+}

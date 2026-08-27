@@ -1,18 +1,35 @@
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
+import { shouldPlayTour } from "../main/application/policies/onboarding-tour.js";
+import type { AppPreferencesMessage, PreferencesWriteRequest } from "../shared/ipc/messages.js";
 import { NavBar } from "./components/nav-bar.js";
+import { ConnectToolsScreen } from "./screens/connect-tools.js";
 import { CreateVaultScreen } from "./screens/create-vault.js";
 import { DashboardScreen } from "./screens/dashboard.js";
+import { DiagnosticsScreen } from "./screens/diagnostics.js";
+import { ImportScreen } from "./screens/import.js";
 import { LockedScreen, type UnlockCredential } from "./screens/locked.js";
 import { MigrationConfirmScreen } from "./screens/migration-confirm.js";
 import { NoVaultScreen } from "./screens/no-vault.js";
+import { OnboardingScreen } from "./screens/onboarding.js";
 import { PackPreviewScreen } from "./screens/pack-preview.js";
 import { ProjectScreen } from "./screens/project.js";
 import { RecoveryKitScreen } from "./screens/recovery-kit.js";
 import { RelocateVaultScreen } from "./screens/relocate-vault.js";
 import { SearchScreen } from "./screens/search.js";
+import { SettingsScreen } from "./screens/settings.js";
 import { SyncScreen } from "./screens/sync.js";
 import { getBridge } from "./state/bridge.js";
 import { I18nProvider } from "./state/i18n-context.js";
+import {
+  autoTourOverlay,
+  CLOSED_OVERLAY,
+  closeOverlay,
+  finishTourOverlay,
+  type OverlayState,
+  openSettings,
+  replayTourFromSettings,
+} from "./state/overlay-nav.js";
+import { mergePreferencesWrite, tourSeenWrite } from "./state/preferences-write.js";
 import {
   afterCreateSuccess,
   afterKitAcknowledged,
@@ -27,18 +44,32 @@ import {
   INITIAL_STATE,
   type SessionState,
 } from "./state/session-state.js";
-import { ThemeProvider } from "./state/theme-context.js";
-import { INITIAL_WORKSPACE_VIEW, type WorkspaceView } from "./state/workspace-nav.js";
+import { ThemeProvider, useTheme } from "./state/theme-context.js";
+import {
+  INITIAL_WORKSPACE_VIEW,
+  resetWorkspaceView,
+  type WorkspaceView,
+} from "./state/workspace-nav.js";
 
 const bridge = getBridge();
 
+/** Only place `data-theme` is applied outside the recovery kit's own permanent `dark` (D-Q, item 89b). */
+function ThemedRoot({ children }: { children: ReactNode }) {
+  const theme = useTheme();
+  return (
+    <div className="app-shell" data-theme={theme}>
+      {children}
+    </div>
+  );
+}
+
 export function App() {
-  const [preferences, setPreferences] = useState<Awaited<
-    ReturnType<typeof bridge.preferences.read>
-  > | null>(null);
+  const [preferences, setPreferences] = useState<AppPreferencesMessage | null>(null);
   const [state, setState] = useState<SessionState>(INITIAL_STATE);
   const [dbPath, setDbPath] = useState<string>("");
   const [pendingCredential, setPendingCredential] = useState<UnlockCredential | null>(null);
+  const [overlayState, setOverlayState] = useState<OverlayState>(CLOSED_OVERLAY);
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>(INITIAL_WORKSPACE_VIEW);
 
   useEffect(() => {
     (async () => {
@@ -52,18 +83,81 @@ export function App() {
     })();
   }, []);
 
+  // D-U(a) Option 2 — see overlay-nav.ts's autoTourOverlay, tested headlessly there.
+  useEffect(() => {
+    if (preferences !== null)
+      setOverlayState((current) => autoTourOverlay(current, state, preferences));
+  }, [state, preferences]);
+
   if (preferences === null) return null; // "checking" — nothing renders yet, no flash of the wrong language
+  const prefs = preferences; // narrowed once here, so the closures below never see the null branch
+
+  async function updatePreferences(patch: Partial<PreferencesWriteRequest>) {
+    await bridge.preferences.write(mergePreferencesWrite(prefs, patch));
+    setPreferences(await bridge.preferences.read());
+  }
+
+  // Writes `tourSeen` *before* clearing the overlay, so by the time the
+  // auto-trigger effect above re-evaluates, `preferences.tourSeen` is
+  // already true and it does not reopen (Skip and "Get started" both route
+  // here — D-U(b)'s rider). Skips the write entirely when already seen —
+  // replaying "changes nothing else" (criterion 6) — and always closes,
+  // even if the write fails, so a disk error can never trap the user
+  // inside the tour with no way out (W2).
+  async function finishTour() {
+    try {
+      if (shouldPlayTour(prefs)) {
+        await updatePreferences(tourSeenWrite(prefs));
+      }
+    } finally {
+      setOverlayState((current) => finishTourOverlay(current));
+    }
+  }
+
+  function relocationFinished() {
+    // C2: nothing this workspace remembers may survive the session leaving
+    // "unlocked" — paired here so a completed relocation can never reopen
+    // the wizard on the next unlock.
+    setWorkspaceView(resetWorkspaceView());
+    setState(afterLock());
+  }
 
   return (
     <I18nProvider preferences={preferences}>
       <ThemeProvider preferences={preferences}>
-        <Router
-          state={state}
-          setState={setState}
-          dbPath={dbPath}
-          pendingCredential={pendingCredential}
-          setPendingCredential={setPendingCredential}
-        />
+        <ThemedRoot>
+          {overlayState.overlay === "tour" && canNavigateAwayFrom(state) ? (
+            <OnboardingScreen onDone={() => void finishTour()} />
+          ) : overlayState.overlay === "settings" && canNavigateAwayFrom(state) ? (
+            <SettingsScreen
+              preferences={preferences}
+              unlocked={state.phase === "unlocked"}
+              onUpdatePreferences={(patch) => void updatePreferences(patch)}
+              onClose={() => setOverlayState(closeOverlay())}
+              onReplayTour={() => setOverlayState(replayTourFromSettings())}
+              onOpenDiagnostics={() => {
+                setOverlayState(closeOverlay());
+                setWorkspaceView({ screen: "diagnostics" });
+              }}
+              onOpenRelocate={() => {
+                setOverlayState(closeOverlay());
+                setWorkspaceView({ screen: "relocate-vault" });
+              }}
+            />
+          ) : (
+            <Router
+              state={state}
+              setState={setState}
+              dbPath={dbPath}
+              pendingCredential={pendingCredential}
+              setPendingCredential={setPendingCredential}
+              workspaceView={workspaceView}
+              setWorkspaceView={setWorkspaceView}
+              onOpenSettings={() => setOverlayState(openSettings())}
+              onVaultRelocated={relocationFinished}
+            />
+          )}
+        </ThemedRoot>
       </ThemeProvider>
     </I18nProvider>
   );
@@ -75,12 +169,20 @@ function Router({
   dbPath,
   pendingCredential,
   setPendingCredential,
+  workspaceView,
+  setWorkspaceView,
+  onOpenSettings,
+  onVaultRelocated,
 }: {
   state: SessionState;
   setState: (s: SessionState) => void;
   dbPath: string;
   pendingCredential: UnlockCredential | null;
   setPendingCredential: (c: UnlockCredential | null) => void;
+  workspaceView: WorkspaceView;
+  setWorkspaceView: (v: WorkspaceView) => void;
+  onOpenSettings: () => void;
+  onVaultRelocated: () => void;
 }) {
   // D-U(a)'s invariant, asserted at the routing boundary: once kit-pending,
   // the only escape is RecoveryKitScreen's own onAcknowledged callback.
@@ -121,6 +223,7 @@ function Router({
             setPendingCredential(credential);
             setState(afterUnlockUpgradeRequired());
           }}
+          onOpenSettings={onOpenSettings}
         />
       );
 
@@ -150,32 +253,50 @@ function Router({
       );
 
     case "unlocked":
-      return <Workspace onVaultRelocated={() => setState(afterLock())} />;
+      return (
+        <Workspace
+          view={workspaceView}
+          setView={setWorkspaceView}
+          onOpenSettings={onOpenSettings}
+          onVaultRelocated={onVaultRelocated}
+        />
+      );
 
     default:
       return null;
   }
 }
 
-/** Dashboard/search/sync are the nav-bar's three top-level destinations; project, pack-preview, and relocate-vault are drill-downs, reached from Dashboard/Sync, that don't get their own nav entry. */
-function Workspace({ onVaultRelocated }: { onVaultRelocated: () => void }) {
-  const [view, setView] = useState<WorkspaceView>(INITIAL_WORKSPACE_VIEW);
-
+/** Dashboard/search/sync are the nav-bar's three top-level destinations; project, pack-preview, relocate-vault, connect-tools, import, and diagnostics are drill-downs, reached from Dashboard/Sync/Settings, that don't get their own nav entry. */
+function Workspace({
+  view,
+  setView,
+  onOpenSettings,
+  onVaultRelocated,
+}: {
+  view: WorkspaceView;
+  setView: (v: WorkspaceView) => void;
+  onOpenSettings: () => void;
+  onVaultRelocated: () => void;
+}) {
   return (
     <div className="workspace">
-      <NavBar active={view.screen} onNavigate={(screen) => setView({ screen })} />
+      <NavBar
+        active={view.screen}
+        onNavigate={(screen) => setView({ screen })}
+        onOpenSettings={onOpenSettings}
+      />
       {view.screen === "dashboard" && (
         <DashboardScreen
           bridge={bridge}
           onSelectProject={(project) => setView({ screen: "project", project })}
-          onConnectTool={() => {
-            // Wired to the connect-tools screen in Slice 9.
-          }}
-          onImportHistory={() => {
-            // Wired to the import screen in Slice 9.
-          }}
+          onConnectTool={() => setView({ screen: "connect-tools" })}
+          onImportHistory={() => setView({ screen: "import" })}
+          onCheckSetup={() => setView({ screen: "diagnostics" })}
         />
       )}
+      {view.screen === "connect-tools" && <ConnectToolsScreen bridge={bridge} />}
+      {view.screen === "import" && <ImportScreen bridge={bridge} />}
       {view.screen === "project" && (
         <ProjectScreen
           bridge={bridge}
@@ -193,8 +314,13 @@ function Workspace({ onVaultRelocated }: { onVaultRelocated: () => void }) {
         />
       )}
       {view.screen === "sync" && (
-        <SyncScreen bridge={bridge} onMoveVault={() => setView({ screen: "relocate-vault" })} />
+        <SyncScreen
+          bridge={bridge}
+          onMoveVault={() => setView({ screen: "relocate-vault" })}
+          onCheckSetup={() => setView({ screen: "diagnostics" })}
+        />
       )}
+      {view.screen === "diagnostics" && <DiagnosticsScreen bridge={bridge} />}
       {view.screen === "relocate-vault" && (
         // The move locks the vault as its first step (§4.7 step 31) — "Unlock
         // again" hands control back to the Router's own "locked" screen

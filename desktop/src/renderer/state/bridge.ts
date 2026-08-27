@@ -8,6 +8,8 @@ import type {
   ContentSearchRequest,
   ContentShowRequest,
   ContextItemMessage,
+  DiagnosticsCopyReportRequest,
+  DiagnosticsRunResponse,
   DialogFileChoiceResponse,
   ImportListRequest,
   ImportListResponse,
@@ -15,6 +17,7 @@ import type {
   ImportPreviewRequest,
   ImportRunRequest,
   IpcResult,
+  NodeStatusResponse,
   PreferencesWriteRequest,
   ProjectListEntryMessage,
   RecoveryKitResponse,
@@ -66,6 +69,10 @@ export interface ValijaBridge {
   sync: {
     status(): Promise<SyncStatusResponse>;
   };
+  diagnostics: {
+    run(): Promise<DiagnosticsRunResponse>;
+    copyReport(req: DiagnosticsCopyReportRequest): Promise<void>;
+  };
   relocation: {
     preflight(req: RelocationPreflightRequest): Promise<IpcResult<RelocationPreflightResponse>>;
     move(req: RelocationMoveRequest): Promise<IpcResult<RelocationMoveResponse>>;
@@ -82,6 +89,7 @@ export interface ValijaBridge {
   tools: {
     status(): Promise<ToolsStatusEntry[]>;
     connect(req: ToolsConnectRequest): Promise<IpcResult<ToolsConnectResponse>>;
+    nodeStatus(): Promise<NodeStatusResponse>;
   };
   preferences: {
     read(): Promise<AppPreferencesMessage>;

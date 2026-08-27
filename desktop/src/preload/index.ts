@@ -9,6 +9,8 @@ import type {
   ContentSearchRequest,
   ContentShowRequest,
   ContextItemMessage,
+  DiagnosticsCopyReportRequest,
+  DiagnosticsRunResponse,
   DialogFileChoiceResponse,
   ImportListRequest,
   ImportListResponse,
@@ -16,6 +18,7 @@ import type {
   ImportPreviewRequest,
   ImportRunRequest,
   IpcResult,
+  NodeStatusResponse,
   PreferencesWriteRequest,
   ProjectListEntryMessage,
   RecoveryKitResponse,
@@ -80,6 +83,11 @@ contextBridge.exposeInMainWorld("valija", {
   sync: {
     status: (): Promise<SyncStatusResponse> => ipcRenderer.invoke("sync:status"),
   },
+  diagnostics: {
+    run: (): Promise<DiagnosticsRunResponse> => ipcRenderer.invoke("diagnostics:run"),
+    copyReport: (req: DiagnosticsCopyReportRequest): Promise<void> =>
+      ipcRenderer.invoke("diagnostics:copyReport", req),
+  },
   relocation: {
     preflight: (req: RelocationPreflightRequest): Promise<IpcResult<RelocationPreflightResponse>> =>
       ipcRenderer.invoke("relocation:preflight", req),
@@ -104,6 +112,7 @@ contextBridge.exposeInMainWorld("valija", {
     status: (): Promise<ToolsStatusEntry[]> => ipcRenderer.invoke("tools:status"),
     connect: (req: ToolsConnectRequest): Promise<IpcResult<ToolsConnectResponse>> =>
       ipcRenderer.invoke("tools:connect", req),
+    nodeStatus: (): Promise<NodeStatusResponse> => ipcRenderer.invoke("tools:nodeStatus"),
   },
   preferences: {
     read: (): Promise<AppPreferencesMessage> => ipcRenderer.invoke("preferences:read"),

@@ -4,7 +4,9 @@ import { CHANNELS } from "../../shared/ipc/channels.js";
 import type { AppPreferencesStore } from "../application/ports/app-preferences.js";
 import type { ClipboardPort } from "../application/ports/clipboard.js";
 import type { FilePicker } from "../application/ports/file-picker.js";
+import type { NodeProbe } from "../application/ports/node-probe.js";
 import { createContentHandlers } from "./handlers/content-handlers.js";
+import { createDiagnosticsHandlers } from "./handlers/diagnostics-handlers.js";
 import { createDialogHandlers } from "./handlers/dialog-handlers.js";
 import { createImportHandlers } from "./handlers/import-handlers.js";
 import { createPreferencesHandlers } from "./handlers/preferences-handlers.js";
@@ -20,6 +22,7 @@ export interface RegisterHandlersDeps {
   preferencesStore: AppPreferencesStore;
   filePicker: FilePicker;
   clipboard: ClipboardPort;
+  nodeProbe: NodeProbe;
 }
 
 type AnyHandler = (request: unknown) => unknown;
@@ -30,6 +33,7 @@ function buildHandlerMap(deps: RegisterHandlersDeps): Record<string, AnyHandler>
     ...createVaultHandlers(deps.getContainer),
     ...createContentHandlers(deps.getContainer, deps.filePicker, deps.clipboard),
     ...createSyncHandlers(deps.getContainer),
+    ...createDiagnosticsHandlers(deps.getContainer, deps.clipboard),
     ...createRelocationHandlers(
       deps.getContainer,
       deps.rebuildContainer,
@@ -37,7 +41,7 @@ function buildHandlerMap(deps: RegisterHandlersDeps): Record<string, AnyHandler>
       deps.filePicker,
     ),
     ...createImportHandlers(deps.getContainer, deps.filePicker),
-    ...createToolsHandlers(deps.getContainer),
+    ...createToolsHandlers(deps.getContainer, deps.nodeProbe),
     ...createPreferencesHandlers(deps.preferencesStore),
     ...createDialogHandlers(deps.filePicker),
   } as unknown as Record<string, AnyHandler>;
