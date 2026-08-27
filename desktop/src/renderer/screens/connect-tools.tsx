@@ -20,6 +20,7 @@ export function ConnectToolsScreen({ bridge }: { bridge: ValijaBridge }) {
   const [results, setResults] = useState<Record<string, ToolsConnectResponse>>({});
   const [connecting, setConnecting] = useState<string | null>(null);
   const [copiedFor, setCopiedFor] = useState<string | null>(null);
+  const [stepsOpen, setStepsOpen] = useState(false);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: bridge is a stable module-scoped singleton, not reactive state
   useEffect(() => {
@@ -54,6 +55,60 @@ export function ConnectToolsScreen({ bridge }: { bridge: ValijaBridge }) {
   return (
     <div className="screen connect-tools">
       <h1>{t("connect.title")}</h1>
+
+      <div className={stepsOpen ? "disclosure open" : "disclosure"}>
+        <button
+          type="button"
+          className="disclosure-header"
+          onClick={() => setStepsOpen((open) => !open)}
+        >
+          <svg
+            className="chevron"
+            width="14"
+            height="14"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M6 4l4 4-4 4"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span className="disclosure-title">{t("connect.stepsTitle")}</span>
+          <span className="disclosure-sub">{t("connect.stepsSummary")}</span>
+        </button>
+        {stepsOpen && (
+          <div className="disclosure-body">
+            <ol className="steps-list">
+              <li>
+                <span className="step-num done">1</span>
+                <span className="step-body">
+                  <strong>{t("connect.step1Title")}</strong>
+                  <span>{t("connect.step1Body")}</span>
+                </span>
+              </li>
+              <li>
+                <span className="step-num">2</span>
+                <span className="step-body">
+                  <strong>{t("connect.step2Title")}</strong>
+                  <span>{t("connect.step2Body")}</span>
+                </span>
+              </li>
+              <li>
+                <span className="step-num">3</span>
+                <span className="step-body">
+                  <strong>{t("connect.step3Title")}</strong>
+                  <span>{t("connect.step3Body")}</span>
+                </span>
+              </li>
+            </ol>
+          </div>
+        )}
+      </div>
 
       {nodeWarningNeeded && (
         <div className="warning">

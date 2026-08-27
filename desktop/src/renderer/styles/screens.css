@@ -38,11 +38,15 @@
   word-break: break-word;
 }
 
-/* onboarding.tsx */
+/* onboarding.tsx — a tour slide, not a form: centered like the others (base.css), plus its own text/controls centered within that box. */
+.onboarding {
+  text-align: center;
+}
 .onboarding .slide-dots {
   display: flex;
   gap: 6px;
-  margin: 16px 0;
+  margin: 16px auto;
+  justify-content: center;
 }
 .onboarding .dot {
   width: 8px;
@@ -52,6 +56,9 @@
 }
 .onboarding .dot.active {
   background: var(--color-accent);
+}
+.onboarding .actions {
+  justify-content: center;
 }
 
 /* settings.tsx */
@@ -63,6 +70,163 @@
 .pack-text {
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* connect-tools.tsx — had no styling at all before (item 89b never covered
+   it): client cards rendered as a bare bulleted list. Added alongside the
+   new steps disclosure, both following the same bordered-box vocabulary as
+   .check-row / .kit-text below. */
+.connect-tools .disclosure {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+.connect-tools .disclosure-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+.connect-tools .disclosure.open .disclosure-header {
+  border-bottom: 1px solid var(--color-border);
+}
+.connect-tools .disclosure-header .chevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: transform 0.15s;
+}
+.connect-tools .disclosure.open .chevron {
+  color: var(--color-accent);
+  transform: rotate(90deg);
+}
+.connect-tools .disclosure-title {
+  flex: 1;
+  font-weight: 600;
+}
+.connect-tools .disclosure-sub {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+.connect-tools .disclosure-body {
+  padding: 18px 16px 16px;
+}
+.connect-tools .steps-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 16px;
+}
+.connect-tools .steps-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.connect-tools .step-num {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.connect-tools .step-num.done {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+.connect-tools .step-body strong {
+  display: block;
+}
+.connect-tools .step-body span {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+.connect-tools .warning {
+  border: 1px solid var(--color-warning);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+.connect-tools .warning-title {
+  font-weight: 600;
+}
+.connect-tools .docs-hint {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+.connect-tools .client-cards {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.connect-tools .client-card {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 16px;
+}
+.connect-tools .client-name {
+  margin-right: 12px;
+  font-weight: 600;
+}
+.connect-tools .client-status {
+  margin-right: 12px;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+.connect-tools .client-status.connected {
+  color: var(--color-accent);
+}
+.connect-tools .client-points-at {
+  margin: 4px 0 12px;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+/* Always its own line with breathing room above — whether or not the
+   optional client-points-at paragraph came before it (only the already-
+   connected case renders that paragraph; the not-connected case doesn't,
+   and without this the status text and the button ran together). */
+.connect-tools .client-card > button {
+  display: block;
+  margin-top: 12px;
+}
+.connect-tools .connect-success {
+  margin-top: 8px;
+  color: var(--color-accent);
+  font-size: 0.9rem;
+}
+.connect-tools .connect-manual-fallback {
+  margin-top: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 12px;
+}
+.connect-tools .connect-manual-fallback pre {
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  padding: 12px;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.85rem;
 }
 
 /* diagnostics.tsx */

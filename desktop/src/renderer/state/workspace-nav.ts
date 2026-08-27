@@ -1,4 +1,4 @@
-/** Which screen is showing inside the unlocked workspace. Dashboard/search/sync are the three nav-bar destinations; project, pack-preview, relocate-vault, connect-tools, import, and diagnostics are drill-downs reached from Dashboard/Sync. */
+/** Which screen is showing inside the unlocked workspace. Dashboard/search/connect-tools/sync are the four nav-bar destinations; project, pack-preview, relocate-vault, import, and diagnostics are drill-downs reached from Dashboard/Sync. */
 export type WorkspaceView =
   | { screen: "dashboard" }
   | { screen: "project"; project: string }

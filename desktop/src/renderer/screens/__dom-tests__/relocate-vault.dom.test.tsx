@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type {
   RelocationClientResult,
   RelocationMoveResponse,
@@ -107,6 +107,16 @@ async function chooseFolder() {
   await screen.findByText("valija");
 }
 
+const ORIGINAL_USER_AGENT = window.navigator.userAgent;
+
+function setUserAgent(userAgent: string) {
+  Object.defineProperty(window.navigator, "userAgent", { value: userAgent, configurable: true });
+}
+
+afterEach(() => {
+  setUserAgent(ORIGINAL_USER_AGENT);
+});
+
 describe("RelocateVaultScreen (DOM)", () => {
   it("run 1 — a pre-flight refusal (destination occupied) blocks the move, no confirm button appears", async () => {
     const bridge = fakeBridge({
@@ -198,5 +208,39 @@ describe("RelocateVaultScreen (DOM)", () => {
     // claude-code and claude-desktop were rewritten from the original move
     // response and were never touched by the retry.
     expect(screen.getByText(/claude-code, claude-desktop, cursor/i)).toBeInTheDocument();
+  });
+
+  it("run 4 — the env line matches the host shell: PowerShell on Windows, bash/zsh elsewhere", async () => {
+    const preflight: RelocationPreflightResponse = {
+      destinationDisplayName: "valija",
+      looksLikeCloud: false,
+      refusalCode: null,
+      clients: [],
+    };
+    const move: RelocationMoveResponse = {
+      root: "C:\\Users\\oscar\\backups\\valija",
+      clientResults: [],
+    };
+
+    setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+    const windowsBridge = fakeBridge({ preflight, move });
+    await renderScreen(windowsBridge);
+    await chooseFolder();
+    fireEvent.click(await screen.findByText(/move vault/i));
+    expect(
+      await screen.findByText('$env:VALIJA_HOME = "C:\\Users\\oscar\\backups\\valija"'),
+    ).toBeInTheDocument();
+
+    setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36");
+    const macBridge = fakeBridge({
+      preflight,
+      move: { root: "/Users/oscar/Dropbox/valija", clientResults: [] },
+    });
+    await renderScreen(macBridge);
+    await chooseFolder();
+    fireEvent.click(await screen.findByText(/move vault/i));
+    expect(
+      await screen.findByText('export VALIJA_HOME="/Users/oscar/Dropbox/valija"'),
+    ).toBeInTheDocument();
   });
 });

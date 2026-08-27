@@ -5,6 +5,7 @@
   "description": "Valija desktop companion — Electron shell over the existing valija container.",
   "type": "module",
   "license": "Apache-2.0",
+  "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",

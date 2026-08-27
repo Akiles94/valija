@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { shouldPlayTour } from "../main/application/policies/onboarding-tour.js";
 import type { AppPreferencesMessage, PreferencesWriteRequest } from "../shared/ipc/messages.js";
 import { NavBar } from "./components/nav-bar.js";
@@ -18,8 +18,9 @@ import { RelocateVaultScreen } from "./screens/relocate-vault.js";
 import { SearchScreen } from "./screens/search.js";
 import { SettingsScreen } from "./screens/settings.js";
 import { SyncScreen } from "./screens/sync.js";
-import { getBridge } from "./state/bridge.js";
+import { getBridge, type ValijaBridge } from "./state/bridge.js";
 import { I18nProvider } from "./state/i18n-context.js";
+import { withLockDetection } from "./state/lock-aware-bridge.js";
 import {
   autoTourOverlay,
   CLOSED_OVERLAY,
@@ -89,6 +90,11 @@ export function App() {
       setOverlayState((current) => autoTourOverlay(current, state, preferences));
   }, [state, preferences]);
 
+  // Stable for the component's lifetime (setState is stable across renders)
+  // — so wrapped screens' own `useEffect(() => {...}, [])` mount-once calls
+  // still see one consistent bridge, the same as the raw module singleton.
+  const lockAwareBridge = useMemo(() => withLockDetection(bridge, () => setState(afterLock())), []);
+
   if (preferences === null) return null; // "checking" — nothing renders yet, no flash of the wrong language
   const prefs = preferences; // narrowed once here, so the closures below never see the null branch
 
@@ -122,6 +128,16 @@ export function App() {
     setState(afterLock());
   }
 
+  // The nav bar's own "Lock now" — same C2 reset as relocationFinished, so
+  // the next unlock lands back on the dashboard rather than wherever the
+  // workspace view happened to be when locked.
+  async function lockNow() {
+    const result = await lockAwareBridge.vault.lock();
+    if (!result.ok) return;
+    setWorkspaceView(resetWorkspaceView());
+    setState(afterLock());
+  }
+
   return (
     <I18nProvider preferences={preferences}>
       <ThemeProvider preferences={preferences}>
@@ -146,6 +162,7 @@ export function App() {
             />
           ) : (
             <Router
+              bridge={lockAwareBridge}
               state={state}
               setState={setState}
               dbPath={dbPath}
@@ -155,6 +172,7 @@ export function App() {
               setWorkspaceView={setWorkspaceView}
               onOpenSettings={() => setOverlayState(openSettings())}
               onVaultRelocated={relocationFinished}
+              onLock={() => void lockNow()}
             />
           )}
         </ThemedRoot>
@@ -164,6 +182,7 @@ export function App() {
 }
 
 function Router({
+  bridge,
   state,
   setState,
   dbPath,
@@ -173,7 +192,9 @@ function Router({
   setWorkspaceView,
   onOpenSettings,
   onVaultRelocated,
+  onLock,
 }: {
+  bridge: ValijaBridge;
   state: SessionState;
   setState: (s: SessionState) => void;
   dbPath: string;
@@ -183,6 +204,7 @@ function Router({
   setWorkspaceView: (v: WorkspaceView) => void;
   onOpenSettings: () => void;
   onVaultRelocated: () => void;
+  onLock: () => void;
 }) {
   // D-U(a)'s invariant, asserted at the routing boundary: once kit-pending,
   // the only escape is RecoveryKitScreen's own onAcknowledged callback.
@@ -255,10 +277,12 @@ function Router({
     case "unlocked":
       return (
         <Workspace
+          bridge={bridge}
           view={workspaceView}
           setView={setWorkspaceView}
           onOpenSettings={onOpenSettings}
           onVaultRelocated={onVaultRelocated}
+          onLock={onLock}
         />
       );
 
@@ -267,17 +291,21 @@ function Router({
   }
 }
 
-/** Dashboard/search/sync are the nav-bar's three top-level destinations; project, pack-preview, relocate-vault, connect-tools, import, and diagnostics are drill-downs, reached from Dashboard/Sync/Settings, that don't get their own nav entry. */
+/** Dashboard/search/connect-tools/sync are the nav-bar's four top-level destinations; project, pack-preview, relocate-vault, import, and diagnostics are drill-downs, reached from Dashboard/Sync/Settings, that don't get their own nav entry. */
 function Workspace({
+  bridge,
   view,
   setView,
   onOpenSettings,
   onVaultRelocated,
+  onLock,
 }: {
+  bridge: ValijaBridge;
   view: WorkspaceView;
   setView: (v: WorkspaceView) => void;
   onOpenSettings: () => void;
   onVaultRelocated: () => void;
+  onLock: () => void;
 }) {
   return (
     <div className="workspace">
@@ -285,6 +313,7 @@ function Workspace({
         active={view.screen}
         onNavigate={(screen) => setView({ screen })}
         onOpenSettings={onOpenSettings}
+        onLock={onLock}
       />
       {view.screen === "dashboard" && (
         <DashboardScreen

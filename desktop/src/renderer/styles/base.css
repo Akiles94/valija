@@ -36,12 +36,31 @@ body {
 
 .app-shell {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .screen {
   max-width: 720px;
   margin: 0 auto;
   padding: 24px;
+}
+
+/*
+ * The Router's own standalone steps (locked, create/no-vault, onboarding,
+ * migration) are short and single-purpose, not a scrolling list like the
+ * unlocked Workspace — so they're vertically centered in the window instead
+ * of pinned to the top-left of an otherwise empty screen. `margin: auto` on
+ * a flex item centers it on both axes, overriding `.screen`'s own
+ * `margin: 0 auto` above (higher specificity). `.settings` (the overlay)
+ * keeps its natural top-aligned, scrollable layout — it holds several
+ * sections, not one short step. `.recovery-kit` keeps its own full-bleed
+ * dark treatment (above, D-Q's exception, item 89b) rather than this.
+ */
+.app-shell > .screen:not(.settings):not(.recovery-kit) {
+  margin: auto;
+  max-width: 480px;
+  width: 100%;
 }
 
 h1 {
@@ -68,6 +87,25 @@ button {
   cursor: pointer;
 }
 
+/*
+ * locked.tsx's own settings-gear (a lone button, not inside .nav-bar) has no
+ * gap before the h1 that follows it — h1's own margin is bottom-only. Scoped
+ * to the adjacent-sibling case so `.nav-bar .settings-gear` (margin-left:
+ * auto, no following h1) is untouched.
+ */
+.settings-gear + h1 {
+  margin-top: 16px;
+}
+
+/*
+ * A trailing block-level control after a <form> (locked.tsx's "I only have
+ * my recovery key" button, below the passphrase form) had no gap before it —
+ * neither the form nor the button carried one, so they touched directly.
+ */
+form {
+  margin-bottom: 16px;
+}
+
 button:disabled {
   opacity: 0.5;
   cursor: default;
@@ -80,7 +118,8 @@ button.active {
 }
 
 input,
-textarea {
+textarea,
+select {
   font: inherit;
   background: var(--color-surface);
   color: var(--color-text);
@@ -92,6 +131,20 @@ textarea {
 label {
   display: block;
   margin-bottom: 8px;
+}
+
+/*
+ * A text field inside a `<label>` (every passphrase field — locked,
+ * create-vault) drops to its own line and fills the label's width, instead
+ * of sitting on the same line as the label text at its cramped native size.
+ * Scoped to `label` and to text-like types only — a checkbox/radio inside a
+ * label (recovery-kit's acknowledgement, settings' theme/language picks)
+ * must keep its native inline size, not stretch to 100% width.
+ */
+label input:not([type="checkbox"]):not([type="radio"]) {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
 }
 
 .error {
@@ -121,8 +174,15 @@ label {
   border-bottom: 1px solid var(--color-border);
 }
 
-.nav-bar .settings-gear {
+.nav-bar .lock-button {
   margin-left: auto;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.nav-bar .lock-button:hover {
+  background: var(--color-danger);
+  color: var(--color-bg);
 }
 
 /* Standard visually-hidden pattern — used by locked.tsx's fork banner to keep the writer device id available to assistive tech without showing it as plain text. */

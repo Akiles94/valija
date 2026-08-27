@@ -22,6 +22,7 @@ export const es: Catalog = {
     tryAgain: "Reintentar",
     close: "Cerrar",
     settings: "Configuración",
+    lockNow: "Bloquear ahora",
     loading: "Cargando…",
     connected: "Conectado",
     notConnected: "No conectado",
@@ -130,7 +131,20 @@ export const es: Catalog = {
   },
 
   connect: {
+    navLabel: "Conectar",
     title: "Conecta tus herramientas de IA",
+    stepsTitle: "Cómo usarlo con tus herramientas",
+    stepsSummary: "3 pasos",
+    step1Title: "Conecta la herramienta",
+    step1Body:
+      'Presiona "Conectar" en su tarjeta de abajo. Valija agrega su configuración sin tocar el resto.',
+    step2Title: "Reinicia esa herramienta",
+    step2Body: "Cierra y vuelve a abrir Claude, ChatGPT o Cursor para que detecte el cambio.",
+    step3Title: "Pídele que guarde o recuerde algo",
+    step3Body:
+      'Dile algo como "recuerda que prefiero TypeScript sobre JavaScript", o usa el comando ' +
+      '"/save-context" para que revise toda la sesión y elija el proyecto, el tipo (decisión, ' +
+      "avance, preferencia…) y las etiquetas por ti. Lo que guarde aparecerá aquí, en el Panel.",
     pointsAt: "Apunta a {vaultPath}",
     connectButton: "Conectar",
     connectedDetail:
@@ -246,6 +260,8 @@ export const es: Catalog = {
     title: "Mueve tu bóveda",
     explainer:
       "Valija no se comunica con Dropbox, iCloud, OneDrive ni con nada más. La sincronización funciona porque la carpeta de tu bóveda vive dentro de una carpeta que tu propia aplicación de sincronización ya mantiene al día. Esto la mueve allí, recuerda a dónde fue y actualiza las herramientas de IA que has conectado para que sigan encontrándola.",
+    cliNotice:
+      "Si también usas la línea de comandos: no lee la configuración de esta app, así que después de mover la bóveda tendrás que ejecutar un comando en tu terminal. Te lo mostraremos —con botón para copiar— en cuanto termine el movimiento.",
     chooseFolder: "Elegir una carpeta…",
     folderRecognizedAsCloud: "Esta carpeta parece estar sincronizada por otra aplicación.",
     folderNotRecognized:
