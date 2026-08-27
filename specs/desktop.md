@@ -36,6 +36,21 @@ structural choice, not a convenience. `no-network-surface.test.ts` asserts no `s
 `fetch`/`XMLHttpRequest`/`http(s)://`/`crashReporter`) anywhere in `desktop/src`, including its
 `.css` files.
 
+**Discovering an auto-lock mid-screen never dead-ends.** Because state only refreshes on action or
+focus (never a push from main), a screen finds out the vault auto-locked underneath it the same way
+it finds out about any other failure: the next bridge call it makes comes back `VAULT_LOCKED`.
+`renderer/state/lock-aware-bridge.ts` wraps the bridge once, in `app.tsx`, before it reaches any
+screen — any `VAULT_LOCKED` result from any call routes the app back to `LockedScreen`
+(`setState(afterLock())`), rather than leaving the screen showing a translated error with no way to
+unlock. This is why `Router`/`Workspace` take `bridge` as an explicit prop instead of closing over
+the module-level bridge singleton every screen used to reach directly.
+
+**The nav bar's "Lock now"** (`NavBar`'s red `lock-button`, styled with `--color-danger`) is the
+first UI path to `vault:lock` — until it shipped, the only ways a vault ever locked were the idle
+auto-lock TTL and relocation's own lock-first-then-move step. `App.lockNow()` calls it through the
+same lock-aware bridge, then runs the identical reset `relocationFinished()` does
+(`resetWorkspaceView()` + `afterLock()`), so the next unlock lands back on the dashboard either way.
+
 ## Preferences (`main/application/ports/app-preferences.ts`, `main/infra/file-app-preferences-store.ts`)
 
 `AppPreferences` — **exactly four keys, no fifth** (§8.4): `vaultPath: string | null` (a location
@@ -126,8 +141,10 @@ client-config failure is reported and **never** rolls the vault move back, since
 already succeeded and moved. Preferences (`vaultPath`) are updated only after the use case returns
 `ok`; on any failure they're untouched. The wizard's own screen
 (`renderer/screens/relocate-vault.tsx`) shows the pre-flight refusals before anything is written,
-and — since a terminal has no way to read this app's preferences file — a copyable
-`export VALIJA_HOME="…"` line after a successful move.
+and — since a terminal has no way to read this app's preferences file — a copyable env-var line
+after a successful move: `export VALIJA_HOME="…"` on macOS/Linux, `$env:VALIJA_HOME = "…"` on
+Windows (`export` is bash/zsh syntax and PowerShell doesn't understand it), chosen from
+`navigator.userAgent` in `relocate-vault.tsx`.
 
 ## What is structurally guaranteed, not just documented
 

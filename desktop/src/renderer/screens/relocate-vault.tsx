@@ -89,7 +89,7 @@ export function RelocateVaultScreen({
 
   function handleCopyEnvLine() {
     if (stage.step !== "done") return;
-    void bridge.content.copy({ text: `export VALIJA_HOME="${stage.root}"` });
+    void bridge.content.copy({ text: envLineFor(stage.root) });
     setCopied(true);
   }
 
@@ -100,9 +100,12 @@ export function RelocateVaultScreen({
       {error !== null && <p className="error">{error}</p>}
 
       {stage.step === "choose" && (
-        <button type="button" onClick={() => void handleChooseFolder()}>
-          {t("relocate.chooseFolder")}
-        </button>
+        <>
+          <p className="notice">{t("relocate.cliNotice")}</p>
+          <button type="button" onClick={() => void handleChooseFolder()}>
+            {t("relocate.chooseFolder")}
+          </button>
+        </>
       )}
 
       {(stage.step === "preflight" || stage.step === "moveFailed") && (
@@ -189,6 +192,17 @@ function PreflightView({
   );
 }
 
+/**
+ * `export FOO=…` is bash/zsh syntax — meaningless in PowerShell, the default
+ * shell on Windows terminals. This is the one line valija tells a user to
+ * paste into their terminal (§4.7 step 35), so it must match the shell it's
+ * landing in rather than assume POSIX.
+ */
+function envLineFor(root: string): string {
+  const isWindows = navigator.userAgent.includes("Windows");
+  return isWindows ? `$env:VALIJA_HOME = "${root}"` : `export VALIJA_HOME="${root}"`;
+}
+
 function refusalCopy(t: Translate, code: string): string {
   switch (code) {
     case "RELOCATION_DESTINATION_OCCUPIED":
@@ -242,7 +256,7 @@ function DoneView({
         </div>
       ))}
       <p>{t("relocate.envLineIntro")}</p>
-      <pre>{`export VALIJA_HOME="${root}"`}</pre>
+      <pre>{envLineFor(root)}</pre>
       <button type="button" onClick={onCopyEnvLine}>
         {copied ? t("relocate.envLineCopied") : t("common.copy")}
       </button>

@@ -219,14 +219,17 @@ you having to redo the Connect step for each one.
 
 **The one consequence worth knowing if you also use the CLI:** this app remembers the new location
 in its own preferences file, but a terminal has no way to read that file. After a move, the wizard
-shows you a line to run in your shell —
+shows you a line to run in your shell — matching the OS you're on, since `export` is bash/zsh
+syntax and means nothing to PowerShell:
 
 ```
-export VALIJA_HOME="/the/new/path"
+export VALIJA_HOME="/the/new/path"        # macOS, Linux
+$env:VALIJA_HOME = "C:\the\new\path"       # Windows (PowerShell)
 ```
 
 — with a copy button, so `valija status` and every other CLI command keep finding the same vault.
-Add it to your shell profile if you want it to stick across terminal sessions.
+Add it to your shell profile (or run `setx VALIJA_HOME "..."` on Windows) if you want it to stick
+across terminal sessions.
 
 ---
 

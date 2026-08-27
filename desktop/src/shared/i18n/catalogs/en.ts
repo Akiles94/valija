@@ -24,6 +24,7 @@ export const en = {
     tryAgain: "Try again",
     close: "Close",
     settings: "Settings",
+    lockNow: "Lock now",
     loading: "Loading…",
     connected: "Connected",
     notConnected: "Not connected",
@@ -129,7 +130,21 @@ export const en = {
   },
 
   connect: {
+    navLabel: "Connect",
     title: "Connect your AI tools",
+    stepsTitle: "How to use it with your tools",
+    stepsSummary: "3 steps",
+    step1Title: "Connect the tool",
+    step1Body:
+      'Press "Connect" on its card below. Valija adds its config without touching the rest.',
+    step2Title: "Restart that tool",
+    step2Body: "Close and reopen Claude, ChatGPT, or Cursor so it picks up the change.",
+    step3Title: "Ask it to save or recall something",
+    step3Body:
+      'Say something like "remember that I prefer TypeScript over JavaScript," or use the ' +
+      '"/save-context" command to have it review the whole session and pick the project, type ' +
+      "(decision, progress, preference…), and tags for you. Whatever it saves shows up here, on " +
+      "the Dashboard.",
     pointsAt: "Points at {vaultPath}",
     connectButton: "Connect",
     connectedDetail:
@@ -243,6 +258,8 @@ export const en = {
     title: "Move your vault",
     explainer:
       "Valija does not talk to Dropbox, iCloud, OneDrive or anything else. Syncing works by your vault folder living inside a folder your own sync app already keeps up to date. This moves it there, remembers where it went, and updates the AI tools you've connected so they keep finding it.",
+    cliNotice:
+      "If you also use the command line: it doesn't read this app's settings, so after the move you'll need to run one command in your terminal. You'll see it — with a copy button — once the move finishes.",
     chooseFolder: "Choose a folder…",
     folderRecognizedAsCloud: "This folder looks like it's synced by another app.",
     folderNotRecognized: "Valija can't confirm this folder syncs — you can still use it.",
