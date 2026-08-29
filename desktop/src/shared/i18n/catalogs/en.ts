@@ -105,6 +105,8 @@ export const en = {
     typeFilterImported: "Imported",
     pinned: "Pinned",
     noItems: "No items in this project yet.",
+    showMore: "Show more",
+    showLess: "Show less",
   },
 
   search: {

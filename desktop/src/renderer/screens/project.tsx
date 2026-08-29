@@ -1,9 +1,9 @@
 import { type ChangeEvent, useEffect, useState } from "react";
 import { ITEM_TYPES } from "../../../../src/context/domain/values/item-type.js";
-import { formatDate } from "../../shared/i18n/format.js";
+import { ItemCard } from "../components/item-card.js";
 import type { ValijaBridge } from "../state/bridge.js";
 import { wireFocusRefresh } from "../state/focus-refresh.js";
-import { useErrorCopy, useLanguage, useT } from "../state/i18n-context.js";
+import { useErrorCopy, useT } from "../state/i18n-context.js";
 
 interface ItemRow {
   id: string;
@@ -35,7 +35,6 @@ export function ProjectScreen({
   onViewPack: (project: string) => void;
 }) {
   const t = useT();
-  const language = useLanguage();
   const errorCopy = useErrorCopy();
   const [typeFilter, setTypeFilter] = useState<string>(ALL_TYPES);
   const [items, setItems] = useState<ItemRow[] | null>(null);
@@ -98,13 +97,14 @@ export function ProjectScreen({
       {items !== null && items.length > 0 && (
         <ul className="item-list">
           {items.map((item) => (
-            <li key={item.id} className="item-row">
-              <span className="item-type">{item.type}</span>
-              <span className="item-date">{formatDate(new Date(item.createdAt), language)}</span>
-              {item.pinned && <span className="item-pinned">{t("project.pinned")}</span>}
-              {item.tags.length > 0 && <span className="item-tags">{item.tags.join(", ")}</span>}
-              <p className="item-content">{item.content}</p>
-            </li>
+            <ItemCard
+              key={item.id}
+              type={item.type}
+              content={item.content}
+              tags={item.tags}
+              pinned={item.pinned}
+              createdAt={item.createdAt}
+            />
           ))}
         </ul>
       )}
