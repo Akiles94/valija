@@ -1,7 +1,7 @@
 # CARDS — Project item cards with light Markdown rendering · Refined Spec
 
-**Status:** Gate R **open**. Ten decisions (D-A … D-J) each carry an analysed **Default**.
-Nothing here is settled until Oscar says so; the main agent holds the gate.
+**Status:** Gate R **approved** (Oscar 2026-08-29) — all ten defaults (D-A … D-J) approved as
+written, no changes requested.
 
 **Directory:** `CARDS` — a UI-polish advance, deliberately not a milestone number (same posture
 as `GUI`).
