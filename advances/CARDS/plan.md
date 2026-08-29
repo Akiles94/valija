@@ -1,5 +1,7 @@
 # CARDS — Project item cards with light Markdown rendering · Implementation Plan
 
+Approved: Oscar 2026-08-29
+
 **Spec:** `advances/CARDS/refined.md` — Gate R **approved** (Oscar, 2026-08-29), all ten decisions
 D-A … D-J adopted with their stated defaults, no changes. This plan implements those defaults; it
 does not reopen them.
