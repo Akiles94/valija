@@ -141,6 +141,14 @@ write to a file — the pack is your saved content, so it is never translated, e
 window. **Copy** puts it on your clipboard; **Export…** saves it to a file you choose, as Markdown
 or JSON.
 
+Each item in a project's list is shown as a card: its type and date in the header, its tags as
+individual pills, and its content rendered as light Markdown — headings, **bold**, numbered and
+bulleted lists, and inline or fenced code render as their formatted equivalents instead of showing
+the raw `##`/`**`/`` ` `` characters. Anything outside that small set is shown exactly as it was
+typed. A long item collapses behind a **Show more** control. This is display only: the context
+pack, **Copy**, **Export…**, and what an AI tool receives through `get_context`/`search_context`
+are all unaffected and still show your content verbatim.
+
 ---
 
 ## Connecting your AI tools
