@@ -251,3 +251,140 @@
   font-weight: 600;
   margin-right: 8px;
 }
+
+/* project.tsx — the item list as cards (CARDS). The .md-* rules belong to
+   components/markdown-content.tsx, whose only consumer today is this screen's
+   card; they live here until a second screen renders it. Existing tokens only. */
+.item-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.item-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+.item-row.pinned {
+  border-color: var(--color-accent);
+}
+.item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.item-type {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+.item-pinned {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.item-row.pinned .item-meta,
+.item-row.pinned .item-type {
+  color: var(--color-accent);
+}
+.item-sep {
+  color: var(--color-text-muted);
+}
+.item-date {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+.item-content {
+  position: relative;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+.item-content.collapsed {
+  max-height: 176px;
+  overflow: hidden;
+}
+.item-fade {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 48px;
+  background: linear-gradient(to bottom, transparent, var(--color-bg));
+  pointer-events: none;
+}
+.item-toggle {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--color-accent);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.item-tag {
+  border: 1px solid var(--color-border);
+  border-radius: 100px;
+  background: var(--color-surface);
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.md-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.md-p,
+.md-heading {
+  margin: 0;
+  white-space: pre-line;
+}
+.md-heading {
+  font-weight: 600;
+}
+.md-list {
+  margin: 0;
+  padding-left: 20px;
+}
+.md-content .md-list li + li {
+  margin-top: 4px;
+}
+.md-code {
+  border-radius: 4px;
+  background: var(--color-surface);
+  padding: 1px 4px;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.9em;
+}
+.md-pre {
+  margin: 0;
+  border-radius: 4px;
+  background: var(--color-surface);
+  padding: 10px 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.85rem;
+}
