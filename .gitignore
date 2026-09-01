@@ -4,7 +4,3 @@ coverage/
 *.log
 .DS_Store
 *.tsbuildinfo
-desktop/node_modules/
-desktop/out/
-desktop/dist/
-desktop/release/

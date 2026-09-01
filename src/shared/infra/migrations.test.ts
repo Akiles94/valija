@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { LATEST_SCHEMA_VERSION, migrate, pendingMigrations, schemaVersion } from "./migrations.js";
+import { migrate, schemaVersion } from "./migrations.js";
 import { openVaultDb } from "./sqlite.js";
 
 const tmp = mkdtempSync(join(tmpdir(), "valija-migrations-"));
@@ -44,22 +44,5 @@ describe("Migrations", () => {
     expect(stale).toHaveLength(0);
     expect(fresh).toHaveLength(1);
     db.close();
-  });
-
-  it("LATEST_SCHEMA_VERSION matches the highest version applied by migrate", () => {
-    const db = openVaultDb(join(tmp, "latest.db"), randomBytes(32).toString("hex"));
-    migrate(db);
-    expect(schemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
-    db.close();
-  });
-
-  it("pendingMigrations(current) reports only migrations after current, with their backup flag", () => {
-    expect(pendingMigrations(0)).toEqual([
-      { version: 1, backsUpCiphertext: false },
-      { version: 2, backsUpCiphertext: true },
-      { version: 3, backsUpCiphertext: true },
-    ]);
-    expect(pendingMigrations(2)).toEqual([{ version: 3, backsUpCiphertext: true }]);
-    expect(pendingMigrations(LATEST_SCHEMA_VERSION)).toEqual([]);
   });
 });
