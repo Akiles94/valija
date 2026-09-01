@@ -33,8 +33,8 @@ export async function unlockCommand(
 ): Promise<void> {
   const input =
     options.recoveryKey !== undefined
-      ? { recoveryKeyHex: options.recoveryKey }
-      : { passphrase: await promptHidden("Passphrase: ") };
+      ? { recoveryKeyHex: options.recoveryKey, upgradeConfirmed: true }
+      : { passphrase: await promptHidden("Passphrase: "), upgradeConfirmed: true };
   const result = await c.unlockVault.execute(input);
   if (!result.ok) fail(result.error);
   console.log("Vault unlocked. MCP tools can now read and write context.");
