@@ -3,15 +3,6 @@ import { dirname } from "node:path";
 import SqliteDatabase, { type Database } from "better-sqlite3-multiple-ciphers";
 
 /**
- * `better-sqlite3-multiple-ciphers`'s own default when `timeout` is omitted
- * (`lib/database.js`: `'timeout' in options ? options.timeout : 5000`) — made
- * explicit here (D-J(a)) rather than left as an inherited library default, so
- * "what timeout is a contended write actually running with?" has an answer in
- * the source. Behaviour for the CLI and the MCP server is unchanged.
- */
-export const SQLITE_BUSY_TIMEOUT_MS = 5000;
-
-/**
  * Open (or create) the SQLCipher vault database with a raw 32-byte key.
  * Throws SqliteError (SQLITE_NOTADB) if the key is wrong for an existing file.
  *
@@ -23,7 +14,7 @@ export function openVaultDb(dbPath: string, keyHex: string): Database {
     throw new Error("Vault key must be 64 hex characters (32 bytes).");
   }
   mkdirSync(dirname(dbPath), { recursive: true });
-  const db = new SqliteDatabase(dbPath, { timeout: SQLITE_BUSY_TIMEOUT_MS });
+  const db = new SqliteDatabase(dbPath);
   try {
     db.pragma("cipher='sqlcipher'");
     db.pragma(`key="x'${keyHex}'"`);

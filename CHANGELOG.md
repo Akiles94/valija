@@ -6,26 +6,6 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
 
 ### Added
 
-- **Valija Desktop** — an Electron companion app (`desktop/`, unpublished, not part of the npm
-  package) giving the vault a window: browse, search and export context packs; connect Claude Code,
-  Claude Desktop and Cursor with one click; import chat history; a bilingual (English/Spanish) UI
-  with a welcome tour and a Settings screen; a Diagnostics screen mirroring `valija doctor`; and a
-  **vault relocation wizard** — move your vault into a folder a sync client already keeps up to
-  date, re-pointing every already-connected AI tool's config as part of the move. See
-  [`docs/gui.md`](docs/gui.md). No MCP tool, CLI command, or published package changed.
-- `src/vault`: a **schema-upgrade consent gate** — `UnlockVault` now refuses
-  (`VAULT_UPGRADE_REQUIRED`) to migrate a behind-schema vault unless the caller confirms
-  (`upgradeConfirmed: true`); the CLI passes this at its one call site, so `valija unlock`'s own
-  behavior — migrate silently — is unchanged. A new `readSchemaVersion` read lets a caller check the
-  pending migration (and whether it backs up ciphertext) before confirming.
-- `src/vault`: a **vault relocation use case** (`RelocateVault`) — copies the vault to a new folder,
-  verifies the copy byte-for-byte before removing the original, and refuses to run against an
-  unlocked vault or an unsafe destination (occupied, unwritable, nested, or a source that isn't at
-  rest). Used by the desktop app's relocation wizard; no CLI command added.
-- `src/delivery`: `context-pack-export.ts` and `diagnostics.ts` — the composition `valija export`
-  and `valija doctor` already used, lifted into shared functions the desktop app also calls, so
-  "byte-identical to the CLI" is structural rather than a test that can rot.
-
 - `docs/vault-format.md` — a written contract documenting the vault's crypto parameters, header schema, encrypted schema, pack-assembly algorithm, markdown rendering, and search query construction, for anyone building a second (non-Node) reader — starting with the mobile companion groundwork in `advances/M4/`. Verified against a committed golden-vault conformance fixture (`src/testing/__fixtures__/golden-vault/`) that proves the desktop implementation matches it byte-for-byte; no behavior change.
 - `advances/MOBILE/` — a Kotlin Multiplatform proof of concept (in the separate `akiles94/valija-mobile` repo) proved the vault format and pack algorithm are portable: a second implementation renders a byte-identical pack, and the vendored SQLite3MultipleCiphers amalgamation plus Argon2id compile and execute through both JNI/NDK and Kotlin/Native cinterop, verified in CI against an Android emulator and an iOS simulator. No distributable mobile app is planned (decided against, 2026-08-16); on-device Argon2id latency and Android arm64 execution were never measured and stay open if mobile is ever reconsidered. No behavior change.
 

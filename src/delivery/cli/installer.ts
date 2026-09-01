@@ -5,16 +5,7 @@ import { dirname, join } from "node:path";
 export const CLIENTS = ["claude-code", "claude-desktop", "cursor"] as const;
 export type ClientId = (typeof CLIENTS)[number];
 
-const MCP_COMMAND = "npx";
-const MCP_ARGS = ["-y", "valija", "mcp"];
-const MCP_ENTRY = { command: MCP_COMMAND, args: MCP_ARGS };
-
-/** The entry written into a client's config: an `env` block naming the vault only when the caller supplies one — the CLI's own call site never does, so its output stays byte-identical (D-R(a)'s companion step). */
-function mcpEntry(vaultPath?: string): Record<string, unknown> {
-  return vaultPath === undefined
-    ? { command: MCP_COMMAND, args: MCP_ARGS }
-    : { command: MCP_COMMAND, args: MCP_ARGS, env: { VALIJA_HOME: vaultPath } };
-}
+const MCP_ENTRY = { command: "npx", args: ["-y", "valija", "mcp"] };
 
 export function clientConfigPath(client: ClientId, platform = process.platform): string {
   const home = homedir();
@@ -64,28 +55,19 @@ function backupExisting(configPath: string): string | null {
 }
 
 /** Merge the valija server into mcpServers, preserving everything else in the config. */
-function mergeValijaEntry(
-  existing: Record<string, unknown>,
-  vaultPath?: string,
-): Record<string, unknown> {
+function mergeValijaEntry(existing: Record<string, unknown>): Record<string, unknown> {
   const servers =
     typeof existing.mcpServers === "object" && existing.mcpServers !== null
       ? (existing.mcpServers as Record<string, unknown>)
       : {};
-  return { ...existing, mcpServers: { ...servers, valija: mcpEntry(vaultPath) } };
+  return { ...existing, mcpServers: { ...servers, valija: MCP_ENTRY } };
 }
 
-/**
- * `vaultPath`, when given, is written into the entry's `env` block (D-R(a)'s
- * companion step) — the desktop app always supplies it, from both the
- * ordinary connect flow and the relocation wizard's re-pointing step; the
- * CLI's `install` command never does, so its output is byte-identical.
- */
-export function installIntoClient(client: ClientId, vaultPath?: string): InstallResult {
+export function installIntoClient(client: ClientId): InstallResult {
   const configPath = clientConfigPath(client);
   const existing = readExistingConfig(configPath);
   const backupPath = backupExisting(configPath);
-  const merged = mergeValijaEntry(existing, vaultPath);
+  const merged = mergeValijaEntry(existing);
   writeFileSync(configPath, `${JSON.stringify(merged, null, 2)}\n`, "utf8");
   return { configPath, backupPath };
 }
