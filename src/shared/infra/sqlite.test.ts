@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { migrate } from "./migrations.js";
-import { isWrongKeyError, openVaultDb } from "./sqlite.js";
+import { isWrongKeyError, openVaultDb, SQLITE_BUSY_TIMEOUT_MS } from "./sqlite.js";
 
 const tmp = mkdtempSync(join(tmpdir(), "valija-sqlite-"));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
@@ -108,5 +108,9 @@ describe("SQLCipher engine", () => {
 
     expect(existsSync(`${path}-wal`)).toBe(false);
     expect(existsSync(`${path}-shm`)).toBe(false);
+  });
+
+  it("the busy timeout is explicit in code, matching the library's own default (D-J(a))", () => {
+    expect(SQLITE_BUSY_TIMEOUT_MS).toBe(5000);
   });
 });

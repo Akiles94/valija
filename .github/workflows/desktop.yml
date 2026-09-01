@@ -1,0 +1,112 @@
+name: Desktop
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - "desktop/**"
+      - ".github/workflows/desktop.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Package (tag only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: npm run package
+      # Slice 13, item 95: the tag job computes and publishes each artifact's
+      # SHA-256 so docs/gui.md's checksum table is filled from this build,
+      # never from a developer's laptop. `sha256sum` is GNU coreutils and
+      # doesn't exist on macos-latest's BSD userland — `shasum -a 256` is the
+      # portable fallback, present on all three runners, with the identical
+      # `<hash>  <name>` output format.
+      - name: Checksum artifacts (tag only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        working-directory: desktop/release
+        run: |
+          shopt -s nullglob
+          artifacts=(*.dmg *.exe *.AppImage)
+          if [ ${#artifacts[@]} -eq 0 ]; then
+            echo "::error::no packaged artifact found in desktop/release (${{ matrix.os }})" >&2
+            exit 1
+          fi
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "${artifacts[@]}" > "checksums-${{ matrix.os }}.txt"
+          else
+            shasum -a 256 "${artifacts[@]}" > "checksums-${{ matrix.os }}.txt"
+          fi
+          cat "checksums-${{ matrix.os }}.txt"
+      - name: Upload artifacts (tag only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: valija-desktop-${{ matrix.os }}
+          path: |
+            desktop/release/*.dmg
+            desktop/release/*.exe
+            desktop/release/*.AppImage
+            desktop/release/checksums-*.txt
+          if-no-files-found: error
+
+  release:
+    # Runs once, after all three OSes have packaged and checksummed successfully — never partial.
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release-${{ github.ref }}
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: valija-desktop-*
+          path: release-artifacts
+          merge-multiple: true
+      - name: Combine and verify checksums
+        working-directory: release-artifacts
+        run: |
+          # Sorted on the filename field (column 2), not the hash, so the
+          # published list reads in a stable, scannable order across releases.
+          cat checksums-*.txt | sort -k2 > checksums.txt
+          rm checksums-*.txt
+          sha256sum -c checksums.txt
+      - name: Publish GitHub release
+        # Pinned to the v2.6.2 tag's commit — the first third-party action in
+        # this repo, and it holds contents: write, so a mutable tag isn't
+        # trusted the way the first-party actions/* steps above are.
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          files: |
+            release-artifacts/*.dmg
+            release-artifacts/*.exe
+            release-artifacts/*.AppImage
+            release-artifacts/checksums.txt
+          draft: true
+          # Unsigned builds (§8.1) — a maintainer reviews and publishes manually,
+          # never an automatic, unattended release.
+          generate_release_notes: true
