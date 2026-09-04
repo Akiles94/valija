@@ -129,6 +129,39 @@ describe("ImportConversations", () => {
     if (!r.ok) expect(r.error.code).toBe("UNSUPPORTED_SOURCE");
   });
 
+  it("dry-run rejects an invalid project name before touching the writer (D-14)", () => {
+    const writer = new RecordingImportItems();
+    const uc = new ImportConversations(
+      reader,
+      registryOf([conv("a", "Alpha", "2024-01-01")]),
+      writer,
+      clock,
+    );
+    const r = uc.execute({
+      filePath: "x.json",
+      projectName: "Openai 1",
+      all: true,
+      dryRun: true,
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe("INVALID_PROJECT_NAME");
+    expect(writer.calls).toHaveLength(0);
+  });
+
+  it("import still rejects the same invalid project name (D-14, unchanged behaviour)", () => {
+    const writer = new RecordingImportItems();
+    const uc = new ImportConversations(
+      reader,
+      registryOf([conv("a", "Alpha", "2024-01-01")]),
+      writer,
+      clock,
+    );
+    const r = uc.execute({ filePath: "x.json", projectName: "Openai 1", all: true });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe("INVALID_PROJECT_NAME");
+    expect(writer.calls).toHaveLength(0);
+  });
+
   it("carries per-conversation parse failures into the summary", () => {
     const parser: ConversationParser = {
       source: "chatgpt",
