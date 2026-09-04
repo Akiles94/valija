@@ -18,6 +18,29 @@ export function allChecked(listing: readonly ImportListingRow[]): Set<number> {
   return new Set(listing.map((row) => row.index));
 }
 
+export interface SelectionCounts {
+  conversationCount: number;
+  itemCount: number;
+}
+
+/**
+ * What the progress copy promises: how many conversations are checked and how
+ * many items they are estimated to produce (`estimatedChunks`, the same number
+ * the listing row already shows). An estimate by construction — the final
+ * count comes back from `ImportConversations` and may differ. Field names match
+ * the catalog placeholders so the result can be spread straight into `t()`.
+ */
+export function countSelection(
+  listing: readonly ImportListingRow[],
+  checked: ReadonlySet<number>,
+): SelectionCounts {
+  const selected = listing.filter((row) => checked.has(row.index));
+  return {
+    conversationCount: selected.length,
+    itemCount: selected.reduce((total, row) => total + row.estimatedChunks, 0),
+  };
+}
+
 export type SortDirection = "asc" | "desc";
 
 /**
