@@ -172,12 +172,13 @@ clickable link, since this app never opens a URL or makes a network request of a
 
 ## Importing your chat history
 
-**Import your chat history** reads an export file you've already downloaded from ChatGPT or Claude
-— the app explains up front that it never contacts either service itself. Pick the file, preview
-what would be imported (nothing is written yet), then import. One thing worth knowing: imported
-items are searchable and show up in their project, but they don't appear in context packs — that's
-by design (imported history is bulk, unreviewed context; a pack stays made of things you've
-actively decided to keep).
+Reachable from the dashboard header, beside **Check my setup**, whether your vault is empty or
+already holds projects: **Import your chat history** reads an export file you've already downloaded
+from ChatGPT or Claude — the app explains up front that it never contacts either service itself.
+Pick the file, preview what would be imported (nothing is written yet), then import. One thing
+worth knowing: imported items are searchable and show up in their project, but they don't appear in
+context packs — that's by design (imported history is bulk, unreviewed context; a pack stays made
+of things you've actively decided to keep).
 
 ---
 
