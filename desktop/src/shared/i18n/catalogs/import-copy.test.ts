@@ -34,12 +34,14 @@ describe("import progress copy", () => {
     });
 
     it(`${lang}: the new progress copy never claims another save is already running`, () => {
-      // Scoped to the new keys, not all of import.* — busyRetrying still carries
-      // exactly that stale wording until Slice 3 deletes it (its last render).
       for (const text of [importing, previewing, importingShort, previewingShort]) {
         expect(text).not.toMatch(/retry|reintent/i);
         expect(text).not.toMatch(/another save|otro guardado/i);
       }
+    });
+
+    it(`${lang}: busyRetrying is gone — its last render disappeared in Slice 3`, () => {
+      expect(Object.hasOwn(catalog.import, "busyRetrying")).toBe(false);
     });
   }
 });
