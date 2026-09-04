@@ -195,7 +195,6 @@ export const en = {
     perConversationFailure: "{title}: {reason}",
     excludedFromPacksNotice:
       "Imported items are searchable and visible in the project, but they don't appear in context packs.",
-    busyRetrying: "Another save is in progress — retrying…",
   },
 
   diagnostics: {

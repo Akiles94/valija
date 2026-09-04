@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatDate } from "../../shared/i18n/format.js";
 import type {
   ImportFormatOverride,
@@ -10,12 +10,24 @@ import { useErrorCopy, useLanguage, useT } from "../state/i18n-context.js";
 import {
   allChecked,
   buildPickSpec,
+  countSelection,
   type SortDirection,
   sortListingByDate,
 } from "../state/import-selection.js";
+import { waitForNextPaint } from "../state/next-paint.js";
 
 const NEW_PROJECT = "__new__";
 const FORMAT_OPTIONS: readonly ImportFormatOverride[] = ["chatgpt", "claude", "generic"];
+
+type Working = "reading" | "preview" | "import" | null;
+
+/**
+ * Not a `DomainError.code` from `src/` — the renderer's own label for "the IPC call itself
+ * rejected" (a schema-validation throw in `register-handlers.ts` never becomes a Result).
+ * Rendered through `errors.generic`; the caught error is never read, so no raw driver or zod
+ * string can reach the screen (§7).
+ */
+const REJECTED_CALL_CODE = "UNEXPECTED";
 
 /**
  * §9 items 72–77 — one screen: choose a file, resolve the format (auto, or a
@@ -45,7 +57,9 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
   const [projectChoice, setProjectChoice] = useState<string>(NEW_PROJECT);
   const [newProjectName, setNewProjectName] = useState("");
 
-  const [working, setWorking] = useState<"preview" | "import" | null>(null);
+  const [working, setWorking] = useState<Working>(null);
+  const workingRef = useRef<Working>(null);
+  const statusRef = useRef<HTMLDivElement>(null);
   const [resultOutcome, setResultOutcome] = useState<ImportOutcomeResponse | null>(null);
   const [resultMode, setResultMode] = useState<"preview" | "import" | null>(null);
 
@@ -56,32 +70,66 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
     });
   }, []);
 
-  async function handleChooseFile() {
-    const chosen = await bridge.dialog.chooseImportFile();
-    if (chosen === null) return;
+  useEffect(() => {
+    if (working !== null) return;
+    if (resultOutcome === null && error === null) return;
+    statusRef.current?.scrollIntoView?.({ block: "nearest" });
+  }, [working, resultOutcome, error]);
+
+  /** Start a run: gate first (synchronously), then clear whatever the last run left on screen (D-7). */
+  function beginWork(mode: Exclude<Working, null>) {
+    workingRef.current = mode;
+    setWorking(mode);
     setError(null);
-    setHandle(chosen.handle);
-    setDisplayName(chosen.displayName);
-    await loadListing(chosen.handle, undefined);
+    setResultOutcome(null);
+    setResultMode(null);
+  }
+
+  /** Always reached — from success, from a failed `Result`, and from a rejection (D-9). */
+  function endWork() {
+    workingRef.current = null;
+    setWorking(null);
+  }
+
+  async function handleChooseFile() {
+    if (workingRef.current !== null) return;
+    try {
+      const chosen = await bridge.dialog.chooseImportFile();
+      if (chosen === null) return; // the user pressed Cancel — a silent no-op
+      setHandle(chosen.handle);
+      setDisplayName(chosen.displayName);
+      await loadListing(chosen.handle, undefined);
+    } catch {
+      setError(errorCopy(REJECTED_CALL_CODE));
+    }
   }
 
   async function loadListing(theHandle: string, override: ImportFormatOverride | undefined) {
-    const result = await bridge.import.list({
-      handle: theHandle,
-      ...(override === undefined ? {} : { from: override }),
-    });
-    if (!result.ok) {
-      if (result.error.code === "UNSUPPORTED_SOURCE") {
-        setStage("formatOverride");
+    if (workingRef.current !== null) return;
+    beginWork("reading");
+    await waitForNextPaint(); // D-2 = O1: present the busy frame before main blocks
+    try {
+      const result = await bridge.import.list({
+        handle: theHandle,
+        ...(override === undefined ? {} : { from: override }),
+      });
+      if (!result.ok) {
+        if (result.error.code === "UNSUPPORTED_SOURCE") {
+          setStage("formatOverride");
+          return;
+        }
+        setError(errorCopy(result.error.code));
         return;
       }
-      setError(errorCopy(result.error.code));
-      return;
+      setFrom(override);
+      setListing(result.value.listing);
+      setChecked(allChecked(result.value.listing));
+      setStage("listed");
+    } catch {
+      setError(errorCopy(REJECTED_CALL_CODE));
+    } finally {
+      endWork();
     }
-    setFrom(override);
-    setListing(result.value.listing);
-    setChecked(allChecked(result.value.listing));
-    setStage("listed");
   }
 
   function handleFormatChoice(chosenFormat: ImportFormatOverride) {
@@ -104,12 +152,11 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
   }
 
   async function runSelection(mode: "preview" | "import") {
+    if (workingRef.current !== null) return; // D-9: immune to an OS-buffered second click
     const projectName = resolvedProjectName();
     const pick = buildPickSpec(checked);
     if (handle === null || projectName === null || pick === undefined) return;
 
-    setWorking(mode);
-    setError(null);
     const request = {
       handle,
       projectName,
@@ -117,15 +164,31 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
       ...(filterText.trim().length === 0 ? {} : { query: filterText.trim() }),
       ...(from === undefined ? {} : { from }),
     };
-    const result =
-      mode === "preview" ? await bridge.import.preview(request) : await bridge.import.run(request);
-    setWorking(null);
-    if (!result.ok) {
-      setError(errorCopy(result.error.code));
-      return;
+    beginWork(mode);
+    await waitForNextPaint(); // D-2 = O1: present the busy frame before main blocks
+    try {
+      const result =
+        mode === "preview"
+          ? await bridge.import.preview(request)
+          : await bridge.import.run(request);
+      if (!result.ok) {
+        setError(errorCopy(result.error.code));
+        return;
+      }
+      setResultOutcome(result.value);
+      setResultMode(mode);
+    } catch {
+      setError(errorCopy(REJECTED_CALL_CODE));
+    } finally {
+      endWork();
     }
-    setResultOutcome(result.value);
-    setResultMode(mode);
+  }
+
+  function busyMessage(): string | null {
+    if (working === null) return null;
+    if (working === "reading") return t("import.detectingFormat");
+    const counts = countSelection(listing ?? [], checked);
+    return t(working === "preview" ? "import.previewing" : "import.importing", { ...counts });
   }
 
   const canSubmit = resolvedProjectName() !== null && buildPickSpec(checked) !== undefined;
@@ -136,15 +199,15 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
       : displayedListing.filter((row) =>
           row.title.toLowerCase().includes(filterText.trim().toLowerCase()),
         );
+  const busy = busyMessage();
 
   return (
     <div className="screen import">
       <h1>{t("import.title")}</h1>
       <p className="explainer">{t("import.explainer")}</p>
-      {error !== null && <p className="error">{error}</p>}
 
       {stage === "choose" && (
-        <button type="button" onClick={() => void handleChooseFile()}>
+        <button type="button" disabled={working !== null} onClick={() => void handleChooseFile()}>
           {t("import.chooseFile")}
         </button>
       )}
@@ -154,7 +217,12 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
           <p>{displayName}</p>
           <p>{t("import.formatOverridePrompt")}</p>
           {FORMAT_OPTIONS.map((format) => (
-            <button type="button" key={format} onClick={() => handleFormatChoice(format)}>
+            <button
+              type="button"
+              key={format}
+              disabled={working !== null}
+              onClick={() => handleFormatChoice(format)}
+            >
               {format}
             </button>
           ))}
@@ -187,6 +255,7 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
                 <label>
                   <input
                     type="checkbox"
+                    disabled={working !== null}
                     checked={checked.has(row.index)}
                     onChange={() => toggleChecked(row.index)}
                   />
@@ -218,51 +287,69 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
               onChange={(e) => setNewProjectName(e.target.value)}
             />
           )}
+        </div>
+      )}
 
-          {working === "preview" && <p>{t("common.loading")}</p>}
-          {working === "import" && <p>{t("import.busyRetrying")}</p>}
+      {/* One region for busy, result and error (D-4), mounted unconditionally so it
+          can hold a loadListing error even while stage is still "choose", and so
+          an assistive-tech user gets it announced before it ever has content. */}
+      <div
+        className="import-status"
+        aria-live="polite"
+        aria-busy={working !== null}
+        ref={statusRef}
+      >
+        {busy !== null && (
+          <>
+            <p className="import-busy">{busy}</p>
+            <p className="explainer">{t("import.mayStopResponding")}</p>
+          </>
+        )}
+        {error !== null && <p className="error">{error}</p>}
+        {resultOutcome !== null && resultMode !== null && (
+          <div className="import-result">
+            <p>
+              {t(resultMode === "preview" ? "import.previewSummary" : "import.importSummary", {
+                itemCount: resultOutcome.imported,
+                conversationCount: resultOutcome.conversations,
+                project: resolvedProjectName() ?? "",
+                skipped: resultOutcome.skipped,
+                failed: resultOutcome.failed,
+              })}
+            </p>
+            {resultOutcome.failures.length > 0 && (
+              <ul className="import-failures">
+                {resultOutcome.failures.map((failure) => (
+                  <li key={`${failure.conversation}-${failure.reason}`}>
+                    {t("import.perConversationFailure", {
+                      title: failure.conversation,
+                      reason: failure.reason,
+                    })}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {resultMode === "import" && <p>{t("import.excludedFromPacksNotice")}</p>}
+          </div>
+        )}
+      </div>
 
+      {stage === "listed" && listing !== null && (
+        <div className="actions">
           <button
             type="button"
             disabled={!canSubmit || working !== null}
             onClick={() => void runSelection("preview")}
           >
-            {t("import.preview")}
+            {working === "preview" ? t("import.previewingShort") : t("import.preview")}
           </button>
           <button
             type="button"
             disabled={!canSubmit || working !== null}
             onClick={() => void runSelection("import")}
           >
-            {t("import.importButton")}
+            {working === "import" ? t("import.importingShort") : t("import.importButton")}
           </button>
-
-          {resultOutcome !== null && resultMode !== null && (
-            <div className="import-result">
-              <p>
-                {t(resultMode === "preview" ? "import.previewSummary" : "import.importSummary", {
-                  itemCount: resultOutcome.imported,
-                  conversationCount: resultOutcome.conversations,
-                  project: resolvedProjectName() ?? "",
-                  skipped: resultOutcome.skipped,
-                  failed: resultOutcome.failed,
-                })}
-              </p>
-              {resultOutcome.failures.length > 0 && (
-                <ul className="import-failures">
-                  {resultOutcome.failures.map((failure) => (
-                    <li key={`${failure.conversation}-${failure.reason}`}>
-                      {t("import.perConversationFailure", {
-                        title: failure.conversation,
-                        reason: failure.reason,
-                      })}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {resultMode === "import" && <p>{t("import.excludedFromPacksNotice")}</p>}
-            </div>
-          )}
         </div>
       )}
     </div>

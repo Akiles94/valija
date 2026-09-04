@@ -194,7 +194,6 @@ export const es: Catalog = {
     perConversationFailure: "{title}: {reason}",
     excludedFromPacksNotice:
       "Los elementos importados se pueden buscar y aparecen en el proyecto, pero no forman parte de los paquetes de contexto.",
-    busyRetrying: "Hay otro guardado en curso; reintentando…",
   },
 
   diagnostics: {
