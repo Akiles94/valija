@@ -5,6 +5,13 @@ default as written (D-1 through D-13). D-1 (frozen-window confirmation) stays an
 observation for Oscar to make during/around implementation — the defaults already say to
 treat V1–V7 as in scope regardless of its answer, and D-2 starts at O1 (escalate to O2 only
 if D-1 later shows multi-minute freezes Oscar considers unacceptable).
+
+**Amendment (Oscar, 2026-09-04, "sumalo"):** while using the app, Oscar hit a second bug on
+the same screen — Preview claimed a project name would work, then Import rejected the exact
+same name. He asked for it to be folded into this advance rather than opened separately. See
+**§2.6 (V8)** and **Problem 2** in §1/§4 below. Folded in via chat approval, not a fresh Gate R
+round, because the root cause was already fully diagnosed (single file, single guard) before he
+asked — plan.md had not yet received its `Approved:` line, so scope was still open to amend.
 **Directory:** `IMPORT-FEEDBACK`, deliberately not a milestone number — same posture as
 `GUI` / `MOBILE` / `CONNECT` / `CARDS` / `IMPORT-ENTRY`.
 **Origin:** Oscar, using the app: *"When I save an import there's no feedback about whether it's
@@ -32,6 +39,11 @@ are actually looking, whether the import succeeded (and with what numbers) or fa
 
 This advance changes **no** import semantics: the same file, the same parser, the same selection,
 the same single `ImportConversations` → `ImportItems` write, the same numbers.
+
+**Problem 2 (added 2026-09-04).** Preview must not claim success for a project name that Import
+will then reject. Concretely: **validate the project name at the same moment for both Preview and
+Import**, so a doomed name is caught before the user commits to it, not after — and, ideally, tell
+the user *why* a name is invalid, not just that it is.
 
 ---
 
@@ -125,6 +137,29 @@ renderer tree, so any spinner must be pure CSS with no remote asset; jsdom DOM t
 **three** screens (`recovery-kit`, `relocate-vault`, and `project` since CARDS), so GUI plan
 P-D5's "exactly two screens" limit has already moved.
 
+### 2.6 V8 — Preview doesn't validate the project name; Import does (Problem 2, added 2026-09-04)
+
+- `src/context/domain/values/project-name.ts:4` — `parseProjectName` requires
+  `/^[a-z0-9][a-z0-9-]{0,63}$/` after trim + lowercase: letters, digits, hyphens only, no spaces,
+  no leading hyphen. `"Openai 1"` normalizes to `"openai 1"`, which fails on the space.
+- `src/importers/application/use-cases/import-conversations.use-case.ts:111-119` — the `dry-run`
+  branch (Preview) builds its summary **from `input.projectName` directly**, echoed verbatim into
+  `project:` (line 219's `summary()`), and never calls `importItems.execute`. The `list` branch
+  (line 94-99) doesn't even receive a project name. **Neither reachable-from-Preview code path ever
+  calls `parseProjectName`.**
+- `src/context/application/use-cases/import-items.use-case.ts:53` — `parseProjectName` is called
+  **only** here, which only the real `import` branch reaches
+  (`import-conversations.use-case.ts:121`).
+- Result: Preview renders *"Se importarían 111 elementos de 100 conversaciones en 'Openai 1'…"* —
+  a specific, confident number — for a name that cannot be saved. The user commits, then Import
+  fails with `INVALID_PROJECT_NAME` → the catalog string `"Ese nombre de proyecto no es válido."`
+  (`es.ts:336`, `en.ts` equivalent), which names no rule and gives no example. Reproduced live by
+  Oscar: `newProjectName = "Openai 1"` (typed into `import.tsx`'s free-text input, which has no
+  `pattern`, `maxLength`, or hint — §2.1's table, unchanged).
+- **Not a security or write-path concern** — `parseProjectName`'s rule itself is correct and
+  unchanged by this advance (it is the same guard `ImportItems`/`SaveContext`/the CLI all share).
+  This is purely "the two code paths that report a project name disagree about whether it's valid."
+
 ---
 
 ## 3. User walkthrough (observable behaviour)
@@ -183,6 +218,9 @@ write, not what is written.
 - `desktop/src/main/ipc/handlers/import-handlers.ts` — **only** if D-2 ≠ O1 or D-9's main-side
   symmetry is taken (make `import:list`/`import:preview` non-throwing like `import:run`).
 - One renderer test that fails against today's `import.tsx` (D-12); one paragraph in `docs/gui.md`.
+- **Problem 2 (V8):** `src/importers/application/use-cases/import-conversations.use-case.ts` —
+  validate `input.projectName` (via `parseProjectName`, same rule `ImportItems` already enforces)
+  in the `dry-run` branch too, not just `import`, so Preview and Import agree. See **D-14**.
 
 ### Explicitly deferred
 | Deferred | Why |
@@ -194,7 +232,8 @@ write, not what is written.
 | Changing the busy-retry policy itself (attempts, backoff) or surfacing a *real* retry to the UI | Only the misleading *reuse* of the retry string is in scope |
 | A general redesign of the import screen, or a shared busy component for all nine screens | See D-12; this advance may extract at most what it needs |
 | Post-import navigation to the project | See D-11 |
-| Anything in `src/**` (use cases, importers, vault) | The write path is correct; only its visibility is broken |
+| Loosening or changing `parseProjectName`'s rule itself, or adding client-side input formatting/a live-validation hint on the free-text field | The rule is correct and unchanged (V8); this advance makes Preview honor it, not redesign the input. A `pattern`/hint on the field is a reasonable follow-up but not required to close the reported bug |
+| Anything else in `src/**` (import parsing, chunking, the vault write path) | Only the one missing validation call is in scope; everything else about the write path is correct |
 
 ---
 
@@ -337,6 +376,31 @@ window? (c) roughly how big is the export, how many conversations, how long does
   screen shows while reading, while importing, and afterwards — and, while D-2 = O1, that a large
   import may make the window stop responding. CLAUDE.md: docs ship in the same commit.
 
+### D-14 — Where Preview's project-name validation lives (Problem 2 / V8)
+- **Option A (default)** — `import-conversations.use-case.ts` imports `parseProjectName` directly
+  from `context/domain/values/project-name.js` and calls it at the top of the `dry-run` branch
+  (and, harmlessly, `import` — `ImportItems` already re-checks it, defense in depth, not deleted).
+  **Precedent already exists**: this same file already imports types from
+  `context/application/use-cases/import-items.use-case.js`, and
+  `importers/domain/services/chunk-render.test.ts` already imports
+  `context/domain/values/content.js` directly — `importers` and `context` are not isolated from
+  each other the way `vault`/`context` are from unrelated modules. No new port, no new file.
+- **Option B** — introduce a small `ProjectNameValidator` port into `importers/application/ports/`,
+  implemented in `container.ts` by wrapping `parseProjectName`. Cleaner hexagonal boundary, but a
+  new port + adapter for one regex check is the "premature abstraction" CLAUDE.md warns against,
+  given Option A's precedent already exists in this exact file.
+- **Option C** — route `dry-run` through `ImportItems.execute` itself with a new `dryRun` flag that
+  skips the write. **Rejected**: blurs the hard-won invariant that dry-run never touches the vault
+  (mirrors the CLI's own `--dry-run`), and risks a real write on a wiring mistake.
+- **Default: A.** One import, one early-return `Result` check, reusing the exact error
+  (`INVALID_PROJECT_NAME`) and the same `errorCopy(result.error.code)` path the renderer already
+  has for Import — so Preview and Import show the *identical* localized message for the same bad
+  name, just at the earlier, safer moment.
+- **Copy note:** V8's other half — `"Ese nombre de proyecto no es válido."` names no rule — is
+  **not** fixed by D-14 alone. Whether to also improve `INVALID_PROJECT_NAME`'s catalog copy to
+  state the rule (e.g. *"...solo minúsculas, números y guiones, sin espacios."*) is folded into
+  **D-3**'s catalog pass at implementation; both catalogs' `catalogs.test.ts` parity must still pass.
+
 ---
 
 ## 6. Acceptance criteria (reviewer checklist)
@@ -372,12 +436,25 @@ Each traces to a step in §3.
       both buttons are reachable without an extreme scroll (D-6), in a window at its default size,
       in **both** languages.
 
+**Project-name honesty (V8 / Problem 2)**
+- [ ] Previewing with an invalid project name (e.g. containing a space, or uppercase, or a leading
+      hyphen) fails **at Preview**, with the same localized `INVALID_PROJECT_NAME` message Import
+      would show — never a confident "would import N items" summary for a name that cannot be
+      saved (D-14).
+- [ ] Previewing and then Importing the **same** valid or invalid name always agree: both succeed
+      or both fail, never one then the other.
+- [ ] `list` mode (no project name involved) is unaffected.
+- [ ] A test exists that fails against today's `import-conversations.use-case.ts` (dry-run accepts
+      an invalid name) and passes after.
+
 **Cross-cutting**
 - [ ] A test exists that **fails against today's `import.tsx`** and passes after (D-12).
 - [ ] `npm run typecheck && npm run lint && npm run test` green in the repo root **and** in
       `desktop/`.
-- [ ] The diff touches no file under `src/**`, no `desktop/src/shared/ipc/**`, no preload, no
-      `package.json` — unless D-2 = O2 is chosen, in which case §7 applies in full.
+- [ ] The diff touches no file under `src/**` **except**
+      `import-conversations.use-case.ts`/`.test.ts` (D-14, Problem 2), no
+      `desktop/src/shared/ipc/**`, no preload, no `package.json` — unless D-2 = O2 is chosen, in
+      which case §7 applies in full.
 - [ ] `docs/gui.md` describes the three moments (D-13).
 - [ ] No import semantics changed: same parser resolution, same selection, same single write, same
       counts, same deterministic ids.
@@ -412,10 +489,13 @@ literally:
 
 ## 8. Architecture notes (clean architecture / DDD / hexagonal)
 
-- The default fix lives entirely in the **renderer presentation layer**, plus optionally two
-  defensive edits in a main-process **IPC adapter** (D-9 Option B). No domain, no application, no
-  port, no use case, no value object changes — a new file under any `domain/`/`application/` folder
-  is a signal that scope has crept.
+- The default fix lives almost entirely in the **renderer presentation layer**, plus optionally two
+  defensive edits in a main-process **IPC adapter** (D-9 Option B), plus **one application-layer
+  edit** for Problem 2/V8 (D-14): `import-conversations.use-case.ts` gains an early
+  `parseProjectName` check in its `dry-run` branch, reusing the existing domain value from
+  `context/domain/values/project-name.ts` — no new port, no new use case, no new value object. A
+  new file under any `domain/`/`application/` folder beyond that single call site is a signal that
+  scope has crept.
 - If any logic is worth extracting from `import.tsx` (e.g. "which status does this state produce?"
   as a pure function), it belongs beside the existing `renderer/state/import-selection.ts` — a pure,
   unit-tested module — not in a new bare file at a layer root. **No bare files** (CLAUDE.md).
@@ -434,7 +514,8 @@ literally:
 `desktop/src/renderer/styles/screens.css` (first rules for `.import-listing`, `.conversation-list`,
 `.import-status`, `.import-result`) · `desktop/src/main/ipc/handlers/import-handlers.ts` (D-9
 Option B only) · a new `desktop/src/renderer/screens/__dom-tests__/import.dom.test.tsx` ·
-`docs/gui.md`.
+`docs/gui.md` · **`src/importers/application/use-cases/import-conversations.use-case.ts` and its
+`.test.ts`** (D-14, Problem 2/V8 — the one `src/**` file this advance touches).
 
 ---
 

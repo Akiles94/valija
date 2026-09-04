@@ -6,10 +6,13 @@
 > only after it does. **This planner does not write that line.**
 
 **Spec:** `advances/IMPORT-FEEDBACK/refined.md` — Gate R **resolved** (Oscar, 2026-09-04), every
-default D-1…D-13 approved as written. Nothing in D-1…D-13 is reopened here.
+default D-1…D-13 approved as written, plus an **amendment** folded in the same day ("sumalo"):
+Problem 2 / V8 — Preview doesn't validate the project name, Import does — resolved as **D-14 = A**.
+Nothing in D-1…D-14 is reopened here.
 
-**Type:** Presentation change. Renderer (screen + two pure units + CSS + copy) plus **two
-defensive edits in one main-process IPC adapter** (D-9 Option B). No `src/**`, no
+**Type:** Presentation change, plus one small application-layer fix. Renderer (screen + two pure
+units + CSS + copy) plus **two defensive edits in one main-process IPC adapter** (D-9 Option B)
+plus **one early-validation call in one `src/` use case** (D-14, Slice 0). No
 `desktop/src/shared/ipc/**`, no preload, no zod schema, no `package.json`, no new dependency.
 
 ---
@@ -33,6 +36,7 @@ These are settled inputs, restated so the implementer never has to re-derive the
 | **D-11 = A** | No post-import navigation. `ImportScreen` keeps its `{ bridge }`-only interface. |
 | **D-12 = A** | `desktop/src/renderer/screens/__dom-tests__/import.dom.test.tsx` with a controllable fake bridge. |
 | **D-13 = yes** | One paragraph in `docs/gui.md` §"Importing your chat history". |
+| **D-14 = A** *(amendment)* | `import-conversations.use-case.ts`'s `dry-run` branch calls `parseProjectName` (from `context/domain/values/project-name.js`, same rule `ImportItems` already enforces) before building its summary, so Preview and Import agree. No new port. |
 
 ---
 
@@ -57,11 +61,15 @@ the diff is identical; only the branch differs.
 
 ## Plan summary
 
-Six slices, each independently checkable and green on
+Seven slices, each independently checkable and green on
 `npm run typecheck && npm run lint && npm run test` (run in `desktop/` **and** in the repo root).
-The two cheap, isolated pieces (copy, pure units) land first so the load-bearing screen rewrite has
-nothing else moving underneath it.
+Slice 0 is entirely independent of Slices 1–6 (different module, no shared file) and can land in
+any order relative to them. The two cheap, isolated renderer pieces (copy, pure units) land before
+the load-bearing screen rewrite so it has nothing else moving underneath it.
 
+- **Slice 0 — Preview honors the project-name rule too (D-14, Problem 2/V8).** One early
+  `parseProjectName` check in `import-conversations.use-case.ts`'s `dry-run` branch. Independent of
+  every other slice; touches the only `src/**` file in this advance.
 - **Slice 1 — honest progress copy.** Add `import.importing`, `import.previewing`,
   `import.mayStopResponding` (plus the two short button labels, P-D3) to both catalogs, with an
   `import-copy.test.ts` in the `connect-copy.test.ts` idiom. `busyRetrying` is *not* deleted yet —
@@ -145,6 +153,47 @@ rather than editing by line number.
    against the *same* render closure, where `working` is still `null`. The guard must therefore read
    a `useRef` set **synchronously** in `beginWork`. The `working` state stays as the render-driving
    value; the ref is the gate. See P-D4.
+
+---
+
+## Slice 0 — Preview honors the project-name rule too (D-14, Problem 2/V8)
+
+**Goal.** Preview and Import agree about whether a project name is valid — always, not just when
+the name happens to survive both a live-file round trip and a second click.
+
+**Files touched**
+- `src/importers/application/use-cases/import-conversations.use-case.ts` — import `parseProjectName`
+  from `../../../context/domain/values/project-name.js` (precedent: this file already imports from
+  `context/application/use-cases/import-items.use-case.js`, two lines above). In `execute()`, right
+  after the `if (mode === "list") { return ok(...); }` block and before
+  `const selected = selectConversations(...)`, add:
+  ```ts
+  const name = parseProjectName(input.projectName ?? "");
+  if (!name.ok) return name;
+  ```
+  By this point `mode` is narrowed to `"dry-run" | "import"` (the `list` branch already returned),
+  so this single check covers both without a redundant mode test. Placed **before**
+  `selectConversations` runs, so an invalid name fails fast without spending time on selection.
+  `ImportItems.execute` (reached only by the `import` branch, via `this.importItems`) keeps its own
+  `parseProjectName` call verbatim — this is defense in depth, not a replacement; the two call
+  sites now simply agree instead of one silently skipping the check. `list` mode is untouched — it
+  never receives or reports a project name.
+
+**Tests**
+- `src/importers/application/use-cases/import-conversations.use-case.test.ts` — one new case: a
+  `dry-run` call with an invalid project name (e.g. `"Openai 1"`, containing a space) returns
+  `{ ok: false, error: { code: "INVALID_PROJECT_NAME" } }` **without** calling the injected
+  `importItems` mock at all (proves it fails before reaching the write-path port, i.e. it is
+  genuinely a preview-time check, not accidentally routed through `import`). A second case: the
+  same invalid name in `import` mode still fails the same way (unchanged, pre-existing behaviour —
+  guards against a future edit accidentally removing the redundant check and calling it done).
+
+**Stays green.** `parseProjectName`'s import crosses from `importers` into `context`'s domain
+layer, which is already an established pattern in this file and in
+`importers/domain/services/chunk-render.test.ts` — no new dependency direction, no cycle risk
+(`context` does not import from `importers`).
+
+**Est. production lines:** ~6 (one import, one four-line guard). Tests ~20.
 
 ---
 
@@ -636,7 +685,8 @@ it together with `import.mayStopResponding` (D-10).
 | Typecheck / lint / test green in root **and** `desktop/` | Run at the end of every slice | gates |
 | Diff touches no `src/**`, no `desktop/src/shared/ipc/**`, no preload, no `package.json` | `git diff --name-only` against the file list in "Repo structure after execution" | review |
 | `docs/gui.md` describes the three moments | Slice 6 | docs |
-| No import semantics changed | No `src/**` file in the diff; `import-handlers.test.ts`'s lineage / pack / no-temp-file tests pass untouched | existing suites |
+| No import semantics changed | No `src/**` file in the diff except Slice 0's early validation (D-14); `import-handlers.test.ts`'s lineage / pack / no-temp-file tests pass untouched | existing suites |
+| Preview and Import agree on project-name validity (V8/D-14) | `import-conversations.use-case.test.ts`'s new dry-run + import invalid-name cases | application use case |
 
 **Manual bilingual check (required, not optional).** `cd desktop && npm run dev`, unlock, open
 Import, choose an export with a few hundred conversations: confirm the list scrolls in place and the
@@ -682,8 +732,10 @@ of this list is that the implementer can confirm that *literally*:
    scans the new `.ts`, `.tsx` and `.css` files automatically — and forbids `setInterval`, which the
    paint gate deliberately does not use.
 10. **After the last slice:** run `git diff --name-only` and confirm the list matches the tree below
-    exactly. Any hit under `src/`, `desktop/src/preload/`, `desktop/src/shared/ipc/`, or either
-    `package.json` means scope crept and the change must be dropped, not justified.
+    exactly. Any hit under `src/` **other than** `importers/application/use-cases/
+    import-conversations.use-case.{ts,test.ts}` (Slice 0, D-14), or any hit under
+    `desktop/src/preload/`, `desktop/src/shared/ipc/`, or either `package.json`, means scope crept
+    and the change must be dropped, not justified.
 
 ---
 
@@ -840,8 +892,8 @@ to decide on its own. P-D1, P-D2, P-D3 and P-D4 are the ones that matter.
 
 ## Repo structure after execution
 
-Twelve source paths change (six production, six test), plus `docs/gui.md`. Everything else is shown
-only as an unchanged anchor.
+Fourteen source paths change (seven production, seven test), plus `docs/gui.md`. Everything else is
+shown only as an unchanged anchor.
 
 ```
 valija/
@@ -856,8 +908,13 @@ valija/
 │                                                     history" gains one paragraph on the three
 │                                                     moments + the freeze warning — D-13)
 │
-├── src/                                             UNCHANGED — not one file (§4: the write path
-│                                                     is correct; only its visibility was broken)
+├── src/
+│   └── importers/application/use-cases/
+│       ├── import-conversations.use-case.ts         CHANGED (Slice 0, D-14: `parseProjectName`
+│       │                                             check moved to cover dry-run too)
+│       └── import-conversations.use-case.test.ts    CHANGED (Slice 0: invalid-name case for
+│                                                     both dry-run and import)
+│   (everything else under src/ — the write path itself — UNCHANGED, §4)
 │
 ├── desktop/
 │   ├── package.json · vitest.config.ts ·
@@ -923,6 +980,8 @@ valija/
 **File-count check for the reviewer** — `git diff --name-only` must print exactly:
 
 ```
+src/importers/application/use-cases/import-conversations.use-case.test.ts
+src/importers/application/use-cases/import-conversations.use-case.ts
 desktop/src/main/ipc/handlers/import-handlers.test.ts
 desktop/src/main/ipc/handlers/import-handlers.ts
 desktop/src/renderer/screens/__dom-tests__/import.dom.test.tsx
@@ -946,15 +1005,16 @@ docs/gui.md
 
 | Slice | Production (TS/CSS) | Tests | Docs |
 |---|---|---|---|
+| 0 — project-name validation (D-14) | ~6 | ~20 | — |
 | 1 — copy | ~14 | ~40 | — |
 | 2 — pure units | ~26 | ~45 | — |
 | 3 — `import.tsx` + catalog deletion | ~85 net (−2 catalog) | ~200 | — |
 | 4 — CSS | ~45 | — | — |
 | 5 — main handlers | ~14 | ~35 | — |
 | 6 — docs | — | — | ~7 |
-| **Total** | **≈185 production lines** | **≈320** | **≈7** |
+| **Total** | **≈191 production lines** | **≈340** | **≈7** |
 
-(~140 TS + ~45 CSS. `import.tsx` grows from 270 to roughly 340 lines.)
+(~146 TS + ~45 CSS. `import.tsx` grows from 270 to roughly 340 lines.)
 
 ### Risks
 
@@ -968,6 +1028,7 @@ docs/gui.md
 | The new `.actions` wrapper changes the visual position of the buttons on a narrow window in Spanish | Low | The required bilingual manual check; the remedy is `flex-wrap: wrap` on `.import .actions`, to be reported rather than smuggled in |
 | Scope creep into caching the parsed export, a progress bar, or a Cancel button | Low | `refined.md` §4's deferral table and the exact file list above; the reviewer counts files |
 | Slice 5's `try/catch` accidentally makes a handler `async` and breaks three existing synchronous handler tests | Low | Named in the ground-truth notes; `import-handlers.test.ts:116,143,160` call them without `await` |
+| Slice 0's check runs on the pre-selection path, so an invalid name is now reported *before* an otherwise-fatal selection error (e.g. `NO_CONVERSATIONS_SELECTED`) would have been — a change in which of two errors wins when both are true | Low | Acceptable and arguably more correct (project-name is checkable without reading the export at all); call out in review if Oscar wants selection errors to win instead |
 
 ---
 
