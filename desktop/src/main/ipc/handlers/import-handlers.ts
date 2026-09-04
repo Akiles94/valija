@@ -51,6 +51,23 @@ async function runImportWithBusyRetry<T>(
 }
 
 /**
+ * D-9 Option B: `import:run` has always converted a throw from the synchronous
+ * import chain into a typed code; `import:list`/`import:preview` did not, so a
+ * throw crossed IPC as a rejection and stranded the renderer. Same rule as
+ * everywhere else here: a localized code, never a raw driver or parser string
+ * (§9 item 75). The caught error is deliberately not read.
+ */
+function orStorageError<T>(run: () => Result<T, DomainError>): Result<T, DomainError> {
+  try {
+    return run();
+  } catch {
+    return err(
+      new DomainError("STORAGE_ERROR", "The vault is busy right now. Try again in a moment."),
+    );
+  }
+}
+
+/**
  * Every filesystem path here is resolved from a `handle` the dialog channel
  * minted (§8.6) — no channel accepts a path directly. No parser, chunker,
  * selection rule or archive reader is re-implemented: everything routes
@@ -73,11 +90,13 @@ export function createImportHandlers(getContainer: () => Container, filePicker: 
       const path = resolvePath(req.handle);
       if (!path.ok) return toIpcResult(path, () => ({ source: "", listing: [] }));
       return toIpcResult(
-        getContainer().importConversations.execute({
-          filePath: path.value,
-          list: true,
-          ...(req.from === undefined ? {} : { from: req.from }),
-        }),
+        orStorageError(() =>
+          getContainer().importConversations.execute({
+            filePath: path.value,
+            list: true,
+            ...(req.from === undefined ? {} : { from: req.from }),
+          }),
+        ),
         (v): ImportListResponse => ({ source: v.source, listing: v.listing ?? [] }),
       );
     },
@@ -86,16 +105,18 @@ export function createImportHandlers(getContainer: () => Container, filePicker: 
       const path = resolvePath(req.handle);
       if (!path.ok) return toIpcResult(path, emptyOutcome);
       return toIpcResult(
-        getContainer().importConversations.execute({
-          filePath: path.value,
-          projectName: req.projectName,
-          dryRun: true,
-          ...(req.pick === undefined ? {} : { pick: req.pick }),
-          ...(req.query === undefined ? {} : { query: req.query }),
-          ...(req.since === undefined ? {} : { since: req.since }),
-          ...(req.all === undefined ? {} : { all: req.all }),
-          ...(req.from === undefined ? {} : { from: req.from }),
-        }),
+        orStorageError(() =>
+          getContainer().importConversations.execute({
+            filePath: path.value,
+            projectName: req.projectName,
+            dryRun: true,
+            ...(req.pick === undefined ? {} : { pick: req.pick }),
+            ...(req.query === undefined ? {} : { query: req.query }),
+            ...(req.since === undefined ? {} : { since: req.since }),
+            ...(req.all === undefined ? {} : { all: req.all }),
+            ...(req.from === undefined ? {} : { from: req.from }),
+          }),
+        ),
         toOutcome,
       );
     },
