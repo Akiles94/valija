@@ -144,9 +144,9 @@ export const es: Catalog = {
     step2Body: "Cierra y vuelve a abrir Claude, ChatGPT o Cursor para que detecte el cambio.",
     step3Title: "Pídele que guarde o recuerde algo",
     step3Body:
-      'Dile algo como "recuerda que prefiero TypeScript sobre JavaScript", o usa el comando ' +
-      '"/save-context" para que revise toda la sesión y elija el proyecto, el tipo (decisión, ' +
-      "avance, preferencia…) y las etiquetas por ti. Lo que guarde aparecerá aquí, en el Panel.",
+      'Dile algo como "recuerda que prefiero TypeScript sobre JavaScript". Valija revisará la ' +
+      "sesión y lo guardará por ti, eligiendo el proyecto, el tipo (decisión, avance, " +
+      "preferencia…) y las etiquetas. Lo que guarde aparecerá aquí, en el Panel.",
     pointsAt: "Apunta a {vaultPath}",
     connectButton: "Conectar",
     connectedDetail:
