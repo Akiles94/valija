@@ -320,6 +320,44 @@ describe("import-handlers", () => {
     if (!result.ok) expect(result.error.code).toBe("STORAGE_ERROR");
   });
 
+  it("import:list turns a throw into STORAGE_ERROR instead of rejecting across IPC (D-9 Option B)", () => {
+    const container = {
+      paths: { root: tmp, header: "", db: "" },
+      importConversations: {
+        execute: vi.fn(() => {
+          throw new Error("disk read failure");
+        }),
+      },
+      // biome-ignore lint/suspicious/noExplicitAny: only importConversations is exercised here
+    } as any as Container;
+
+    const handlers = createImportHandlers(() => container, fakeFilePicker({ "fh-throws": "/x" }));
+    const result = handlers["import:list"]({ handle: "fh-throws" });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(Object.keys(result.error)).toEqual(["code"]);
+    if (!result.ok) expect(result.error.code).toBe("STORAGE_ERROR");
+  });
+
+  it("import:preview turns a throw into STORAGE_ERROR instead of rejecting across IPC (D-9 Option B)", () => {
+    const container = {
+      paths: { root: tmp, header: "", db: "" },
+      importConversations: {
+        execute: vi.fn(() => {
+          throw new Error("disk read failure");
+        }),
+      },
+      // biome-ignore lint/suspicious/noExplicitAny: only importConversations is exercised here
+    } as any as Container;
+
+    const handlers = createImportHandlers(() => container, fakeFilePicker({ "fh-throws": "/x" }));
+    const result = handlers["import:preview"]({ handle: "fh-throws", projectName: "p" });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(Object.keys(result.error)).toEqual(["code"]);
+    if (!result.ok) expect(result.error.code).toBe("STORAGE_ERROR");
+  });
+
   it("a non-busy throw is never retried, and still never surfaces a raw message", async () => {
     const container = {
       paths: { root: tmp, header: "", db: "" },
