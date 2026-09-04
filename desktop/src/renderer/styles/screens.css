@@ -10,6 +10,10 @@
 .dashboard-header h1 {
   margin: 0;
 }
+.dashboard-header .header-actions {
+  display: flex;
+  gap: 8px;
+}
 .project-cards {
   list-style: none;
   padding: 0;

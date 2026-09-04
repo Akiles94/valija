@@ -54,13 +54,20 @@ export function DashboardScreen({
   }, []);
 
   // Rendered in every branch (§9's item 89a) — the empty first-run dashboard
-  // is exactly when a user needs this most.
+  // is exactly when a user needs this most. Import lives here too, not only in
+  // the empty branch, or a vault with any content has no route to it at all
+  // (IMPORT-ENTRY, D-1).
   const header = (
     <div className="dashboard-header">
       <h1>{t("dashboard.title")}</h1>
-      <button type="button" onClick={onCheckSetup}>
-        {t("dashboard.checkMySetup")}
-      </button>
+      <div className="header-actions">
+        <button type="button" onClick={onImportHistory}>
+          {t("dashboard.importHistory")}
+        </button>
+        <button type="button" onClick={onCheckSetup}>
+          {t("dashboard.checkMySetup")}
+        </button>
+      </div>
     </div>
   );
 
