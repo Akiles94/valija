@@ -143,10 +143,9 @@ export const en = {
     step2Body: "Close and reopen Claude, ChatGPT, or Cursor so it picks up the change.",
     step3Title: "Ask it to save or recall something",
     step3Body:
-      'Say something like "remember that I prefer TypeScript over JavaScript," or use the ' +
-      '"/save-context" command to have it review the whole session and pick the project, type ' +
-      "(decision, progress, preference…), and tags for you. Whatever it saves shows up here, on " +
-      "the Dashboard.",
+      'Say something like "remember that I prefer TypeScript over JavaScript." It reviews the ' +
+      "session and saves it for you — picking the project, type (decision, progress, " +
+      "preference…), and tags. Whatever it saves shows up here, on the Dashboard.",
     pointsAt: "Points at {vaultPath}",
     connectButton: "Connect",
     connectedDetail:
