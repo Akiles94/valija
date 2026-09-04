@@ -180,6 +180,13 @@ worth knowing: imported items are searchable and show up in their project, but t
 context packs — that's by design (imported history is bulk, unreviewed context; a pack stays made
 of things you've actively decided to keep).
 
+While it works, the screen says so. Choosing a file shows **Reading the file…**; pressing
+**Preview** or **Import** shows what it is doing and with how many conversations, disables both
+buttons until it finishes, and puts the result — the number of items imported, any conversations
+that failed, or the reason it couldn't — in that same spot, just above the buttons you pressed.
+One honest warning: a large export is read, parsed and written in one go, so while an import runs
+the window may stop responding and can't be moved. It hasn't crashed; let it finish.
+
 ---
 
 ## Diagnostics — "Check my setup"
