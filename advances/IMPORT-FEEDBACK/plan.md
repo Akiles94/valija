@@ -1,3 +1,5 @@
+Approved: Oscar 2026-09-04
+
 # IMPORT-FEEDBACK — Execution plan
 
 > Implementation must **not** begin until Oscar has reviewed this file and added an
