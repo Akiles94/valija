@@ -60,11 +60,20 @@ describe("clientConnectionState", () => {
     expect(clientConnectionState(entry("installed"), vaultStatus({}), nodeOk)).toBe("ready");
   });
 
-  it("skips the node check while node status hasn't loaded yet", () => {
-    expect(clientConnectionState(entry("installed"), vaultStatus({}), null)).toBe("ready");
+  it("reports checking, never a guess, while node status hasn't loaded yet", () => {
+    expect(clientConnectionState(entry("installed"), vaultStatus({}), null)).toBe("checking");
   });
 
-  it("treats a not-yet-loaded vault status as vault-not-initialized, never a guess", () => {
-    expect(clientConnectionState(entry("installed"), null, nodeOk)).toBe("vault-not-initialized");
+  it("reports checking, never a guess, while vault status hasn't loaded yet", () => {
+    expect(clientConnectionState(entry("installed"), null, nodeOk)).toBe("checking");
+  });
+
+  it("reports checking when both are still loading", () => {
+    expect(clientConnectionState(entry("installed"), null, null)).toBe("checking");
+  });
+
+  it("config-invalid and not-installed are reported immediately, even before vault/node load", () => {
+    expect(clientConnectionState(entry("config-invalid"), null, null)).toBe("config-invalid");
+    expect(clientConnectionState(entry("not-installed"), null, null)).toBe("not-installed");
   });
 });

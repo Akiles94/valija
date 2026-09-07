@@ -15,6 +15,7 @@ import { wireFocusRefresh } from "../state/focus-refresh.js";
 import { useT } from "../state/i18n-context.js";
 
 const STATUS_LABEL_KEY: Record<ClientConnectionState, TranslationKey> = {
+  checking: "connect.status.checking",
   "not-installed": "connect.status.notInstalled",
   "config-invalid": "connect.status.configInvalid",
   "node-missing": "connect.status.nodeMissing",
@@ -62,12 +63,18 @@ export function ConnectToolsScreen({ bridge }: { bridge: ValijaBridge }) {
     };
   }, []);
 
+  // The main process's connectClient never throws by design (its own catch
+  // builds the manual-snippet outcome), but the `finally` here is defense in
+  // depth against a rejected IPC call (a schema failure, e.g.) permanently
+  // disabling the Connect button (C2).
   async function handleConnect(client: string) {
     setConnecting(client);
-    const result = await bridge.tools.connect({ client });
-    setConnecting(null);
-    if (!result.ok) return;
-    setResults((prev) => ({ ...prev, [client]: result.value }));
+    try {
+      const result = await bridge.tools.connect({ client });
+      if (result.ok) setResults((prev) => ({ ...prev, [client]: result.value }));
+    } finally {
+      setConnecting(null);
+    }
   }
 
   function handleCopy(client: string, snippet: string) {

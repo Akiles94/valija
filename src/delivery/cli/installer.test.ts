@@ -1,8 +1,21 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { CLIENTS, clientConfigPath, installIntoClient, manualInstructions } from "./installer.js";
+import { resolveMcpLaunch } from "./mcp-launch.js";
+
+// installIntoClient/manualInstructions both resolve the launch entry through
+// mcp-launch.ts, which otherwise shells out to real `npm prefix -g` on every
+// call — slow, machine-dependent, and against plan.md's explicit instruction
+// to stub this rather than assert an absolute, machine-specific path (W4).
+// mcp-launch.ts's own platform-branch logic is covered by mcp-launch.test.ts.
+vi.mock("./mcp-launch.js", () => ({
+  resolveMcpLaunch: vi.fn(() => ({
+    command: "node",
+    args: ["/fake/global/prefix/lib/node_modules/valija/dist/program.js", "mcp"],
+  })),
+}));
 
 // clientConfigPath resolves against homedir(); redirect HOME for this file only so
 // installIntoClient never touches a real config on the machine running the suite.
@@ -30,15 +43,10 @@ describe("installIntoClient — the shared client-config writer (D-R(a)'s compan
   )("called with no vaultPath writes a resolved node entry with no env block, for %s (P1)", (client) => {
     const result = installIntoClient(client);
     const written = JSON.parse(readFileSync(result.configPath, "utf8"));
-    // Asserts shape, not the machine's actual global prefix (installer.test.ts
-    // is not the place to stub resolveMcpLaunch — see mcp-launch.test.ts for
-    // its own platform-branch coverage).
-    expect(written.mcpServers.valija.command).toBe("node");
-    expect(written.mcpServers.valija.args).toHaveLength(2);
-    expect(written.mcpServers.valija.args[0]).toContain("valija");
-    expect(written.mcpServers.valija.args[1]).toBe("mcp");
-    expect(written.mcpServers.valija.command).not.toBe("npx");
-    expect(written.mcpServers.valija.env).toBeUndefined();
+    expect(written.mcpServers.valija).toEqual({
+      command: "node",
+      args: ["/fake/global/prefix/lib/node_modules/valija/dist/program.js", "mcp"],
+    });
   });
 
   it.each(
@@ -86,13 +94,32 @@ describe("installIntoClient — the shared client-config writer (D-R(a)'s compan
     expect(after.someOtherSetting).toBe(true);
     expect(after.mcpServers.valija.env).toEqual({ VALIJA_HOME: "/tmp/new-vault" });
   });
+
+  it("throws (never writes) when the launch entry can't be resolved, so the caller's fallback runs instead (C1/C2)", () => {
+    vi.mocked(resolveMcpLaunch).mockReturnValueOnce(null);
+    const configPath = clientConfigPath("cursor");
+    const before = readFileSync(configPath, "utf8");
+    expect(() => installIntoClient("cursor")).toThrow(/PATH/);
+    expect(readFileSync(configPath, "utf8")).toBe(before); // untouched, not partially written
+  });
 });
 
-describe("manualInstructions — unaffected by the vaultPath parameter", () => {
+describe("manualInstructions — never throws (C2), always leads with the fix (W6)", () => {
   it("renders the resolved node entry, with no env block and no stale npx snippet", () => {
     const text = manualInstructions("cursor");
+    expect(text).toContain("npm i -g valija");
     expect(text).toContain('"command": "node"');
     expect(text).not.toContain("npx");
     expect(text).not.toContain("env");
+  });
+
+  it("falls back to a fill-in-yourself template, without throwing, when the launch entry can't be resolved", () => {
+    vi.mocked(resolveMcpLaunch).mockReturnValueOnce(null);
+    let text = "";
+    expect(() => {
+      text = manualInstructions("cursor");
+    }).not.toThrow();
+    expect(text).toContain("npm i -g valija");
+    expect(text).toContain("npm prefix -g");
   });
 });

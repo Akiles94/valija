@@ -103,7 +103,7 @@ Key property of MCP to keep in mind: **the server never sees the conversation**.
 
 ## 7. MCP surface
 
-Server name: `valija`. Transport: stdio. Started as `valija mcp` (client config: `npx -y valija mcp`). Input validation with zod at the boundary; on locked vault every tool returns: *"Vault is locked. Ask the user to run `valija unlock` in a terminal."*
+Server name: `valija`. Transport: stdio. Started as `valija mcp` (client config, resolved at Connect/`install` time from the installed package's `dist/program.js` — CONNECT — never a per-launch `npx -y valija` fetch). Input validation with zod at the boundary; on locked vault every tool returns: *"Vault is locked. Ask the user to run `valija unlock` in a terminal."*
 
 ### Tools (5 — resist adding more)
 

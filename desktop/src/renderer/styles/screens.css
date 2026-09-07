@@ -205,6 +205,10 @@
 .connect-tools .client-status.state-config-invalid {
   color: var(--color-danger);
 }
+.connect-tools .client-status.state-checking,
+.connect-tools .client-status.state-not-installed {
+  color: var(--color-text-muted);
+}
 .connect-tools .client-points-at {
   margin: 4px 0 12px;
   color: var(--color-text-muted);

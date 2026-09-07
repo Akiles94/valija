@@ -13,10 +13,18 @@ export type ClientId = (typeof CLIENTS)[number];
  * supplies — the CLI's own call site supplies neither, so its output stays
  * byte-identical (D-R(a)'s companion step; CONNECT D-D's TTL rider). Launch
  * shape per CONNECT D2/D-A: `resolveMcpLaunch()`, never the old per-launch
- * `npx -y valija` fetch.
+ * `npx -y valija` fetch. `resolveMcpLaunch()` returns `null` rather than
+ * throwing when npm can't be reached — this function turns that into a
+ * plain thrown `Error` (matching `readExistingConfig`'s own style), which
+ * every caller of `installIntoClient` already catches and treats the same
+ * as an unmergeable config: fall back to the manual snippet.
  */
 function mcpEntry(vaultPath?: string, autoLockMinutes?: number | null): Record<string, unknown> {
-  const { command, args } = resolveMcpLaunch();
+  const launch = resolveMcpLaunch();
+  if (launch === null) {
+    throw new Error("Could not resolve valija's launch entry — is npm on this machine's PATH?");
+  }
+  const { command, args } = launch;
   const env: Record<string, string> = {};
   if (vaultPath !== undefined) env.VALIJA_HOME = vaultPath;
   if (autoLockMinutes !== undefined) {
@@ -110,9 +118,28 @@ export function installIntoClient(
   return { configPath, backupPath };
 }
 
+/**
+ * Never throws (C2) — this is the fallback shown after something else has
+ * already failed, so it cannot itself depend on that same thing succeeding.
+ * `resolveMcpLaunch()` already returns `null` instead of throwing; when it
+ * does, this renders a template entry the user fills in by hand rather than
+ * a resolved absolute path, and always leads with the one command
+ * (`npm i -g valija`) that fixes the most common cause (W6).
+ */
 export function manualInstructions(client: ClientId): string {
+  const launch = resolveMcpLaunch();
+  const entry =
+    launch ??
+    ({
+      command: "node",
+      args: [
+        "<the folder 'npm prefix -g' prints>/lib/node_modules/valija/dist/program.js (Windows: no 'lib' segment)",
+        "mcp",
+      ],
+    } satisfies { command: string; args: string[] });
   return (
-    `Add this to the "mcpServers" object of ${clientConfigPath(client)}:\n\n` +
-    `  "valija": ${JSON.stringify(resolveMcpLaunch(), null, 2).replace(/\n/g, "\n  ")}\n`
+    `First, make sure valija is installed globally:\n\n  npm i -g valija\n\n` +
+    `Then add this to the "mcpServers" object of ${clientConfigPath(client)}:\n\n` +
+    `  "valija": ${JSON.stringify(entry, null, 2).replace(/\n/g, "\n  ")}\n`
   );
 }

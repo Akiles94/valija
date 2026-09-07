@@ -166,6 +166,7 @@ export const en = {
     failureNotInstalled: "{client} doesn't seem to be installed on this machine.",
     failureInvalidConfig: "{client}'s config file isn't valid JSON — it was left untouched.",
     status: {
+      checking: "Checking…",
       notInstalled: "Not connected",
       configInvalid: "Config unreadable",
       nodeMissing: "Connected, but Node.js is missing",

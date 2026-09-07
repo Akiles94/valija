@@ -169,6 +169,7 @@ export const es: Catalog = {
     failureInvalidConfig:
       "El archivo de configuración de {client} no es JSON válido; se dejó sin cambios.",
     status: {
+      checking: "Comprobando…",
       notInstalled: "No conectado",
       configInvalid: "Configuración ilegible",
       nodeMissing: "Conectado, pero falta Node.js",
