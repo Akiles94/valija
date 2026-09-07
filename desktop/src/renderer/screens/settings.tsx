@@ -4,16 +4,22 @@ import { useT } from "../state/i18n-context.js";
 type ThemeChoice = AppPreferencesMessage["theme"];
 type LanguageChoice = AppPreferencesMessage["language"];
 
+const AUTO_LOCK_CHOICES = [5, 15, 30, 60] as const;
+
 /**
  * §4.8, D-U(d). Reachable while the vault is locked (item 88) — this
  * component never imports `bridge.js` and calls no IPC of any kind; the
- * caller in `app.tsx` owns reading and writing preferences. Exactly four
- * sections and no fifth. Vault & sync **links** to the existing Diagnostics
- * screen and the existing relocation wizard rather than re-rendering their
- * data (P-D12) — the environment-resolved values stay the Sync panel's one
- * display. Not a config editor: no field here can set `VALIJA_HOME`,
- * `VALIJA_STATE_HOME` or `VALIJA_AUTOLOCK_MINUTES`, and nothing here can
- * destroy, re-key or re-initialize a vault.
+ * caller in `app.tsx` owns reading and writing preferences. Originally
+ * exactly four sections; CONNECT (D5) deliberately adds a fifth, "Bloqueo
+ * automático" — a device-local, user-chosen preference, not vault
+ * configuration. Vault & sync **links** to the existing Diagnostics screen
+ * and the existing relocation wizard rather than re-rendering their data
+ * (P-D12) — the environment-resolved values stay the Sync panel's one
+ * display. Not a config editor: no field here can set `VALIJA_HOME` or
+ * `VALIJA_STATE_HOME`, and nothing here can destroy, re-key or re-initialize
+ * a vault. The auto-lock control writes only the device-local preference —
+ * reaching a connected tool's own `VALIJA_AUTOLOCK_MINUTES` still requires
+ * that tool's next Connect press (D-F), never a silent rewrite from here.
  */
 export function SettingsScreen({
   preferences,
@@ -26,7 +32,11 @@ export function SettingsScreen({
 }: {
   preferences: AppPreferencesMessage;
   unlocked: boolean;
-  onUpdatePreferences: (patch: { theme?: ThemeChoice; language?: LanguageChoice }) => void;
+  onUpdatePreferences: (patch: {
+    theme?: ThemeChoice;
+    language?: LanguageChoice;
+    autoLockMinutes?: number | null;
+  }) => void;
   onClose: () => void;
   onReplayTour: () => void;
   onOpenDiagnostics: () => void;
@@ -78,6 +88,31 @@ export function SettingsScreen({
             {t(key)}
           </label>
         ))}
+      </section>
+
+      <section>
+        <h2>{t("settings.autoLock")}</h2>
+        {AUTO_LOCK_CHOICES.map((minutes) => (
+          <label key={minutes}>
+            <input
+              type="radio"
+              name="autoLockMinutes"
+              checked={preferences.autoLockMinutes === minutes}
+              onChange={() => onUpdatePreferences({ autoLockMinutes: minutes })}
+            />
+            {t("settings.autoLockMinutes", { minutes })}
+          </label>
+        ))}
+        <label>
+          <input
+            type="radio"
+            name="autoLockMinutes"
+            checked={preferences.autoLockMinutes === null}
+            onChange={() => onUpdatePreferences({ autoLockMinutes: null })}
+          />
+          {t("settings.autoLockNever")}
+        </label>
+        <p className="explainer">{t("settings.autoLockReconnectNote")}</p>
       </section>
 
       <section>

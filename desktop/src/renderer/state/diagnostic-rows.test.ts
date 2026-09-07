@@ -101,7 +101,7 @@ describe("diagnosticRows", () => {
 
   it("shows a connected client's real vault path as its extra line", () => {
     const toolsStatus: ToolsStatusEntry[] = [
-      { client: "cursor", connected: true, vaultPath: "/Users/oscar/.valija" },
+      { client: "cursor", presence: "installed", vaultPath: "/Users/oscar/.valija" },
     ];
     const rows = diagnosticRows({
       checks: [check({ name: "cursor", ok: true, detail: "valija installed" })],
@@ -116,7 +116,7 @@ describe("diagnosticRows", () => {
   });
 
   it("shows the default-location line when a client is installed but tools:status reports no vaultPath (W2)", () => {
-    const toolsStatus: ToolsStatusEntry[] = [{ client: "claude-code", connected: true }];
+    const toolsStatus: ToolsStatusEntry[] = [{ client: "claude-code", presence: "installed" }];
     const rows = diagnosticRows({
       checks: [check({ name: "claude-code", ok: true, detail: "valija installed" })],
       toolsStatus,
@@ -130,7 +130,9 @@ describe("diagnosticRows", () => {
   });
 
   it("shows no extra line for a client that isn't connected at all", () => {
-    const toolsStatus: ToolsStatusEntry[] = [{ client: "claude-desktop", connected: false }];
+    const toolsStatus: ToolsStatusEntry[] = [
+      { client: "claude-desktop", presence: "not-installed" },
+    ];
     const rows = diagnosticRows({
       checks: [check({ name: "claude-desktop", ok: false, detail: "config not found" })],
       toolsStatus,
@@ -144,7 +146,7 @@ describe("diagnosticRows", () => {
   it("gives no explanation, rather than a wrong one, for a name that is neither a fixed check nor a reported client", () => {
     const rows = diagnosticRows({
       checks: [check({ name: "some-future-check", ok: true })],
-      toolsStatus: [{ client: "cursor", connected: false }],
+      toolsStatus: [{ client: "cursor", presence: "not-installed" }],
       nodeStatus: null,
       t,
       errorCopy,

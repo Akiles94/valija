@@ -70,6 +70,7 @@ function fakeBridge(overrides: {
         theme: "system",
         language: "en",
         tourSeen: false,
+        autoLockMinutes: 15,
       }),
       write: vi.fn(),
     },
@@ -90,7 +91,13 @@ function fakeBridge(overrides: {
 async function renderScreen(bridge: ValijaBridge, onDone = vi.fn()) {
   render(
     <I18nProvider
-      preferences={{ vaultPath: null, theme: "system", language: "en", tourSeen: false }}
+      preferences={{
+        vaultPath: null,
+        theme: "system",
+        language: "en",
+        tourSeen: false,
+        autoLockMinutes: 15,
+      }}
     >
       <RelocateVaultScreen bridge={bridge} onDone={onDone} />
     </I18nProvider>,

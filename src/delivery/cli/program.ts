@@ -7,6 +7,7 @@ import { exportCommand, projectsCommand, searchCommand, showCommand } from "./co
 import { doctorCommand } from "./doctor.js";
 import { importCommand } from "./import-command.js";
 import { CLIENTS, type ClientId, installIntoClient, manualInstructions } from "./installer.js";
+import { ensureValijaInstalled } from "./mcp-launch.js";
 import { initCommand, lockCommand, statusCommand, unlockCommand } from "./vault-commands.js";
 
 const program = new Command();
@@ -97,6 +98,7 @@ program
       process.exit(1);
     }
     try {
+      ensureValijaInstalled();
       const result = installIntoClient(client as ClientId);
       console.log(`valija MCP server added to ${result.configPath}`);
       if (result.backupPath) console.log(`Backup of the previous config: ${result.backupPath}`);

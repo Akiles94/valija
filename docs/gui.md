@@ -130,6 +130,13 @@ If the app detects your vault's schema is behind the version it expects, it stop
 it's about to do — including that a populated vault gets a ciphertext backup before anything
 changes — before you confirm. Nothing is migrated silently; a fresh vault never sees this screen.
 
+**A LOCKED/UNLOCKED indicator (CONNECT)** sits in the workspace's nav bar the whole time your vault
+is unlocked, next to **Lock now** — so lock state is never something you have to open Diagnostics to
+check. If the vault auto-locks from inactivity while you're away, the screen you land back on when
+you return says so directly ("Locked due to inactivity"), rather than just asking for your
+passphrase with no explanation. Manually pressing **Lock now** shows no such banner — you already
+know why it's locked.
+
 ---
 
 ## Browsing, searching, and taking a pack
@@ -153,8 +160,13 @@ are all unaffected and still show your content verbatim.
 
 ## Connecting your AI tools
 
-**Connect an AI tool** shows a card per supported client (Claude Code, Claude Desktop, Cursor),
-each showing whether it's already connected. **Connect** writes the same config change
+**Connect an AI tool** shows a card per supported client (Claude Code, Claude Desktop, Cursor), each
+in one of six honest states (CONNECT), never a single "Conectado": **Not connected**, **Config
+unreadable** (with the manual-fallback snippet below), **Connected, but Node.js is missing**,
+**Connected — create your vault**, **Connected, but the vault is locked**, or **Ready to use**. That
+last label deliberately never says "Connected" — this app can tell you its own preconditions are met
+(the config is right, Node runs, the vault is unlocked), never that the AI tool itself has a live
+session, which it has no way to observe. **Connect** writes the same config change
 `valija install <client>` does — backing up the previous file first — and tells you which client to
 restart to pick it up. If a client isn't installed, or its config file isn't valid JSON, the app
 explains that in plain language and offers the same manual instructions the CLI's
@@ -162,11 +174,16 @@ explains that in plain language and offers the same manual instructions the CLI'
 JSON snippet and file paths meant to be pasted somewhere, not prose meant to be read.
 
 **Your AI tools reach the vault through Node.js**, separately from whether Node is installed for
-this app itself — every client's config points at `npx -y valija mcp`, which needs a working
+this app itself — Connect resolves the already-installed `valija` package and writes a config entry
+that runs it directly through `node`, with no per-launch download: the first time you restart your
+AI tool it connects immediately, even on a machine that has never fetched `valija` before. Connect
+also makes sure `valija` itself is installed globally first, on the machine's usual `npm`, so a
+first-time Connect doesn't leave a config pointing at nothing. Either step still needs a working
 `node`/`npm` on your machine. If the app can't find them, Connect still writes the config (so it's
 ready the moment Node is installed) but tells you plainly that the tool won't be able to reach your
 vault until then, with a short pointer reading "How to install Node.js" — plain text, not a
-clickable link, since this app never opens a URL or makes a network request of any kind.
+clickable link, since this app never opens a URL or makes a network request other than that one
+global-install step.
 
 ---
 
@@ -196,10 +213,11 @@ already do (see [Language](#language) for exactly what that means and why).
 
 One thing that can look like a contradiction and isn't: a client the CLI installed with `valija
 install` (no explicit folder recorded) shows as **OK, points at the default location** here, while
-the **Connect an AI tool** screen calls that same client **not connected** — Diagnostics is
-reporting what `doctor` reports (an entry exists), Connect is reporting whether that entry names a
-specific vault folder. Both are accurate; they're answering slightly different questions about the
-same client.
+the **Connect an AI tool** screen may call that same client **Connected — create your vault** or
+**Connected, but the vault is locked** rather than **Ready to use** — Diagnostics is reporting what
+`doctor` reports (an entry exists), Connect is reporting the fuller set of preconditions (config,
+Node, vault) that decide whether the entry can actually be used right now. Both are accurate;
+they're answering slightly different questions about the same client.
 
 ---
 
@@ -245,10 +263,15 @@ across terminal sessions.
 ## Settings
 
 Reachable by clicking the gear — from the dashboard, any project view, or even the locked screen,
-since Settings needs no unlocked vault at all. Four sections, and no fifth:
+since Settings needs no unlocked vault at all. Five sections:
 
 - **Appearance** — Follow system, Light, or Dark. Changes take effect immediately.
 - **Language** — Follow system, English, or Español. Also immediate — no restart, no re-unlock.
+- **Auto-lock** (CONNECT) — 5/15/30/60 minutes, or an explicit **Never**. The default stays 15
+  minutes; disabling it is always a visible, deliberate choice, never a silent one. A chosen value
+  applies to this app immediately; any AI tool you've already connected picks it up the next time
+  you press **Connect** for it again — this app never rewrites a connected tool's config in the
+  background.
 - **Vault & sync** — shortcuts to the Diagnostics screen and the relocation wizard above (the same
   screens, not a second copy of them); see the Sync panel for the actual folder path and connection
   details. **These two shortcuts only work while your vault is unlocked** — if you're locked out and
@@ -257,11 +280,15 @@ since Settings needs no unlocked vault at all. Four sections, and no fifth:
 - **Help** — replay the welcome tour, any time, as many times as you like.
 
 **What Settings deliberately is not:** it has no CLI counterpart, and none is planned — everything
-here is either a UI preference (appearance, language) or a shortcut to a screen that already exists
-elsewhere. It cannot set `VALIJA_HOME`, `VALIJA_STATE_HOME` or `VALIJA_AUTOLOCK_MINUTES` — those stay
-environment variables, shown read-only in the Sync panel, because they're configuration a terminal
-session controls, and this app is explicit about not quietly overriding that. It offers no way to
-destroy, re-key, or re-initialize a vault — this app creates and moves vaults, it never deletes one.
+here is either a UI preference (appearance, language, auto-lock) or a shortcut to a screen that
+already exists elsewhere. It cannot set `VALIJA_HOME` or `VALIJA_STATE_HOME` — those stay environment
+variables, shown read-only in the Sync panel, because they're configuration a terminal session
+controls, and this app is explicit about not quietly overriding that. Auto-lock is the one exception,
+and deliberately so (CONNECT): the MCP server your AI tools talk to reads its idle timeout from its
+own `VALIJA_AUTOLOCK_MINUTES` environment value, so a Settings toggle the server never saw would be
+dishonest — choosing a value here is what makes the value that reaches each tool's config on its next
+Connect. It offers no way to destroy, re-key, or re-initialize a vault — this app creates and moves
+vaults, it never deletes one.
 
 ---
 
@@ -324,9 +351,10 @@ Every one of them only fires when you click its button — nothing is copied aut
   and points at the guidance in [the main README](../README.md#use-it-on-several-devices); there is
   no merge or "keep this one" button anywhere.
 - **Destroy or re-initialize a vault** — covered above, under Settings.
-- **Run an MCP server** — the server your AI tools talk to is the same separate process
-  `npx -y valija mcp` always was; this app never embeds one, and moving your vault re-points every
-  already-connected client's config so that process keeps finding it.
+- **Run an MCP server** — the server your AI tools talk to is still a separate process this app
+  never embeds, launched through the resolved, already-installed `valija` rather than the old
+  `npx -y valija mcp` (CONNECT); moving your vault re-points every already-connected client's config
+  so that process keeps finding it.
 - **Produce a provider-specific artifact** — nothing here talks to ChatGPT's or Claude's API, or any
   network endpoint at all. Import reads a file you already downloaded; nothing is fetched.
 - **Configure anything environment-resolved** — `VALIJA_HOME`, `VALIJA_STATE_HOME`, and

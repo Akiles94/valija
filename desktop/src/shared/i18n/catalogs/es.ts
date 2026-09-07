@@ -86,6 +86,12 @@ export const es: Catalog = {
     forkBody:
       "La bóveda en {vaultPath} recibió cambios de otro dispositivo sin los cambios de este. No se ha fusionado ni eliminado nada; consulta el panel de sincronización para saber qué hacer.",
     goToSync: "Abrir Sincronización y seguridad",
+    autoLockedBanner: "Se bloqueó por inactividad.",
+  },
+
+  nav: {
+    lockIndicatorUnlocked: "Desbloqueada",
+    lockIndicatorLocked: "Bloqueada",
   },
 
   dashboard: {
@@ -144,9 +150,9 @@ export const es: Catalog = {
     step2Body: "Cierra y vuelve a abrir Claude, ChatGPT o Cursor para que detecte el cambio.",
     step3Title: "Pídele que guarde o recuerde algo",
     step3Body:
-      'Dile algo como "recuerda que prefiero TypeScript sobre JavaScript", o usa el comando ' +
-      '"/save-context" para que revise toda la sesión y elija el proyecto, el tipo (decisión, ' +
-      "avance, preferencia…) y las etiquetas por ti. Lo que guarde aparecerá aquí, en el Panel.",
+      'Dile algo como "recuerda que prefiero TypeScript sobre JavaScript". Valija revisará la ' +
+      "sesión y lo guardará por ti, eligiendo el proyecto, el tipo (decisión, avance, " +
+      "preferencia…) y las etiquetas. Lo que guarde aparecerá aquí, en el Panel.",
     pointsAt: "Apunta a {vaultPath}",
     connectButton: "Conectar",
     connectedDetail:
@@ -162,6 +168,14 @@ export const es: Catalog = {
     failureNotInstalled: "{client} no parece estar instalado en este equipo.",
     failureInvalidConfig:
       "El archivo de configuración de {client} no es JSON válido; se dejó sin cambios.",
+    status: {
+      notInstalled: "No conectado",
+      configInvalid: "Configuración ilegible",
+      nodeMissing: "Conectado, pero falta Node.js",
+      vaultNotInitialized: "Conectado — crea tu bóveda",
+      vaultLocked: "Conectado, pero la bóveda está bloqueada",
+      ready: "Listo para usar",
+    },
   },
 
   import: {
@@ -311,6 +325,11 @@ export const es: Catalog = {
     languageSystem: "Seguir el sistema",
     languageEnglish: "English",
     languageSpanish: "Español",
+    autoLock: "Bloqueo automático",
+    autoLockMinutes: "{minutes} min",
+    autoLockNever: "Nunca",
+    autoLockReconnectNote:
+      "Las herramientas conectadas aplican un valor cambiado la próxima vez que las reconectes.",
     vaultAndSync: "Bóveda y sincronización",
     openDiagnostics: "Revisar mi configuración",
     openRelocate: "Mover mi bóveda…",

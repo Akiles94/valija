@@ -24,11 +24,13 @@ export function LockedScreen({
   onUnlocked,
   onUpgradeRequired,
   onOpenSettings,
+  reason,
 }: {
   bridge: ValijaBridge;
   onUnlocked: (result: UnlockSuccess) => void;
   onUpgradeRequired: (credential: UnlockCredential) => void;
   onOpenSettings: () => void;
+  reason?: "idle" | "manual";
 }) {
   const t = useT();
   const errorCopy = useErrorCopy();
@@ -69,6 +71,7 @@ export function LockedScreen({
         {t("common.settings")}
       </button>
       <h1>{t("locked.title")}</h1>
+      {reason === "idle" && <p className="auto-locked-banner">{t("locked.autoLockedBanner")}</p>}
       <form onSubmit={handleSubmit}>
         <label>
           {useRecoveryKey ? t("locked.recoveryKeyLabel") : t("locked.passphraseLabel")}

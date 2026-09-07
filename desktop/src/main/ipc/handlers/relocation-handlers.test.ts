@@ -53,6 +53,7 @@ function makePreferencesStore(): AppPreferencesStore & { written: AppPreferences
     theme: "system",
     language: "system",
     tourSeen: false,
+    autoLockMinutes: 15,
   };
   return {
     written,

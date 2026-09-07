@@ -7,6 +7,7 @@ const PREFS: AppPreferencesMessage = {
   theme: "dark",
   language: "es",
   tourSeen: false,
+  autoLockMinutes: 15,
 };
 
 describe("mergePreferencesWrite", () => {
@@ -15,14 +16,16 @@ describe("mergePreferencesWrite", () => {
       theme: "light",
       language: "es",
       tourSeen: false,
+      autoLockMinutes: 15,
     });
   });
 
-  it("an empty patch round-trips the three writable fields unchanged", () => {
+  it("an empty patch round-trips the four writable fields unchanged", () => {
     expect(mergePreferencesWrite(PREFS, {})).toEqual({
       theme: "dark",
       language: "es",
       tourSeen: false,
+      autoLockMinutes: 15,
     });
   });
 
@@ -31,17 +34,37 @@ describe("mergePreferencesWrite", () => {
       theme: "dark",
       language: "en",
       tourSeen: false,
+      autoLockMinutes: 15,
+    });
+  });
+
+  it("carries a chosen autoLockMinutes through the merge, including disabled (null)", () => {
+    expect(mergePreferencesWrite(PREFS, { autoLockMinutes: null })).toEqual({
+      theme: "dark",
+      language: "es",
+      tourSeen: false,
+      autoLockMinutes: null,
     });
   });
 });
 
 describe("tourSeenWrite", () => {
-  it("sets tourSeen true and preserves theme/language, via markTourSeen", () => {
-    expect(tourSeenWrite(PREFS)).toEqual({ theme: "dark", language: "es", tourSeen: true });
+  it("sets tourSeen true and preserves theme/language/autoLockMinutes, via markTourSeen", () => {
+    expect(tourSeenWrite(PREFS)).toEqual({
+      theme: "dark",
+      language: "es",
+      tourSeen: true,
+      autoLockMinutes: 15,
+    });
   });
 
   it("is idempotent when tourSeen is already true", () => {
     const alreadySeen = { ...PREFS, tourSeen: true };
-    expect(tourSeenWrite(alreadySeen)).toEqual({ theme: "dark", language: "es", tourSeen: true });
+    expect(tourSeenWrite(alreadySeen)).toEqual({
+      theme: "dark",
+      language: "es",
+      tourSeen: true,
+      autoLockMinutes: 15,
+    });
   });
 });

@@ -12,11 +12,22 @@ export function mergePreferencesWrite(
   current: AppPreferencesMessage,
   patch: Partial<PreferencesWriteRequest>,
 ): PreferencesWriteRequest {
-  return { theme: current.theme, language: current.language, tourSeen: current.tourSeen, ...patch };
+  return {
+    theme: current.theme,
+    language: current.language,
+    tourSeen: current.tourSeen,
+    autoLockMinutes: current.autoLockMinutes,
+    ...patch,
+  };
 }
 
 /** The tour's finish handler builds its write from the same policy (Slice 3's `markTourSeen`) the preferences store is tested against, rather than hand-rolling `{ tourSeen: true }`. */
 export function tourSeenWrite(preferences: AppPreferencesMessage): PreferencesWriteRequest {
   const marked = markTourSeen(preferences);
-  return { theme: marked.theme, language: marked.language, tourSeen: marked.tourSeen };
+  return {
+    theme: marked.theme,
+    language: marked.language,
+    tourSeen: marked.tourSeen,
+    autoLockMinutes: preferences.autoLockMinutes,
+  };
 }

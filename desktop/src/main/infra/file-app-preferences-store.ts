@@ -30,6 +30,14 @@ export class FileAppPreferencesStore implements AppPreferencesStore {
         theme: raw.theme ?? DEFAULT_PREFERENCES.theme,
         language: raw.language ?? DEFAULT_PREFERENCES.language,
         tourSeen: raw.tourSeen ?? DEFAULT_PREFERENCES.tourSeen,
+        // `??` would treat an explicit, saved "off" (null) the same as an
+        // absent key — defaulting a disabled TTL back to 15 every read. Only
+        // `undefined` (a file written before CONNECT) falls back to the
+        // default; `null` is a real, persisted choice.
+        autoLockMinutes:
+          raw.autoLockMinutes === undefined
+            ? DEFAULT_PREFERENCES.autoLockMinutes
+            : raw.autoLockMinutes,
       };
     } catch {
       return DEFAULT_PREFERENCES;
@@ -37,14 +45,16 @@ export class FileAppPreferencesStore implements AppPreferencesStore {
   }
 
   write(next: AppPreferences): void {
-    // Exactly the four permitted keys, spelled out — an unknown key added by
+    // Exactly the five permitted keys, spelled out — an unknown key added by
     // hand to `next` is dropped rather than persisted, making §8.4's "exactly
-    // four keys" criterion structural rather than a promise.
+    // N keys" criterion (four, then CONNECT's D5 amendment to five)
+    // structural rather than a promise.
     const toWrite: AppPreferences = {
       vaultPath: next.vaultPath,
       theme: next.theme,
       language: next.language,
       tourSeen: next.tourSeen,
+      autoLockMinutes: next.autoLockMinutes,
     };
     mkdirSync(dirname(this.filePath), { recursive: true });
     const tmp = `${this.filePath}.${process.pid}.tmp`;

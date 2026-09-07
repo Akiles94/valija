@@ -6,6 +6,15 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
 
 ### Added
 
+- **Valija Desktop, CONNECT** — honest connection state and a reliable first run. Connect and
+  `valija install` now write a config entry that launches the installed `valija` directly through
+  `node`, with no per-launch npm fetch (fixes a `CONNECT_TIMEOUT` some users hit on a cold cache);
+  each client card on the Connect screen shows one of six real states instead of a single
+  "Conectado"; a LOCKED/UNLOCKED indicator now lives in the app's nav bar, with a "locked due to
+  inactivity" signal when auto-lock fires; auto-lock's TTL is now configurable from Settings and
+  reaches each connected client's own MCP process; and the onboarding copy no longer tells users to
+  type a nonexistent `/save-context` command. See
+  [`advances/CONNECT/docs.connect.md`](advances/CONNECT/docs.connect.md).
 - **Valija Desktop** — an Electron companion app (`desktop/`, unpublished, not part of the npm
   package) giving the vault a window: browse, search and export context packs; connect Claude Code,
   Claude Desktop and Cursor with one click; import chat history; a bilingual (English/Spanish) UI

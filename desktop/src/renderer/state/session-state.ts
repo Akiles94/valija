@@ -9,7 +9,7 @@ export type SessionState =
   | { phase: "no-vault" }
   | { phase: "creating" }
   | { phase: "kit-pending" }
-  | { phase: "locked" }
+  | { phase: "locked"; reason?: "idle" | "manual" }
   | { phase: "unlocking" }
   | { phase: "upgrade-required" }
   | { phase: "unlocked"; forkNotice?: ForkNotice };
@@ -58,8 +58,14 @@ export function afterMigrationCancelled(): SessionState {
   return { phase: "locked" };
 }
 
-export function afterLock(): SessionState {
-  return { phase: "locked" };
+/**
+ * `reason` distinguishes an explicit `lockNow` press ("manual") from a lock
+ * lazily discovered via `VAULT_LOCKED` ("idle") — never touched at boot
+ * (`afterStatusCheck`'s cold-start locked carries no reason, since the cause
+ * is unknown then).
+ */
+export function afterLock(reason?: "idle" | "manual"): SessionState {
+  return reason === undefined ? { phase: "locked" } : { phase: "locked", reason };
 }
 
 /**

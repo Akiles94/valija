@@ -177,9 +177,16 @@ export interface ImportOutcomeResponse {
   failures: ImportFailureMessage[];
 }
 
+/**
+ * `presence` is a config-only read (never opens `vault.db` or the keychain):
+ * `not-installed` covers both an absent config file and one that simply has
+ * no `mcpServers.valija` entry; `config-invalid` is a config file that isn't
+ * valid JSON. The renderer combines this with `VaultStatus`/`NodeStatus` to
+ * derive the full per-client state (CONNECT, `clientConnectionState`).
+ */
 export interface ToolsStatusEntry {
   client: string;
-  connected: boolean;
+  presence: "not-installed" | "installed" | "config-invalid";
   vaultPath?: string;
 }
 
@@ -213,6 +220,8 @@ export interface AppPreferencesMessage {
   theme: SystemOr<"light" | "dark">;
   language: SystemOr<Language>;
   tourSeen: boolean;
+  /** CONNECT D-D/D5 — minutes of idle auto-lock, or null (disabled). */
+  autoLockMinutes: number | null;
 }
 
 /**
@@ -227,6 +236,7 @@ export interface PreferencesWriteRequest {
   theme: SystemOr<"light" | "dark">;
   language: SystemOr<Language>;
   tourSeen: boolean;
+  autoLockMinutes: number | null;
 }
 
 export interface DialogFileChoiceResponse {

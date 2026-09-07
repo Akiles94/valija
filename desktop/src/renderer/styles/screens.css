@@ -194,8 +194,16 @@
   color: var(--color-text-muted);
   font-size: 0.9rem;
 }
-.connect-tools .client-status.connected {
+.connect-tools .client-status.state-ready {
   color: var(--color-accent);
+}
+.connect-tools .client-status.state-node-missing,
+.connect-tools .client-status.state-vault-locked,
+.connect-tools .client-status.state-vault-not-initialized {
+  color: var(--color-warning);
+}
+.connect-tools .client-status.state-config-invalid {
+  color: var(--color-danger);
 }
 .connect-tools .client-points-at {
   margin: 4px 0 12px;

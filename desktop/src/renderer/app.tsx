@@ -93,7 +93,10 @@ export function App() {
   // Stable for the component's lifetime (setState is stable across renders)
   // — so wrapped screens' own `useEffect(() => {...}, [])` mount-once calls
   // still see one consistent bridge, the same as the raw module singleton.
-  const lockAwareBridge = useMemo(() => withLockDetection(bridge, () => setState(afterLock())), []);
+  const lockAwareBridge = useMemo(
+    () => withLockDetection(bridge, () => setState(afterLock("idle"))),
+    [],
+  );
 
   if (preferences === null) return null; // "checking" — nothing renders yet, no flash of the wrong language
   const prefs = preferences; // narrowed once here, so the closures below never see the null branch
@@ -135,7 +138,7 @@ export function App() {
     const result = await lockAwareBridge.vault.lock();
     if (!result.ok) return;
     setWorkspaceView(resetWorkspaceView());
-    setState(afterLock());
+    setState(afterLock("manual"));
   }
 
   return (
@@ -246,6 +249,7 @@ function Router({
             setState(afterUnlockUpgradeRequired());
           }}
           onOpenSettings={onOpenSettings}
+          {...(state.reason === undefined ? {} : { reason: state.reason })}
         />
       );
 
@@ -283,6 +287,7 @@ function Router({
           onOpenSettings={onOpenSettings}
           onVaultRelocated={onVaultRelocated}
           onLock={onLock}
+          unlocked={state.phase === "unlocked"}
         />
       );
 
@@ -299,6 +304,7 @@ function Workspace({
   onOpenSettings,
   onVaultRelocated,
   onLock,
+  unlocked,
 }: {
   bridge: ValijaBridge;
   view: WorkspaceView;
@@ -306,6 +312,7 @@ function Workspace({
   onOpenSettings: () => void;
   onVaultRelocated: () => void;
   onLock: () => void;
+  unlocked: boolean;
 }) {
   return (
     <div className="workspace">
@@ -314,6 +321,7 @@ function Workspace({
         onNavigate={(screen) => setView({ screen })}
         onOpenSettings={onOpenSettings}
         onLock={onLock}
+        unlocked={unlocked}
       />
       {view.screen === "dashboard" && (
         <DashboardScreen

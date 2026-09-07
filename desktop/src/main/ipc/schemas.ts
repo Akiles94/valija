@@ -83,6 +83,7 @@ export const SCHEMAS = {
     theme: z.enum(["system", "light", "dark"]),
     language: z.enum(["system", "en", "es"]),
     tourSeen: z.boolean(),
+    autoLockMinutes: z.number().int().positive().nullable(),
   }),
   "dialog:chooseImportFile": z.void(),
   "dialog:chooseVaultFolder": z.void(),

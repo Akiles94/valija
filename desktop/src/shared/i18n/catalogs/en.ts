@@ -85,6 +85,12 @@ export const en = {
     forkBody:
       "The vault at {vaultPath} was written to by another device without this one's changes. Nothing has been merged or deleted — see the Sync panel for what to do next.",
     goToSync: "Open Sync & safety",
+    autoLockedBanner: "Locked due to inactivity.",
+  },
+
+  nav: {
+    lockIndicatorUnlocked: "Unlocked",
+    lockIndicatorLocked: "Locked",
   },
 
   dashboard: {
@@ -143,10 +149,9 @@ export const en = {
     step2Body: "Close and reopen Claude, ChatGPT, or Cursor so it picks up the change.",
     step3Title: "Ask it to save or recall something",
     step3Body:
-      'Say something like "remember that I prefer TypeScript over JavaScript," or use the ' +
-      '"/save-context" command to have it review the whole session and pick the project, type ' +
-      "(decision, progress, preference…), and tags for you. Whatever it saves shows up here, on " +
-      "the Dashboard.",
+      'Say something like "remember that I prefer TypeScript over JavaScript." It reviews the ' +
+      "session and saves it for you — picking the project, type (decision, progress, " +
+      "preference…), and tags. Whatever it saves shows up here, on the Dashboard.",
     pointsAt: "Points at {vaultPath}",
     connectButton: "Connect",
     connectedDetail:
@@ -160,6 +165,14 @@ export const en = {
     manualInstructionsCopied: "Copied the manual instructions",
     failureNotInstalled: "{client} doesn't seem to be installed on this machine.",
     failureInvalidConfig: "{client}'s config file isn't valid JSON — it was left untouched.",
+    status: {
+      notInstalled: "Not connected",
+      configInvalid: "Config unreadable",
+      nodeMissing: "Connected, but Node.js is missing",
+      vaultNotInitialized: "Connected — create your vault",
+      vaultLocked: "Connected, but the vault is locked",
+      ready: "Ready to use",
+    },
   },
 
   import: {
@@ -304,6 +317,11 @@ export const en = {
     languageSystem: "Follow system",
     languageEnglish: "English",
     languageSpanish: "Español",
+    autoLock: "Auto-lock",
+    autoLockMinutes: "{minutes} min",
+    autoLockNever: "Never",
+    autoLockReconnectNote:
+      "Connected tools apply a changed value the next time you reconnect them.",
     vaultAndSync: "Vault & sync",
     openDiagnostics: "Check my setup",
     openRelocate: "Move my vault…",

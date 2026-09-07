@@ -21,3 +21,13 @@ export function isIdleExpired(lastActivity: Date, now: Date, ttlMinutes: number)
   const elapsedMinutes = (now.getTime() - lastActivity.getTime()) / 60_000;
   return elapsedMinutes >= ttlMinutes;
 }
+
+/**
+ * `parseAutoLockTtl`'s round-trip pair (CONNECT D-D) — formats a chosen TTL
+ * for a client's `env.VALIJA_AUTOLOCK_MINUTES`, exactly like `VALIJA_HOME` is
+ * written today. `null` (disabled) becomes `"off"`, never `"0"`, so a reader
+ * never has to special-case a bare zero.
+ */
+export function formatAutoLockMinutes(ttl: number | null): string {
+  return ttl === null ? "off" : String(ttl);
+}

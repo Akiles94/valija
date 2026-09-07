@@ -1,17 +1,19 @@
 import { useT } from "../state/i18n-context.js";
 import type { WorkspaceView } from "../state/workspace-nav.js";
 
-/** The four top-level destinations inside the unlocked workspace; project/pack-preview/relocate-vault/import/diagnostics are drill-downs, reached from Dashboard/Sync. The gear (Settings, §4.8 step 37) and the lock button are reachable from every one of them. */
+/** The four top-level destinations inside the unlocked workspace; project/pack-preview/relocate-vault/import/diagnostics are drill-downs, reached from Dashboard/Sync. The gear (Settings, §4.8 step 37), the lock button, and the lock-state indicator (D-B) are reachable from every one of them. */
 export function NavBar({
   active,
   onNavigate,
   onOpenSettings,
   onLock,
+  unlocked,
 }: {
   active: WorkspaceView["screen"];
   onNavigate: (screen: "dashboard" | "search" | "connect-tools" | "sync") => void;
   onOpenSettings: () => void;
   onLock: () => void;
+  unlocked: boolean;
 }) {
   const t = useT();
   return (
@@ -44,6 +46,9 @@ export function NavBar({
       >
         {t("sync.title")}
       </button>
+      <span className={unlocked ? "lock-indicator unlocked" : "lock-indicator locked"}>
+        {t(unlocked ? "nav.lockIndicatorUnlocked" : "nav.lockIndicatorLocked")}
+      </span>
       <button type="button" className="lock-button" onClick={onLock}>
         {t("common.lockNow")}
       </button>

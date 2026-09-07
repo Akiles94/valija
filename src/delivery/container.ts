@@ -50,7 +50,11 @@ export interface Container {
   importConversations: ImportConversations;
 }
 
-export function buildContainer(options?: { vaultRoot?: string }): Container {
+export function buildContainer(options?: {
+  vaultRoot?: string;
+  /** CONNECT D5 — the desktop app's chosen TTL, overriding the env parse so its Settings toggle actually reaches SessionGuard. CLI/MCP pass nothing and keep today's env-only behaviour. */
+  autoLockMinutes?: number | null;
+}): Container {
   const paths = resolveVaultPaths(options?.vaultRoot);
   const store = new FileVaultStore(paths, ulidIds, systemClock);
   const crypto = new Argon2VaultCrypto();
@@ -58,7 +62,10 @@ export function buildContainer(options?: { vaultRoot?: string }): Container {
   const folder = new FileVaultFolder(paths);
   const mover = new FileVaultMover();
   const deviceIdentity = new FileDeviceIdentity(resolveStatePaths(), ulidIds);
-  const ttlMinutes = parseAutoLockTtl(process.env.VALIJA_AUTOLOCK_MINUTES);
+  const ttlMinutes =
+    options?.autoLockMinutes !== undefined
+      ? options.autoLockMinutes
+      : parseAutoLockTtl(process.env.VALIJA_AUTOLOCK_MINUTES);
   const guard = new SessionGuard(deviceIdentity, keychain, systemClock, ttlMinutes);
   const sessions = new SqliteVaultSessions(
     paths,

@@ -16,6 +16,7 @@ const PREFS = (tourSeen: boolean): AppPreferencesMessage => ({
   theme: "system",
   language: "system",
   tourSeen,
+  autoLockMinutes: 15,
 });
 
 const LOCKED: SessionState = { phase: "locked" };

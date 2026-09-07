@@ -1,11 +1,21 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { CLIENTS, clientConfigPath } from "../../../../../src/delivery/cli/installer.js";
+import { ensureValijaInstalled } from "../../../../../src/delivery/cli/mcp-launch.js";
 import type { Container } from "../../../../../src/delivery/container.js";
 import type { NodeProbe } from "../../application/ports/node-probe.js";
 import { createToolsHandlers } from "./tools-handlers.js";
+
+// `installIntoClient`/`ensureValijaInstalled` both go through mcp-launch.ts,
+// which otherwise shells out to real `npm` — including, on ensure, a real
+// `npm i -g valija` on a machine that doesn't have it. Stubbed so this suite
+// never touches the network or the machine's global npm prefix (Slice 4).
+vi.mock("../../../../../src/delivery/cli/mcp-launch.js", () => ({
+  ensureValijaInstalled: vi.fn(),
+  resolveMcpLaunch: () => ({ command: "node", args: ["/fake/valija/dist/program.js", "mcp"] }),
+}));
 
 const tmpHome = mkdtempSync(join(tmpdir(), "valija-tools-home-"));
 const originalHome = process.env.HOME;
@@ -27,6 +37,19 @@ function fakeNodeProbe(result: { nodeRunnable: boolean; npmRunnable: boolean }):
   return { check: async () => result };
 }
 
+function fakePreferencesStore(autoLockMinutes: number | null = 15) {
+  return {
+    read: () => ({
+      vaultPath: null,
+      theme: "system" as const,
+      language: "system" as const,
+      tourSeen: false,
+      autoLockMinutes,
+    }),
+    write: () => {},
+  };
+}
+
 /** clientConfigPath's directory (e.g. ~/.cursor/) may not exist yet in a fresh temp HOME. */
 function writeRawClientConfig(configPath: string, content: string): void {
   mkdirSync(dirname(configPath), { recursive: true });
@@ -38,23 +61,26 @@ describe("tools-handlers", () => {
     rmSync(tmpHome, { recursive: true, force: true });
   });
 
-  it("tools:status reports every client as not connected before anything is installed", () => {
+  it("tools:status reports every client as not-installed before anything is installed", () => {
     const handlers = createToolsHandlers(
       () => fakeContainer("/tmp/vault"),
       fakeNodeProbe({ nodeRunnable: true, npmRunnable: true }),
+      fakePreferencesStore(),
     );
     const status = handlers["tools:status"]();
     expect(status).toHaveLength(CLIENTS.length);
     for (const entry of status) {
-      expect(entry.connected).toBe(false);
+      expect(entry.presence).toBe("not-installed");
       expect(entry.vaultPath).toBeUndefined();
     }
   });
 
   it("tools:connect writes the current vault root, and tools:status then reports it", () => {
+    vi.mocked(ensureValijaInstalled).mockClear();
     const handlers = createToolsHandlers(
       () => fakeContainer("/tmp/my-vault"),
       fakeNodeProbe({ nodeRunnable: true, npmRunnable: true }),
+      fakePreferencesStore(),
     );
     const connected = handlers["tools:connect"]({ client: "cursor" });
     expect(connected.ok).toBe(true);
@@ -62,17 +88,61 @@ describe("tools-handlers", () => {
       expect(connected.value.outcome).toBe("connected");
       expect(connected.value.configPath).toBe(clientConfigPath("cursor"));
     }
+    expect(ensureValijaInstalled).toHaveBeenCalled();
 
     const status = handlers["tools:status"]();
     const cursor = status.find((s) => s.client === "cursor");
-    expect(cursor?.connected).toBe(true);
+    expect(cursor?.presence).toBe("installed");
     expect(cursor?.vaultPath).toBe("/tmp/my-vault");
+  });
+
+  it("tools:connect falls back to the manual snippet (D4) when ensureValijaInstalled cannot install valija", () => {
+    vi.mocked(ensureValijaInstalled).mockImplementationOnce(() => {
+      throw new Error("npm install failed");
+    });
+    const handlers = createToolsHandlers(
+      () => fakeContainer("/tmp/vault"),
+      fakeNodeProbe({ nodeRunnable: true, npmRunnable: true }),
+      fakePreferencesStore(),
+    );
+    const result = handlers["tools:connect"]({ client: "cursor" });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.outcome).toBe("configUnreadable");
+      expect(result.value.manualSnippet).toContain("mcpServers");
+      expect(result.value.manualSnippet).not.toContain("npm install failed");
+    }
+  });
+
+  it("tools:connect writes the current autoLockMinutes preference into the client's env (CONNECT D-D/D-F)", () => {
+    const handlers = createToolsHandlers(
+      () => fakeContainer("/tmp/vault"),
+      fakeNodeProbe({ nodeRunnable: true, npmRunnable: true }),
+      fakePreferencesStore(30),
+    );
+    const result = handlers["tools:connect"]({ client: "cursor" });
+    expect(result.ok).toBe(true);
+    const written = JSON.parse(readFileSync(clientConfigPath("cursor"), "utf8"));
+    expect(written.mcpServers.valija.env.VALIJA_AUTOLOCK_MINUTES).toBe("30");
+  });
+
+  it("tools:status reports config-invalid for a client whose config isn't valid JSON", () => {
+    writeRawClientConfig(clientConfigPath("cursor"), "{ not valid json");
+    const handlers = createToolsHandlers(
+      () => fakeContainer("/tmp/vault"),
+      fakeNodeProbe({ nodeRunnable: true, npmRunnable: true }),
+      fakePreferencesStore(),
+    );
+    const status = handlers["tools:status"]();
+    const cursor = status.find((s) => s.client === "cursor");
+    expect(cursor?.presence).toBe("config-invalid");
   });
 
   it("tools:connect refuses an unknown client with a typed error code, not a thrown exception", () => {
     const handlers = createToolsHandlers(
       () => fakeContainer("/tmp/vault"),
       fakeNodeProbe({ nodeRunnable: true, npmRunnable: true }),
+      fakePreferencesStore(),
     );
     const result = handlers["tools:connect"]({ client: "not-a-real-client" });
     expect(result.ok).toBe(false);
@@ -84,6 +154,7 @@ describe("tools-handlers", () => {
     const handlers = createToolsHandlers(
       () => fakeContainer("/tmp/vault"),
       fakeNodeProbe({ nodeRunnable: true, npmRunnable: true }),
+      fakePreferencesStore(),
     );
 
     const result = handlers["tools:connect"]({ client: "cursor" });
@@ -102,6 +173,7 @@ describe("tools-handlers", () => {
     const handlers = createToolsHandlers(
       () => container,
       fakeNodeProbe({ nodeRunnable: true, npmRunnable: true }),
+      fakePreferencesStore(),
     );
     // fakeContainer only exposes `paths` — a keychain or vault-db read would
     // throw against this container, so a clean result here proves neither happened.
@@ -112,6 +184,7 @@ describe("tools-handlers", () => {
     const handlers = createToolsHandlers(
       () => fakeContainer("/tmp/vault"),
       fakeNodeProbe({ nodeRunnable: false, npmRunnable: true }),
+      fakePreferencesStore(),
     );
     const status = await handlers["tools:nodeStatus"]();
     expect(status).toEqual({ nodeRunnable: false, npmRunnable: true });

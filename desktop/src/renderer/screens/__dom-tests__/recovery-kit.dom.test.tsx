@@ -56,6 +56,7 @@ function fakeBridge(kitText: string | null): ValijaBridge {
         theme: "system",
         language: "en",
         tourSeen: false,
+        autoLockMinutes: 15,
       }),
       write: vi.fn(),
     },
@@ -69,7 +70,13 @@ const expectedKitText = renderRecoveryKit(manifest.vaultId, manifest.keyHex, man
 async function renderScreen(bridge: ValijaBridge, onAcknowledged = vi.fn()) {
   render(
     <I18nProvider
-      preferences={{ vaultPath: null, theme: "system", language: "en", tourSeen: false }}
+      preferences={{
+        vaultPath: null,
+        theme: "system",
+        language: "en",
+        tourSeen: false,
+        autoLockMinutes: 15,
+      }}
     >
       <RecoveryKitScreen bridge={bridge} onAcknowledged={onAcknowledged} />
     </I18nProvider>,
@@ -88,7 +95,13 @@ async function renderScreen(bridge: ValijaBridge, onAcknowledged = vi.fn()) {
 async function renderScreenWithNoKit(bridge: ValijaBridge, onAcknowledged = vi.fn()) {
   render(
     <I18nProvider
-      preferences={{ vaultPath: null, theme: "system", language: "en", tourSeen: false }}
+      preferences={{
+        vaultPath: null,
+        theme: "system",
+        language: "en",
+        tourSeen: false,
+        autoLockMinutes: 15,
+      }}
     >
       <RecoveryKitScreen bridge={bridge} onAcknowledged={onAcknowledged} />
     </I18nProvider>,

@@ -28,13 +28,14 @@ describe("FileAppPreferencesStore", () => {
     expect(store.read()).toEqual(DEFAULT_PREFERENCES);
   });
 
-  it("round-trips a write through read with exactly the four keys", () => {
+  it("round-trips a write through read with exactly the five keys", () => {
     const store = new FileAppPreferencesStore(dir);
     const written = {
       vaultPath: "/Users/oscar/Dropbox/valija",
       theme: "dark" as const,
       language: "es" as const,
       tourSeen: true,
+      autoLockMinutes: 30,
     };
     store.write(written);
     expect(store.read()).toEqual(written);
@@ -47,7 +48,28 @@ describe("FileAppPreferencesStore", () => {
       lastProjectViewed: "alpha",
     } as AppPreferences);
     const onDisk = JSON.parse(readFileSync(join(dir, "preferences.json"), "utf8"));
-    expect(Object.keys(onDisk).sort()).toEqual(["language", "theme", "tourSeen", "vaultPath"]);
+    expect(Object.keys(onDisk).sort()).toEqual([
+      "autoLockMinutes",
+      "language",
+      "theme",
+      "tourSeen",
+      "vaultPath",
+    ]);
+  });
+
+  it("defaults autoLockMinutes to 15 for a file written before CONNECT (the key absent)", () => {
+    writeFileSync(
+      join(dir, "preferences.json"),
+      JSON.stringify({ vaultPath: null, theme: "system", language: "system", tourSeen: false }),
+    );
+    const store = new FileAppPreferencesStore(dir);
+    expect(store.read().autoLockMinutes).toBe(15);
+  });
+
+  it("round-trips an explicit null (disabled), never defaulting it back to 15", () => {
+    const store = new FileAppPreferencesStore(dir);
+    store.write({ ...DEFAULT_PREFERENCES, autoLockMinutes: null });
+    expect(store.read().autoLockMinutes).toBeNull();
   });
 
   it("write is atomic: no .tmp file survives, and the real file always parses", () => {

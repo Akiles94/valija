@@ -1,11 +1,27 @@
 import { useEffect, useState } from "react";
+import type { TranslationKey } from "../../shared/i18n/translate.js";
 import type {
   NodeStatusResponse,
   ToolsConnectResponse,
   ToolsStatusEntry,
+  VaultStatusResponse,
 } from "../../shared/ipc/messages.js";
 import type { ValijaBridge } from "../state/bridge.js";
+import {
+  type ClientConnectionState,
+  clientConnectionState,
+} from "../state/client-connection-state.js";
+import { wireFocusRefresh } from "../state/focus-refresh.js";
 import { useT } from "../state/i18n-context.js";
+
+const STATUS_LABEL_KEY: Record<ClientConnectionState, TranslationKey> = {
+  "not-installed": "connect.status.notInstalled",
+  "config-invalid": "connect.status.configInvalid",
+  "node-missing": "connect.status.nodeMissing",
+  "vault-not-initialized": "connect.status.vaultNotInitialized",
+  "vault-locked": "connect.status.vaultLocked",
+  ready: "connect.status.ready",
+};
 
 /**
  * §9 item 71 — one card per client, `tools:status`'s own connected/not-connected
@@ -17,6 +33,7 @@ export function ConnectToolsScreen({ bridge }: { bridge: ValijaBridge }) {
   const t = useT();
   const [entries, setEntries] = useState<ToolsStatusEntry[] | null>(null);
   const [nodeStatus, setNodeStatus] = useState<NodeStatusResponse | null>(null);
+  const [vaultStatus, setVaultStatus] = useState<VaultStatusResponse | null>(null);
   const [results, setResults] = useState<Record<string, ToolsConnectResponse>>({});
   const [connecting, setConnecting] = useState<string | null>(null);
   const [copiedFor, setCopiedFor] = useState<string | null>(null);
@@ -25,14 +42,23 @@ export function ConnectToolsScreen({ bridge }: { bridge: ValijaBridge }) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: bridge is a stable module-scoped singleton, not reactive state
   useEffect(() => {
     let cancelled = false;
-    bridge.tools.status().then((v) => {
-      if (!cancelled) setEntries(v);
-    });
-    bridge.tools.nodeStatus().then((v) => {
-      if (!cancelled) setNodeStatus(v);
-    });
+    function load() {
+      bridge.tools.status().then((v) => {
+        if (!cancelled) setEntries(v);
+      });
+      bridge.tools.nodeStatus().then((v) => {
+        if (!cancelled) setNodeStatus(v);
+      });
+      bridge.vault.status().then((result) => {
+        if (!cancelled && result.ok) setVaultStatus(result.value);
+      });
+    }
+    load();
+    // No setInterval anywhere — refreshes on mount and on window focus only.
+    const unwireFocus = wireFocusRefresh(window, load);
     return () => {
       cancelled = true;
+      unwireFocus();
     };
   }, []);
 
@@ -124,62 +150,63 @@ export function ConnectToolsScreen({ bridge }: { bridge: ValijaBridge }) {
 
       {entries !== null && (
         <ul className="client-cards">
-          {entries.map((entry) => (
-            <li key={entry.client} className="client-card">
-              <span className="client-name">{entry.client}</span>
-              <span className="client-status">
-                {entry.connected ? t("common.connected") : t("common.notConnected")}
-              </span>
-              {entry.connected && entry.vaultPath !== undefined && (
-                <p className="client-points-at">
-                  {t("connect.pointsAt", { vaultPath: entry.vaultPath })}
-                </p>
-              )}
-
-              <button
-                type="button"
-                onClick={() => void handleConnect(entry.client)}
-                disabled={connecting === entry.client}
-              >
-                {t("connect.connectButton")}
-              </button>
-
-              {results[entry.client]?.outcome === "connected" && (
-                <p className="connect-success">
-                  {results[entry.client]?.backupPath === undefined
-                    ? t("connect.connectedDetailNoBackup", {
-                        configPath: results[entry.client]?.configPath ?? "",
-                        client: entry.client,
-                      })
-                    : t("connect.connectedDetail", {
-                        configPath: results[entry.client]?.configPath ?? "",
-                        backupPath: results[entry.client]?.backupPath ?? "",
-                        client: entry.client,
-                      })}
-                </p>
-              )}
-
-              {results[entry.client]?.outcome === "configUnreadable" && (
-                <div className="connect-manual-fallback">
-                  <p className="error">
-                    {t("connect.failureInvalidConfig", { client: entry.client })}
+          {entries.map((entry) => {
+            const state = clientConnectionState(entry, vaultStatus, nodeStatus);
+            return (
+              <li key={entry.client} className="client-card">
+                <span className="client-name">{entry.client}</span>
+                <span className={`client-status state-${state}`}>{t(STATUS_LABEL_KEY[state])}</span>
+                {entry.vaultPath !== undefined && (
+                  <p className="client-points-at">
+                    {t("connect.pointsAt", { vaultPath: entry.vaultPath })}
                   </p>
-                  <p>{t("connect.manualInstructionsIntro")}</p>
-                  <pre>{results[entry.client]?.manualSnippet}</pre>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleCopy(entry.client, results[entry.client]?.manualSnippet ?? "")
-                    }
-                  >
-                    {copiedFor === entry.client
-                      ? t("connect.manualInstructionsCopied")
-                      : t("common.copy")}
-                  </button>
-                </div>
-              )}
-            </li>
-          ))}
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => void handleConnect(entry.client)}
+                  disabled={connecting === entry.client}
+                >
+                  {t("connect.connectButton")}
+                </button>
+
+                {results[entry.client]?.outcome === "connected" && (
+                  <p className="connect-success">
+                    {results[entry.client]?.backupPath === undefined
+                      ? t("connect.connectedDetailNoBackup", {
+                          configPath: results[entry.client]?.configPath ?? "",
+                          client: entry.client,
+                        })
+                      : t("connect.connectedDetail", {
+                          configPath: results[entry.client]?.configPath ?? "",
+                          backupPath: results[entry.client]?.backupPath ?? "",
+                          client: entry.client,
+                        })}
+                  </p>
+                )}
+
+                {results[entry.client]?.outcome === "configUnreadable" && (
+                  <div className="connect-manual-fallback">
+                    <p className="error">
+                      {t("connect.failureInvalidConfig", { client: entry.client })}
+                    </p>
+                    <p>{t("connect.manualInstructionsIntro")}</p>
+                    <pre>{results[entry.client]?.manualSnippet}</pre>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleCopy(entry.client, results[entry.client]?.manualSnippet ?? "")
+                      }
+                    >
+                      {copiedFor === entry.client
+                        ? t("connect.manualInstructionsCopied")
+                        : t("common.copy")}
+                    </button>
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

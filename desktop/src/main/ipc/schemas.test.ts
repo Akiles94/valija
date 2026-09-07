@@ -32,6 +32,7 @@ describe("schema rejection", () => {
         theme: "purple",
         language: "system",
         tourSeen: false,
+        autoLockMinutes: 15,
       }).success,
     ).toBe(false);
   });
@@ -51,6 +52,15 @@ describe("schema rejection", () => {
         theme: "dark",
         language: "es",
         tourSeen: true,
+        autoLockMinutes: 15,
+      }).success,
+    ).toBe(true);
+    expect(
+      SCHEMAS["preferences:write"].safeParse({
+        theme: "dark",
+        language: "es",
+        tourSeen: true,
+        autoLockMinutes: null,
       }).success,
     ).toBe(true);
   });
@@ -60,6 +70,7 @@ describe("schema rejection", () => {
       theme: "dark",
       language: "es",
       tourSeen: true,
+      autoLockMinutes: 15,
       vaultPath: "/anything/an/attacker/wants",
     });
     expect(result.success).toBe(true);

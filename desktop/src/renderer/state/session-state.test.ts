@@ -64,6 +64,17 @@ describe("session-state", () => {
     expect(afterLock()).toEqual({ phase: "locked" });
   });
 
+  it("afterLock carries the reason a manual lock or an idle auto-lock supplies, and none when omitted", () => {
+    expect(afterLock("manual")).toEqual({ phase: "locked", reason: "manual" });
+    expect(afterLock("idle")).toEqual({ phase: "locked", reason: "idle" });
+    expect(afterLock()).not.toHaveProperty("reason");
+  });
+
+  it("afterStatusCheck's cold-start locked carries no reason — the cause is unknown at boot", () => {
+    const locked = afterStatusCheck({ initialized: true, unlocked: false });
+    expect(locked).not.toHaveProperty("reason");
+  });
+
   it("canNavigateAwayFrom is false only during kit-pending — the D-U(a) invariant", () => {
     expect(canNavigateAwayFrom({ phase: "kit-pending" })).toBe(false);
     expect(canNavigateAwayFrom({ phase: "checking" })).toBe(true);

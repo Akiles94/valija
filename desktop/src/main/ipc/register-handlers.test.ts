@@ -23,6 +23,7 @@ function fakeDeps() {
     theme: "system",
     language: "system",
     tourSeen: false,
+    autoLockMinutes: 15,
   };
   const preferencesStore: AppPreferencesStore = {
     read: () => preferences,

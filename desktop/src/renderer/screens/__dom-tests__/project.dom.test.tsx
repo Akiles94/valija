@@ -56,9 +56,13 @@ function fakeBridge(items: ContextItemMessage[]): ValijaBridge {
     import: { list: vi.fn(), preview: vi.fn(), run: vi.fn() },
     tools: { status: vi.fn(), connect: vi.fn(), nodeStatus: vi.fn() },
     preferences: {
-      read: vi
-        .fn()
-        .mockResolvedValue({ vaultPath: null, theme: "system", language: "en", tourSeen: false }),
+      read: vi.fn().mockResolvedValue({
+        vaultPath: null,
+        theme: "system",
+        language: "en",
+        tourSeen: false,
+        autoLockMinutes: 15,
+      }),
       write: vi.fn(),
     },
     dialog: { chooseImportFile: vi.fn(), chooseVaultFolder: vi.fn() },
@@ -74,6 +78,7 @@ function renderScreen(bridge: ValijaBridge, preferences?: Partial<AppPreferences
         theme: "system",
         language: "en",
         tourSeen: false,
+        autoLockMinutes: 15,
         ...preferences,
       }}
     >

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isIdleExpired, parseAutoLockTtl } from "./auto-lock-ttl.js";
+import { formatAutoLockMinutes, isIdleExpired, parseAutoLockTtl } from "./auto-lock-ttl.js";
 
 describe("parseAutoLockTtl", () => {
   it("defaults to 15 minutes when unset or empty", () => {
@@ -23,6 +23,18 @@ describe("parseAutoLockTtl", () => {
     expect(parseAutoLockTtl("-5")).toBe(15);
     expect(parseAutoLockTtl("abc")).toBe(15);
     expect(parseAutoLockTtl("1.5")).toBe(15);
+  });
+});
+
+describe("formatAutoLockMinutes", () => {
+  it("round-trips with parseAutoLockTtl for a chosen interval", () => {
+    expect(formatAutoLockMinutes(15)).toBe("15");
+    expect(parseAutoLockTtl(formatAutoLockMinutes(15))).toBe(15);
+  });
+
+  it("formats disabled as 'off', never a bare zero, and round-trips", () => {
+    expect(formatAutoLockMinutes(null)).toBe("off");
+    expect(parseAutoLockTtl(formatAutoLockMinutes(null))).toBeNull();
   });
 });
 

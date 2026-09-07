@@ -26,11 +26,23 @@ if (!gotLock) {
     const preferences = preferencesStore.read();
     const vaultRoot = resolveVaultRoot(process.env, preferences);
 
-    let container: Container = buildContainer(vaultRoot === undefined ? {} : { vaultRoot });
+    // The desktop's own SessionGuard TTL (CONNECT D5) — read once at launch,
+    // then kept alongside `container` so a relocation rebuild never resets it
+    // back to the env default.
+    let autoLockMinutes = preferences.autoLockMinutes;
+    let container: Container = buildContainer({
+      ...(vaultRoot === undefined ? {} : { vaultRoot }),
+      autoLockMinutes,
+    });
     const getContainer = (): Container => container;
     /** Called after a successful relocation to point every handler at the new root. */
     const rebuildContainer = (newRoot: string): void => {
-      container = buildContainer({ vaultRoot: newRoot });
+      container = buildContainer({ vaultRoot: newRoot, autoLockMinutes });
+    };
+    /** Called when Settings changes the auto-lock TTL, so this session's SessionGuard honours it immediately (CONNECT D5) without waiting for a relocation or restart. */
+    const updateAutoLock = (minutes: number | null): void => {
+      autoLockMinutes = minutes;
+      container = buildContainer({ vaultRoot: container.paths.root, autoLockMinutes });
     };
 
     const filePicker = new ElectronFilePicker();
@@ -40,6 +52,7 @@ if (!gotLock) {
     registerHandlers({
       getContainer,
       rebuildContainer,
+      updateAutoLock,
       preferencesStore,
       filePicker,
       clipboard,

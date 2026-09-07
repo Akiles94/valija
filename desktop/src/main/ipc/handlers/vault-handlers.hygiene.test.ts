@@ -75,7 +75,7 @@ describe("vault-handlers — §8.2: the recovery kit crosses the boundary exactl
 });
 
 describe("vault-handlers — §8.4/§8.2: disk hygiene after a scripted init", () => {
-  it("the preferences file has exactly the four keys, and no file the app wrote contains a raw key", async () => {
+  it("the preferences file has exactly the five keys, and no file the app wrote contains a raw key", async () => {
     const root = mkdtempSync(join(tmpdir(), "valija-hygiene-"));
     try {
       const prefsStore = new FileAppPreferencesStore(root);
@@ -83,6 +83,7 @@ describe("vault-handlers — §8.4/§8.2: disk hygiene after a scripted init", (
         theme: "dark",
         language: "es",
         tourSeen: true,
+        autoLockMinutes: 15,
       });
 
       const handlers = createVaultHandlers(() => makeContainer(root));
@@ -96,6 +97,7 @@ describe("vault-handlers — §8.4/§8.2: disk hygiene after a scripted init", (
 
       const prefsOnDisk = JSON.parse(readFileSync(join(root, "preferences.json"), "utf8"));
       expect(Object.keys(prefsOnDisk).sort()).toEqual([
+        "autoLockMinutes",
         "language",
         "theme",
         "tourSeen",

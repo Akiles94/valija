@@ -155,6 +155,11 @@ label input:not([type="checkbox"]):not([type="radio"]) {
   color: var(--color-warning);
 }
 
+.auto-locked-banner {
+  color: var(--color-warning);
+  margin-bottom: 12px;
+}
+
 .explainer,
 .label {
   color: var(--color-text-muted);
@@ -174,8 +179,25 @@ label input:not([type="checkbox"]):not([type="radio"]) {
   border-bottom: 1px solid var(--color-border);
 }
 
-.nav-bar .lock-button {
+.nav-bar .lock-indicator {
   margin-left: auto;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.nav-bar .lock-indicator.unlocked {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+
+.nav-bar .lock-indicator.locked {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+}
+
+.nav-bar .lock-button {
   border-color: var(--color-danger);
   color: var(--color-danger);
 }

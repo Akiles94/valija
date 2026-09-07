@@ -19,6 +19,8 @@ import { SCHEMAS } from "./schemas.js";
 export interface RegisterHandlersDeps {
   getContainer: () => Container;
   rebuildContainer: (newRoot: string) => void;
+  /** CONNECT D5 — rebuilds the container with a newly-chosen auto-lock TTL; optional so existing callers/tests that don't exercise Settings' TTL control are unaffected. */
+  updateAutoLock?: (minutes: number | null) => void;
   preferencesStore: AppPreferencesStore;
   filePicker: FilePicker;
   clipboard: ClipboardPort;
@@ -41,8 +43,8 @@ function buildHandlerMap(deps: RegisterHandlersDeps): Record<string, AnyHandler>
       deps.filePicker,
     ),
     ...createImportHandlers(deps.getContainer, deps.filePicker),
-    ...createToolsHandlers(deps.getContainer, deps.nodeProbe),
-    ...createPreferencesHandlers(deps.preferencesStore),
+    ...createToolsHandlers(deps.getContainer, deps.nodeProbe, deps.preferencesStore),
+    ...createPreferencesHandlers(deps.preferencesStore, deps.updateAutoLock),
     ...createDialogHandlers(deps.filePicker),
   } as unknown as Record<string, AnyHandler>;
 }
