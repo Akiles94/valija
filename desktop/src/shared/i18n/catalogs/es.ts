@@ -166,8 +166,7 @@ export const es: Catalog = {
     manualInstructionsIntro: "También puedes agregar esto tú mismo:",
     manualInstructionsCopied: "Se copiaron las instrucciones manuales",
     failureNotInstalled: "{client} no parece estar instalado en este equipo.",
-    failureInvalidConfig:
-      "El archivo de configuración de {client} no es JSON válido; se dejó sin cambios.",
+    connectFailed: "No se pudo conectar {client} automáticamente.",
     status: {
       checking: "Comprobando…",
       notInstalled: "No conectado",

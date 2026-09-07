@@ -178,12 +178,18 @@ this app itself — Connect resolves the already-installed `valija` package and 
 that runs it directly through `node`, with no per-launch download: the first time you restart your
 AI tool it connects immediately, even on a machine that has never fetched `valija` before. Connect
 also makes sure `valija` itself is installed globally first, on the machine's usual `npm`, so a
-first-time Connect doesn't leave a config pointing at nothing. Either step still needs a working
-`node`/`npm` on your machine. If the app can't find them, Connect still writes the config (so it's
-ready the moment Node is installed) but tells you plainly that the tool won't be able to reach your
-vault until then, with a short pointer reading "How to install Node.js" — plain text, not a
-clickable link, since this app never opens a URL or makes a network request other than that one
-global-install step.
+first-time Connect doesn't leave a config pointing at nothing. Both steps need a working `node`/`npm`
+on your machine to resolve *where* to point the config — this is different from, and checked
+separately from, whether *your AI tool's own* Node.js works (the warning below). If Valija's own
+attempt to resolve or install `valija` fails — `npm` isn't reachable, or the install itself fails —
+Connect does **not** write a broken config; it falls back to the same manual-instructions block
+described above, so you're never left with an entry pointing at nothing.
+
+Separately, and only once Connect has actually written an entry: if this machine's `node`/`npm`
+still aren't runnable — e.g. Node was uninstalled since — the card tells you plainly that the tool
+won't be able to reach your vault until you install it, with a short pointer reading "How to install
+Node.js" — plain text, not a clickable link, since this app never opens a URL or makes a network
+request other than the one global-install step above.
 
 ---
 

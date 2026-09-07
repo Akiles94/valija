@@ -164,7 +164,12 @@ export const en = {
     manualInstructionsIntro: "You can also add this yourself:",
     manualInstructionsCopied: "Copied the manual instructions",
     failureNotInstalled: "{client} doesn't seem to be installed on this machine.",
-    failureInvalidConfig: "{client}'s config file isn't valid JSON — it was left untouched.",
+    // Shown for every `configUnreadable` outcome — an unreadable config file,
+    // an unresolvable/unfetchable valija install, or anything else
+    // installIntoClient's own catch-all recovers from. Deliberately
+    // cause-neutral rather than naming "invalid JSON" specifically, since
+    // that would misattribute the other cases (CONNECT review W1).
+    connectFailed: "Couldn't connect {client} automatically.",
     status: {
       checking: "Checking…",
       notInstalled: "Not connected",

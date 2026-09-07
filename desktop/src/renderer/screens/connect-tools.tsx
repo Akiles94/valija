@@ -28,7 +28,11 @@ const STATUS_LABEL_KEY: Record<ClientConnectionState, TranslationKey> = {
  * §9 item 71 — one card per client, `tools:status`'s own connected/not-connected
  * read, and `Connect` always writes the app's current vault path (D-R(a)
  * rider 5). §9 item 71a — the Node/npm warning is informational only: it
- * never disables Connect (D-W).
+ * never disables the Connect button (D-W). This is distinct from whether a
+ * press actually succeeds (CONNECT): if Valija's own `npm` resolution or
+ * install fails, the button stays enabled but the press falls back to the
+ * manual-snippet outcome instead of writing a config — see
+ * `connect.connectFailed`.
  */
 export function ConnectToolsScreen({ bridge }: { bridge: ValijaBridge }) {
   const t = useT();
@@ -194,9 +198,7 @@ export function ConnectToolsScreen({ bridge }: { bridge: ValijaBridge }) {
 
                 {results[entry.client]?.outcome === "configUnreadable" && (
                   <div className="connect-manual-fallback">
-                    <p className="error">
-                      {t("connect.failureInvalidConfig", { client: entry.client })}
-                    </p>
+                    <p className="error">{t("connect.connectFailed", { client: entry.client })}</p>
                     <p>{t("connect.manualInstructionsIntro")}</p>
                     <pre>{results[entry.client]?.manualSnippet}</pre>
                     <button

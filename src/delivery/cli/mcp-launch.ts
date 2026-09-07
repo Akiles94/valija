@@ -11,11 +11,16 @@ export interface McpLaunchEntry {
  * `shell: true` is required on Windows — `npm` is installed there only as
  * `npm.cmd`, and `execFileSync` alone cannot resolve a `.cmd` shim without
  * going through the shell (same reasoning as
- * `desktop/src/main/infra/child-process-node-probe.ts`). It also covers a
- * GUI-launched Electron app on macOS/Linux inheriting launchd/init's minimal
- * `PATH`, where a shell profile (nvm/fnm/Volta/Homebrew) is what actually
- * puts `npm` on it. No untrusted input crosses this call — every argument
- * here is a literal.
+ * `desktop/src/main/infra/child-process-node-probe.ts`). No untrusted input
+ * crosses this call — every argument here is a literal.
+ *
+ * This does **not** fix a GUI-launched Electron app on macOS/Linux
+ * inheriting launchd/init's minimal `PATH`: `sh -c`/`cmd /c` inherit the
+ * parent's environment as-is and source no login profile, so an
+ * nvm/fnm/Volta/Homebrew `npm` that only exists once a shell profile runs is
+ * still unreachable here. That case is left to the `null` return below —
+ * the caller falls back to the manual-instructions path rather than
+ * crashing — not silently "handled" by this option.
  */
 function globalNpmPrefix(): string | null {
   try {

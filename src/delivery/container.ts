@@ -52,7 +52,15 @@ export interface Container {
 
 export function buildContainer(options?: {
   vaultRoot?: string;
-  /** CONNECT D5 — the desktop app's chosen TTL, overriding the env parse so its Settings toggle actually reaches SessionGuard. CLI/MCP pass nothing and keep today's env-only behaviour. */
+  /**
+   * CONNECT D5 — the desktop app's chosen TTL, so its Settings toggle
+   * actually reaches SessionGuard. `VALIJA_AUTOLOCK_MINUTES`, when set in
+   * the process's own environment, still wins over it — the same
+   * precedence `resolveVaultRoot` gives `VALIJA_HOME` over a remembered
+   * `vaultPath` — so a terminal session that exported a tighter TTL is
+   * never silently widened back to the persisted default. CLI/MCP pass
+   * nothing and keep today's env-only behaviour.
+   */
   autoLockMinutes?: number | null;
 }): Container {
   const paths = resolveVaultPaths(options?.vaultRoot);
@@ -63,9 +71,11 @@ export function buildContainer(options?: {
   const mover = new FileVaultMover();
   const deviceIdentity = new FileDeviceIdentity(resolveStatePaths(), ulidIds);
   const ttlMinutes =
-    options?.autoLockMinutes !== undefined
-      ? options.autoLockMinutes
-      : parseAutoLockTtl(process.env.VALIJA_AUTOLOCK_MINUTES);
+    process.env.VALIJA_AUTOLOCK_MINUTES !== undefined
+      ? parseAutoLockTtl(process.env.VALIJA_AUTOLOCK_MINUTES)
+      : options?.autoLockMinutes !== undefined
+        ? options.autoLockMinutes
+        : parseAutoLockTtl(undefined);
   const guard = new SessionGuard(deviceIdentity, keychain, systemClock, ttlMinutes);
   const sessions = new SqliteVaultSessions(
     paths,
