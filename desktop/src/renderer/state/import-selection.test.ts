@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { ImportListingRow } from "../../shared/ipc/messages.js";
-import { allChecked, buildPickSpec, sortListingByDate } from "./import-selection.js";
+import {
+  allChecked,
+  buildPickSpec,
+  countSelection,
+  sortListingByDate,
+} from "./import-selection.js";
 
-function row(index: number, date: string): ImportListingRow {
-  return { index, title: `Row ${index}`, date, messageCount: 2, estimatedChunks: 1 };
+function row(index: number, date: string, estimatedChunks = 1): ImportListingRow {
+  return { index, title: `Row ${index}`, date, messageCount: 2, estimatedChunks };
 }
 
 describe("buildPickSpec", () => {
@@ -28,6 +33,29 @@ describe("allChecked", () => {
 
   it("is empty for an empty listing", () => {
     expect(allChecked([])).toEqual(new Set());
+  });
+});
+
+describe("countSelection", () => {
+  it("returns {0, 0} for an empty selection", () => {
+    const listing = [row(1, "2024-01-01", 3), row(2, "2024-01-02", 5)];
+    expect(countSelection(listing, new Set())).toEqual({ conversationCount: 0, itemCount: 0 });
+  });
+
+  it("sums only the checked rows' estimatedChunks", () => {
+    const listing = [row(1, "2024-01-01", 3), row(2, "2024-01-02", 5), row(3, "2024-01-03", 2)];
+    expect(countSelection(listing, new Set([1, 3]))).toEqual({
+      conversationCount: 2,
+      itemCount: 5,
+    });
+  });
+
+  it("ignores a checked index absent from the listing, never NaN", () => {
+    const listing = [row(1, "2024-01-01", 3)];
+    expect(countSelection(listing, new Set([1, 99]))).toEqual({
+      conversationCount: 1,
+      itemCount: 3,
+    });
   });
 });
 

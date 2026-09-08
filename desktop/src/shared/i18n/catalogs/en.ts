@@ -204,6 +204,17 @@ export const en = {
     perConversationFailure: "{title}: {reason}",
     excludedFromPacksNotice:
       "Imported items are searchable and visible in the project, but they don't appear in context packs.",
+    importing: "Importing {itemCount} items from {conversationCount} conversations…",
+    previewing: "Preparing a preview of {itemCount} items from {conversationCount} conversations…",
+    // Button labels only — the sentences above are too long for a button, and they
+    // are already on screen one line higher, in the status region (D-5, P-D3).
+    importingShort: "Importing…",
+    previewingShort: "Preparing…",
+    // D-10: shown while D-2 = O1 keeps the import on the main process. If the work ever
+    // moves off the main thread (D-2 = O2), delete this key in the same change — a stale
+    // "may stop responding" would be a new lie.
+    mayStopResponding:
+      "This can take a while. The window may stop responding until it finishes — don't close it.",
     busyRetrying: "Another save is in progress — retrying…",
   },
 

@@ -75,6 +75,34 @@ describe("ImportConversations", () => {
     expect(writer.calls).toHaveLength(0);
   });
 
+  it("dry-run with an invalid project name fails fast (D-14/V8) — before ImportItems is ever called", () => {
+    const writer = new RecordingImportItems();
+    const uc = new ImportConversations(
+      reader,
+      registryOf([conv("a", "Alpha", "2024-01-01")]),
+      writer,
+      clock,
+    );
+    const r = uc.execute({ filePath: "x.json", projectName: "Openai 1", all: true, dryRun: true });
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.error.code).toBe("INVALID_PROJECT_NAME");
+    expect(writer.calls).toHaveLength(0);
+  });
+
+  it("import with the same invalid project name still fails the same way (unchanged)", () => {
+    const writer = new RecordingImportItems();
+    const uc = new ImportConversations(
+      reader,
+      registryOf([conv("a", "Alpha", "2024-01-01")]),
+      writer,
+      clock,
+    );
+    const r = uc.execute({ filePath: "x.json", projectName: "Openai 1", all: true });
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.error.code).toBe("INVALID_PROJECT_NAME");
+    expect(writer.calls).toHaveLength(0);
+  });
+
   it("import delegates the chunks to ImportItems in one call", () => {
     const writer = new RecordingImportItems();
     const uc = new ImportConversations(

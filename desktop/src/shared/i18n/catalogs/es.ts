@@ -201,6 +201,13 @@ export const es: Catalog = {
     perConversationFailure: "{title}: {reason}",
     excludedFromPacksNotice:
       "Los elementos importados se pueden buscar y aparecen en el proyecto, pero no forman parte de los paquetes de contexto.",
+    importing: "Importando {itemCount} elementos de {conversationCount} conversaciones…",
+    previewing:
+      "Preparando la vista previa de {itemCount} elementos de {conversationCount} conversaciones…",
+    importingShort: "Importando…",
+    previewingShort: "Preparando…",
+    mayStopResponding:
+      "Esto puede tardar. La ventana puede dejar de responder hasta que termine; no la cierres.",
     busyRetrying: "Hay otro guardado en curso; reintentando…",
   },
 
