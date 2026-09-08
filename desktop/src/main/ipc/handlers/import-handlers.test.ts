@@ -338,4 +338,46 @@ describe("import-handlers", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe("STORAGE_ERROR");
   });
+
+  it("import:list returns STORAGE_ERROR (never throws) when the use case throws (D-9 Option B)", () => {
+    const container = {
+      paths: { root: tmp, header: "", db: "" },
+      importConversations: {
+        execute: vi.fn(() => {
+          throw new Error("something else entirely");
+        }),
+      },
+      // biome-ignore lint/suspicious/noExplicitAny: only importConversations is exercised here
+    } as any as Container;
+
+    const handlers = createImportHandlers(() => container, fakeFilePicker({ "fh-x": "/x" }));
+    const result = handlers["import:list"]({ handle: "fh-x" });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe("STORAGE_ERROR");
+      expect(result.error).not.toHaveProperty("message");
+    }
+  });
+
+  it("import:preview returns STORAGE_ERROR (never throws) when the use case throws (D-9 Option B)", () => {
+    const container = {
+      paths: { root: tmp, header: "", db: "" },
+      importConversations: {
+        execute: vi.fn(() => {
+          throw new Error("something else entirely");
+        }),
+      },
+      // biome-ignore lint/suspicious/noExplicitAny: only importConversations is exercised here
+    } as any as Container;
+
+    const handlers = createImportHandlers(() => container, fakeFilePicker({ "fh-x": "/x" }));
+    const result = handlers["import:preview"]({ handle: "fh-x", projectName: "p" });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe("STORAGE_ERROR");
+      expect(result.error).not.toHaveProperty("message");
+    }
+  });
 });
