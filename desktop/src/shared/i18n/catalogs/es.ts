@@ -330,6 +330,8 @@ export const es: Catalog = {
     autoLockNever: "Nunca",
     autoLockReconnectNote:
       "Las herramientas conectadas aplican un valor cambiado la próxima vez que las reconectes.",
+    autoLockEnvOverrideNote:
+      "Si abriste esta app desde una terminal con VALIJA_AUTOLOCK_MINUTES definida, se usa ese valor en su lugar; revisa Diagnóstico para ver cuál está realmente activo.",
     vaultAndSync: "Bóveda y sincronización",
     openDiagnostics: "Revisar mi configuración",
     openRelocate: "Mover mi bóveda…",

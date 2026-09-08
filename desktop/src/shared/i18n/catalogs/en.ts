@@ -328,6 +328,8 @@ export const en = {
     autoLockNever: "Never",
     autoLockReconnectNote:
       "Connected tools apply a changed value the next time you reconnect them.",
+    autoLockEnvOverrideNote:
+      "If you launched this app from a terminal with VALIJA_AUTOLOCK_MINUTES set, that value is used instead — check Diagnostics for what's actually in effect.",
     vaultAndSync: "Vault & sync",
     openDiagnostics: "Check my setup",
     openRelocate: "Move my vault…",

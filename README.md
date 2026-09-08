@@ -188,6 +188,12 @@ that's CLI-only plumbing.
 | `VALIJA_AUTOLOCK_MINUTES` | `15` | Idle auto-lock timeout in minutes; `0` or `off` disables it. |
 | `VALIJA_STATE_HOME` | `~/.valija-state` | Device-local state (device id, sync bookkeeping, idle timer). Never synced. |
 
+The desktop app has a Settings equivalent for `VALIJA_AUTOLOCK_MINUTES` (5/15/30/60 minutes, or
+"Never"), for the sessions it runs itself. If you launch the desktop app from a terminal that has
+this variable exported, the variable still wins — same precedence as `VALIJA_HOME` above — so a
+terminal session's tighter timeout is never silently widened back to whatever Settings shows. See
+[`docs/gui.md`](docs/gui.md#settings) for the full picture.
+
 ## Security model (short version)
 
 - Everything at rest is ciphertext: SQLCipher whole-database encryption, full-text search index

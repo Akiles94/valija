@@ -277,7 +277,10 @@ since Settings needs no unlocked vault at all. Five sections:
   minutes; disabling it is always a visible, deliberate choice, never a silent one. A chosen value
   applies to this app immediately; any AI tool you've already connected picks it up the next time
   you press **Connect** for it again — this app never rewrites a connected tool's config in the
-  background.
+  background. **If you launch this app from a terminal that has `VALIJA_AUTOLOCK_MINUTES` exported,
+  that value wins over whatever this screen shows** — the same precedence `VALIJA_HOME` has over the
+  relocation wizard's remembered path — so a terminal session's tighter TTL is never silently
+  widened. Diagnostics always shows the TTL actually in effect.
 - **Vault & sync** — shortcuts to the Diagnostics screen and the relocation wizard above (the same
   screens, not a second copy of them); see the Sync panel for the actual folder path and connection
   details. **These two shortcuts only work while your vault is unlocked** — if you're locked out and
@@ -363,18 +366,26 @@ Every one of them only fires when you click its button — nothing is copied aut
   so that process keeps finding it.
 - **Produce a provider-specific artifact** — nothing here talks to ChatGPT's or Claude's API, or any
   network endpoint at all. Import reads a file you already downloaded; nothing is fetched.
-- **Configure anything environment-resolved** — `VALIJA_HOME`, `VALIJA_STATE_HOME`, and
-  `VALIJA_AUTOLOCK_MINUTES` stay shell environment variables, shown read-only in the Sync panel.
+- **Configure anything environment-resolved** — `VALIJA_HOME` and `VALIJA_STATE_HOME` stay shell
+  environment variables, shown read-only in the Sync panel. `VALIJA_AUTOLOCK_MINUTES` is the one
+  exception (CONNECT): it has a Settings control precisely because the MCP subprocess reads it from
+  its own environment, so a UI-only toggle the server never saw would be dishonest — see
+  [Settings](#settings) for the precedence rule between a shell-exported value and the Settings
+  choice.
 - **Support a third language** — English and Spanish only, for now.
 
 **One environment consequence worth stating plainly:** an app launched by double-clicking its icon
 inherits none of your shell's environment variables. If you've set `VALIJA_HOME` in a shell profile,
 this app never sees it — it uses the location the relocation wizard remembered instead (or
-`~/.valija` if you've never moved anything). The same is true of `VALIJA_STATE_HOME` and
-`VALIJA_AUTOLOCK_MINUTES`: if you've overridden either in a shell profile, this app uses their
-defaults instead, which — for `VALIJA_STATE_HOME` specifically — means a different device identity
-than your terminal sessions use. The Sync panel's device and state-folder display is where you'd
-notice this.
+`~/.valija` if you've never moved anything). The same is true of `VALIJA_STATE_HOME`: if you've
+overridden it in a shell profile, this app uses its default instead, meaning a different device
+identity than your terminal sessions use — the Sync panel's device and state-folder display is where
+you'd notice this. **`VALIJA_AUTOLOCK_MINUTES` is different**, and deliberately so: a double-clicked
+launch has no shell env var to lose, so it simply uses whatever you last chose in Settings (default
+15 minutes). The only case where the two can disagree is launching this app *from* a terminal that
+has `VALIJA_AUTOLOCK_MINUTES` exported — there, exactly like `VALIJA_HOME`, the environment variable
+wins over the Settings choice, so a terminal session that tightened the TTL is never silently
+widened back to whatever Settings shows.
 
 ---
 

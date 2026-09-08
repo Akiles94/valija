@@ -113,6 +113,7 @@ export function SettingsScreen({
           {t("settings.autoLockNever")}
         </label>
         <p className="explainer">{t("settings.autoLockReconnectNote")}</p>
+        <p className="explainer">{t("settings.autoLockEnvOverrideNote")}</p>
       </section>
 
       <section>

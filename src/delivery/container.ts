@@ -50,17 +50,31 @@ export interface Container {
   importConversations: ImportConversations;
 }
 
+/**
+ * CONNECT D5's precedence rule, pulled out as a pure function so it's
+ * testable without constructing a real `Container`: `VALIJA_AUTOLOCK_MINUTES`,
+ * when set in the process's own environment, always wins over the desktop's
+ * persisted preference — the same precedence `resolveVaultRoot` gives
+ * `VALIJA_HOME` over a remembered `vaultPath` — so a terminal session that
+ * exported a tighter TTL is never silently widened back to the persisted
+ * default. `optionsAutoLockMinutes` is `undefined` for the CLI/MCP call
+ * site, which keeps today's env-only behaviour unchanged.
+ */
+export function resolveAutoLockTtl(
+  env: { VALIJA_AUTOLOCK_MINUTES?: string },
+  optionsAutoLockMinutes?: number | null,
+): number | null {
+  if (env.VALIJA_AUTOLOCK_MINUTES !== undefined) {
+    return parseAutoLockTtl(env.VALIJA_AUTOLOCK_MINUTES);
+  }
+  return optionsAutoLockMinutes !== undefined
+    ? optionsAutoLockMinutes
+    : parseAutoLockTtl(undefined);
+}
+
 export function buildContainer(options?: {
   vaultRoot?: string;
-  /**
-   * CONNECT D5 — the desktop app's chosen TTL, so its Settings toggle
-   * actually reaches SessionGuard. `VALIJA_AUTOLOCK_MINUTES`, when set in
-   * the process's own environment, still wins over it — the same
-   * precedence `resolveVaultRoot` gives `VALIJA_HOME` over a remembered
-   * `vaultPath` — so a terminal session that exported a tighter TTL is
-   * never silently widened back to the persisted default. CLI/MCP pass
-   * nothing and keep today's env-only behaviour.
-   */
+  /** CONNECT D5 — the desktop app's chosen TTL, so its Settings toggle actually reaches SessionGuard. See `resolveAutoLockTtl` for the precedence rule against `VALIJA_AUTOLOCK_MINUTES`. */
   autoLockMinutes?: number | null;
 }): Container {
   const paths = resolveVaultPaths(options?.vaultRoot);
@@ -70,12 +84,7 @@ export function buildContainer(options?: {
   const folder = new FileVaultFolder(paths);
   const mover = new FileVaultMover();
   const deviceIdentity = new FileDeviceIdentity(resolveStatePaths(), ulidIds);
-  const ttlMinutes =
-    process.env.VALIJA_AUTOLOCK_MINUTES !== undefined
-      ? parseAutoLockTtl(process.env.VALIJA_AUTOLOCK_MINUTES)
-      : options?.autoLockMinutes !== undefined
-        ? options.autoLockMinutes
-        : parseAutoLockTtl(undefined);
+  const ttlMinutes = resolveAutoLockTtl(process.env, options?.autoLockMinutes);
   const guard = new SessionGuard(deviceIdentity, keychain, systemClock, ttlMinutes);
   const sessions = new SqliteVaultSessions(
     paths,
