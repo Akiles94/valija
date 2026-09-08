@@ -215,7 +215,6 @@ export const en = {
     // "may stop responding" would be a new lie.
     mayStopResponding:
       "This can take a while. The window may stop responding until it finishes — don't close it.",
-    busyRetrying: "Another save is in progress — retrying…",
   },
 
   diagnostics: {

@@ -3,13 +3,11 @@ import { en } from "./en.js";
 import { es } from "./es.js";
 
 /**
- * IMPORT-FEEDBACK Slice 1: honest, parameterised progress copy for the three
- * moments (reading, previewing, importing), in both languages, with matching
- * placeholders. The "no retry/another-save mention" and "busyRetrying is
- * gone" assertions land in Slice 3, once its last render is actually
- * removed — asserting them here would fail against Slice 1's own catalogs,
- * which still carry `busyRetrying` on purpose (deleting it earlier breaks
- * `typecheck`, since `TranslationKey` is derived from `en`).
+ * IMPORT-FEEDBACK: honest, parameterised progress copy for the three moments
+ * (reading, previewing, importing), in both languages, with matching
+ * placeholders (Slice 1), and — once Slice 3 removed its last render —
+ * `busyRetrying`'s removal and the V1 "no retry/another-save" promise
+ * (Slice 3).
  */
 describe("import progress copy — placeholder parity and short-label shape", () => {
   for (const [lang, catalog] of [
@@ -30,6 +28,18 @@ describe("import progress copy — placeholder parity and short-label shape", ()
 
     it(`${lang}: mayStopResponding exists`, () => {
       expect(catalog.import.mayStopResponding.length).toBeGreaterThan(0);
+    });
+
+    it(`${lang}: busyRetrying is gone — its last render was removed in Slice 3`, () => {
+      expect(Object.hasOwn(catalog.import, "busyRetrying")).toBe(false);
+    });
+
+    it(`${lang}: no import.* string ever claims another save is in progress (V1)`, () => {
+      for (const value of Object.values(catalog.import)) {
+        if (typeof value !== "string") continue;
+        expect(value).not.toMatch(/another save|otro guardado/i);
+        expect(value).not.toMatch(/retrying|reintentando/i);
+      }
     });
   }
 });

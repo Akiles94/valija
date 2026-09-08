@@ -208,7 +208,6 @@ export const es: Catalog = {
     previewingShort: "Preparando…",
     mayStopResponding:
       "Esto puede tardar. La ventana puede dejar de responder hasta que termine; no la cierres.",
-    busyRetrying: "Hay otro guardado en curso; reintentando…",
   },
 
   diagnostics: {
