@@ -91,6 +91,12 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
     try {
       const chosen = await bridge.dialog.chooseImportFile();
       if (chosen === null) return; // the user pressed Cancel — a silent no-op
+      // Re-check the gate after the dialog resolves: two dialogs requested in
+      // the same task (the OS-buffered double-click D-9 exists for) can both
+      // resolve, and without this a second resolution would overwrite
+      // handle/displayName out from under a listing already in flight for
+      // the first one — file B's name shown over file A's listing.
+      if (workingRef.current !== null) return;
       setHandle(chosen.handle);
       setDisplayName(chosen.displayName);
       await loadListing(chosen.handle, undefined);

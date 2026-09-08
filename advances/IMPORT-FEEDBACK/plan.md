@@ -607,9 +607,16 @@ its own security review (§7's last bullet).
 
 ## Slice 5 — main-process symmetry (D-9 Option B)
 
-**Goal.** `import:list` and `import:preview` can no longer throw across IPC; every throw becomes the
-same `STORAGE_ERROR` code `import:run` already produces. Removes the asymmetry that made V5
-reachable in the first place.
+**Amendment (change-reviewer's first pass, W3, folded in during the fix pass — `f3a27e8`):** shipped
+as `UNREADABLE_FILE`, not `STORAGE_ERROR` as originally planned below. Neither `import:list` nor
+`import:preview` ever writes to the vault, so a throw on either is a read/parse crash on the export
+file, not vault contention — `STORAGE_ERROR`'s "the vault is busy" copy would misattribute the cause.
+`UNREADABLE_FILE` is an existing `ImporterErrorCode` with localized copy in both catalogs already.
+`import:run` keeps `STORAGE_ERROR` for its own busy-retry give-up, where that copy is accurate.
+
+**Goal.** `import:list` and `import:preview` can no longer throw across IPC; every throw becomes a
+typed code, never a raw driver/parser string crossing IPC as a rejection. Removes the asymmetry that
+made V5 reachable in the first place.
 
 **File touched:** `desktop/src/main/ipc/handlers/import-handlers.ts`
 

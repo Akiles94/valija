@@ -1,25 +1,30 @@
-Verdict: FAIL
+Verdict: PASS
 
-# IMPORT-FEEDBACK — change review
+# IMPORT-FEEDBACK — change review (second pass)
 
-Reviewed at `f5ffbd4`, diffed against `0777d4c` (CONNECT's last commit on
-`claude/valija-desktop-launch-strategy-4mwugz`). Six commits: `8e034f5` (the `Approved:` line),
+Reviewed at `f3a27e8` ("fix(IMPORT-FEEDBACK): address change-reviewer's FAIL pass"), on top of
+`f5ffbd4`, diffed against `0777d4c` (CONNECT's last commit on
+`claude/valija-desktop-launch-strategy-4mwugz`). Seven commits: `8e034f5` (the `Approved:` line),
 `c3bb23e` (Slices 0–2), `f012cdf` (Slice 3), `81decda` (Slice 4), `f4c1722` (Slice 5), `f5ffbd4`
-(Slice 6). Every claim below is re-derived from the diff and from the files at HEAD, not from the
-commit messages or the hand-off summary.
+(Slice 6), `f3a27e8` (the fix pass).
+
+Every claim below is re-derived from the diff and from the files at HEAD — not from the commit
+message, not from the hand-off summary. The **whole** §6/§7 checklist was re-checked from scratch,
+not just the fixed items. Two of the fix-pass claims were verified **empirically**, by mutating an
+out-of-repo copy of the tree (`/tmp/.../scratchpad/probe`, `src/` + `desktop/src/` + a symlinked
+`node_modules`) and re-running the DOM suite there; the repo working tree was never modified.
 
 ## Line count
 
 | Category | Lines |
 | --- | --- |
-| Production TS/TSX | **+284 / −95** (plan estimated ~146 TS) |
-| CSS | +60 (plan estimated ~45) |
-| Tests | **+472 / −3** (plan estimated ~340) |
+| Production TS/TSX | **+276 / −82** (plan estimated ~146 TS) |
+| CSS | +67 (plan estimated ~45) |
+| Tests | **+488 / −3** (plan estimated ~340) |
 | Docs (`docs/gui.md`) | +7 |
 
-`import.tsx` is +174/−78 against a plan estimate of "~85 net"; the file went 270 → 367 lines
-(plan said "roughly 340"). Over, but not by a factor that indicates smuggled scope — the file list
-below is exact.
+`import.tsx` is 368 lines (was 270; plan said "roughly 340"). Over the estimate, but the file list
+below is exact and nothing extra is smuggled in.
 
 ## Suites — re-run by me at review time on the working tree
 
@@ -30,10 +35,9 @@ below is exact.
 
 ## File-count check (plan §"Security-sensitive surfaces" item 10)
 
-`git diff --name-only 0777d4c..HEAD -- desktop src` prints exactly the 14 paths plan.md lists
-(7 production, 7 test) — verified path by path. Plus `docs/gui.md` (Slice 6) and
-`advances/IMPORT-FEEDBACK/plan.md` (the `Approved:` line). **No** hit under `src/` other than
-`importers/application/use-cases/import-conversations.use-case.{ts,test.ts}`, **no**
+`git diff --name-only 0777d4c..HEAD` prints exactly the 15 paths plan.md lists (7 production, 7
+test, plus `docs/gui.md`), plus `advances/IMPORT-FEEDBACK/{plan,review}.md`. **No** hit under `src/`
+other than `importers/application/use-cases/import-conversations.use-case.{ts,test.ts}`, **no**
 `desktop/src/preload/`, **no** `desktop/src/shared/ipc/`, **no** `package.json`, **no**
 `src/delivery/mcp/`. Scope is clean.
 
@@ -45,76 +49,82 @@ below is exact.
 
 | # | Criterion | Verdict | Evidence |
 | --- | --- | --- | --- |
-| B1 | Visible in-progress state *before* main begins the synchronous work, **verified manually on Windows with a real large export** | **Not met — not performed** | The mechanism exists: `next-paint.ts:14-23` (double-rAF + task), awaited at `import.tsx:105` and `:165` before every blocking bridge call. But §6's bullet requires the *measurement*, and it was not run (no Windows host, no reproducible freeze in this sandbox). No Oscar deferral exists for it. Disclosed, not hidden — see §5. This is the criterion refined.md §10 calls "the one thing that decides whether the advance landed" |
-| B2 | Both action buttons disabled for the whole run; the pressed button's label reflects the state | **Met** | `import.tsx:346-361` — both carry `disabled={!canSubmit \|\| working !== null}`; `:352` renders `import.previewingShort`, `:359` `import.importingShort` when pressed. `import.dom.test.tsx:132-133` asserts both disabled mid-run, `:139-140` both re-enabled after |
-| B3 | Choosing a file shows the reading state and disables the chooser | **Met** | `import.tsx:104` `beginWork("reading")`, `:187` renders `import.detectingFormat`, `:265` chooser `disabled={working !== null}`. `import.dom.test.tsx:244-245` |
-| B4 | In-progress copy never claims another save is in progress; `busyRetrying` removed from both catalogs; `catalogs.test.ts` parity passes | **Met** | `en.ts` / `es.ts` diffs delete `busyRetrying` and add the five keys with matching placeholders; `import-copy.test.ts:38-40` asserts `Object.hasOwn(...,"busyRetrying") === false` for both, `:42-49` asserts no `import.*` string matches `/another save\|otro guardado/i` or `/retrying\|reintentando/i`. `catalogs.test.ts` untouched and green |
+| B1 | Visible in-progress state *before* main begins the synchronous work, **verified manually on Windows with a real large export** | **Not performed — human gate, still open (§5.1)** | The mechanism is in place and correct: `next-paint.ts:14-23` (double-rAF then a task, no `setInterval`), awaited at `import.tsx:105` and `:165` before every blocking bridge call. But §6's bullet demands the *measurement*, and it cannot be run here (no Windows host, no packaged build target, no reproducible main-process freeze). Not satisfied by source, not hidden — see §5 |
+| B2 | Both action buttons disabled for the whole run; the pressed button's label reflects the state | **Met** | `import.tsx:350-363` — both carry `disabled={!canSubmit \|\| working !== null}`; `:355` renders `import.previewingShort`, `:362` `import.importingShort` when pressed. `import.dom.test.tsx:132-133` (both disabled mid-run), `:139-140` (both re-enabled after) |
+| B3 | Choosing a file shows the reading state and disables the chooser | **Met** | `import.tsx:104` `beginWork("reading")`, `:187` renders `import.detectingFormat`, `:217` chooser `disabled={working !== null}`. `import.dom.test.tsx:252-253` |
+| B4 | In-progress copy never claims another save is in progress; `busyRetrying` removed from both catalogs; `catalogs.test.ts` parity passes | **Met** | `en.ts` / `es.ts` delete `busyRetrying` and add the five keys with matching placeholders; `import-copy.test.ts:33-35` (`Object.hasOwn(...) === false` in both), `:37-44` (no `import.*` string matches `/another save\|otro guardado/i` or `/retrying\|reintentando/i`). Repo-wide grep: `busyRetrying` survives only inside that test's own assertions. `catalogs.test.ts` untouched and green |
 
 ### Result and error (steps 7, 8)
 
 | # | Criterion | Verdict | Evidence |
 | --- | --- | --- | --- |
-| R1 | Result and error appear in the **same region as the action buttons**, not at the top of a page the user has scrolled away from (D-4); region is `aria-live` | **NOT MET** | `aria-live="polite"` is present (`import.tsx:225`). The **placement is wrong**: `.import-status` (`import.tsx:223-262`) is a direct child of `.screen.import`, rendered at line 223 — *before* `stage === "choose"` (`:264`), *before* `stage === "formatOverride"` (`:270`) and *before* the whole `stage === "listed"` block (`:287-363`). The action buttons stayed **inside** `.import-listing`, at `:346-361`. So in the listed stage the file name, conversation count, filter row, sort button, the 320px conversation list, the project picker and the new-project input all sit **between** the status region and the buttons. This is the top-of-screen placement §6 explicitly rules out, and it contradicts the spec's own mockup (refined.md §3, status region *under* the picker, *above* the buttons), D-4 Option A ("immediately above the action buttons"), plan.md Slice 3 step 9 ("`.import-listing` keeps: display name, count, filter, sort, list, project picker… both action buttons and the result block **leave** it… After the listing branch, unconditionally: `<div className="import-status">`… **Then**, for the listed stage only, `<div className="actions">`"), and the code's own CSS comment at `screens.css:278` ("One region for busy, result and error (D-4), **immediately above the actions** — where the user's eyes and cursor already are"). Details and the fix in §6 C1 |
-| R2 | Starting a new run clears the previous run's summary before the new one begins | **Met** | `beginWork` (`import.tsx:75-81`) clears `error`, `resultOutcome`, `resultMode`; called at `:104` and `:164`. `import.dom.test.tsx:189-190` asserts the old summary is gone *and* the new busy line is up while the second run is in flight |
-| R3 | A rejected `bridge.import.*` call leaves the screen usable | **Met** | `try/catch/finally` at `import.tsx:106-127` (loadListing) and `:166-181` (runSelection); `catch { setError(errorCopy(REJECTED_CALL_CODE)); }` with `endWork()` in `finally`. `import.dom.test.tsx:194-205` drives a real rejection and asserts both buttons re-enabled and `.import-status .error` non-null |
-| R4 | A second click while a run is in flight never starts a second run, even when delivered after a freeze | **Met (implementation); test is weaker than it claims** | `workingRef` (`import.tsx:62`) is set synchronously inside `beginWork` (`:76`) and checked at the top of all three entry points (`:90`, `:103`, `:150`), cleared only in `endWork` (`:85`) which is reached from every `finally`. That is P-D4 implemented correctly. `import.dom.test.tsx:207-223` asserts `run` called once — but the second `fireEvent.click` lands on a button React has already rendered `disabled`, so the assertion holds with or without `workingRef`; the test cannot attribute the outcome to the guard. See §6 W2 |
-| R5 | Result block still shows per-conversation failures and `import.excludedFromPacksNotice`, unchanged | **Met** | `import.tsx:247-259` is the old block moved verbatim. `import.dom.test.tsx:274-293` (failures + notice on import) and `:295-302` (no notice on preview) |
+| R1 | Result and error appear in the **same region as the action buttons**, not at the top of a page the user has scrolled away from (D-4); region is `aria-live` | **Met — first pass's C1 is closed** | `.import-status` (`import.tsx:307-346`) now renders **after** all three stage branches (`:216` choose, `:222` formatOverride, `:239-298` listed) and **immediately before** `.actions` (`:348-365`), which was lifted out of `.import-listing`. It is still unconditional, so the "reading" busy state and a `loadListing` error have somewhere to go while `stage` is `"choose"` (proven by DOM case 6, which runs entirely in the choose stage). `aria-live="polite"` at `:309`, `aria-busy` at `:310`. The top-of-screen `<p className="error">` is gone — `import.dom.test.tsx:268` asserts `.screen.import > p.error` is `null`, `:271` asserts `.import-status .error` is not. **Tripwire verified empirically:** I hoisted the region back above the stage branches in the scratch copy — case 7 failed at `import.dom.test.tsx:280` (`region.nextElementSibling` no longer `.actions`). The hardened assertions are real, not decorative |
+| R2 | Starting a new run clears the previous run's summary before the new one begins | **Met** | `beginWork` (`import.tsx:74-81`) clears `error`, `resultOutcome`, `resultMode`; called at `:104` and `:164`. `import.dom.test.tsx:189-190` asserts the old summary is gone *and* the new busy line is up while the second run is in flight |
+| R3 | A rejected `bridge.import.*` call leaves the screen usable | **Met** | `try/catch/finally` at `import.tsx:106-127` (`loadListing`) and `:166-181` (`runSelection`); `catch { setError(errorCopy(REJECTED_CALL_CODE)); }` with `endWork()` in `finally`. `import.dom.test.tsx:194-205` drives a real rejection: both buttons re-enabled, `.import-status .error` present. Main side: `import-handlers.ts:66-72` makes `import:list`/`import:preview` non-throwing (`import-handlers.test.ts:342-382`) |
+| R4 | A second click while a run is in flight never starts a second run, even when the click is delivered after a freeze | **Met — first pass's W2 is closed, and I verified it** | `workingRef` (`import.tsx:62`) is set synchronously in `beginWork` (`:76`), checked at all three entry points (`:90`, `:103`, `:150`), cleared only in `endWork` (`:85`), which every `finally` reaches. Case 5 (`import.dom.test.tsx:207-231`) now dispatches **both** clicks inside one `act()` batch, so React has not yet re-rendered `disabled` when the second handler runs — the ref is the only thing that can block it. **Verified empirically:** deleting the `workingRef` line at `import.tsx:150` in the scratch copy makes case 5 fail with "expected 1 times, but got 2 times". The test is now genuine evidence for the guard |
+| R5 | Result block still shows per-conversation failures and `import.excludedFromPacksNotice`, unchanged | **Met** | `import.tsx:320-345` is the old block, moved verbatim into the region. `import.dom.test.tsx:286-305` (failures + notice on import), `:307-314` (no notice on preview) |
 
 ### Layout (step 3)
 
 | # | Criterion | Verdict | Evidence |
 | --- | --- | --- | --- |
-| L1 | With several hundred conversations, project picker, status region and both buttons reachable without an extreme scroll, default window size, **both languages** | **Not met (unverified, and probably false)** | D-6 is implemented: `screens.css:252-260` gives `.conversation-list` `max-height: 320px; overflow-y: auto`. But plan.md's **"Manual bilingual check (required, not optional)"** was not performed, and R1's placement makes the criterion doubtful rather than merely unverified: with the region at the top and the buttons at the bottom, the listed-stage stack at the default 1100×720 window (`main-window.ts:17-18`; `.screen` padding 24px, `base.css:43-47`) is roughly nav-bar + h1 + explainer + a populated status region (~90–140px, taller in Spanish where both `import.previewing` and `mayStopResponding` wrap) + file name + count + filter row + 320px list + picker + input + actions ≈ 790–840px against ~670px of usable viewport. The region and the buttons are then never on screen together — the exact failure D-4 exists to prevent. This is an estimate, not a measurement; the required manual check is the decider, and it is outstanding |
+| L1 | With several hundred conversations, project picker, status region and both buttons reachable without an extreme scroll, default window size, **both languages** | **Met structurally; the required manual bilingual check is still unperformed (§5.2)** | D-6 is implemented (`screens.css:252-260`: `max-height: 320px; overflow-y: auto`), and with C1 fixed the three elements are now **contiguous** in the DOM: picker + new-project input are the last children of `.import-listing` (`import.tsx:279-296`), then `.import-status` (`:307`), then `.actions` (`:348`). Scrolling to the bottom now puts all three on screen together — the failure mode the first pass predicted is gone. What remains is only the visual/bilingual confirmation at the real default window size (1100×720) with the longer `es` strings, which plan.md marks "required, not optional" and which cannot be run here |
 
 ### Project-name honesty (V8 / Problem 2)
 
 | # | Criterion | Verdict | Evidence |
 | --- | --- | --- | --- |
-| P1 | Previewing with an invalid name fails **at Preview**, with the same localized `INVALID_PROJECT_NAME` message Import would show | **Met** | `import-conversations.use-case.ts:103-109` — `parseProjectName(input.projectName ?? "")` runs after the `list` early-return (`:95-101`) and **before** `selectConversations` (`:111`), so it covers `dry-run` and `import` alike. The renderer already renders `errorCopy(result.error.code)` (`import.tsx:172`) for both paths, so the two show the identical string |
-| P2 | Preview and Import always agree — both succeed or both fail | **Met** | Single guard on the shared path; `ImportItems`' own `parseProjectName` is untouched (defense in depth). Tests: `import-conversations.use-case.test.ts:78-90` (dry-run) and `:92-104` (import) |
-| P3 | `list` mode unaffected | **Met** | The `list` branch returns at `:95-101`, before the new guard. `import:list` (`import-handlers.ts:90-103`) passes no `projectName` and its existing handler tests stay green |
-| P4 | A test exists that fails against today's use case and passes after | **Met** | `import-conversations.use-case.test.ts:78-90`: against `0777d4c` the dry-run branch never called `parseProjectName`, so `execute` returned `ok` — `expect(r.ok).toBe(false)` was red. Re-derived from `git show 0777d4c:src/.../import-conversations.use-case.ts` |
+| P1 | Previewing with an invalid name fails **at Preview**, with the same localized `INVALID_PROJECT_NAME` message Import would show | **Met** | `import-conversations.use-case.ts:103-109` — `parseProjectName(input.projectName ?? "")` runs after the `list` early-return (`:95-101`) and before `selectConversations` (`:111`), so `dry-run` and `import` share one guard. The renderer renders `errorCopy(result.error.code)` for both paths (`import.tsx:172`), so the two show the identical string |
+| P2 | Preview and Import always agree — both succeed or both fail | **Met** | One guard on the shared path; `ImportItems`' own `parseProjectName` untouched (defense in depth). Tests: `import-conversations.use-case.test.ts:78-90` (dry-run) and `:92-108` (import) |
+| P3 | `list` mode unaffected | **Met** | The `list` branch returns at `:95-101`, before the guard. `import:list` (`import-handlers.ts:93-106`) passes no `projectName`; its existing handler tests are untouched and green |
+| P4 | A test exists that fails against today's use case and passes after | **Met** | `import-conversations.use-case.test.ts:78-90`: at `0777d4c` the dry-run branch never called `parseProjectName`, so `execute` returned `ok` and `expect(r.ok).toBe(false)` was red |
 
 ### Cross-cutting
 
 | # | Criterion | Verdict | Evidence |
 | --- | --- | --- | --- |
-| X1 | A test exists that **fails against today's `import.tsx`** and passes after (D-12) | **Met** | Re-derived against `git show 0777d4c:desktop/src/renderer/screens/import.tsx`: case 1 (`/importing 3 items from 1 conversations/`) — old code rendered `import.busyRetrying`, red. Case 2 — same, red. Case 3 (stale summary cleared) — old `runSelection` never cleared `resultOutcome`, red. Case 4 (rejection) — old code had no `try/catch`, red. Case 6 (reading state) — old `loadListing` had no busy state, red. Case 7 — old code rendered `<p className="error">` as a direct child of `.screen.import` and had no `.actions` element, red twice over. Six cases genuinely red. **Correction to the hand-off note:** case 5 was almost certainly *green* against the old code too (the old `setWorking(mode)` already disabled the buttons before the second `fireEvent.click`), so "7 of 9 failed" overstates it. The criterion is still met |
+| X1 | A test exists that **fails against today's `import.tsx`** and passes after (D-12) | **Met — measured, not argued** | I restored `0777d4c`'s `import.tsx`, `en.ts` and `es.ts` into the scratch copy and ran the new DOM file against them: **7 of 9 cases fail** (cases 1–7); only case 8 and the preview-notice case pass. Against HEAD all 9 pass. (Note this also corrects my first pass: with case 5 rewritten, it is now red against the old code too) |
 | X2 | `typecheck && lint && test` green in repo root **and** `desktop/` | **Met** | Re-run by me: 324 and 792 tests, exit 0 on all six commands |
 | X3 | Diff touches no `src/**` except `import-conversations.use-case.{ts,test.ts}`, no `desktop/src/shared/ipc/**`, no preload, no `package.json` | **Met** | See the file-count check above |
-| X4 | `docs/gui.md` describes the three moments | **Met** | `docs/gui.md:206-212` — reading, working with counts + disabled buttons, and the result/failure in the same spot, plus D-10's may-stop-responding warning |
-| X5 | No import semantics changed — same parser resolution, selection, single write, counts, deterministic ids | **Met, with one deliberate ordering change** | Nothing in the write path moved. The new guard changes *which* error wins when an invalid name and a selection error are both true (plan.md's own risk table names this and accepts it), and a programmatic `dry-run` with no `projectName` now returns `INVALID_PROJECT_NAME` instead of a summary. Unreachable from the CLI (`import-command.ts:31-34` requires `-p` whenever a selection flag is present) and from the desktop (`import:preview`/`import:run` always send `projectName`) |
+| X4 | `docs/gui.md` describes the three moments | **Met** | `docs/gui.md:206-212` — reading, working (with counts and disabled buttons), and the result/failure "in that same spot, just above the buttons you pressed", plus D-10's may-stop-responding warning. Note the paragraph's claim about placement is now **true** of the markup, which it was not at `f5ffbd4` |
+| X5 | No import semantics changed — same parser resolution, selection, single write, counts, deterministic ids | **Met, with one deliberate ordering change** | Nothing in the write path moved. The new guard changes *which* error wins when an invalid name and a selection error are both true (plan.md's risk table names and accepts this), and a programmatic `dry-run` with no `projectName` now returns `INVALID_PROJECT_NAME` instead of a summary — unreachable from the CLI (`import-command.ts` requires `-p` whenever a selection flag is present) and from the desktop (`import:preview`/`import:run` always send `projectName`) |
 
 ---
 
 ## 2. Plan conformance
 
-Slices 0, 1, 2, 4, 5 and 6 match plan.md as written, including the details the plan flagged as traps:
-`import:list`/`import:preview` stay **synchronous** (`import-handlers.ts:90`, `:105` — no `async`, so
-`import-handlers.test.ts`'s existing non-`await` calls still pass); `waitForNextPaint` uses no
-`setInterval` and keeps its `setTimeout` fallback for the `node` environment (`next-paint.ts:16-19`);
-`scrollIntoView` is optional-called (`import.tsx:209`) so jsdom does not throw; `busyRetrying` is
-deleted in the same commit as its last render; the CSS section lands after `/* connect-tools.tsx */`
-and before `/* diagnostics.tsx */` per that file's per-screen ordering (`screens.css:79`, `:248`,
-`:308`).
+Slices 0–6 match plan.md, including every trap the plan flagged: `import:list`/`import:preview`
+stay **synchronous** (`import-handlers.ts:93`, `:108` — no `async`, so the existing non-`await`
+handler tests still pass); `waitForNextPaint` uses no `setInterval` and keeps its `setTimeout`
+fallback for the `node` environment (`next-paint.ts:16-19`); `scrollIntoView` is optional-called
+(`import.tsx:208`) so jsdom does not throw; `busyRetrying` was deleted in the same commit as its
+last render; the CSS lands in its per-screen slot between `/* connect-tools.tsx */` and
+`/* diagnostics.tsx */` (`screens.css:248`, `:313`). Slice 3 step 9's JSX order — the thing the
+first pass failed on — is now followed exactly.
 
-Deviations:
+Deviations, all judged safe:
 
-- **D1 (material, unjustified) — Slice 3 step 9's JSX order was not followed.** The plan moved the
-  action buttons out of `.import-listing` into a sibling `.actions` row rendered *after* the status
-  region. The implementation kept `.actions` inside `.import-listing` and hoisted the status region
-  above every stage branch instead. "Mounted unconditionally at screen level" does not require "at
-  the top of the screen" — rendering the region *after* the three stage branches satisfies both the
-  live-region-mounted-early requirement and the "reading busy state / `loadListing` error while
-  `stage` is still `choose`" requirement the hand-off cites, while keeping D-4. This is criterion R1
-  above and Critical C1 below. Note that the *previous* code put the result block immediately after
-  the buttons; for the result specifically, the new position is further from the user's cursor than
-  the code being replaced.
-- **D2 (benign) — the D-7 reset "when a new file is chosen"** happens inside `loadListing`'s
-  `beginWork("reading")` (`import.tsx:104`) rather than explicitly in `handleChooseFile`. Equivalent
-  and less duplicative; no objection.
-- **D3 (benign) — the `biome-ignore` on the scroll effect** was dropped because all three deps are
-  listed (`import.tsx:210`). Lint is green. Cleaner than the plan.
+- **D1 (justified) — Slice 5 returns `UNREADABLE_FILE`, not `STORAGE_ERROR`.** `refined.md` D-9
+  Option B and `plan.md` Slice 5 both say "mirroring `import:run`'s catch-all → `STORAGE_ERROR`".
+  `import-handlers.ts:66-72` returns `importerErr("UNREADABLE_FILE", …)` instead. This is a
+  deviation from the letter of the approved plan, made in response to my first pass's W3. It is
+  safe and better: neither channel writes to the vault (`import:list` lists;
+  `import:preview` returns before `importItems.execute` — `import-conversations.use-case.ts:120-128`),
+  `getContainer` is `() => container` and cannot throw (`main/index.ts:37`), so the only reachable
+  throw is a read/parse/chunk crash on the export file. `UNREADABLE_FILE` is an existing
+  `ImporterErrorCode` (`src/importers/domain/errors.ts:8`) with localized copy in both catalogs
+  (`en.ts:376`, `es.ts:375`). §6 names no code for this path, so no criterion is affected. **But
+  refined.md D-9 B and plan.md Slice 5 now read as stale** — see W3 below.
+- **D2 (benign)** — the D-7 reset "when a new file is chosen" happens inside `loadListing`'s
+  `beginWork("reading")` (`import.tsx:104`) rather than in `handleChooseFile`. Equivalent, less
+  duplicative.
+- **D3 (benign)** — the planned `biome-ignore` on the scroll effect was dropped because all three
+  deps are listed (`import.tsx:209`). Lint green. Cleaner than the plan.
+- **D4 (process, not code) — P-D1 was never recorded.** The plan required the orchestrator to state,
+  before Slice 1, whether the work lands on `feat/import-feedback` or directly on the session
+  branch. It landed on `claude/valija-desktop-launch-strategy-4mwugz` (the same branch CONNECT used),
+  which is IMPORT-ENTRY's precedent and the plan's own listed alternative — but nothing in the repo
+  records the choice. Cosmetic; noted so it is not silently repeated.
 
 ---
 
@@ -123,10 +133,10 @@ Deviations:
 | Gate | Result |
 | --- | --- |
 | Security surface not weakened | **PASS** — see §4 |
-| Tests present for new behaviour; suite passing | **PASS** — every new production unit has a test; both suites green, re-run by me |
-| Advance ritual evidenced | **PASS** — `refined.md` (Gate R resolved 2026-09-04, amendment folded in the same day) → `plan.md` line 1 `Approved: Oscar 2026-09-08`, added in its own commit `8e034f5` before any `src/**` or `desktop/**` edit (`c3bb23e` follows it) → this `review.md` |
-| Naming, clean-architecture placement, no bare files at a layer root | **PASS** — `src/` gains **no** file; the one `src/` change is 7 lines inside an existing `application/use-cases/` file. Every new desktop file lands in an existing kind-named folder: `renderer/state/next-paint.ts{,.test.ts}`, `renderer/screens/__dom-tests__/import.dom.test.tsx`, `shared/i18n/catalogs/import-copy.test.ts`. `desktop/src/renderer/` is a presentation tree partitioned by kind, not a `domain/application/infra` layer root, so CLAUDE.md's bare-file rule does not bite. `countSelection` extends `import-selection.ts` rather than adding a file — correct, it is the same kind of thing (a pure fact about the current selection). Verb-first export names (`waitForNextPaint`, `countSelection`) match `wireFocusRefresh` / `buildPickSpec` / `sortListingByDate`. Class names are kebab-case and scoped under `.import`; `.actions` is reused from `base.css:168-172` rather than reinvented. `next-paint.ts` living in `state/` is a stretch of that folder's name, but it is P-D5's explicitly reasoned, Oscar-approved choice with `focus-refresh.ts` as precedent — no action |
-| Every acceptance criterion met | **FAIL** — R1 not met (§6 C1); B1 and L1 not performed (§5) |
+| Tests present for new behaviour; suite passing | **PASS** — every new production unit has a test; both suites green, re-run by me; the two tests the first pass called weak (DOM 5, DOM 7) are now provably sensitive, verified by mutation |
+| Advance ritual evidenced | **PASS** — `refined.md` (Gate R resolved 2026-09-04, amendment folded in the same day) → `plan.md` line 1 `Approved: Oscar 2026-09-08`, added in its own commit `8e034f5` **before** any `src/**`/`desktop/**` edit (`c3bb23e` is the next commit) → this `review.md` |
+| Naming, clean-architecture placement, no bare files at a layer root | **PASS** — `src/` gains **no** file; the one `src/` change is a 7-line guard inside an existing `application/use-cases/` file. Every new desktop file lands in an existing kind-named folder (`renderer/state/next-paint.ts{,.test.ts}`, `renderer/screens/__dom-tests__/import.dom.test.tsx`, `shared/i18n/catalogs/import-copy.test.ts`); `desktop/src/renderer/` is a presentation tree partitioned by kind, not a `domain/application/infra` layer root, so CLAUDE.md's bare-file rule does not bite. `countSelection` extends `import-selection.ts` rather than adding a file — correct, it is the same kind of thing. Verb-first exports (`waitForNextPaint`, `countSelection`, `orUnreadableFile`) match `wireFocusRefresh` / `buildPickSpec` / `sortListingByDate`. Class names kebab-case and scoped under `.import`; `.actions` reused from `base.css:168-172`. `next-paint.ts` in `state/` is a stretch of that folder's name (see S1) but is P-D5's reasoned, Oscar-approved choice with `focus-refresh.ts` as precedent |
+| Every acceptance criterion met | **Code-level: yes.** B1 and the bilingual half of L1 are human-gated measurements that were not performed and are recorded as open in §5 — they are not code defects and, per this pass's remit and CONNECT's precedent, they are not treated as the sole cause of a FAIL. This verdict does **not** certify them |
 
 ---
 
@@ -135,165 +145,162 @@ Deviations:
 | # | Check | Result |
 | --- | --- | --- |
 | 1 | No new bridge surface, no preload change, no zod schema edit | **Confirmed** — nothing under `desktop/src/preload/` or `desktop/src/shared/ipc/` in the diff; `ValijaBridge` unchanged |
-| 2 | No filesystem path originates in or is rendered by the renderer | **Confirmed** — `git diff … \| grep -E "^\+.*(filePath\|resolveHandle\|path)"` returns hits only in `import-handlers.ts` (pre-existing lines re-indented by the `orStorageError` wrap) and in `src/` test fixtures. `import.tsx` carries none; the busy copy interpolates only `itemCount`/`conversationCount` (`import.tsx:189`) |
-| 3 | The rejection path never reads the caught error | **Confirmed** — `catch {` with no binding at `import.tsx:123`, `:177`, `:97` and `import-handlers.ts:64`. No `String(e)`, no `e.message` |
-| 4 | No `console.*` anywhere in the diff | **Confirmed** — zero added lines match `console\.` |
-| 5 | Slice 5 keeps the code-only wire shape | **Confirmed** — `toIpcResult` (`to-ipc-result.ts:9`) emits `{ code }` only; `orStorageError`'s message is a fixed English constant that never crosses IPC; the two new tests assert `expect(result.error).not.toHaveProperty("message")` (`import-handlers.test.ts:361`, `:381`) |
-| 6 | No vault session, key material or keychain access moves | **Confirmed** — nothing in the diff opens a session, reads a key, or touches the keychain. No SQLCipher keying, Argon2id parameter or keychain call is in the diff at all |
-| 7 | Imported items stay excluded from context packs | **Confirmed** — `import.excludedFromPacksNotice` still renders for import mode only (`import.tsx:259`), pinned by `import.dom.test.tsx:292` and `:301` |
+| 2 | No filesystem path originates in or is rendered by the renderer | **Confirmed** — `import.tsx` contains no `path`, `filePath` or `resolveHandle` token at all (grep at HEAD); the screen still passes the opaque `handle` and displays only the dialog's `displayName`; the busy copy interpolates only `itemCount`/`conversationCount` (`import.tsx:188-189`) |
+| 3 | The rejection path never reads the caught error | **Confirmed** — `catch {` with no binding at `import.tsx:97`, `:123`, `:177` and `import-handlers.ts:69`. No `String(e)`, no `e.message` anywhere in the diff |
+| 4 | No `console.*` anywhere in the diff | **Confirmed** — zero added lines match `console\.` (also checked `process.env`, `localStorage`) |
+| 5 | Code-only wire shape | **Confirmed** — `to-ipc-result.ts:9` emits `{ code }` only; `orUnreadableFile`'s message is a fixed English constant that never crosses IPC; both new handler tests assert `expect(result.error).not.toHaveProperty("message")` (`import-handlers.test.ts:359`, `:380`) |
+| 6 | No vault session, key material, or keychain access moves | **Confirmed** — nothing in the diff opens a session, reads a key, or touches the OS keychain. No SQLCipher keying, no Argon2id parameter, no keychain call appears in the diff at all. `import:preview`'s dry-run path still returns before `importItems.execute`, so Preview still never touches the vault (`import-conversations.use-case.ts:120-128`) |
+| 7 | Imported items stay excluded from context packs | **Confirmed** — `import.excludedFromPacksNotice` still renders for import mode only (`import.tsx:343`), pinned by `import.dom.test.tsx:304` and `:313` |
 | 8 | MCP surface unchanged | **Confirmed** — nothing under `src/delivery/mcp/`; 5 tools + 2 prompts untouched |
-| 9 | No network, telemetry, URL or remote asset; no `setInterval` | **Confirmed** — no spinner, no `url()` in the new CSS, no `setInterval` in `next-paint.ts`. `no-network-surface.test.ts` scans the new `.ts`/`.tsx`/`.css` and is green |
+| 9 | No network, telemetry, URL or remote asset; no `setInterval` | **Confirmed** — no spinner (D-5 = A), no `url()` in the new CSS, no `setInterval` in `next-paint.ts`. `no-network-surface.test.ts` scans the new `.ts`/`.tsx`/`.css` and is green |
 | 10 | File list matches the plan exactly | **Confirmed** — see above |
 
 No plaintext is written to disk, no secret or key is logged, key derivation and keychain use are
-untouched, SQLCipher keying is untouched. **No security gate is breached.**
+untouched, SQLCipher keying is untouched, and the fix pass changed nothing on any of those axes.
+**No security gate is breached.**
 
 ---
 
-## 5. Unperformed, disclosed gaps
+## 5. Outstanding human gates — unperformed, disclosed, still open
 
-Recorded openly, per the pattern `advances/CONNECT/review.md` §4 established. Neither is hidden and
-neither is being waved through; both are genuinely unmet until real results or an explicit Oscar
-deferral exists.
+Recorded the way `advances/CONNECT/review.md` §4 records its equivalent. Neither is satisfied and
+neither is being waved through; the PASS above is a statement about the code, not about these.
 
-1. **D-2's Windows measurement (refined.md §6 first bullet, §10; plan.md "Manual measurement — D-2's
-   bet").** Not performed. This environment has no Windows host, no packaged build target and no way
-   to reproduce a main-process UI freeze under a test harness. All five sub-steps are outstanding:
-   whether "Leyendo el archivo…" and the disabled-button state appear *before* the freeze or after
-   it; whether the title bar reads "(No responde)"; whether a second click during the freeze starts a
-   second import; whether the summary is visible without scrolling afterwards; and D-1's export
-   size / conversation count / per-phase wall-clock. Until it is run, **it is unknown whether the
-   advance's central bet (O1: two rAFs plus a task is enough for Chromium to present the busy frame
-   before main blocks) holds at all.** Everything else in this advance (V1–V8) is worth having
-   regardless — refined.md §10 says so and I agree — but this bullet is not satisfied by source.
-   If it fails, refined.md §5 D-2 and plan.md are explicit that the answer is to escalate to O2 as
-   its own advance with its own security review, not to ship quietly.
-2. **The plan's "Manual bilingual check (required, not optional)."** Not performed — no display.
-   This is the check that would have caught C1 below: it asks specifically whether "the picker,
-   status region and both buttons sit together on one screen", in `en` and in the longer `es`
-   strings, and whether a forced failure shows the error in the status region "not off-screen at the
-   top". As implemented, at least the second half of that check would have failed.
+1. **D-2's Windows measurement (refined.md §6 first bullet and §10; plan.md "Manual measurement —
+   D-2's bet").** Not performed. This environment has no Windows host, no packaged build target and
+   no way to reproduce a main-process UI freeze. All five sub-steps are outstanding: whether
+   "Leyendo el archivo…" and the disabled-button state are presented *before* the freeze or after
+   it; whether the title bar reads "(No responde)"; whether a second click during the freeze starts
+   a second import; whether the summary is visible without scrolling afterwards; and D-1's export
+   size / conversation count / per-phase wall-clock. **Until it is run, it remains unknown whether
+   the advance's central bet (O1: two rAFs plus a task is enough for Chromium to present the busy
+   frame before main blocks) holds at all.** If it fails, refined.md D-2 and plan.md are explicit:
+   escalate to O2 as its own advance with its own security review — do not ship quietly.
+2. **plan.md's "Manual bilingual check (required, not optional)."** Not performed — no display.
+   It asks whether the picker, status region and both buttons sit together on one screen in `en`
+   and in the longer `es` strings, and whether a forced failure (choosing a non-export file) shows
+   the error in the status region. C1's fix makes the DOM order correct and contiguous, which is
+   the necessary half; the sufficient half is a pair of eyes at 1100×720.
 
-To close them the way CONNECT closed its equivalent, either real results get recorded here, or
-Oscar records an explicit deferral (e.g. a `Deferred (§5.1 Windows measurement): Oscar <date>` line
-at the top of this file, in his own hand). An agent must not write that line on its own.
+To close them, either real results get recorded in this file, or Oscar records an explicit
+deferral — e.g. `Deferred (§5.1 Windows measurement, §5.2 bilingual check): Oscar <date>` at the
+top of this file, in his own hand. **An agent must not write that line on its own** (CLAUDE.md's
+approval-marker rule). Merging on this PASS without one of those two means shipping V1–V8's repairs
+— all independently worth having — while D-2's bet stays untested.
 
 ---
 
-## 6. Issues, prioritized
+## 6. First-pass findings — disposition
+
+| First pass | Status now | Evidence |
+| --- | --- | --- |
+| **C1** status region at the top of the screen, buttons inside `.import-listing` | **Closed** | `import.tsx:307-346` after all stage branches, `:348-365` `.actions` as a sibling; hardened case 7 (`import.dom.test.tsx:276-283`) verified by mutation to fail if it drifts back |
+| **W1** `:empty { display: none }` removes the live region from the a11y tree | **Closed** | `screens.css:288-297` zeroes border/padding/margin instead; the element stays in the tree, and with no children it still costs no visible box |
+| **W2** DOM case 5 proved nothing | **Closed** | Rewritten as one batched `act()` (`import.dom.test.tsx:219-222`); verified by mutation — without `import.tsx:150`'s guard it fails with 2 calls |
+| **W3** "the vault is busy" for a file-read crash | **Closed (with a doc side-effect)** | `import-handlers.ts:66-72` → `UNREADABLE_FILE`; see W3 below for the stale spec text |
+| **W4** duplicated `DomainError("STORAGE_ERROR", …)` literal | **Closed** | Only one copy remains (`import-handlers.ts:44-46`, in `runImportWithBusyRetry`, where it is accurate) |
+| **S1** stale comment on the scroll effect | **Closed** | `import.tsx:202-204` now describes what the effect does |
+| **S4** mislabelled use-case test case | **Closed** | `import-conversations.use-case.test.ts:92-96` now says why the case is green |
+| **S2** `t(…, { ...counts })` spread | Open (cosmetic) | `import.tsx:189` |
+| **S3** `handleChooseFile` gates on `workingRef` but never sets it | Open — **and now has a sharper failure mode**; see W1 below | `import.tsx:89-100` |
+| **S5** unlabelled project-name input → `getByRole("textbox", { name: "" })` | Open (out of advance scope, §4 defers input work) | `import.tsx:290-296`, `import.dom.test.tsx:118` |
+| **S6** `next-paint.test.ts` covers only the fallback branch | Open (P-D5 accepted it knowingly) | `next-paint.test.ts:9-22` |
+
+---
+
+## 7. Issues, prioritized
 
 ### Critical
 
-**C1 — the status region is at the top of the screen, not above the action buttons; D-4 is not
-delivered.** `import.tsx:223-262` renders `.import-status` as the third child of `.screen.import`,
-ahead of all three stage branches (`:264`, `:270`, `:287`); the buttons stayed inside
-`.import-listing` at `:346-361`. Between them: file name, conversation count, filter input, sort
-button, a 320px scrolling list, the project `<select>` and the new-project `<input>`. Refined.md §6
-asks for result and error "in the **same region as the action buttons**, not at the top of a page
-the user has scrolled away from"; §3's mockup and walkthrough step 7 ("the same place she just
-clicked") say the same; D-4 Option A says "immediately above the action buttons"; plan.md Slice 3
-step 9 spells out the exact JSX order; and `screens.css:278`'s own comment asserts the region is
-"immediately above the actions — where the user's eyes and cursor already are", which the markup
-makes false. This is V3 in a smaller form, in the advance whose stated purpose is to kill V3.
-`import.dom.test.tsx:265-271` does not catch it because `compareDocumentPosition` is satisfied by
-*any* position before the buttons, including the top of the page.
-
-*Fix (plan.md Slice 3 step 9, unchanged):* move the `.import-status` `<div>` to render **after** all
-three stage branches, and lift the two action buttons out of `.import-listing` into a sibling
-`{stage === "listed" && <div className="actions">…}` rendered after the region. The region stays
-mounted unconditionally at screen level, so the "reading" busy state and a `loadListing` error still
-have somewhere to go while `stage` is `"choose"`, and D-4 is satisfied for the listed stage.
-Then tighten DOM case 7 so it can never pass again with the region at the top — assert that
-`region.nextElementSibling` is the `.actions` row (or that `.conversation-list` precedes `region`),
-not merely that the region precedes the buttons. Re-run the bilingual manual check afterwards (§5.2)
-to confirm L1.
+None. C1 is closed and I could not find another blocking defect on a full re-check.
 
 ### Warning
 
-**W1 — `.import-status:empty { display: none }` (`screens.css:288-290`) partly defeats the reason the
-region is mounted early.** An `aria-live` region inside a `display: none` subtree is not in the
-accessibility tree; when it becomes non-empty it is re-inserted, which several screen readers treat
-as a new region rather than a live update — the same failure mode the plan's own ground-truth note
-("a region that appears at the same moment as its text is frequently not announced") was trying to
-avoid. It is plan-conformant, so not a criterion breach, but V7 is an explicit acceptance area.
-*Suggested fix:* keep the element in the tree and zero out only its box —
-`.import .import-status:empty { border: 0; padding: 0; margin: 0; }` — rather than removing it from
-layout.
+**W1 — the chooser's guard reads the gate but never sets it, and the new gate turns an old race
+into a guaranteed mismatch.** `handleChooseFile` (`import.tsx:89-100`) checks
+`workingRef.current !== null` but never assigns it, so the dialog itself is ungated. Two clicks
+delivered in the same task (exactly the OS-buffered case D-9 exists for, and the case DOM 5 now
+proves is real for the action buttons) run two `bridge.dialog.chooseImportFile()` calls. When the
+second resolves, `setHandle`/`setDisplayName` at `:94-95` run unconditionally, but the follow-up
+`loadListing` is rejected by its own gate at `:103` if the first listing is still in flight — so the
+screen ends up showing **file B's name and handle over file A's listing**, and a subsequent import
+would run file B's handle against file A's selection indices. Before this advance the second
+`loadListing` was not gated, so the two eventually agreed; the new gate makes the mismatch
+deterministic instead of racy. Not an acceptance breach (§6's re-entrancy bullet is about a *run*,
+and D-8's "disable the chooser while it runs" is implemented at `:217`), and the window is narrow —
+but it is a correctness regression introduced by this diff. *Suggested fix, one line:* re-check the
+gate after the dialog resolves, before mutating state —
+```ts
+const chosen = await bridge.dialog.chooseImportFile();
+if (chosen === null) return;              // the user pressed Cancel — a silent no-op
+if (workingRef.current !== null) return;  // a second dialog resolved after the first already started reading
+setHandle(chosen.handle);
+```
+(Alternatively gate the dialog itself, but that needs `beginWork`/`endWork` restructuring so
+`loadListing`'s own gate does not then reject the legitimate call.)
 
-**W2 — DOM case 5 cannot prove what it claims.** `import.dom.test.tsx:207-223` fires two clicks and
-asserts `run` was called once. By the time the second `fireEvent.click` runs, React has flushed
-`beginWork`'s `setWorking` and rendered `disabled` on the button, and React suppresses `onClick` on
-disabled form controls — so the assertion holds identically whether or not `workingRef` exists. The
-guard itself is implemented correctly (`import.tsx:62`, `:76`, `:85`, `:90`, `:103`, `:150`), so
-R4 is met on the code; the test is just not evidence for it. *Suggested fix:* dispatch both clicks
-inside a single `act(() => { btn.click(); btn.click(); })` against a button that has not yet
-re-rendered, or drive `runSelection` twice in one task, so the ref is the only thing that can block
-the second call.
+**W2 — the summary renders the project name that is on screen *now*, not the one the run used.**
+`import.tsx:326` passes `resolvedProjectName() ?? ""` into `import.importSummary`, evaluated at
+render time, while the request captured its own `projectName` at `:151` before `beginWork`. Change
+the `<select>` or the new-project `<input>` during a run — neither is disabled (only the checkboxes
+are, per P-D7) — and the "Se importaron N elementos … en 'X'" line names a project that was never
+written. Pre-existing (the old code did the same) and out of §6's letter, but this advance's whole
+point is that the summary is the answer to "did it save?", and it now sits where the user is
+looking. *Suggested fix:* store the run's project name alongside `resultMode`/`resultOutcome` in
+`beginWork`'s sibling state and render that; or disable the picker and the name input while
+`working !== null`, matching P-D7's reasoning for the checkboxes.
 
-**W3 — `orStorageError` reports a file-read/parse crash as "the vault is busy".**
-`import-handlers.ts:61-69` maps *every* throw out of `import:list`/`import:preview` to
-`STORAGE_ERROR`, whose user-facing copy is "Algo salió mal al leer o escribir los archivos de la
-bóveda". But `ImportConversations` already returns `Result`s for real read failures, so a *throw* on
-those two channels is an unexpected crash — most plausibly an OOM or a `RangeError` out of fflate on
-a huge archive (refined.md §2.3: 128 MB/entry, 256 MB total), which has nothing to do with the
-vault. The code is what the plan specified and the message never crosses IPC, so this is not a
-breach; but it tells the user the wrong thing at exactly the moment they most need a true one.
-*Suggested fix:* either reuse `UNREADABLE_FILE` for the two read-only channels, or add one
-`errors.UNEXPECTED` key pair (P-D6's own listed alternative) and use it here and for the renderer's
-`REJECTED_CALL_CODE`, which currently renders "Algo salió mal (UNEXPECTED)." with a bare English
-token.
-
-**W4 — the duplicated `DomainError` literal.**
-`new DomainError("STORAGE_ERROR", "The vault is busy right now. Try again in a moment.")` now appears
-verbatim at `import-handlers.ts:45` and `:66`. Two copies of one sentence in one 157-line file will
-drift. *Suggested fix:* one `function vaultBusyError()` (or a module constant) used by both
-`runImportWithBusyRetry` and `orStorageError`.
+**W3 — refined.md D-9 Option B and plan.md Slice 5 now describe code that no longer exists.** Both
+say the two read-only channels map a throw to `STORAGE_ERROR`; `import-handlers.ts:70` returns
+`UNREADABLE_FILE`. The code is the better of the two and I endorse it (§2 D1), but the approved
+spec/plan text is now stale, and nothing records the amendment the way refined.md §2.6 records the
+"sumalo" amendment. *Suggested fix:* a one-line note in refined.md D-9 (or in plan.md Slice 5)
+saying the code was changed on review and why — Oscar approved a plan whose text now disagrees with
+what shipped.
 
 ### Suggestion
 
-- **S1 — the comment above the scroll effect (`import.tsx:202-205`) describes a different decision
-  than the code below it.** It explains why the *region* is mounted early (already explained, almost
-  word for word, at `:217-222`), then says "so this fires only once busy/result/error clear", which
-  is not what the effect does — it fires when `working` clears **and** a result or error exists.
-  Replace with one line naming D-4's sub-decision: "On completion, bring the region into view;
-  `block: "nearest"` is a no-op when it already is. Optional call — jsdom has no `scrollIntoView`."
-- **S2 — `t(…, { ...counts })` at `import.tsx:189`.** The spread exists only to satisfy the params
-  index signature; it reads as if something is being merged. Typing `SelectionCounts` as a
-  `Record`-compatible shape, or a one-line `const params = countSelection(...)` with a named type,
-  reads better and allocates one object fewer per render.
-- **S3 — `handleChooseFile` gates on `workingRef` but never sets it** (`import.tsx:89-100`), so the
-  file dialog itself is ungated: a double click on "Elegir un archivo…" can request two dialogs.
-  Low risk (Electron's open dialog is window-modal) and pre-existing, but `beginWork("reading")`
-  before the `await` and `endWork()` in a `finally` would make the guard uniform across all three
-  entry points and would also disable the chooser while the dialog is open.
-- **S4 — a stale comment in the new use-case test.**
-  `import-conversations.use-case.test.ts:92` labels the import-mode case "unchanged, pre-existing
-  behaviour", but against `0777d4c` that test was red too: the recording `ImportItems` double returns
-  `ok`, so the old code produced a successful summary and `writer.calls` of length 1. The test is
-  valuable; the comment mis-describes it.
-- **S5 — the free-text project input has no label** (`import.tsx:339-343`), which is why the DOM test
-  has to select it with `getByRole("textbox", { name: "" })` (`import.dom.test.tsx:118`) — a brittle
-  selector that now encodes the a11y gap. Out of this advance's scope (§4 defers input hints), but
-  worth an issue: a `<label>` would fix the a11y gap and let the test say what it means.
-- **S6 — `next-paint.test.ts` covers only the `setTimeout` fallback.** The rAF path — the one that
-  actually ships — is exercised only indirectly, through the jsdom DOM test. P-D5 accepted this
-  knowingly; if the Windows measurement (§5.1) ever pushes the gate to a third frame, add the
-  `// @vitest-environment jsdom` companion at that point.
+- **S1 — `renderer/state/next-paint.ts` is not state.** `state/` is already a grab-bag
+  (`focus-refresh.ts`, `overlay-nav.ts`, `diagnostic-rows.ts`), so this is consistent rather than
+  novel, and P-D5 chose it explicitly with Oscar's approval. But "opening a folder tells you what's
+  in it" (CLAUDE.md) is weakened by every such addition. If a second timing helper ever appears,
+  that is the moment to cut `renderer/timing/` and move both.
+- **S2 — the listed-stage condition is now written twice.** `stage === "listed" && listing !== null`
+  appears at `import.tsx:239` and `:348`; if one ever gains a clause the other will not.
+  A `const isListed = stage === "listed" && listing !== null;` beside `canSubmit` (`:193`) reads
+  better and cannot drift.
+- **S3 — the CSS comment at `screens.css:277-280` still says the region is "Hidden until it has
+  something to say".** After W1's fix it is not hidden, it is box-zeroed; the very next comment
+  block (`:288-292`) explains exactly that. Delete the stale half-sentence.
+- **S4 — `t("import.importing", { ...counts })` (`import.tsx:189`).** The spread exists only to
+  satisfy the params index signature and reads as if something were being merged; a
+  `Record`-compatible `SelectionCounts`, or a named `const params`, reads better and allocates one
+  object fewer per render while busy.
+- **S5 — two DOM cases settle a deferred promise as their last statement without awaiting**
+  (`import.dom.test.tsx:191`, `:230`). Harmless today (both suites are green and Vitest does not
+  fail on the act warning), but a state update after the test body has returned is the classic
+  source of cross-test flake. `await screen.findByText(…)` after each settle costs one line.
+- **S6 — the project-name input still has no `<label>`** (`import.tsx:290-296`), which is why the
+  DOM test must select it with `getByRole("textbox", { name: "" })` (`import.dom.test.tsx:118`) — a
+  selector that now encodes the a11y gap. §4 defers input work, so this is a follow-up, not a
+  finding against this advance.
+- **S7 — record P-D1.** Nothing in the repo states which branch decision was taken (§2 D4). A line
+  in plan.md would close it.
 
 ---
 
-## 7. What would flip this to PASS
+## 8. What this PASS does and does not say
 
-1. **C1 fixed**: `.import-status` rendered after the stage branches, `.actions` lifted out of
-   `.import-listing` into a sibling rendered after the region, and DOM case 7 strengthened so it
-   fails if the region drifts back above the listing. This is the only code change required.
-2. **§5.1** — the D-2 Windows measurement recorded here with real numbers, **or** an explicit Oscar
-   deferral of it, recorded in this file the way CONNECT §4 records its own.
-3. **§5.2** — the required manual bilingual check run after C1's fix, confirming picker + status
-   region + both buttons on one screen in `en` and `es`, and that a forced failure shows in the
-   status region.
+It says: every code-level acceptance criterion in refined.md §6 is met and independently
+re-derived; the first pass's Critical and all four Warnings are genuinely closed (two of them
+verified by mutating a copy of the tree and watching the tests fail); the plan was followed, its one
+material deviation is safer than the text it deviates from; both suites are green at 324 + 792; the
+file list is exactly the one the plan promised; and no security surface moved — no key, no keychain
+call, no SQLCipher keying, no new IPC channel, no path in the renderer, no logged secret.
 
-W1–W4 and S1–S6 are not blocking. Everything else in the advance is sound: the project-name fix is
-correct and correctly placed, the re-entrancy guard is right, the rejection hardening is complete on
-both sides of the IPC boundary, the copy is honest and machine-checked, the file list is exactly the
-one the plan promised, and no security surface moved.
+It does **not** say that D-2's bet works. §5.1 and §5.2 are unperformed human gates, not findings I
+have cleared. Before this is treated as done, Oscar should either record the Windows measurement and
+the bilingual check in this file, or record an explicit deferral line here in his own hand — and if
+the measurement later shows the pre-click frame persisting, this advance's copy, layout, result and
+validation fixes still stand, but O1 does not, and D-2 = O2 becomes a separate advance with its own
+security review.

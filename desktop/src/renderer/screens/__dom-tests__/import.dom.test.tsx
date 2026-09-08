@@ -44,6 +44,7 @@ function fakeBridge(overrides: {
   list?: (req: unknown) => Promise<IpcResult<{ source: string; listing: ImportListingRow[] }>>;
   preview?: (req: unknown) => Promise<IpcResult<ImportOutcomeResponse>>;
   run?: (req: unknown) => Promise<IpcResult<ImportOutcomeResponse>>;
+  chooseImportFile?: () => Promise<{ handle: string; displayName: string } | null>;
 }): ValijaBridge {
   const list = vi.fn(
     overrides.list ??
@@ -91,7 +92,10 @@ function fakeBridge(overrides: {
       write: vi.fn(),
     },
     dialog: {
-      chooseImportFile: vi.fn().mockResolvedValue({ handle: "fh-1", displayName: "export.json" }),
+      chooseImportFile: vi.fn(
+        overrides.chooseImportFile ??
+          (() => Promise.resolve({ handle: "fh-1", displayName: "export.json" })),
+      ),
       chooseVaultFolder: vi.fn(),
     },
     // biome-ignore lint/suspicious/noExplicitAny: only import/dialog/content.projects are exercised by this suite
@@ -254,6 +258,59 @@ describe("ImportScreen (DOM) — busy state, the re-entrancy guard, and the sing
 
     list.settle({ ok: true, value: { source: "chatgpt", listing: [row(1)] } });
     await screen.findByText("export.json");
+  });
+
+  it("a dialog that resolves while an earlier one's listing is already loading never overwrites its handle/displayName (review W1)", async () => {
+    const dialogA = deferred<{ handle: string; displayName: string } | null>();
+    const dialogB = deferred<{ handle: string; displayName: string } | null>();
+    let dialogCalls = 0;
+    const listA = deferred<IpcResult<{ source: string; listing: ImportListingRow[] }>>();
+    const bridge = fakeBridge({
+      chooseImportFile: () => {
+        dialogCalls += 1;
+        return dialogCalls === 1 ? dialogA.promise : dialogB.promise;
+      },
+      list: () => listA.promise,
+    });
+    render(
+      <I18nProvider
+        preferences={{
+          vaultPath: null,
+          theme: "system",
+          language: "en",
+          tourSeen: false,
+          autoLockMinutes: 15,
+        }}
+      >
+        <ImportScreen bridge={bridge} />
+      </I18nProvider>,
+    );
+    const chooseButton = screen.getByText(/choose a file/i);
+    // Two dialog requests in the same task — the OS-buffered double-click D-9 exists for.
+    await act(() => {
+      chooseButton.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      chooseButton.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    expect(bridge.dialog.chooseImportFile).toHaveBeenCalledTimes(2);
+
+    // File A's dialog resolves first; its listing starts loading.
+    dialogA.settle({ handle: "fh-A", displayName: "a.json" });
+    await screen.findByText(/reading the file/i);
+    await waitFor(() => expect(bridge.import.list).toHaveBeenCalled());
+
+    // File B's dialog resolves while A's listing is still in flight — must be a no-op.
+    // Awaiting the same promise inside `act` lets handleChooseFile's second
+    // invocation run its (empty, post-fix) continuation before we assert.
+    await act(async () => {
+      dialogB.settle({ handle: "fh-B", displayName: "b.json" });
+      await dialogB.promise;
+    });
+    expect(screen.queryByText("b.json")).toBeNull();
+    expect(bridge.import.list).toHaveBeenCalledTimes(1);
+    expect(bridge.import.list).toHaveBeenCalledWith(expect.objectContaining({ handle: "fh-A" }));
+
+    listA.settle({ ok: true, value: { source: "chatgpt", listing: [row(1)] } });
+    await screen.findByText("a.json");
   });
 
   it("case 7: the status region is a live region, precedes the actions, and is the only place errors live (V3/V7/D-4)", async () => {
