@@ -339,7 +339,7 @@ describe("import-handlers", () => {
     if (!result.ok) expect(result.error.code).toBe("STORAGE_ERROR");
   });
 
-  it("import:list returns STORAGE_ERROR (never throws) when the use case throws (D-9 Option B)", () => {
+  it("import:list returns UNREADABLE_FILE (never throws, never 'the vault is busy') when the use case throws (D-9 Option B)", () => {
     const container = {
       paths: { root: tmp, header: "", db: "" },
       importConversations: {
@@ -355,12 +355,12 @@ describe("import-handlers", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.error.code).toBe("STORAGE_ERROR");
+      expect(result.error.code).toBe("UNREADABLE_FILE");
       expect(result.error).not.toHaveProperty("message");
     }
   });
 
-  it("import:preview returns STORAGE_ERROR (never throws) when the use case throws (D-9 Option B)", () => {
+  it("import:preview returns UNREADABLE_FILE (never throws, never 'the vault is busy') when the use case throws (D-9 Option B)", () => {
     const container = {
       paths: { root: tmp, header: "", db: "" },
       importConversations: {
@@ -376,7 +376,7 @@ describe("import-handlers", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.error.code).toBe("STORAGE_ERROR");
+      expect(result.error.code).toBe("UNREADABLE_FILE");
       expect(result.error).not.toHaveProperty("message");
     }
   });

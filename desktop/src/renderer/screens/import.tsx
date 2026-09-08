@@ -199,10 +199,9 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
           row.title.toLowerCase().includes(filterText.trim().toLowerCase()),
         );
 
-  // The live region must be mounted before it has content (a region that
-  // appears at the same moment as its text is often not announced by screen
-  // readers) — so this fires only once busy/result/error clear, and scrolls
-  // the already-mounted region into view. jsdom has no scrollIntoView.
+  // On completion (working clears, and a result or error landed), bring the
+  // status region into view; `block: "nearest"` is a no-op when it's already
+  // visible. Optional call — jsdom has no scrollIntoView.
   useEffect(() => {
     if (working !== null) return;
     if (resultOutcome === null && error === null) return;
@@ -213,53 +212,6 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
     <div className="screen import">
       <h1>{t("import.title")}</h1>
       <p className="explainer">{t("import.explainer")}</p>
-
-      {/* One region for busy, result and error (D-4) — mounted unconditionally
-          at screen level, not inside any one stage's branch, so it exists
-          before it has content (a live region that appears at the same
-          instant as its text is often not announced) and so a "reading"
-          busy state or a loadListing error has somewhere to render while
-          `stage` is still "choose". */}
-      <div
-        className="import-status"
-        aria-live="polite"
-        aria-busy={working !== null}
-        ref={statusRef}
-      >
-        {busy !== null && (
-          <>
-            <p className="import-busy">{busy}</p>
-            <p className="explainer">{t("import.mayStopResponding")}</p>
-          </>
-        )}
-        {error !== null && <p className="error">{error}</p>}
-        {resultOutcome !== null && resultMode !== null && (
-          <div className="import-result">
-            <p>
-              {t(resultMode === "preview" ? "import.previewSummary" : "import.importSummary", {
-                itemCount: resultOutcome.imported,
-                conversationCount: resultOutcome.conversations,
-                project: resolvedProjectName() ?? "",
-                skipped: resultOutcome.skipped,
-                failed: resultOutcome.failed,
-              })}
-            </p>
-            {resultOutcome.failures.length > 0 && (
-              <ul className="import-failures">
-                {resultOutcome.failures.map((failure) => (
-                  <li key={`${failure.conversation}-${failure.reason}`}>
-                    {t("import.perConversationFailure", {
-                      title: failure.conversation,
-                      reason: failure.reason,
-                    })}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {resultMode === "import" && <p>{t("import.excludedFromPacksNotice")}</p>}
-          </div>
-        )}
-      </div>
 
       {stage === "choose" && (
         <button type="button" disabled={working !== null} onClick={() => void handleChooseFile()}>
@@ -342,23 +294,73 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
               onChange={(e) => setNewProjectName(e.target.value)}
             />
           )}
+        </div>
+      )}
 
-          <div className="actions">
-            <button
-              type="button"
-              disabled={!canSubmit || working !== null}
-              onClick={() => void runSelection("preview")}
-            >
-              {working === "preview" ? t("import.previewingShort") : t("import.preview")}
-            </button>
-            <button
-              type="button"
-              disabled={!canSubmit || working !== null}
-              onClick={() => void runSelection("import")}
-            >
-              {working === "import" ? t("import.importingShort") : t("import.importButton")}
-            </button>
+      {/* One region for busy, result and error (D-4), unconditional so a
+          "reading" busy state or a loadListing error has somewhere to render
+          while `stage` is still "choose" (mounted before it has content —
+          a live region that appears at the same instant as its text is
+          often not announced) — but placed after the listing branch and
+          before the actions, immediately above the buttons, where the
+          user's eyes and cursor already are. */}
+      <div
+        className="import-status"
+        aria-live="polite"
+        aria-busy={working !== null}
+        ref={statusRef}
+      >
+        {busy !== null && (
+          <>
+            <p className="import-busy">{busy}</p>
+            <p className="explainer">{t("import.mayStopResponding")}</p>
+          </>
+        )}
+        {error !== null && <p className="error">{error}</p>}
+        {resultOutcome !== null && resultMode !== null && (
+          <div className="import-result">
+            <p>
+              {t(resultMode === "preview" ? "import.previewSummary" : "import.importSummary", {
+                itemCount: resultOutcome.imported,
+                conversationCount: resultOutcome.conversations,
+                project: resolvedProjectName() ?? "",
+                skipped: resultOutcome.skipped,
+                failed: resultOutcome.failed,
+              })}
+            </p>
+            {resultOutcome.failures.length > 0 && (
+              <ul className="import-failures">
+                {resultOutcome.failures.map((failure) => (
+                  <li key={`${failure.conversation}-${failure.reason}`}>
+                    {t("import.perConversationFailure", {
+                      title: failure.conversation,
+                      reason: failure.reason,
+                    })}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {resultMode === "import" && <p>{t("import.excludedFromPacksNotice")}</p>}
           </div>
+        )}
+      </div>
+
+      {stage === "listed" && listing !== null && (
+        <div className="actions">
+          <button
+            type="button"
+            disabled={!canSubmit || working !== null}
+            onClick={() => void runSelection("preview")}
+          >
+            {working === "preview" ? t("import.previewingShort") : t("import.preview")}
+          </button>
+          <button
+            type="button"
+            disabled={!canSubmit || working !== null}
+            onClick={() => void runSelection("import")}
+          >
+            {working === "import" ? t("import.importingShort") : t("import.importButton")}
+          </button>
         </div>
       )}
     </div>

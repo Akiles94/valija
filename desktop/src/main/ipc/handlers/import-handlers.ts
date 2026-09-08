@@ -57,14 +57,17 @@ async function runImportWithBusyRetry<T>(
  * try/catch there covered it too — D-9 = A + B, not B alone). Same rule as
  * everywhere else here: a localized code, never a raw driver or parser string
  * (§9 item 75). The caught error is deliberately not read.
+ *
+ * `UNREADABLE_FILE`, not `STORAGE_ERROR`: these two channels never write to
+ * the vault, so a throw here is a read/parse crash on the export file (an
+ * oversized archive, a malformed entry) — telling the user "the vault is
+ * busy" would point them at the wrong thing entirely.
  */
-function orStorageError<T>(run: () => Result<T, DomainError>): Result<T, DomainError> {
+function orUnreadableFile<T>(run: () => Result<T, DomainError>): Result<T, DomainError> {
   try {
     return run();
   } catch {
-    return err(
-      new DomainError("STORAGE_ERROR", "The vault is busy right now. Try again in a moment."),
-    );
+    return importerErr("UNREADABLE_FILE", "That file couldn't be read.");
   }
 }
 
@@ -91,7 +94,7 @@ export function createImportHandlers(getContainer: () => Container, filePicker: 
       const path = resolvePath(req.handle);
       if (!path.ok) return toIpcResult(path, () => ({ source: "", listing: [] }));
       return toIpcResult(
-        orStorageError(() =>
+        orUnreadableFile(() =>
           getContainer().importConversations.execute({
             filePath: path.value,
             list: true,
@@ -106,7 +109,7 @@ export function createImportHandlers(getContainer: () => Container, filePicker: 
       const path = resolvePath(req.handle);
       if (!path.ok) return toIpcResult(path, emptyOutcome);
       return toIpcResult(
-        orStorageError(() =>
+        orUnreadableFile(() =>
           getContainer().importConversations.execute({
             filePath: path.value,
             projectName: req.projectName,

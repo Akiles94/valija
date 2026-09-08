@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type {
   ImportListingRow,
@@ -204,14 +204,22 @@ describe("ImportScreen (DOM) — busy state, the re-entrancy guard, and the sing
     expect(error).not.toBeNull();
   });
 
-  it("case 5: a second click while working never starts a second run", async () => {
+  it("case 5: a second click while working never starts a second run, even before React re-renders the disabled button (P-D4)", async () => {
     const run = deferred<IpcResult<ImportOutcomeResponse>>();
     const bridge = fakeBridge({ run: () => run.promise });
     await reachListedStage(bridge);
 
     const importButton = screen.getByRole("button", { name: /^import$/i });
-    fireEvent.click(importButton);
-    fireEvent.click(importButton);
+    // Both dispatches inside one `act` batch: React defers re-rendering
+    // (and therefore setting `disabled`) until the callback returns, so both
+    // click handlers run against the *same* not-yet-disabled button — the
+    // OS-buffered double-click case D-9 exists for. If this were guarded
+    // only by the `disabled` attribute (not `workingRef`), both handlers
+    // would call `bridge.import.run`.
+    await act(() => {
+      importButton.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      importButton.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
     await screen.findByText(/importing 3 items/i);
     // The busy text commits (via beginWork's setWorking) before the paint
     // yield resolves and bridge.import.run is actually called — wait for the
@@ -262,12 +270,16 @@ describe("ImportScreen (DOM) — busy state, the re-entrancy guard, and the sing
     expect(region).toHaveAttribute("aria-live", "polite");
     expect(region?.querySelector(".error")).not.toBeNull();
 
+    // D-4: not merely "somewhere before the buttons" (which the top of the
+    // page would also satisfy) — immediately above them, with the listing
+    // content between the top of the screen and the region.
     const actions = document.querySelector(".import .actions");
+    const list = document.querySelector(".import .conversation-list");
     expect(actions).not.toBeNull();
-    if (region !== null && actions !== null) {
-      expect(
-        region.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING,
-      ).toBeTruthy();
+    expect(list).not.toBeNull();
+    expect(region?.nextElementSibling).toBe(actions);
+    if (region !== null && list !== null) {
+      expect(list.compareDocumentPosition(region) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     }
   });
 

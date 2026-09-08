@@ -285,8 +285,15 @@
   background: var(--color-surface);
   padding: 12px 16px;
 }
+/* Zeroes the box, not `display: none` — an aria-live region removed from
+   layout is also removed from the accessibility tree, so when it later
+   gains content some screen readers treat it as a brand-new region rather
+   than an update to one they're already watching (the exact failure the
+   plan's own ground-truth note about early-mounting was trying to avoid). */
 .import .import-status:empty {
-  display: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
 }
 .import .import-status p {
   margin: 0;

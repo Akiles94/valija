@@ -89,7 +89,11 @@ describe("ImportConversations", () => {
     expect(writer.calls).toHaveLength(0);
   });
 
-  it("import with the same invalid project name still fails the same way (unchanged)", () => {
+  it("import with the same invalid project name fails the same way, guarded here too — not just by ImportItems's own check", () => {
+    // RecordingImportItems is a fake that always returns ok regardless of
+    // project name, so this case is only green because of Slice 0's new
+    // guard in execute() itself — the real ImportItems's own parseProjectName
+    // call (defense in depth) is not what this unit test exercises.
     const writer = new RecordingImportItems();
     const uc = new ImportConversations(
       reader,
