@@ -118,6 +118,12 @@ async function chooseFileAndSelectProject() {
   fireEvent.change(screen.getByLabelText("Import into"), { target: { value: "myproj" } });
 }
 
+/** Drives the screen from "choose" to "listed", leaving "New project…" selected (the default). */
+async function chooseFile() {
+  fireEvent.click(screen.getByRole("button", { name: "Choose a file…" }));
+  await screen.findByText("Chat about TS");
+}
+
 describe("ImportScreen (DOM)", () => {
   it("case 1: busy state is visible between click and resolution, then clears on success", async () => {
     const run = deferred<IpcResult<ImportOutcomeResponse>>();
@@ -283,6 +289,71 @@ describe("ImportScreen (DOM)", () => {
         "Imported items are searchable and visible in the project, but they don't appear in context packs.",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("case 9: typing a human name previews its slug without touching the field's own value", async () => {
+    const bridge = fakeBridge({});
+    renderScreen(bridge);
+    await chooseFile();
+
+    const field = screen.getByLabelText("Project name");
+    fireEvent.change(field, { target: { value: "Openai 1" } });
+
+    await screen.findByText("Will be saved as: openai-1");
+    expect(field).toHaveValue("Openai 1");
+  });
+
+  it("case 10: submitting sends the slug, never the raw text, over IPC", async () => {
+    const run = vi.fn(
+      (): Promise<IpcResult<ImportOutcomeResponse>> =>
+        Promise.resolve({ ok: true, value: OUTCOME }),
+    );
+    const bridge = fakeBridge({ run });
+    renderScreen(bridge);
+    await chooseFile();
+
+    fireEvent.change(screen.getByLabelText("Project name"), { target: { value: "Openai 1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Import" }));
+
+    await waitFor(() => expect(run).toHaveBeenCalled());
+    expect(run).toHaveBeenCalledWith(expect.objectContaining({ projectName: "openai-1" }));
+  });
+
+  it("case 11: a name with no letters or digits disables both actions", async () => {
+    const bridge = fakeBridge({});
+    renderScreen(bridge);
+    await chooseFile();
+
+    fireEvent.change(screen.getByLabelText("Project name"), { target: { value: "☕☕" } });
+
+    await screen.findByText("Type at least one letter or number.");
+    expect(screen.getByRole("button", { name: "Preview" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Import" })).toBeDisabled();
+  });
+
+  it("case 12: a name colliding with an existing project is announced before submitting", async () => {
+    const bridge = fakeBridge({});
+    renderScreen(bridge);
+    await chooseFile();
+
+    fireEvent.change(screen.getByLabelText("Project name"), { target: { value: "myproj" } });
+
+    await screen.findByText(
+      "Will be saved as: myproj (existing project — items will be added there)",
+    );
+  });
+
+  it("case 13: already-valid text shows no hint at all", async () => {
+    const bridge = fakeBridge({});
+    renderScreen(bridge);
+    await chooseFile();
+
+    fireEvent.change(screen.getByLabelText("Project name"), { target: { value: "openai-1" } });
+
+    // No preview/empty/existing text ever appears for text that's already a valid, non-colliding slug.
+    await waitFor(() => {
+      expect(screen.queryByText(/Will be saved as|Type at least one/)).toBeNull();
+    });
   });
 
   it("no import.* string mentions retrying — the SQLITE_BUSY-retry wording is gone", () => {
