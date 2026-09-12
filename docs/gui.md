@@ -187,6 +187,13 @@ that failed, or the reason it couldn't — in that same spot, just above the but
 One honest warning: a large export is read, parsed and written in one go, so while an import runs
 the window may stop responding and can't be moved. It hasn't crashed; let it finish.
 
+Project names are stored as slugs — lowercase letters, digits and hyphens, nothing else. Typing a
+new project's name however you'd naturally write it (spaces, capitals, accents) is fine: the field
+shows, before you commit to anything, exactly what it will be saved as (e.g. "Openai 1" →
+`openai-1`), and that's the name you'll see afterwards everywhere — the project list, the CLI, and
+any AI tool connected through MCP. The CLI stays strict on purpose: `valija import -p "My Proj"`
+still fails, because a CLI flag is an address a script relies on, not prose a person is composing.
+
 ---
 
 ## Diagnostics — "Check my setup"
