@@ -178,6 +178,11 @@ export const es: Catalog = {
     filterPlaceholder: "Filtrar conversaciones",
     projectLabel: "Importar en",
     projectNewOption: "Nuevo proyecto…",
+    projectNameLabel: "Nombre del proyecto",
+    projectNamePlaceholder: "ej. openai-1",
+    projectSlugPreview: "Se guardará como: {slug}",
+    projectSlugExisting: "Se guardará como: {slug} (proyecto existente — se añadirá ahí)",
+    projectSlugEmpty: "Escribe al menos una letra o un número.",
     preview: "Vista previa",
     previewSummary:
       "Se importarían {itemCount} elementos de {conversationCount} conversaciones en '{project}' (omitidas {skipped}, fallidas {failed}).",
@@ -339,7 +344,8 @@ export const es: Catalog = {
     INVALID_GENERATION: "El historial de escrituras de la bóveda parece dañado.",
     INVALID_WRITE_STAMP: "El historial de escrituras de la bóveda parece dañado.",
     VAULT_FORK_DETECTED: "Esta bóveda cambió en otro dispositivo sin los cambios de este.",
-    INVALID_PROJECT_NAME: "Ese nombre de proyecto no es válido.",
+    INVALID_PROJECT_NAME:
+      "Los nombres de proyecto solo pueden llevar minúsculas, números y guiones, sin espacios. Por ejemplo: openai-1.",
     INVALID_ITEM_TYPE: "Ese tipo de elemento no es válido.",
     INVALID_TAG: "Esa etiqueta no es válida.",
     CONTENT_TOO_LARGE: "Ese contenido es demasiado grande para guardarlo.",

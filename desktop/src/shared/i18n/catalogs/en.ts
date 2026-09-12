@@ -175,6 +175,11 @@ export const en = {
     filterPlaceholder: "Filter conversations",
     projectLabel: "Import into",
     projectNewOption: "New project…",
+    projectNameLabel: "Project name",
+    projectNamePlaceholder: "e.g. openai-1",
+    projectSlugPreview: "Will be saved as: {slug}",
+    projectSlugExisting: "Will be saved as: {slug} (existing project — items will be added there)",
+    projectSlugEmpty: "Type at least one letter or number.",
     preview: "Preview",
     previewSummary:
       "Would import {itemCount} items from {conversationCount} conversations into '{project}' (skipped {skipped}, failed {failed}).",
@@ -335,7 +340,8 @@ export const en = {
     INVALID_GENERATION: "The vault's write history looks corrupted.",
     INVALID_WRITE_STAMP: "The vault's write history looks corrupted.",
     VAULT_FORK_DETECTED: "This vault was changed on another device without this one's changes.",
-    INVALID_PROJECT_NAME: "That project name isn't valid.",
+    INVALID_PROJECT_NAME:
+      "Project names can only use lowercase letters, numbers and hyphens — no spaces. For example: openai-1.",
     INVALID_ITEM_TYPE: "That item type isn't valid.",
     INVALID_TAG: "That tag isn't valid.",
     CONTENT_TOO_LARGE: "That content is too large to save.",
