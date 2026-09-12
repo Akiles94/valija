@@ -452,3 +452,14 @@
   color: var(--color-text-muted);
   font-size: 0.9rem;
 }
+/* PROJECT-NAME-SLUG: the "will be saved as" line beneath the new-project field.
+   Empty when there's nothing to say (D-1) — the :empty rule hides it rather than
+   the component conditionally rendering, same trick as .import-status above. */
+.import .project-slug-hint {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+.import .project-slug-hint:empty {
+  display: none;
+}
