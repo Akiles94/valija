@@ -15,6 +15,7 @@ import {
   sortListingByDate,
 } from "../state/import-selection.js";
 import { waitForNextPaint } from "../state/next-paint.js";
+import { previewProjectSlug, slugifyProjectName } from "../state/project-slug.js";
 
 const NEW_PROJECT = "__new__";
 const FORMAT_OPTIONS: readonly ImportFormatOverride[] = ["chatgpt", "claude", "generic"];
@@ -147,8 +148,23 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
   }
 
   function resolvedProjectName(): string | null {
-    const name = projectChoice === NEW_PROJECT ? newProjectName.trim() : projectChoice;
+    const name = projectChoice === NEW_PROJECT ? slugifyProjectName(newProjectName) : projectChoice;
     return name.length === 0 ? null : name;
+  }
+
+  /** Empty string when there is nothing to say — `.project-slug-hint:empty` then hides it (D-1). */
+  function projectSlugHintText(): string {
+    const hint = previewProjectSlug(newProjectName, existingProjects);
+    switch (hint.kind) {
+      case "hidden":
+        return "";
+      case "empty":
+        return t("import.projectSlugEmpty");
+      case "existing":
+        return t("import.projectSlugExisting", { slug: hint.slug });
+      case "preview":
+        return t("import.projectSlugPreview", { slug: hint.slug });
+    }
   }
 
   async function runSelection(mode: "preview" | "import") {
@@ -281,11 +297,20 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
             </select>
           </label>
           {projectChoice === NEW_PROJECT && (
-            <input
-              type="text"
-              value={newProjectName}
-              onChange={(e) => setNewProjectName(e.target.value)}
-            />
+            <div className="new-project-field">
+              <label htmlFor="new-project-name">{t("import.projectNameLabel")}</label>
+              <input
+                id="new-project-name"
+                type="text"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                placeholder={t("import.projectNamePlaceholder")}
+                aria-describedby="new-project-name-hint"
+              />
+              <p id="new-project-name-hint" className="project-slug-hint">
+                {projectSlugHintText()}
+              </p>
+            </div>
           )}
         </div>
       )}
