@@ -1,7 +1,9 @@
 # GUI-LAYOUT — restructuring the desktop app's screen layouts · Refined Spec
 
-**Status:** Gate R **open**. Every decision below (D-1 … D-22) carries a **Default** the planner can
-execute as written; §6 is the list Oscar confirms or overrides. Nothing here is implementation.
+**Status:** **Gate R closed** (Oscar, 2026-09-15). Every decision below (D-1 … D-22) is approved as
+written, including D-9 (the pinned-item grouping/reordering, confirmed even though it diverges from
+`valija show`'s order per CARDS D-I — Oscar: "La D9 si, aunque cambie lo anterior"). All other
+defaults confirmed as-is, no changes requested. Nothing here is implementation.
 
 **Directory:** `GUI-LAYOUT` — a UI-structure advance, deliberately not a milestone number (same
 posture as `GUI`, `CARDS`, `CONNECT`, `IMPORT-FEEDBACK`).
