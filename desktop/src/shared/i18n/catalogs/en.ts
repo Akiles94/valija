@@ -147,7 +147,6 @@ export const en = {
     navLabel: "Connect",
     title: "Connect your AI tools",
     stepsTitle: "How to use it with your tools",
-    stepsSummary: "3 steps",
     step1Title: "Connect the tool",
     step1Body:
       'Press "Connect" on its card below. Valija adds its config without touching the rest.',

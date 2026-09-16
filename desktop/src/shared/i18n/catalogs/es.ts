@@ -148,7 +148,6 @@ export const es: Catalog = {
     navLabel: "Conectar",
     title: "Conecta tus herramientas de IA",
     stepsTitle: "Cómo usarlo con tus herramientas",
-    stepsSummary: "3 pasos",
     step1Title: "Conecta la herramienta",
     step1Body:
       'Presiona "Conectar" en su tarjeta de abajo. Valija agrega su configuración sin tocar el resto.',

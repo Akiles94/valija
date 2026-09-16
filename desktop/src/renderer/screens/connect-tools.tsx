@@ -20,7 +20,6 @@ export function ConnectToolsScreen({ bridge }: { bridge: ValijaBridge }) {
   const [results, setResults] = useState<Record<string, ToolsConnectResponse>>({});
   const [connecting, setConnecting] = useState<string | null>(null);
   const [copiedFor, setCopiedFor] = useState<string | null>(null);
-  const [stepsOpen, setStepsOpen] = useState(false);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: bridge is a stable module-scoped singleton, not reactive state
   useEffect(() => {
@@ -56,132 +55,111 @@ export function ConnectToolsScreen({ bridge }: { bridge: ValijaBridge }) {
     <div className="screen connect-tools">
       <h1>{t("connect.title")}</h1>
 
-      <div className={stepsOpen ? "disclosure open" : "disclosure"}>
-        <button
-          type="button"
-          className="disclosure-header"
-          onClick={() => setStepsOpen((open) => !open)}
-        >
-          <svg
-            className="chevron"
-            width="14"
-            height="14"
-            viewBox="0 0 16 16"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M6 4l4 4-4 4"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span className="disclosure-title">{t("connect.stepsTitle")}</span>
-          <span className="disclosure-sub">{t("connect.stepsSummary")}</span>
-        </button>
-        {stepsOpen && (
-          <div className="disclosure-body">
-            <ol className="steps-list">
-              <li>
-                <span className="step-num done">1</span>
-                <span className="step-body">
-                  <strong>{t("connect.step1Title")}</strong>
-                  <span>{t("connect.step1Body")}</span>
+      <div className="connect-body">
+        {entries === null && <p>{t("common.loading")}</p>}
+
+        {entries !== null && (
+          <ul className="client-cards">
+            {entries.map((entry) => (
+              <li key={entry.client} className="client-card">
+                <span className="client-name">{entry.client}</span>
+                <span
+                  className={
+                    entry.connected ? "client-status connected" : "client-status not-connected"
+                  }
+                >
+                  {entry.connected ? t("common.connected") : t("common.notConnected")}
                 </span>
-              </li>
-              <li>
-                <span className="step-num">2</span>
-                <span className="step-body">
-                  <strong>{t("connect.step2Title")}</strong>
-                  <span>{t("connect.step2Body")}</span>
-                </span>
-              </li>
-              <li>
-                <span className="step-num">3</span>
-                <span className="step-body">
-                  <strong>{t("connect.step3Title")}</strong>
-                  <span>{t("connect.step3Body")}</span>
-                </span>
-              </li>
-            </ol>
-          </div>
-        )}
-      </div>
-
-      {nodeWarningNeeded && (
-        <div className="warning">
-          <p className="warning-title">{t("connect.nodeMissingTitle")}</p>
-          <p>{t("connect.nodeMissingBody")}</p>
-          {/* Plain text, not a link: the app never opens a URL or makes a
-              network request of any kind (§8.3), so there is no href here. */}
-          <p className="docs-hint">{t("connect.nodeMissingDocsLink")}</p>
-        </div>
-      )}
-
-      {entries === null && <p>{t("common.loading")}</p>}
-
-      {entries !== null && (
-        <ul className="client-cards">
-          {entries.map((entry) => (
-            <li key={entry.client} className="client-card">
-              <span className="client-name">{entry.client}</span>
-              <span className="client-status">
-                {entry.connected ? t("common.connected") : t("common.notConnected")}
-              </span>
-              {entry.connected && entry.vaultPath !== undefined && (
-                <p className="client-points-at">
-                  {t("connect.pointsAt", { vaultPath: entry.vaultPath })}
-                </p>
-              )}
-
-              <button
-                type="button"
-                onClick={() => void handleConnect(entry.client)}
-                disabled={connecting === entry.client}
-              >
-                {t("connect.connectButton")}
-              </button>
-
-              {results[entry.client]?.outcome === "connected" && (
-                <p className="connect-success">
-                  {results[entry.client]?.backupPath === undefined
-                    ? t("connect.connectedDetailNoBackup", {
-                        configPath: results[entry.client]?.configPath ?? "",
-                        client: entry.client,
-                      })
-                    : t("connect.connectedDetail", {
-                        configPath: results[entry.client]?.configPath ?? "",
-                        backupPath: results[entry.client]?.backupPath ?? "",
-                        client: entry.client,
-                      })}
-                </p>
-              )}
-
-              {results[entry.client]?.outcome === "configUnreadable" && (
-                <div className="connect-manual-fallback">
-                  <p className="error">
-                    {t("connect.failureInvalidConfig", { client: entry.client })}
+                {entry.connected && entry.vaultPath !== undefined && (
+                  <p className="client-points-at">
+                    {t("connect.pointsAt", { vaultPath: entry.vaultPath })}
                   </p>
-                  <p>{t("connect.manualInstructionsIntro")}</p>
-                  <pre>{results[entry.client]?.manualSnippet}</pre>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleCopy(entry.client, results[entry.client]?.manualSnippet ?? "")
-                    }
-                  >
-                    {copiedFor === entry.client
-                      ? t("connect.manualInstructionsCopied")
-                      : t("common.copy")}
-                  </button>
-                </div>
-              )}
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => void handleConnect(entry.client)}
+                  disabled={connecting === entry.client}
+                >
+                  {t("connect.connectButton")}
+                </button>
+
+                {results[entry.client]?.outcome === "connected" && (
+                  <p className="connect-success">
+                    {results[entry.client]?.backupPath === undefined
+                      ? t("connect.connectedDetailNoBackup", {
+                          configPath: results[entry.client]?.configPath ?? "",
+                          client: entry.client,
+                        })
+                      : t("connect.connectedDetail", {
+                          configPath: results[entry.client]?.configPath ?? "",
+                          backupPath: results[entry.client]?.backupPath ?? "",
+                          client: entry.client,
+                        })}
+                  </p>
+                )}
+
+                {results[entry.client]?.outcome === "configUnreadable" && (
+                  <div className="connect-manual-fallback">
+                    <p className="error">
+                      {t("connect.failureInvalidConfig", { client: entry.client })}
+                    </p>
+                    <p>{t("connect.manualInstructionsIntro")}</p>
+                    <pre>{results[entry.client]?.manualSnippet}</pre>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleCopy(entry.client, results[entry.client]?.manualSnippet ?? "")
+                      }
+                    >
+                      {copiedFor === entry.client
+                        ? t("connect.manualInstructionsCopied")
+                        : t("common.copy")}
+                    </button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <aside className="connect-rail">
+          <h2>{t("connect.stepsTitle")}</h2>
+          <ol className="steps-list">
+            <li>
+              <span className="step-num done">1</span>
+              <span className="step-body">
+                <strong>{t("connect.step1Title")}</strong>
+                <span>{t("connect.step1Body")}</span>
+              </span>
             </li>
-          ))}
-        </ul>
-      )}
+            <li>
+              <span className="step-num">2</span>
+              <span className="step-body">
+                <strong>{t("connect.step2Title")}</strong>
+                <span>{t("connect.step2Body")}</span>
+              </span>
+            </li>
+            <li>
+              <span className="step-num">3</span>
+              <span className="step-body">
+                <strong>{t("connect.step3Title")}</strong>
+                <span>{t("connect.step3Body")}</span>
+              </span>
+            </li>
+          </ol>
+
+          {nodeWarningNeeded && (
+            <div className="warning">
+              <p className="warning-title">{t("connect.nodeMissingTitle")}</p>
+              <p>{t("connect.nodeMissingBody")}</p>
+              {/* Plain text, not a link: the app never opens a URL or makes a
+                  network request of any kind (§8.3), so there is no href here. */}
+              <p className="docs-hint">{t("connect.nodeMissingDocsLink")}</p>
+            </div>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }

@@ -150,52 +150,24 @@
   padding: 16px;
 }
 
-/* connect-tools.tsx — had no styling at all before (item 89b never covered
-   it): client cards rendered as a bare bulleted list. Added alongside the
-   new steps disclosure, both following the same bordered-box vocabulary as
-   .check-row / .kit-text below. */
-.connect-tools .disclosure {
+/* connect-tools.tsx — card grid + an always-visible rail (GUI-LAYOUT §5.5,
+   D-21c: replaces the collapsed steps disclosure, the advance's only state
+   removal). Following the same bordered-box vocabulary as .check-row /
+   .kit-text below. */
+.connect-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 24px;
+  align-items: start;
+}
+.connect-rail {
   border: 1px solid var(--color-border);
   border-radius: 6px;
   background: var(--color-surface);
-  margin-bottom: 24px;
-  overflow: hidden;
+  padding: 16px;
 }
-.connect-tools .disclosure-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 14px 16px;
-  border: none;
-  border-radius: 0;
-  background: none;
-  color: var(--color-text);
-  text-align: left;
-  cursor: pointer;
-}
-.connect-tools .disclosure.open .disclosure-header {
-  border-bottom: 1px solid var(--color-border);
-}
-.connect-tools .disclosure-header .chevron {
-  flex-shrink: 0;
-  color: var(--color-text-muted);
-  transition: transform 0.15s;
-}
-.connect-tools .disclosure.open .chevron {
-  color: var(--color-accent);
-  transform: rotate(90deg);
-}
-.connect-tools .disclosure-title {
-  flex: 1;
-  font-weight: 600;
-}
-.connect-tools .disclosure-sub {
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
-}
-.connect-tools .disclosure-body {
-  padding: 18px 16px 16px;
+.connect-rail h2 {
+  margin-top: 0;
 }
 .connect-tools .steps-list {
   list-style: none;
@@ -252,6 +224,7 @@
   list-style: none;
   padding: 0;
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 12px;
 }
 .connect-tools .client-card {
