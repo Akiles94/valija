@@ -133,13 +133,15 @@ export const es: Catalog = {
 
   pack: {
     title: "Paquete de contexto",
+    viewRendered: "Con formato",
+    viewRaw: "Markdown sin formato",
     copy: "Copiar",
     export: "Exportar…",
     exportFormatMarkdown: "Markdown",
     exportFormatJson: "JSON",
     exportedTo: "Guardado en {path}",
     notTranslatedNotice:
-      "Este es tu contenido guardado, mostrado exactamente como se exportará; nunca se traduce.",
+      "Este es tu contenido guardado; nunca se traduce. La vista sin formato muestra exactamente el Markdown que Copiar pone en tu portapapeles.",
   },
 
   connect: {

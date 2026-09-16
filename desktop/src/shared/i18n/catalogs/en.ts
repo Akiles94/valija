@@ -132,13 +132,15 @@ export const en = {
 
   pack: {
     title: "Context pack",
+    viewRendered: "Rendered",
+    viewRaw: "Raw Markdown",
     copy: "Copy",
     export: "Export…",
     exportFormatMarkdown: "Markdown",
     exportFormatJson: "JSON",
     exportedTo: "Saved to {path}",
     notTranslatedNotice:
-      "This is your saved content, shown exactly as it will be exported — never translated.",
+      "This is your saved content, never translated. The raw view shows the exact Markdown that Copy puts on your clipboard.",
   },
 
   connect: {
