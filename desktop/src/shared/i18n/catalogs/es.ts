@@ -87,6 +87,7 @@ export const es: Catalog = {
       "Nada sale de este equipo a menos que tú mismo lo copies. No existe un restablecimiento de contraseña: el kit de recuperación es la única otra forma de entrar.",
     getStarted: "Comenzar",
     replayHelp: "Ver de nuevo el recorrido de bienvenida",
+    progressLabel: "Diapositiva {current} de {total}",
   },
 
   locked: {
