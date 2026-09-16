@@ -1,8 +1,9 @@
 # GUI-LAYOUT — Plan
 
-**Status: awaiting Gate P.** No `Approved:` line yet → `guard-implementation.sh` still blocks every
-edit under `desktop/**`, `src/**`, `package.json` and build config. Implementation must not begin
-until Oscar reviews this file and records approval as a first line:
+Approved: Oscar 2026-09-16
+
+**Status: Gate P closed** (Oscar, 2026-09-16, "Aprobado" — all ten Decisions to confirm, D-P1…D-P10,
+accepted as their stated defaults). Implementation may now proceed slice by slice.
 
 ```
 Approved: Oscar <date>
