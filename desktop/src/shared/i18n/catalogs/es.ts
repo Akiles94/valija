@@ -109,7 +109,10 @@ export const es: Catalog = {
   project: {
     typeFilterAll: "Todos los tipos",
     typeFilterImported: "Importado",
+    typeFilterLabel: "Filtrar por tipo",
     pinned: "Fijado",
+    pinnedSection: "Fijados",
+    otherItems: "Otros elementos",
     noItems: "Todavía no hay elementos en este proyecto.",
     showMore: "Ver más",
     showLess: "Ver menos",

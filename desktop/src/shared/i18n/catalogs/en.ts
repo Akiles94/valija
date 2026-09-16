@@ -108,7 +108,10 @@ export const en = {
   project: {
     typeFilterAll: "All types",
     typeFilterImported: "Imported",
+    typeFilterLabel: "Filter by type",
     pinned: "Pinned",
+    pinnedSection: "Pinned",
+    otherItems: "Other items",
     noItems: "No items in this project yet.",
     showMore: "Show more",
     showLess: "Show less",

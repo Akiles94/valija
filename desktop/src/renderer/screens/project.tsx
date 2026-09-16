@@ -1,9 +1,10 @@
-import { type ChangeEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ITEM_TYPES } from "../../../../src/context/domain/values/item-type.js";
 import { ItemCard } from "../components/item-card.js";
 import type { ValijaBridge } from "../state/bridge.js";
 import { wireFocusRefresh } from "../state/focus-refresh.js";
 import { useErrorCopy, useT } from "../state/i18n-context.js";
+import { partitionPinnedItems } from "../state/pinned-partition.js";
 
 interface ItemRow {
   id: string;
@@ -64,23 +65,62 @@ export function ProjectScreen({
     };
   }, [project, typeFilter]);
 
-  function handleTypeChange(event: ChangeEvent<HTMLSelectElement>) {
-    setTypeFilter(event.target.value);
+  function itemList(rows: ItemRow[]) {
+    return (
+      <ul className="item-list">
+        {rows.map((item) => (
+          <ItemCard
+            key={item.id}
+            type={item.type}
+            content={item.content}
+            tags={item.tags}
+            pinned={item.pinned}
+            createdAt={item.createdAt}
+          />
+        ))}
+      </ul>
+    );
   }
 
   return (
     <div className="screen project">
       <h1>{project}</h1>
-      <div className="actions">
-        <select value={typeFilter} onChange={handleTypeChange}>
-          <option value={ALL_TYPES}>{t("project.typeFilterAll")}</option>
+      <div className="project-toolbar">
+        <fieldset className="chip-row">
+          <legend className="sr-only">{t("project.typeFilterLabel")}</legend>
+          <label className="chip">
+            <input
+              type="radio"
+              name="type-filter"
+              value={ALL_TYPES}
+              checked={typeFilter === ALL_TYPES}
+              onChange={() => setTypeFilter(ALL_TYPES)}
+            />
+            {t("project.typeFilterAll")}
+          </label>
           {ITEM_TYPES.map((type) => (
-            <option key={type} value={type}>
+            <label key={type} className="chip">
+              <input
+                type="radio"
+                name="type-filter"
+                value={type}
+                checked={typeFilter === type}
+                onChange={() => setTypeFilter(type)}
+              />
               {type}
-            </option>
+            </label>
           ))}
-          <option value="imported">{t("project.typeFilterImported")}</option>
-        </select>
+          <label className="chip">
+            <input
+              type="radio"
+              name="type-filter"
+              value="imported"
+              checked={typeFilter === "imported"}
+              onChange={() => setTypeFilter("imported")}
+            />
+            {t("project.typeFilterImported")}
+          </label>
+        </fieldset>
         <button type="button" onClick={() => onViewPack(project)}>
           {t("pack.title")}
         </button>
@@ -89,20 +129,20 @@ export function ProjectScreen({
       {items !== null && items.length === 0 && (
         <p className="empty-title">{t("project.noItems")}</p>
       )}
-      {items !== null && items.length > 0 && (
-        <ul className="item-list">
-          {items.map((item) => (
-            <ItemCard
-              key={item.id}
-              type={item.type}
-              content={item.content}
-              tags={item.tags}
-              pinned={item.pinned}
-              createdAt={item.createdAt}
-            />
-          ))}
-        </ul>
-      )}
+      {items !== null &&
+        items.length > 0 &&
+        (() => {
+          const { pinned, rest } = partitionPinnedItems(items);
+          if (pinned.length === 0) return itemList(items);
+          return (
+            <>
+              <h2 className="item-section-title">{t("project.pinnedSection")}</h2>
+              {itemList(pinned)}
+              <h2 className="item-section-title">{t("project.otherItems")}</h2>
+              {itemList(rest)}
+            </>
+          );
+        })()}
     </div>
   );
 }
