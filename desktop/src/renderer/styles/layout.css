@@ -97,12 +97,66 @@
   color: var(--color-text-muted);
 }
 
-/* Slice 11: the entry cluster (No vault / Create vault / Locked) is centred, single-column, and never shares the workspace grid. */
+/* The entry cluster (No vault / Create vault / Locked / Migration confirm —
+   GUI-LAYOUT §5.11, D-20): a fixed-width dark brand panel beside the
+   screen's own content, never sharing the workspace grid. */
 .entry-shell {
   min-height: 100vh;
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+}
+
+.entry-brand {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  padding: 48px;
+  /* D-20's rider: in the dark app theme the two panels are near-identical —
+     the split stays legible through a border, never a new colour. */
+  border-right: 1px solid var(--color-border);
+}
+
+.entry-brand-mark {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.entry-tagline {
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.entry-trust {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--color-text-muted);
+}
+
+.entry-content {
+  position: relative;
+  display: flex;
+}
+
+/* The centring `base.css`'s `.app-shell > .screen` rule no longer reaches
+   now that the entry screens are nested one level deeper. */
+.entry-content > .screen {
+  margin: auto;
+  max-width: 480px;
+  width: 100%;
+}
+
+.entry-content .settings-gear {
+  position: absolute;
+  top: 24px;
+  right: 24px;
 }
 
 /* D-4's responsive floor: below this width every two-column split (Search, Import, Connect, the Dashboard grid) stacks to one column with the rail/detail panel below the primary content — review-by-eye, jsdom does not lay out. */
@@ -127,5 +181,15 @@
   .connect-body,
   .import-body {
     grid-template-columns: 1fr;
+  }
+
+  /* Brand panel above, per source order — no reordering needed. */
+  .entry-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .entry-brand {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
   }
 }

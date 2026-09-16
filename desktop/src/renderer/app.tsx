@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { shouldPlayTour } from "../main/application/policies/onboarding-tour.js";
 import type { AppPreferencesMessage, PreferencesWriteRequest } from "../shared/ipc/messages.js";
 import { Breadcrumb } from "./components/breadcrumb.js";
+import { EntryShell } from "./components/entry-shell.js";
 import { WorkspaceSidebar } from "./components/workspace-sidebar.js";
 import { ConnectToolsScreen } from "./screens/connect-tools.js";
 import { CreateVaultScreen } from "./screens/create-vault.js";
@@ -228,27 +229,35 @@ function Router({
 
     case "no-vault":
       return (
-        <NoVaultScreen
-          bridge={bridge}
-          onCreateVault={() => setState(creating())}
-          onPointedAtExisting={() => setState(afterLock())}
-        />
+        <EntryShell>
+          <NoVaultScreen
+            bridge={bridge}
+            onCreateVault={() => setState(creating())}
+            onPointedAtExisting={() => setState(afterLock())}
+          />
+        </EntryShell>
       );
 
     case "creating":
-      return <CreateVaultScreen bridge={bridge} onCreated={() => setState(afterCreateSuccess())} />;
+      return (
+        <EntryShell>
+          <CreateVaultScreen bridge={bridge} onCreated={() => setState(afterCreateSuccess())} />
+        </EntryShell>
+      );
 
     case "locked":
       return (
-        <LockedScreen
-          bridge={bridge}
-          onUnlocked={(result) => setState(afterUnlockSuccess(result.fork))}
-          onUpgradeRequired={(credential) => {
-            setPendingCredential(credential);
-            setState(afterUnlockUpgradeRequired());
-          }}
-          onOpenSettings={onOpenSettings}
-        />
+        <EntryShell>
+          <LockedScreen
+            bridge={bridge}
+            onUnlocked={(result) => setState(afterUnlockSuccess(result.fork))}
+            onUpgradeRequired={(credential) => {
+              setPendingCredential(credential);
+              setState(afterUnlockUpgradeRequired());
+            }}
+            onOpenSettings={onOpenSettings}
+          />
+        </EntryShell>
       );
 
     case "unlocking":
@@ -261,19 +270,21 @@ function Router({
         return null;
       }
       return (
-        <MigrationConfirmScreen
-          bridge={bridge}
-          credential={pendingCredential}
-          dbPath={dbPath}
-          onCancel={() => {
-            setPendingCredential(null);
-            setState(afterMigrationCancelled());
-          }}
-          onUnlocked={(result) => {
-            setPendingCredential(null);
-            setState(afterUnlockSuccess(result.fork));
-          }}
-        />
+        <EntryShell>
+          <MigrationConfirmScreen
+            bridge={bridge}
+            credential={pendingCredential}
+            dbPath={dbPath}
+            onCancel={() => {
+              setPendingCredential(null);
+              setState(afterMigrationCancelled());
+            }}
+            onUnlocked={(result) => {
+              setPendingCredential(null);
+              setState(afterUnlockSuccess(result.fork));
+            }}
+          />
+        </EntryShell>
       );
 
     case "unlocked":

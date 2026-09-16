@@ -35,6 +35,13 @@ export const en = {
     breadcrumb: "Breadcrumb",
   },
 
+  entry: {
+    tagline: "Your AI context, encrypted and on your machine.",
+    trustEncrypted: "End-to-end encrypted on this machine.",
+    trustPassphrase: "You hold the passphrase — there is no reset.",
+    trustTools: "Works with Claude, ChatGPT and Cursor.",
+  },
+
   noVault: {
     title: "No vault on this machine yet.",
     createVault: "Create a vault",
