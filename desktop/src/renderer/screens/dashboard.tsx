@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { formatDate } from "../../shared/i18n/format.js";
+import { ProjectIcon } from "../components/icons.js";
 import type { ValijaBridge } from "../state/bridge.js";
 import { wireFocusRefresh } from "../state/focus-refresh.js";
 import { useErrorCopy, useLanguage, useT } from "../state/i18n-context.js";
@@ -117,6 +118,7 @@ export function DashboardScreen({
               className="project-card"
               onClick={() => onSelectProject(project.name)}
             >
+              <ProjectIcon />
               <span className="project-name">{project.name}</span>
               <span className="project-item-count">
                 {t("dashboard.itemCount", { count: project.itemCount })}

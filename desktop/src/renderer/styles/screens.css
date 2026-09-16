@@ -18,7 +18,8 @@
   list-style: none;
   padding: 0;
   display: grid;
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
 }
 .project-card {
   width: 100%;
@@ -27,6 +28,12 @@
   align-items: flex-start;
   gap: 4px;
   text-align: left;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+.project-card:hover {
+  border-color: var(--color-accent);
 }
 
 /* recovery-kit.tsx — permanently dark regardless of app theme (D-Q's exception). min-height fills the window with its own repainted subtree, not just the .kit-text box. */
