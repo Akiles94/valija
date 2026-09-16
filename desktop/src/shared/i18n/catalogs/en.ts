@@ -216,6 +216,10 @@ export const en = {
   diagnostics: {
     title: "Check my setup",
     run: "Run checks",
+    sectionSystem: "System",
+    sectionVault: "Vault",
+    sectionTools: "Connected tools",
+    sectionOther: "Other checks",
     keychainProbeNotice:
       "The keychain check writes and immediately deletes a test entry in your OS keychain. On macOS this may prompt you.",
     nodeProbeNotice:

@@ -280,27 +280,76 @@
   font-size: 0.85rem;
 }
 
-/* diagnostics.tsx */
-.diagnostic-checks {
-  list-style: none;
-  padding: 0;
-  display: grid;
-  gap: 12px;
+/* diagnostics.tsx — a grouped table, one <table> per section (GUI-LAYOUT
+   §5.7, D-14). Colour on the status dot is a *second* signal only — the
+   status word stays, and .check-row's left border keeps carrying warning/
+   fatal too. */
+.screen-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
-.check-row {
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: 12px;
+.screen-toolbar h1 {
+  margin: 0;
 }
-.check-row.warning {
-  border-color: var(--color-warning);
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
 }
-.check-row.fatal {
-  border-color: var(--color-danger);
+.diagnostic-section {
+  margin-top: 24px;
+}
+.diagnostic-section h2 {
+  margin-bottom: 8px;
+}
+.diagnostic-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.diagnostic-table td {
+  border-top: 1px solid var(--color-border);
+  padding: 10px 8px;
+  vertical-align: top;
+}
+/* Border on the row's first cell, not the <tr> itself — table rows don't
+   paint their own borders per the CSS table model. */
+.check-row.warning td:first-child {
+  border-left: 3px solid var(--color-warning);
+}
+.check-row.fatal td:first-child {
+  border-left: 3px solid var(--color-danger);
+}
+.check-status-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+}
+.status-dot.ok {
+  background: var(--color-accent);
+}
+.status-dot.warning {
+  background: var(--color-warning);
+}
+.status-dot.fatal {
+  background: var(--color-danger);
 }
 .check-name {
   font-weight: 600;
-  margin-right: 8px;
+}
+.check-detail-cell p {
+  margin: 0 0 4px;
+}
+.check-detail-cell p:last-child {
+  margin-bottom: 0;
 }
 
 /* project.tsx — toolbar: the type-filter chip row plus the Context pack action (GUI-LAYOUT §5.2, D-11). */
