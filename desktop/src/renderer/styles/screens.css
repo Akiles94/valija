@@ -83,6 +83,52 @@
   word-break: break-word;
 }
 
+/* search.tsx — master-detail split (GUI-LAYOUT §5.3, D-7 Option 2). Single
+   column below the 900px breakpoint (D-4), handled by layout.css's one
+   shared media block, not repeated here. */
+.search-split {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+.hit-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hit-row {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.hit-row[aria-current="true"] {
+  border-color: var(--color-accent);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+.hit-preview {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text-muted);
+}
+.hit-detail {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 16px;
+}
+
 /* connect-tools.tsx — had no styling at all before (item 89b never covered
    it): client cards rendered as a bare bulleted list. Added alongside the
    new steps disclosure, both following the same bordered-box vocabulary as

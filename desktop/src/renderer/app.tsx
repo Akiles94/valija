@@ -340,7 +340,12 @@ function Workspace({
             onViewPack={(project) => setView({ screen: "pack-preview", project })}
           />
         )}
-        {view.screen === "search" && <SearchScreen bridge={bridge} />}
+        {view.screen === "search" && (
+          <SearchScreen
+            bridge={bridge}
+            onOpenProject={(project) => setView({ screen: "project", project })}
+          />
+        )}
         {view.screen === "pack-preview" && (
           <PackPreviewScreen bridge={bridge} project={view.project} />
         )}

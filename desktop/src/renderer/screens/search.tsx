@@ -1,7 +1,9 @@
 import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
 import { formatDate } from "../../shared/i18n/format.js";
+import { MarkdownContent } from "../components/markdown-content.js";
 import type { ValijaBridge } from "../state/bridge.js";
 import { useErrorCopy, useLanguage, useT } from "../state/i18n-context.js";
+import { selectedHit } from "../state/search-selection.js";
 
 interface SearchHit {
   id: string;
@@ -13,8 +15,14 @@ interface SearchHit {
 
 const ALL_PROJECTS = "";
 
-/** `SearchContext`, with optional project narrowing (§9 item 54). */
-export function SearchScreen({ bridge }: { bridge: ValijaBridge }) {
+/** `SearchContext`, with optional project narrowing (§9 item 54), as a master-detail split (§5.3, D-7 Option 2). */
+export function SearchScreen({
+  bridge,
+  onOpenProject,
+}: {
+  bridge: ValijaBridge;
+  onOpenProject: (project: string) => void;
+}) {
   const t = useT();
   const language = useLanguage();
   const errorCopy = useErrorCopy();
@@ -23,6 +31,7 @@ export function SearchScreen({ bridge }: { bridge: ValijaBridge }) {
   const [projectScope, setProjectScope] = useState<string>(ALL_PROJECTS);
   const [results, setResults] = useState<SearchHit[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: bridge is a stable module-scoped singleton, not reactive state
   useEffect(() => {
@@ -39,6 +48,7 @@ export function SearchScreen({ bridge }: { bridge: ValijaBridge }) {
     if (nextQuery.trim().length === 0) {
       setResults(null);
       setError(null);
+      setSelectedId(null);
       return;
     }
     const result = await bridge.content.search(
@@ -50,6 +60,7 @@ export function SearchScreen({ bridge }: { bridge: ValijaBridge }) {
     }
     setError(null);
     setResults(result.value);
+    setSelectedId(null);
   }
 
   function handleSubmit(event: FormEvent) {
@@ -62,6 +73,8 @@ export function SearchScreen({ bridge }: { bridge: ValijaBridge }) {
     setProjectScope(nextScope);
     void runSearch(query, nextScope);
   }
+
+  const hit = results !== null ? selectedHit(results, selectedId) : null;
 
   return (
     <div className="screen search">
@@ -87,17 +100,43 @@ export function SearchScreen({ bridge }: { bridge: ValijaBridge }) {
       {results !== null && (
         <>
           <p className="result-count">{t("search.resultCount", { count: results.length })}</p>
-          {results.length === 0 && <p className="empty-title">{t("search.noResults")}</p>}
-          <ul className="search-results">
-            {results.map((hit) => (
-              <li key={hit.id} className="search-result">
-                <span className="hit-project">{hit.project}</span>
-                <span className="hit-type">{hit.type}</span>
-                <span className="hit-date">{formatDate(new Date(hit.createdAt), language)}</span>
-                <p className="hit-content">{hit.content}</p>
-              </li>
-            ))}
-          </ul>
+          {results.length === 0 ? (
+            <p className="empty-title">{t("search.noResults")}</p>
+          ) : (
+            <div className="search-split">
+              <ul className="hit-list">
+                {results.map((row) => (
+                  <li key={row.id}>
+                    <button
+                      type="button"
+                      className="hit-row"
+                      aria-current={row.id === hit?.id}
+                      onClick={() => setSelectedId(row.id)}
+                    >
+                      <span className="hit-project">{row.project}</span>
+                      <span className="hit-type">{row.type}</span>
+                      <span className="hit-date">
+                        {formatDate(new Date(row.createdAt), language)}
+                      </span>
+                      <span className="hit-preview">{row.content}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="hit-detail">
+                {hit === null ? (
+                  <p className="empty-title">{t("search.noSelection")}</p>
+                ) : (
+                  <>
+                    <MarkdownContent content={hit.content} />
+                    <button type="button" onClick={() => onOpenProject(hit.project)}>
+                      {t("search.openProject")}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

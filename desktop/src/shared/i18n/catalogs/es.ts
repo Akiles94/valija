@@ -127,6 +127,8 @@ export const es: Catalog = {
       other: "{count} resultados",
     },
     noResults: "Sin resultados.",
+    openProject: "Abrir proyecto",
+    noSelection: "Selecciona un resultado para ver su contenido completo.",
   },
 
   pack: {

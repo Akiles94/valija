@@ -126,6 +126,8 @@ export const en = {
       other: "{count} results",
     } satisfies PluralForm,
     noResults: "No results.",
+    openProject: "Open project",
+    noSelection: "Select a result to see its full content.",
   },
 
   pack: {

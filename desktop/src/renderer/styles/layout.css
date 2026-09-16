@@ -122,4 +122,8 @@
   .sidebar-spacer {
     display: none;
   }
+
+  .search-split {
+    grid-template-columns: 1fr;
+  }
 }
