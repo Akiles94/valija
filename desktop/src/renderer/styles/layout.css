@@ -123,7 +123,8 @@
     display: none;
   }
 
-  .search-split {
+  .search-split,
+  .connect-body {
     grid-template-columns: 1fr;
   }
 }
