@@ -124,7 +124,8 @@
   }
 
   .search-split,
-  .connect-body {
+  .connect-body,
+  .import-body {
     grid-template-columns: 1fr;
   }
 }

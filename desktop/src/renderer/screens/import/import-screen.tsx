@@ -1,23 +1,26 @@
 import { useEffect, useRef, useState } from "react";
-import { formatDate } from "../../shared/i18n/format.js";
 import type {
   ImportFormatOverride,
   ImportListingRow,
   ImportOutcomeResponse,
-} from "../../shared/ipc/messages.js";
-import type { ValijaBridge } from "../state/bridge.js";
-import { useErrorCopy, useLanguage, useT } from "../state/i18n-context.js";
+} from "../../../shared/ipc/messages.js";
+import type { ValijaBridge } from "../../state/bridge.js";
+import { useErrorCopy, useLanguage, useT } from "../../state/i18n-context.js";
 import {
   allChecked,
   buildPickSpec,
   countSelection,
   type SortDirection,
   sortListingByDate,
-} from "../state/import-selection.js";
-import { waitForNextPaint } from "../state/next-paint.js";
-import { previewProjectSlug, slugifyProjectName } from "../state/project-slug.js";
+  toggleVisibleSelection,
+  visibleSelectionState,
+} from "../../state/import-selection.js";
+import { waitForNextPaint } from "../../state/next-paint.js";
+import { previewProjectSlug, slugifyProjectName } from "../../state/project-slug.js";
+import { ConversationTable } from "./conversation-table.js";
+import { DestinationPicker, NEW_PROJECT } from "./destination-picker.js";
+import { ImportStatus } from "./import-status.js";
 
-const NEW_PROJECT = "__new__";
 const FORMAT_OPTIONS: readonly ImportFormatOverride[] = ["chatgpt", "claude", "generic"];
 
 type Working = "reading" | "preview" | "import" | null;
@@ -36,7 +39,10 @@ const REJECTED_CALL_CODE = "UNEXPECTED";
  * sort, select, and either Preview (a dry run) or Import. Every write routes
  * through `bridge.import.run`, which wraps the same `ImportConversations`
  * the CLI uses (§9 item 77) — nothing here re-parses or re-chunks a
- * conversation.
+ * conversation. GUI-LAYOUT slice 10c split the table, the destination
+ * controls and the status region into `conversation-table.tsx` /
+ * `destination-picker.tsx` / `import-status.tsx`; this file keeps every
+ * handler and every piece of state.
  */
 export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
   const t = useT();
@@ -48,6 +54,7 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
   const [displayName, setDisplayName] = useState("");
   const [listing, setListing] = useState<ImportListingRow[] | null>(null);
   const [from, setFrom] = useState<ImportFormatOverride | undefined>(undefined);
+  const [detectedFormat, setDetectedFormat] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [checked, setChecked] = useState<Set<number>>(new Set());
@@ -123,6 +130,7 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
         return;
       }
       setFrom(override);
+      setDetectedFormat(result.value.source);
       setListing(result.value.listing);
       setChecked(allChecked(result.value.listing));
       setStage("listed");
@@ -215,168 +223,141 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
       : displayedListing.filter((row) =>
           row.title.toLowerCase().includes(filterText.trim().toLowerCase()),
         );
+  const headerState = visibleSelectionState(checked, visibleListing);
   const busy = busyMessage();
+  const disabled = working !== null;
+
+  function handleToggleVisible() {
+    setChecked((prev) => toggleVisibleSelection(prev, visibleListing));
+  }
 
   return (
     <div className="screen import">
       <h1>{t("import.title")}</h1>
       <p className="explainer">{t("import.explainer")}</p>
 
-      {stage === "choose" && (
-        <button type="button" disabled={working !== null} onClick={() => void handleChooseFile()}>
-          {t("import.chooseFile")}
-        </button>
-      )}
-
-      {stage === "formatOverride" && (
-        <div className="format-override">
-          <p>{displayName}</p>
-          <p>{t("import.formatOverridePrompt")}</p>
-          {FORMAT_OPTIONS.map((format) => (
-            <button
-              type="button"
-              key={format}
-              disabled={working !== null}
-              onClick={() => handleFormatChoice(format)}
-            >
-              {format}
+      <div className={stage === "listed" ? "import-body" : "import-body single"}>
+        <div className="import-main">
+          {stage === "choose" && (
+            <button type="button" disabled={disabled} onClick={() => void handleChooseFile()}>
+              {t("import.chooseFile")}
             </button>
-          ))}
-        </div>
-      )}
+          )}
 
-      {stage === "listed" && listing !== null && (
-        <div className="import-listing">
-          <p>{displayName}</p>
-          <p className="conversation-count">
-            {t("import.conversationCount", { count: listing.length })}
-          </p>
-
-          <input
-            type="search"
-            placeholder={t("import.filterPlaceholder")}
-            value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
-          />
-          <button
-            type="button"
-            onClick={() => setSortDirection((d) => (d === "asc" ? "desc" : "asc"))}
-          >
-            {sortDirection === "asc" ? "↑" : "↓"}
-          </button>
-
-          <ul className="conversation-list">
-            {visibleListing.map((row) => (
-              <li key={row.index} className="conversation-row">
-                <label>
-                  <input
-                    type="checkbox"
-                    disabled={working !== null}
-                    checked={checked.has(row.index)}
-                    onChange={() => toggleChecked(row.index)}
-                  />
-                  <span className="conversation-title">{row.title}</span>
-                  <span className="conversation-date">
-                    {formatDate(new Date(row.date), language)}
-                  </span>
-                  <span className="conversation-chunks">{row.estimatedChunks}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-
-          <label>
-            {t("import.projectLabel")}
-            <select value={projectChoice} onChange={(e) => setProjectChoice(e.target.value)}>
-              <option value={NEW_PROJECT}>{t("import.projectNewOption")}</option>
-              {existingProjects.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
+          {stage === "formatOverride" && (
+            <div className="format-override">
+              <p>{displayName}</p>
+              <p>{t("import.formatOverridePrompt")}</p>
+              {FORMAT_OPTIONS.map((format) => (
+                <button
+                  type="button"
+                  key={format}
+                  disabled={disabled}
+                  onClick={() => handleFormatChoice(format)}
+                >
+                  {format}
+                </button>
               ))}
-            </select>
-          </label>
-          {projectChoice === NEW_PROJECT && (
-            <div className="new-project-field">
-              <label htmlFor="new-project-name">{t("import.projectNameLabel")}</label>
-              <input
-                id="new-project-name"
-                type="text"
-                value={newProjectName}
-                onChange={(e) => setNewProjectName(e.target.value)}
-                placeholder={t("import.projectNamePlaceholder")}
-                aria-describedby="new-project-name-hint"
-              />
-              <p id="new-project-name-hint" className="project-slug-hint">
-                {projectSlugHintText()}
-              </p>
             </div>
           )}
-        </div>
-      )}
 
-      {/* One region for busy, result and error (D-4), mounted unconditionally so it
-          can hold a loadListing error even while stage is still "choose", and so
-          an assistive-tech user gets it announced before it ever has content. */}
-      <div
-        className="import-status"
-        aria-live="polite"
-        aria-busy={working !== null}
-        ref={statusRef}
-      >
-        {busy !== null && (
-          <>
-            <p className="import-busy">{busy}</p>
-            <p className="explainer">{t("import.mayStopResponding")}</p>
-          </>
-        )}
-        {error !== null && <p className="error">{error}</p>}
-        {resultOutcome !== null && resultMode !== null && (
-          <div className="import-result">
-            <p>
-              {t(resultMode === "preview" ? "import.previewSummary" : "import.importSummary", {
-                itemCount: resultOutcome.imported,
-                conversationCount: resultOutcome.conversations,
-                project: resolvedProjectName() ?? "",
-                skipped: resultOutcome.skipped,
-                failed: resultOutcome.failed,
-              })}
-            </p>
-            {resultOutcome.failures.length > 0 && (
-              <ul className="import-failures">
-                {resultOutcome.failures.map((failure) => (
-                  <li key={`${failure.conversation}-${failure.reason}`}>
-                    {t("import.perConversationFailure", {
-                      title: failure.conversation,
-                      reason: failure.reason,
-                    })}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {resultMode === "import" && <p>{t("import.excludedFromPacksNotice")}</p>}
-          </div>
-        )}
+          {stage === "listed" && listing !== null && (
+            <>
+              <p>{displayName}</p>
+              <p className="conversation-count">
+                {t("import.conversationCount", { count: listing.length })}
+              </p>
+
+              <input
+                type="search"
+                placeholder={t("import.filterPlaceholder")}
+                value={filterText}
+                onChange={(e) => setFilterText(e.target.value)}
+              />
+              <button
+                type="button"
+                className="link-button"
+                disabled={disabled}
+                onClick={handleToggleVisible}
+              >
+                {headerState === "all"
+                  ? t("import.deselectAllVisible")
+                  : t("import.selectAllVisible")}
+              </button>
+
+              <ConversationTable
+                rows={visibleListing}
+                checked={checked}
+                disabled={disabled}
+                headerState={headerState}
+                sortDirection={sortDirection}
+                language={language}
+                onToggleRow={toggleChecked}
+                onToggleVisible={handleToggleVisible}
+                onToggleSort={() => setSortDirection((d) => (d === "asc" ? "desc" : "asc"))}
+              />
+            </>
+          )}
+        </div>
+
+        <aside className="import-rail">
+          {stage === "listed" && listing !== null && (
+            <>
+              <p>
+                <span className="label">{t("import.fileLabel")}</span> <span>{displayName}</span>
+              </p>
+              {detectedFormat !== null && (
+                <p>
+                  <span className="label">{t("import.formatLabel")}</span>{" "}
+                  <span>{detectedFormat}</span>
+                </p>
+              )}
+              <p className="selected-count">
+                {t("import.selectedCount", { count: checked.size, total: listing.length })}
+              </p>
+              <DestinationPicker
+                existingProjects={existingProjects}
+                projectChoice={projectChoice}
+                newProjectName={newProjectName}
+                hintText={projectSlugHintText()}
+                onProjectChoiceChange={setProjectChoice}
+                onNewProjectNameChange={setNewProjectName}
+              />
+            </>
+          )}
+
+          {/* ALWAYS mounted, exactly one — a loadListing error or the "Reading
+              the file…" busy line can land here while stage is still "choose". */}
+          <ImportStatus
+            ariaBusy={disabled}
+            busyMessage={busy}
+            error={error}
+            resultOutcome={resultOutcome}
+            resultMode={resultMode}
+            resolvedProjectName={resolvedProjectName()}
+            statusRef={statusRef}
+          />
+
+          {stage === "listed" && listing !== null && (
+            <div className="actions">
+              <button
+                type="button"
+                disabled={!canSubmit || disabled}
+                onClick={() => void runSelection("preview")}
+              >
+                {working === "preview" ? t("import.previewingShort") : t("import.preview")}
+              </button>
+              <button
+                type="button"
+                disabled={!canSubmit || disabled}
+                onClick={() => void runSelection("import")}
+              >
+                {working === "import" ? t("import.importingShort") : t("import.importButton")}
+              </button>
+            </div>
+          )}
+        </aside>
       </div>
-
-      {stage === "listed" && listing !== null && (
-        <div className="actions">
-          <button
-            type="button"
-            disabled={!canSubmit || working !== null}
-            onClick={() => void runSelection("preview")}
-          >
-            {working === "preview" ? t("import.previewingShort") : t("import.preview")}
-          </button>
-          <button
-            type="button"
-            disabled={!canSubmit || working !== null}
-            onClick={() => void runSelection("import")}
-          >
-            {working === "import" ? t("import.importingShort") : t("import.importButton")}
-          </button>
-        </div>
-      )}
     </div>
   );
 }
