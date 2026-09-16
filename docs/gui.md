@@ -132,14 +132,30 @@ changes — before you confirm. Nothing is migrated silently; a fresh vault neve
 
 ---
 
+## Getting around
+
+Once unlocked, a left sidebar holds the app's four top-level destinations — **Dashboard**,
+**Search**, **Connect an AI tool**, and **Sync & safety** — with **Lock now** and the **Settings**
+gear pinned at the bottom, always reachable. Everything else (a project, a context pack, importing,
+diagnostics, moving your vault) is a drill-down reached from one of those four; instead of its own
+Back button, it shows a breadcrumb trail above the screen, so you can always see how you got there
+and jump back to any step in between.
+
+---
+
 ## Browsing, searching, and taking a pack
 
 Once unlocked, the **Dashboard** lists your projects the same way `valija projects` does. Opening
-one shows its items, filterable by type — including items you've imported. **Search** works across
-everything. Opening a project's **Context pack** shows exactly what `valija export <project>` would
-write to a file — the pack is your saved content, so it is never translated, even in a Spanish
-window. **Copy** puts it on your clipboard; **Export…** saves it to a file you choose, as Markdown
-or JSON.
+one shows its items, filterable by type — including items you've imported — with any pinned items
+grouped together above the rest under their own label. **Search** works across everything and shows
+results as a split: a list of hits on the left, the selected one's full content on the right, with
+an **Open project** action.
+
+Opening a project's **Context pack** shows a readable, formatted view of it by default, with a
+**Raw Markdown** toggle for the literal text underneath. Either view is a display choice only —
+**Copy** and **Export…** are unaffected by it, and always produce exactly what
+`valija export <project>` would write to a file: the pack is your saved content, so it is never
+translated, even in a Spanish window, in either view.
 
 Each item in a project's list is shown as a card: its type and date in the header, its tags as
 individual pills, and its content rendered as light Markdown — headings, **bold**, numbered and
@@ -148,6 +164,12 @@ the raw `##`/`**`/`` ` `` characters. Anything outside that small set is shown e
 typed. A long item collapses behind a **Show more** control. This is display only: the context
 pack, **Copy**, **Export…**, and what an AI tool receives through `get_context`/`search_context`
 are all unaffected and still show your content verbatim.
+
+**One deliberate divergence from the CLI, worth stating plainly:** `valija show` lists items in one
+flat, newest-first order. This app's Project view instead groups pinned items above the rest (each
+group keeping that same newest-first order within itself), because a browsing surface benefits from
+surfacing what you pinned — the CLI's flat order is unaffected, and the two are expected to look
+different side by side.
 
 ---
 
@@ -180,12 +202,22 @@ worth knowing: imported items are searchable and show up in their project, but t
 context packs — that's by design (imported history is bulk, unreviewed context; a pack stays made
 of things you've actively decided to keep).
 
+The listing itself is a table — a sortable Date column, and a scrolling region so a 100+
+conversation export stays navigable instead of pushing everything else far down the window. Every
+row starts checked. You can select or deselect all of them at once two ways — a **Select all** /
+**Deselect all** link above the table, or the checkbox in the table's own header — and both follow
+the same rule: they act only on the rows your filter is currently showing. Filter down to a handful
+of conversations and use either select-all control, and the conversations the filter is hiding keep
+whatever checked state they already had; clear the filter and you'll find them exactly as you left
+them. The selected count next to the destination picker always counts every checked conversation,
+not just the visible ones, so it doesn't change as you type into the filter.
+
 While it works, the screen says so. Choosing a file shows **Reading the file…**; pressing
-**Preview** or **Import** shows what it is doing and with how many conversations, disables both
-buttons until it finishes, and puts the result — the number of items imported, any conversations
-that failed, or the reason it couldn't — in that same spot, just above the buttons you pressed.
-One honest warning: a large export is read, parsed and written in one go, so while an import runs
-the window may stop responding and can't be moved. It hasn't crashed; let it finish.
+**Preview** or **Import** shows what it is doing and with how many conversations, disables every
+control on the screen until it finishes, and puts the result — the number of items imported, any
+conversations that failed, or the reason it couldn't — in that same spot, next to the destination
+picker. One honest warning: a large export is read, parsed and written in one go, so while an import
+runs the window may stop responding and can't be moved. It hasn't crashed; let it finish.
 
 Project names are stored as slugs — lowercase letters, digits and hyphens, nothing else. Typing a
 new project's name however you'd naturally write it (spaces, capitals, accents) is fine: the field
