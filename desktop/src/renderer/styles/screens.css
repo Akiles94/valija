@@ -82,6 +82,27 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+.pack-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.pack-toolbar .explainer {
+  flex: 1 0 100%;
+  margin: 0;
+}
+.pack-view-toggle {
+  display: flex;
+  gap: 4px;
+}
+.pack-view-toggle button[aria-pressed="true"] {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  border-color: var(--color-accent);
+  font-weight: 600;
+}
 
 /* search.tsx — master-detail split (GUI-LAYOUT §5.3, D-7 Option 2). Single
    column below the 900px breakpoint (D-4), handled by layout.css's one

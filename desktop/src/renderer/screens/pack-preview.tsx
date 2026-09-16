@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react";
+import { MarkdownContent } from "../components/markdown-content.js";
 import type { ValijaBridge } from "../state/bridge.js";
 import { useErrorCopy, useT } from "../state/i18n-context.js";
 
 type ExportFormat = "markdown" | "json";
+type PackView = "rendered" | "raw";
 
 /**
  * `exportProjectMarkdown` (Slice 4), rendered in the trusted process and
- * displayed as a plain string — never translated (D-V(d), §9 item 55). The
- * one wrapper sentence around it is the only translated copy on this screen.
+ * displayed as a plain string in the raw view — never translated (D-V(d),
+ * §9 item 55). The rendered view (GUI-LAYOUT §5.4, D-7 Option 2) is the same
+ * untrusted-content path `MarkdownContent` already uses for saved items;
+ * `handleCopy`/`handleExport` never read it — both still read `markdown`
+ * and `{project, format}` exactly as before, so Copy and Export always send
+ * the raw saved text regardless of which view is showing (§7.1).
  */
 export function PackPreviewScreen({ bridge, project }: { bridge: ValijaBridge; project: string }) {
   const t = useT();
@@ -17,6 +23,7 @@ export function PackPreviewScreen({ bridge, project }: { bridge: ValijaBridge; p
   const [format, setFormat] = useState<ExportFormat>("markdown");
   const [copied, setCopied] = useState(false);
   const [exportedPath, setExportedPath] = useState<string | null>(null);
+  const [view, setView] = useState<PackView>("rendered");
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: bridge and errorCopy are stable across renders; project is the real input
   useEffect(() => {
@@ -55,10 +62,20 @@ export function PackPreviewScreen({ bridge, project }: { bridge: ValijaBridge; p
   return (
     <div className="screen pack-preview">
       <h1>{t("pack.title")}</h1>
-      <p className="explainer">{t("pack.notTranslatedNotice")}</p>
-      {error !== null && <p className="error">{error}</p>}
-      {markdown !== null && <pre className="pack-text">{markdown}</pre>}
-      <div className="actions">
+      <div className="pack-toolbar">
+        <p className="explainer">{t("pack.notTranslatedNotice")}</p>
+        <div className="pack-view-toggle">
+          <button
+            type="button"
+            aria-pressed={view === "rendered"}
+            onClick={() => setView("rendered")}
+          >
+            {t("pack.viewRendered")}
+          </button>
+          <button type="button" aria-pressed={view === "raw"} onClick={() => setView("raw")}>
+            {t("pack.viewRaw")}
+          </button>
+        </div>
         <button type="button" onClick={handleCopy} disabled={markdown === null}>
           {copied ? t("common.copied") : t("pack.copy")}
         </button>
@@ -70,6 +87,13 @@ export function PackPreviewScreen({ bridge, project }: { bridge: ValijaBridge; p
           {t("pack.export")}
         </button>
       </div>
+      {error !== null && <p className="error">{error}</p>}
+      {markdown !== null &&
+        (view === "raw" ? (
+          <pre className="pack-text">{markdown}</pre>
+        ) : (
+          <MarkdownContent content={markdown} />
+        ))}
       {exportedPath !== null && (
         <p className="export-success">{t("pack.exportedTo", { path: exportedPath })}</p>
       )}
