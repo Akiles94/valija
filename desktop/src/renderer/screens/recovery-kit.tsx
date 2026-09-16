@@ -50,6 +50,7 @@ export function RecoveryKitScreen({
 
   return (
     <div className="screen recovery-kit" data-theme="dark">
+      <p className="kit-banner">{t("recoveryKit.shownOnceBanner")}</p>
       <h1>{t("recoveryKit.title")}</h1>
       <p className="explainer">{t("recoveryKit.englishNotice")}</p>
       <pre className="kit-text">{kitText ?? ""}</pre>
@@ -57,17 +58,19 @@ export function RecoveryKitScreen({
         {t("recoveryKit.copyKey")}
       </button>
       <p className="warning">{t("recoveryKit.copyKeyWarning")}</p>
-      <label>
-        <input
-          type="checkbox"
-          checked={acknowledged}
-          onChange={(e) => setAcknowledged(e.target.checked)}
-        />
-        {t("recoveryKit.acknowledge")}
-      </label>
-      <button type="button" disabled={!acknowledged} onClick={handleContinue}>
-        {t("recoveryKit.confirm")}
-      </button>
+      <div className="kit-gate">
+        <label>
+          <input
+            type="checkbox"
+            checked={acknowledged}
+            onChange={(e) => setAcknowledged(e.target.checked)}
+          />
+          {t("recoveryKit.acknowledge")}
+        </label>
+        <button type="button" disabled={!acknowledged} onClick={handleContinue}>
+          {t("recoveryKit.confirm")}
+        </button>
+      </div>
     </div>
   );
 }

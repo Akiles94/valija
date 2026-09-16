@@ -62,6 +62,7 @@ export const es: Catalog = {
 
   recoveryKit: {
     title: "Tu kit de recuperación",
+    shownOnceBanner: "Esto se muestra una sola vez. No volverá a aparecer.",
     englishNotice:
       "Esto está escrito y guardado en inglés a propósito, para que se lea igual en cualquier equipo, en cualquier idioma, dentro de varios años.",
     copyKey: "Copiar clave",

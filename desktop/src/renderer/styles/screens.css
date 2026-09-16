@@ -48,6 +48,18 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+.recovery-kit .kit-banner {
+  border: 1px solid var(--color-warning);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+.recovery-kit .kit-gate {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 16px;
+}
 
 /* onboarding.tsx — a tour slide, not a form: centered like the others (base.css), plus its own text/controls centered within that box. */
 .onboarding {

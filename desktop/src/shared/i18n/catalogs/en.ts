@@ -63,6 +63,7 @@ export const en = {
 
   recoveryKit: {
     title: "Your recovery kit",
+    shownOnceBanner: "This is shown once. It will not appear again.",
     englishNotice:
       "This is written and stored in English on purpose, so it reads identically on any machine, in any language, years from now.",
     copyKey: "Copy key",
