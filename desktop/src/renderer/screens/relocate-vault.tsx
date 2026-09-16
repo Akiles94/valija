@@ -6,6 +6,7 @@ import type {
 } from "../../shared/ipc/messages.js";
 import type { ValijaBridge } from "../state/bridge.js";
 import { useErrorCopy, useT } from "../state/i18n-context.js";
+import { relocationProgress } from "../state/relocation-steps.js";
 
 type Translate = (key: TranslationKey, params?: Record<string, string | number>) => string;
 
@@ -93,9 +94,21 @@ export function RelocateVaultScreen({
     setCopied(true);
   }
 
+  const progress = relocationProgress(stage.step);
+
   return (
     <div className="screen relocate-vault">
       <h1>{t("relocate.title")}</h1>
+      <ol className="step-indicator">
+        <li aria-current={progress.current === 1 ? "step" : undefined}>{t("relocate.step1")}</li>
+        <li
+          aria-current={progress.current === 2 ? "step" : undefined}
+          className={progress.current === 2 && progress.inProgress ? "in-progress" : undefined}
+        >
+          {t("relocate.step2")}
+        </li>
+        <li aria-current={progress.current === 3 ? "step" : undefined}>{t("relocate.step3")}</li>
+      </ol>
       <p className="explainer">{t("relocate.explainer")}</p>
       {error !== null && <p className="error">{error}</p>}
 
@@ -149,7 +162,7 @@ function PreflightView({
   const { displayName, preflight } = stage;
 
   return (
-    <div className="preflight">
+    <div className="preflight-card">
       <p>{displayName}</p>
       <p>
         {preflight.looksLikeCloud

@@ -307,6 +307,9 @@ export const es: Catalog = {
 
   relocate: {
     title: "Mueve tu bóveda",
+    step1: "Elegir carpeta",
+    step2: "Revisar y confirmar",
+    step3: "Listo",
     explainer:
       "Valija no se comunica con Dropbox, iCloud, OneDrive ni con nada más. La sincronización funciona porque la carpeta de tu bóveda vive dentro de una carpeta que tu propia aplicación de sincronización ya mantiene al día. Esto la mueve allí, recuerda a dónde fue y actualiza las herramientas de IA que has conectado para que sigan encontrándola.",
     cliNotice:

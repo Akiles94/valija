@@ -308,6 +308,9 @@ export const en = {
 
   relocate: {
     title: "Move your vault",
+    step1: "Choose folder",
+    step2: "Review and confirm",
+    step3: "Done",
     explainer:
       "Valija does not talk to Dropbox, iCloud, OneDrive or anything else. Syncing works by your vault folder living inside a folder your own sync app already keeps up to date. This moves it there, remembers where it went, and updates the AI tools you've connected so they keep finding it.",
     cliNotice:
