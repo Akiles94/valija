@@ -1,0 +1,125 @@
+/*
+ * Shell-level layout only (GUI-LAYOUT D-17 Option 2) — the sidebar, the
+ * breadcrumb, and the two-column split shared by Search/Import/Connect. Every
+ * screen's own internals stay in screens.css. Existing tokens only (D-5); no
+ * new custom property, no url(...).
+ */
+
+.workspace {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 220px;
+  padding: 16px 12px;
+  border-right: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.sidebar .brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 16px;
+  font-weight: 600;
+}
+
+.sidebar button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-start;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+/* D-6: never colour alone — an inset bar and bold weight carry the signal too. */
+.sidebar button.active {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--color-accent-text);
+}
+
+.sidebar-spacer {
+  flex: 1;
+}
+
+.sidebar .lock-button {
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+}
+
+.sidebar .lock-button:hover {
+  background: var(--color-danger);
+  color: var(--color-bg);
+}
+
+.workspace-content {
+  overflow-y: auto;
+}
+
+.workspace-content > .screen {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 24px 0;
+  color: var(--color-text-muted);
+}
+
+.breadcrumb button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+}
+
+.breadcrumb [aria-current="page"] {
+  color: var(--color-text);
+}
+
+.crumb-sep {
+  color: var(--color-text-muted);
+}
+
+/* Slice 11: the entry cluster (No vault / Create vault / Locked) is centred, single-column, and never shares the workspace grid. */
+.entry-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* D-4's responsive floor: below this width every two-column split (Search, Import, Connect, the Dashboard grid) stacks to one column with the rail/detail panel below the primary content — review-by-eye, jsdom does not lay out. */
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .sidebar-spacer {
+    display: none;
+  }
+}

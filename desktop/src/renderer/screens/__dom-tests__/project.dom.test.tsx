@@ -77,7 +77,8 @@ function renderScreen(bridge: ValijaBridge, preferences?: Partial<AppPreferences
         ...preferences,
       }}
     >
-      <ProjectScreen bridge={bridge} project="valija" onBack={vi.fn()} onViewPack={vi.fn()} />
+      {/* No onBack: GUI-LAYOUT §4.3 replaced the per-screen Back button with the shell's breadcrumb. */}
+      <ProjectScreen bridge={bridge} project="valija" onViewPack={vi.fn()} />
     </I18nProvider>,
   );
 }

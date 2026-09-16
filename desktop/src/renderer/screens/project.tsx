@@ -26,12 +26,10 @@ const ALL_TYPES = "";
 export function ProjectScreen({
   bridge,
   project,
-  onBack,
   onViewPack,
 }: {
   bridge: ValijaBridge;
   project: string;
-  onBack: () => void;
   onViewPack: (project: string) => void;
 }) {
   const t = useT();
@@ -72,9 +70,6 @@ export function ProjectScreen({
 
   return (
     <div className="screen project">
-      <button type="button" onClick={onBack}>
-        {t("common.back")}
-      </button>
       <h1>{project}</h1>
       <div className="actions">
         <select value={typeFilter} onChange={handleTypeChange}>

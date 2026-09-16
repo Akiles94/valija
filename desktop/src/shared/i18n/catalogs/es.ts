@@ -28,6 +28,11 @@ export const es: Catalog = {
     notConnected: "No conectado",
   },
 
+  shell: {
+    primaryNav: "Navegación principal",
+    breadcrumb: "Ruta de navegación",
+  },
+
   noVault: {
     title: "Todavía no hay una bóveda en este equipo.",
     createVault: "Crear una bóveda",
