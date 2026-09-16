@@ -86,6 +86,7 @@ export const en = {
       "Nothing leaves this machine unless you copy it out yourself. There is no password reset — the recovery kit is the only other way in.",
     getStarted: "Get started",
     replayHelp: "Show the welcome tour again",
+    progressLabel: "Slide {current} of {total}",
   },
 
   locked: {

@@ -6,6 +6,7 @@ import {
   type SlideId,
 } from "../../main/application/policies/onboarding-tour.js";
 import type { TranslationKey } from "../../shared/i18n/translate.js";
+import { ArrowLeftIcon, ArrowRightIcon } from "../components/icons.js";
 import { useT } from "../state/i18n-context.js";
 
 const SLIDE_COPY: Record<SlideId, { title: TranslationKey; body: TranslationKey }> = {
@@ -32,34 +33,57 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   const copy = SLIDE_COPY[slide];
   const previous = previousSlide(slide);
   const next = nextSlide(slide);
+  const current = SLIDE_IDS.indexOf(slide) + 1;
+  const total = SLIDE_IDS.length;
 
   return (
     <div className="screen onboarding">
-      <h1>{t(copy.title)}</h1>
-      <p>{t(copy.body)}</p>
-      <div className="slide-dots">
-        {SLIDE_IDS.map((id) => (
-          <span key={id} className={id === slide ? "dot active" : "dot"} />
-        ))}
-      </div>
-      <div className="actions">
+      <button type="button" className="onboarding-skip" onClick={onDone}>
+        {t("common.skip")}
+      </button>
+
+      <div className="onboarding-nav">
         {previous !== null && (
-          <button type="button" onClick={() => setSlide(previous)}>
-            {t("common.back")}
+          <button
+            type="button"
+            className="onboarding-arrow"
+            aria-label={t("common.back")}
+            onClick={() => setSlide(previous)}
+          >
+            <ArrowLeftIcon />
           </button>
         )}
+
+        <div className="onboarding-slide">
+          <h1>{t(copy.title)}</h1>
+          <p>{t(copy.body)}</p>
+        </div>
+
         {next !== null ? (
-          <button type="button" onClick={() => setSlide(next)}>
-            {t("common.next")}
+          <button
+            type="button"
+            className="onboarding-arrow"
+            aria-label={t("common.next")}
+            onClick={() => setSlide(next)}
+          >
+            <ArrowRightIcon />
           </button>
         ) : (
           <button type="button" onClick={onDone}>
             {t("onboarding.getStarted")}
           </button>
         )}
-        <button type="button" onClick={onDone}>
-          {t("common.skip")}
-        </button>
+      </div>
+
+      <div
+        className="slide-progress"
+        role="progressbar"
+        aria-valuemin={1}
+        aria-valuemax={total}
+        aria-valuenow={current}
+        aria-label={t("onboarding.progressLabel", { current, total })}
+      >
+        <div className="slide-progress-fill" style={{ width: `${(current / total) * 100}%` }} />
       </div>
     </div>
   );

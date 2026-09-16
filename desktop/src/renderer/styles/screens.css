@@ -61,27 +61,48 @@
   margin-top: 16px;
 }
 
-/* onboarding.tsx — a tour slide, not a form: centered like the others (base.css), plus its own text/controls centered within that box. */
+/* onboarding.tsx — a tour slide, not a form: centered like the others
+   (base.css), plus its own text/controls centered within that box.
+   GUI-LAYOUT §5.13: Back/Next flank the slide as icon buttons, Skip sits at
+   the card's own top-right, and the dot row becomes a progress bar. */
 .onboarding {
+  position: relative;
   text-align: center;
 }
-.onboarding .slide-dots {
+.onboarding-skip {
+  position: absolute;
+  top: 0;
+  right: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+}
+.onboarding-nav {
   display: flex;
-  gap: 6px;
-  margin: 16px auto;
+  align-items: center;
   justify-content: center;
+  gap: 16px;
+  margin-top: 8px;
 }
-.onboarding .dot {
-  width: 8px;
-  height: 8px;
+.onboarding-arrow {
+  flex-shrink: 0;
   border-radius: 50%;
+  padding: 8px;
+}
+.onboarding-slide {
+  flex: 1;
+}
+.slide-progress {
+  height: 4px;
+  border-radius: 2px;
   background: var(--color-border);
+  margin: 20px auto 0;
+  max-width: 200px;
+  overflow: hidden;
 }
-.onboarding .dot.active {
+.slide-progress-fill {
+  height: 100%;
   background: var(--color-accent);
-}
-.onboarding .actions {
-  justify-content: center;
 }
 
 /* pack-preview.tsx */
