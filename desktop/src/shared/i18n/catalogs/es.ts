@@ -215,6 +215,10 @@ export const es: Catalog = {
   diagnostics: {
     title: "Revisar mi configuración",
     run: "Ejecutar comprobaciones",
+    sectionSystem: "Sistema",
+    sectionVault: "Bóveda",
+    sectionTools: "Herramientas conectadas",
+    sectionOther: "Otras comprobaciones",
     keychainProbeNotice:
       "La comprobación del llavero escribe y elimina de inmediato una entrada de prueba en el llavero de tu sistema operativo. En macOS esto puede mostrarte un aviso.",
     nodeProbeNotice:

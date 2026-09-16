@@ -1,12 +1,22 @@
 import { useState } from "react";
+import type { TranslationKey } from "../../shared/i18n/translate.js";
 import type {
   DiagnosticCheckMessage,
   NodeStatusResponse,
   ToolsStatusEntry,
 } from "../../shared/ipc/messages.js";
 import type { ValijaBridge } from "../state/bridge.js";
+import type { DiagnosticGroupId } from "../state/diagnostic-groups.js";
+import { groupDiagnosticRows } from "../state/diagnostic-groups.js";
 import { diagnosticRows } from "../state/diagnostic-rows.js";
 import { useErrorCopy, useT } from "../state/i18n-context.js";
+
+const SECTION_LABELS: Record<DiagnosticGroupId, TranslationKey> = {
+  system: "diagnostics.sectionSystem",
+  vault: "diagnostics.sectionVault",
+  tools: "diagnostics.sectionTools",
+  other: "diagnostics.sectionOther",
+};
 
 function CheckRow({
   name,
@@ -27,13 +37,18 @@ function CheckRow({
 }) {
   const severity = ok ? "ok" : fatal ? "fatal" : "warning";
   return (
-    <li className={`check-row ${severity}`}>
-      <span className="check-name">{name}</span>
-      <span className="check-status">{status}</span>
-      {explanation !== "" && <p className="check-explanation">{explanation}</p>}
-      <p className="check-detail">{detail}</p>
-      {extra !== undefined && <p className="check-extra">{extra}</p>}
-    </li>
+    <tr className={`check-row ${severity}`}>
+      <td className="check-status-cell">
+        <span className={`status-dot ${severity}`} aria-hidden="true" />
+        <span className="check-status">{status}</span>
+      </td>
+      <td className="check-name">{name}</td>
+      <td className="check-detail-cell">
+        {explanation !== "" && <p className="check-explanation">{explanation}</p>}
+        <p className="check-detail">{detail}</p>
+        {extra !== undefined && <p className="check-extra">{extra}</p>}
+      </td>
+    </tr>
   );
 }
 
@@ -95,38 +110,54 @@ export function DiagnosticsScreen({ bridge }: { bridge: ValijaBridge }) {
     checks === null
       ? []
       : diagnosticRows({ checks, toolsStatus: toolsStatus ?? [], nodeStatus, t, errorCopy });
+  const groups = groupDiagnosticRows(
+    rows,
+    (toolsStatus ?? []).map((entry) => entry.client),
+  );
 
   return (
     <div className="screen diagnostics">
-      <h1>{t("diagnostics.title")}</h1>
+      <div className="screen-toolbar">
+        <h1>{t("diagnostics.title")}</h1>
+        <div className="toolbar-actions">
+          <button type="button" onClick={() => void handleRunChecks()} disabled={running}>
+            {t("diagnostics.run")}
+          </button>
+          {checks !== null && (
+            <button type="button" onClick={() => void handleCopyReport()}>
+              {copied ? t("common.copied") : t("diagnostics.copyReport")}
+            </button>
+          )}
+        </div>
+      </div>
       <p className="explainer">{t("diagnostics.keychainProbeNotice")}</p>
       <p className="explainer">{t("diagnostics.nodeProbeNotice")}</p>
-
-      <button type="button" onClick={() => void handleRunChecks()} disabled={running}>
-        {t("diagnostics.run")}
-      </button>
       {runError !== null && <p className="error">{runError}</p>}
 
       {checks !== null && (
         <>
-          <ul className="diagnostic-checks">
-            {rows.map((row) => (
-              <CheckRow
-                key={row.key}
-                name={row.name}
-                status={row.status}
-                explanation={row.explanation}
-                detail={row.detail}
-                extra={row.extra}
-                ok={row.ok}
-                fatal={row.fatal}
-              />
-            ))}
-          </ul>
+          {groups.map((group) => (
+            <section key={group.id} className="diagnostic-section">
+              <h2>{t(SECTION_LABELS[group.id])}</h2>
+              <table className="diagnostic-table">
+                <tbody>
+                  {group.rows.map((row) => (
+                    <CheckRow
+                      key={row.key}
+                      name={row.name}
+                      status={row.status}
+                      explanation={row.explanation}
+                      detail={row.detail}
+                      extra={row.extra}
+                      ok={row.ok}
+                      fatal={row.fatal}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          ))}
 
-          <button type="button" onClick={() => void handleCopyReport()}>
-            {copied ? t("common.copied") : t("diagnostics.copyReport")}
-          </button>
           {copyErrorText !== null && <p className="error">{copyErrorText}</p>}
           <p className="explainer">{t("diagnostics.copyReportNotice")}</p>
         </>
