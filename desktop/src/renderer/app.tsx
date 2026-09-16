@@ -7,7 +7,7 @@ import { ConnectToolsScreen } from "./screens/connect-tools.js";
 import { CreateVaultScreen } from "./screens/create-vault.js";
 import { DashboardScreen } from "./screens/dashboard.js";
 import { DiagnosticsScreen } from "./screens/diagnostics.js";
-import { ImportScreen } from "./screens/import.js";
+import { ImportScreen } from "./screens/import/import-screen.js";
 import { LockedScreen, type UnlockCredential } from "./screens/locked.js";
 import { MigrationConfirmScreen } from "./screens/migration-confirm.js";
 import { NoVaultScreen } from "./screens/no-vault.js";

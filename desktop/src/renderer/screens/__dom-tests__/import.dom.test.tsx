@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { en } from "../../../shared/i18n/catalogs/en.js";
 import { es } from "../../../shared/i18n/catalogs/es.js";
@@ -12,7 +12,8 @@ import type {
 } from "../../../shared/ipc/messages.js";
 import type { ValijaBridge } from "../../state/bridge.js";
 import { I18nProvider } from "../../state/i18n-context.js";
-import { ImportScreen } from "../import.js";
+// GUI-LAYOUT slice 10b: import.tsx moved verbatim into screens/import/import-screen.tsx.
+import { ImportScreen } from "../import/import-screen.js";
 
 /**
  * Timing rule for the whole file: because of `waitForNextPaint`, nothing may
@@ -38,6 +39,11 @@ const LISTING_ROW = {
   messageCount: 4,
   estimatedChunks: 2,
 };
+const THREE_ROW_LISTING = [
+  { index: 1, title: "Alpha chat", date: "2024-05-01", messageCount: 4, estimatedChunks: 2 },
+  { index: 2, title: "Beta chat", date: "2024-05-02", messageCount: 3, estimatedChunks: 1 },
+  { index: 3, title: "Gamma note", date: "2024-05-03", messageCount: 5, estimatedChunks: 3 },
+];
 const PROJECTS: ProjectListEntryMessage[] = [
   { name: "myproj", itemCount: 0, lastActivityAt: null },
 ];
@@ -354,6 +360,142 @@ describe("ImportScreen (DOM)", () => {
     await waitFor(() => {
       expect(screen.queryByText(/Will be saved as|Type at least one/)).toBeNull();
     });
+  });
+
+  it("case 14: select-all (the text link) only changes visible rows; hidden checked rows survive both directions", async () => {
+    const bridge = fakeBridge({
+      list: vi.fn(
+        (): Promise<IpcResult<ImportListResponse>> =>
+          Promise.resolve({ ok: true, value: { source: "chatgpt", listing: THREE_ROW_LISTING } }),
+      ),
+    });
+    renderScreen(bridge);
+    fireEvent.click(screen.getByRole("button", { name: "Choose a file…" }));
+    await screen.findByText("Alpha chat");
+
+    // All three start checked (allChecked) — uncheck Alpha and Beta, leaving Gamma checked.
+    fireEvent.click(screen.getByRole("checkbox", { name: "Alpha chat" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Beta chat" }));
+
+    // Filter to hide Gamma (the checked row) and show only Alpha/Beta (both unchecked).
+    fireEvent.change(screen.getByPlaceholderText("Filter conversations"), {
+      target: { value: "chat" },
+    });
+    expect(screen.queryByText("Gamma note")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Select all" }));
+    expect(screen.getByRole("checkbox", { name: "Alpha chat" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Beta chat" })).toBeChecked();
+
+    // Clear the filter — Gamma, hidden throughout, is still checked.
+    fireEvent.change(screen.getByPlaceholderText("Filter conversations"), {
+      target: { value: "" },
+    });
+    await screen.findByText("Gamma note");
+    expect(screen.getByRole("checkbox", { name: "Gamma note" })).toBeChecked();
+  });
+
+  it("case 15: the header checkbox does the same toggle and is indeterminate when some but not all rows are checked", async () => {
+    const bridge = fakeBridge({
+      list: vi.fn(
+        (): Promise<IpcResult<ImportListResponse>> =>
+          Promise.resolve({ ok: true, value: { source: "chatgpt", listing: THREE_ROW_LISTING } }),
+      ),
+    });
+    renderScreen(bridge);
+    fireEvent.click(screen.getByRole("button", { name: "Choose a file…" }));
+    await screen.findByText("Alpha chat");
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Beta chat" }));
+
+    const headerCheckbox = screen.getByRole("checkbox", {
+      name: "Select all",
+    }) as HTMLInputElement;
+    expect(headerCheckbox.indeterminate).toBe(true);
+    expect(headerCheckbox.checked).toBe(false);
+
+    fireEvent.click(headerCheckbox);
+    expect(headerCheckbox.indeterminate).toBe(false);
+    expect(headerCheckbox.checked).toBe(true);
+    expect(screen.getByRole("checkbox", { name: "Beta chat" })).toBeChecked();
+  });
+
+  it("case 16: the rail's selected count is N of the full listing length M, unaffected by an active filter", async () => {
+    const bridge = fakeBridge({
+      list: vi.fn(
+        (): Promise<IpcResult<ImportListResponse>> =>
+          Promise.resolve({ ok: true, value: { source: "chatgpt", listing: THREE_ROW_LISTING } }),
+      ),
+    });
+    renderScreen(bridge);
+    fireEvent.click(screen.getByRole("button", { name: "Choose a file…" }));
+    await screen.findByText("Alpha chat");
+
+    expect(screen.getByText("3 of 3 selected")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText("Filter conversations"), {
+      target: { value: "Alpha" },
+    });
+    expect(screen.queryByText("Beta chat")).toBeNull();
+    expect(screen.getByText("3 of 3 selected")).toBeInTheDocument();
+  });
+
+  it("case 17: every selection control is disabled while a run is in flight", async () => {
+    const run = deferred<IpcResult<ImportOutcomeResponse>>();
+    const bridge = fakeBridge({
+      list: vi.fn(
+        (): Promise<IpcResult<ImportListResponse>> =>
+          Promise.resolve({ ok: true, value: { source: "chatgpt", listing: THREE_ROW_LISTING } }),
+      ),
+      run: vi.fn(() => run.promise),
+    });
+    renderScreen(bridge);
+    fireEvent.click(screen.getByRole("button", { name: "Choose a file…" }));
+    await screen.findByText("Alpha chat");
+    fireEvent.change(screen.getByLabelText("Import into"), { target: { value: "myproj" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Import" }));
+    await screen.findByText(/Importing 6 items from 3 conversations…/);
+
+    expect(screen.getByRole("checkbox", { name: "Select all" })).toBeDisabled();
+    // All three rows are checked by default (allChecked) — the text link reads "Deselect all".
+    expect(screen.getByRole("button", { name: "Deselect all" })).toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: "Alpha chat" })).toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: "Beta chat" })).toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: "Gamma note" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Date" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Preview" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Importing…" })).toBeDisabled();
+
+    run.settle({ ok: true, value: OUTCOME });
+    await screen.findByText(/Imported 2 items from 1 conversations/);
+  });
+
+  it('case 18: exactly one aria-live="polite" element exists in the tree at every stage', async () => {
+    // Stage "choose" — nothing chosen yet.
+    const { container: chooseContainer } = renderScreen(fakeBridge({}));
+    expect(chooseContainer.querySelectorAll('[aria-live="polite"]')).toHaveLength(1);
+
+    // Stage "formatOverride" — auto-detection failed.
+    const { container: overrideContainer } = renderScreen(
+      fakeBridge({
+        list: vi.fn(
+          (): Promise<IpcResult<ImportListResponse>> =>
+            Promise.resolve({ ok: false, error: { code: "UNSUPPORTED_SOURCE" } }),
+        ),
+      }),
+    );
+    fireEvent.click(within(overrideContainer).getByRole("button", { name: "Choose a file…" }));
+    await within(overrideContainer).findByText(
+      "We couldn't tell which export this is. Pick the format:",
+    );
+    expect(overrideContainer.querySelectorAll('[aria-live="polite"]')).toHaveLength(1);
+
+    // Stage "listed" — the listing loaded successfully.
+    const { container: listedContainer } = renderScreen(fakeBridge({}));
+    fireEvent.click(within(listedContainer).getByRole("button", { name: "Choose a file…" }));
+    await within(listedContainer).findByText("Chat about TS");
+    expect(listedContainer.querySelectorAll('[aria-live="polite"]')).toHaveLength(1);
   });
 
   it("no import.* string mentions retrying — the SQLITE_BUSY-retry wording is gone", () => {

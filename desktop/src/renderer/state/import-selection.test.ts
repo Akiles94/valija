@@ -5,6 +5,8 @@ import {
   buildPickSpec,
   countSelection,
   sortListingByDate,
+  toggleVisibleSelection,
+  visibleSelectionState,
 } from "./import-selection.js";
 
 function row(index: number, date: string, estimatedChunks = 1): ImportListingRow {
@@ -74,5 +76,86 @@ describe("countSelection", () => {
       conversationCount: 1,
       itemCount: 3,
     });
+  });
+});
+
+describe("visibleSelectionState", () => {
+  const listing = [row(1, "2024-01-01"), row(2, "2024-01-02"), row(3, "2024-01-03")];
+
+  it("every visible row checked: all", () => {
+    expect(visibleSelectionState(new Set([1, 2, 3]), listing)).toBe("all");
+  });
+
+  it("no visible row checked: none", () => {
+    expect(visibleSelectionState(new Set(), listing)).toBe("none");
+  });
+
+  it("some but not all visible rows checked: some", () => {
+    expect(visibleSelectionState(new Set([1]), listing)).toBe("some");
+  });
+
+  it("an empty visible set is none, never all (an every over [] would lie)", () => {
+    expect(visibleSelectionState(new Set([1, 2, 3]), [])).toBe("none");
+  });
+
+  it("only the visible rows' checked state counts — a hidden checked row doesn't turn a filtered-down view into 'some'", () => {
+    // row 2 is checked but filtered out of `visible`; the two visible rows (1, 3) are both unchecked.
+    const visible = [listing[0] as ImportListingRow, listing[2] as ImportListingRow];
+    expect(visibleSelectionState(new Set([2]), visible)).toBe("none");
+  });
+});
+
+describe("toggleVisibleSelection (D-12 Option 2: union/difference over visible rows only)", () => {
+  const listing = [
+    row(1, "2024-01-01"),
+    row(2, "2024-01-02"),
+    row(3, "2024-01-03"),
+    row(4, "2024-01-04"),
+  ];
+
+  it("all visible checked: deselects exactly those", () => {
+    const visible = [listing[0] as ImportListingRow, listing[1] as ImportListingRow];
+    const checked = new Set([1, 2]);
+    expect(toggleVisibleSelection(checked, visible)).toEqual(new Set());
+  });
+
+  it("none checked: selects exactly the visible ones", () => {
+    const visible = [listing[0] as ImportListingRow, listing[1] as ImportListingRow];
+    const checked = new Set<number>();
+    expect(toggleVisibleSelection(checked, visible)).toEqual(new Set([1, 2]));
+  });
+
+  it("partial: selects the rest of the visible ones", () => {
+    const visible = [
+      listing[0] as ImportListingRow,
+      listing[1] as ImportListingRow,
+      listing[2] as ImportListingRow,
+    ];
+    const checked = new Set([1]);
+    expect(toggleVisibleSelection(checked, visible)).toEqual(new Set([1, 2, 3]));
+  });
+
+  it("rows hidden by the filter keep their checked state — selecting all visible rows", () => {
+    // row 4 is checked but hidden by the filter (not in `visible`); it must survive untouched.
+    const visible = [listing[0] as ImportListingRow, listing[1] as ImportListingRow];
+    const checked = new Set([4]);
+    expect(toggleVisibleSelection(checked, visible)).toEqual(new Set([4, 1, 2]));
+  });
+
+  it("rows hidden by the filter keep their checked state — deselecting all visible rows", () => {
+    const visible = [listing[0] as ImportListingRow, listing[1] as ImportListingRow];
+    const checked = new Set([4, 1, 2]);
+    expect(toggleVisibleSelection(checked, visible)).toEqual(new Set([4]));
+  });
+
+  it("an empty visible set: the toggle is a no-op", () => {
+    const checked = new Set([1, 2]);
+    expect(toggleVisibleSelection(checked, [])).toEqual(new Set([1, 2]));
+  });
+
+  it("after a toggle, buildPickSpec still emits sorted original 1-based indices", () => {
+    const visible = [listing[2] as ImportListingRow, listing[0] as ImportListingRow];
+    const next = toggleVisibleSelection(new Set(), visible);
+    expect(buildPickSpec(next)).toBe("1,3");
   });
 });

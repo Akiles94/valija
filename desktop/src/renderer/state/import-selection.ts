@@ -41,6 +41,41 @@ export function countSelection(
   };
 }
 
+export type VisibleSelectionState = "none" | "some" | "all";
+
+/** What the header checkbox shows: "all"/"none"/"some" over the *visible* rows only. An empty visible set is "none" — never "all" (an `every` over [] would lie). */
+export function visibleSelectionState(
+  checked: ReadonlySet<number>,
+  visible: readonly ImportListingRow[],
+): VisibleSelectionState {
+  if (visible.length === 0) return "none";
+  const checkedCount = visible.filter((row) => checked.has(row.index)).length;
+  if (checkedCount === 0) return "none";
+  if (checkedCount === visible.length) return "all";
+  return "some";
+}
+
+/**
+ * D-12 Option 2 — a union/difference over the visible rows only: selecting adds every visible
+ * row's original index, deselecting removes them, and a row the filter is hiding is never
+ * touched. Composes with buildPickSpec's original-index semantics unchanged.
+ */
+export function toggleVisibleSelection(
+  checked: ReadonlySet<number>,
+  visible: readonly ImportListingRow[],
+): Set<number> {
+  const next = new Set(checked);
+  const allVisibleChecked = visible.length > 0 && visible.every((row) => checked.has(row.index));
+  for (const row of visible) {
+    if (allVisibleChecked) {
+      next.delete(row.index);
+    } else {
+      next.add(row.index);
+    }
+  }
+  return next;
+}
+
 export type SortDirection = "asc" | "desc";
 
 /**
