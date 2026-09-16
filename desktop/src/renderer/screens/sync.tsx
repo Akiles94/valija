@@ -84,53 +84,78 @@ export function SyncScreen({
 
   return (
     <div className="screen sync">
-      <h1>{t("sync.title")}</h1>
+      <div className="screen-toolbar">
+        <h1>{t("sync.title")}</h1>
+        <div className="toolbar-actions">
+          <button type="button" onClick={onMoveVault}>
+            {t("sync.moveVault")}
+          </button>
+          <button type="button" onClick={onCheckSetup}>
+            {t("diagnostics.title")}
+          </button>
+        </div>
+      </div>
 
-      <p>
-        <span className="label">{t("sync.vaultFolder")}</span> <span>{data.dbPath}</span>
-      </p>
-      <p>{data.looksLikeCloud ? t("sync.looksLikeCloud") : t("sync.notRecognizedAsCloud")}</p>
-
-      {data.conflictedCopiesCount > 0 && (
-        <p className="warning">
-          {t("sync.conflictedCopiesFound", { count: data.conflictedCopiesCount })}
-        </p>
-      )}
-      {data.staleBackupsCount > 0 && (
-        <p className="warning">{t("sync.staleBackupsFound", { count: data.staleBackupsCount })}</p>
-      )}
       {(data.conflictedCopiesCount > 0 || data.staleBackupsCount > 0) && (
-        <p className="explainer">{t("sync.conflictGuidance")}</p>
+        <div className="sync-banner">
+          {data.conflictedCopiesCount > 0 && (
+            <p className="warning">
+              {t("sync.conflictedCopiesFound", { count: data.conflictedCopiesCount })}
+            </p>
+          )}
+          {data.staleBackupsCount > 0 && (
+            <p className="warning">
+              {t("sync.staleBackupsFound", { count: data.staleBackupsCount })}
+            </p>
+          )}
+          <p className="explainer">{t("sync.conflictGuidance")}</p>
+        </div>
       )}
 
-      <p>{data.atRest ? t("sync.atRest") : t("sync.notAtRest")}</p>
+      <div className="stat-cards">
+        <div className="stat-card">
+          <span className="stat-card-title">{t("sync.vaultFolder")}</span>
+          <span className="stat-card-value">{data.dbPath}</span>
+          <p className="explainer">
+            {data.looksLikeCloud ? t("sync.looksLikeCloud") : t("sync.notRecognizedAsCloud")}
+          </p>
+        </div>
 
-      {data.generation !== undefined && (
-        <p>
-          {t("sync.generation", { generation: formatCount(data.generation, language) })}
-          {" — "}
-          {data.lastWriterIsThisDevice === true
-            ? t("sync.lastWriterThisDevice")
-            : t("sync.lastWriterOtherDevice")}
-        </p>
-      )}
+        <div className="stat-card">
+          <span className="stat-card-title">{t("sync.fileState")}</span>
+          <span className="stat-card-value">
+            {data.atRest ? t("sync.atRest") : t("sync.notAtRest")}
+          </span>
+        </div>
 
-      <p>
-        {data.autoLockTtlMinutes === null
-          ? t("sync.autoLockDisabled")
-          : t("sync.autoLock", { minutes: formatCount(data.autoLockTtlMinutes, language) })}
-      </p>
+        <div className="stat-card">
+          <span className="stat-card-title">{t("sync.autoLockTitle")}</span>
+          <span className="stat-card-value">
+            {data.autoLockTtlMinutes === null
+              ? t("sync.autoLockDisabled")
+              : t("sync.autoLock", { minutes: formatCount(data.autoLockTtlMinutes, language) })}
+          </span>
+        </div>
 
-      <p>
-        <span className="label">{t("sync.stateHome")}</span> <span>{data.resolvedStateHome}</span>
-      </p>
+        {data.generation !== undefined && (
+          <div className="stat-card">
+            <span className="stat-card-title">{t("sync.generationTitle")}</span>
+            <span className="stat-card-value">
+              {t("sync.generation", { generation: formatCount(data.generation, language) })}
+            </span>
+            <p className="explainer">
+              {data.lastWriterIsThisDevice === true
+                ? t("sync.lastWriterThisDevice")
+                : t("sync.lastWriterOtherDevice")}
+            </p>
+          </div>
+        )}
 
-      <button type="button" onClick={onMoveVault}>
-        {t("sync.moveVault")}
-      </button>
-      <button type="button" onClick={onCheckSetup}>
-        {t("diagnostics.title")}
-      </button>
+        <div className="stat-card wide">
+          <span className="stat-card-title">{t("sync.stateHome")}</span>
+          <span className="stat-card-value">{data.resolvedStateHome}</span>
+        </div>
+      </div>
     </div>
   );
 }
