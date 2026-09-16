@@ -30,6 +30,11 @@ export const en = {
     notConnected: "Not connected",
   },
 
+  shell: {
+    primaryNav: "Main navigation",
+    breadcrumb: "Breadcrumb",
+  },
+
   noVault: {
     title: "No vault on this machine yet.",
     createVault: "Create a vault",

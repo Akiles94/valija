@@ -9,15 +9,7 @@ type ExportFormat = "markdown" | "json";
  * displayed as a plain string — never translated (D-V(d), §9 item 55). The
  * one wrapper sentence around it is the only translated copy on this screen.
  */
-export function PackPreviewScreen({
-  bridge,
-  project,
-  onBack,
-}: {
-  bridge: ValijaBridge;
-  project: string;
-  onBack: () => void;
-}) {
+export function PackPreviewScreen({ bridge, project }: { bridge: ValijaBridge; project: string }) {
   const t = useT();
   const errorCopy = useErrorCopy();
   const [markdown, setMarkdown] = useState<string | null>(null);
@@ -62,9 +54,6 @@ export function PackPreviewScreen({
 
   return (
     <div className="screen pack-preview">
-      <button type="button" onClick={onBack}>
-        {t("common.back")}
-      </button>
       <h1>{t("pack.title")}</h1>
       <p className="explainer">{t("pack.notTranslatedNotice")}</p>
       {error !== null && <p className="error">{error}</p>}

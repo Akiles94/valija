@@ -88,10 +88,10 @@ button {
 }
 
 /*
- * locked.tsx's own settings-gear (a lone button, not inside .nav-bar) has no
- * gap before the h1 that follows it — h1's own margin is bottom-only. Scoped
- * to the adjacent-sibling case so `.nav-bar .settings-gear` (margin-left:
- * auto, no following h1) is untouched.
+ * locked.tsx's own settings-gear (a lone button, not inside the sidebar) has
+ * no gap before the h1 that follows it — h1's own margin is bottom-only.
+ * Scoped to the adjacent-sibling case so the sidebar's own settings button
+ * (last in a column, never followed by an h1) is untouched.
  */
 .settings-gear + h1 {
   margin-top: 16px;
@@ -164,25 +164,6 @@ label input:not([type="checkbox"]):not([type="radio"]) {
   display: flex;
   gap: 8px;
   margin-top: 16px;
-}
-
-.nav-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.nav-bar .lock-button {
-  margin-left: auto;
-  border-color: var(--color-danger);
-  color: var(--color-danger);
-}
-
-.nav-bar .lock-button:hover {
-  background: var(--color-danger);
-  color: var(--color-bg);
 }
 
 /* Standard visually-hidden pattern — used by locked.tsx's fork banner to keep the writer device id available to assistive tech without showing it as plain text. */

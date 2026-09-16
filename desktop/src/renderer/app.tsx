@@ -1,7 +1,8 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { shouldPlayTour } from "../main/application/policies/onboarding-tour.js";
 import type { AppPreferencesMessage, PreferencesWriteRequest } from "../shared/ipc/messages.js";
-import { NavBar } from "./components/nav-bar.js";
+import { Breadcrumb } from "./components/breadcrumb.js";
+import { WorkspaceSidebar } from "./components/workspace-sidebar.js";
 import { ConnectToolsScreen } from "./screens/connect-tools.js";
 import { CreateVaultScreen } from "./screens/create-vault.js";
 import { DashboardScreen } from "./screens/dashboard.js";
@@ -46,6 +47,7 @@ import {
   type SessionState,
 } from "./state/session-state.js";
 import { ThemeProvider, useTheme } from "./state/theme-context.js";
+import { workspaceChrome } from "./state/workspace-chrome.js";
 import {
   INITIAL_WORKSPACE_VIEW,
   resetWorkspaceView,
@@ -291,7 +293,7 @@ function Router({
   }
 }
 
-/** Dashboard/search/connect-tools/sync are the nav-bar's four top-level destinations; project, pack-preview, relocate-vault, import, and diagnostics are drill-downs, reached from Dashboard/Sync/Settings, that don't get their own nav entry. */
+/** Dashboard/search/connect-tools/sync are the sidebar's four top-level destinations; project, pack-preview, relocate-vault, import, and diagnostics are drill-downs, reached from Dashboard/Sync/Settings, that don't get their own nav entry — `workspaceChrome` derives the sidebar/breadcrumb chrome for both kinds of screen. */
 function Workspace({
   bridge,
   view,
@@ -307,55 +309,56 @@ function Workspace({
   onVaultRelocated: () => void;
   onLock: () => void;
 }) {
+  const chrome = workspaceChrome(view);
   return (
     <div className="workspace">
-      <NavBar
-        active={view.screen}
-        onNavigate={(screen) => setView({ screen })}
-        onOpenSettings={onOpenSettings}
-        onLock={onLock}
-      />
-      {view.screen === "dashboard" && (
-        <DashboardScreen
-          bridge={bridge}
-          onSelectProject={(project) => setView({ screen: "project", project })}
-          onConnectTool={() => setView({ screen: "connect-tools" })}
-          onImportHistory={() => setView({ screen: "import" })}
-          onCheckSetup={() => setView({ screen: "diagnostics" })}
+      {chrome.sidebar && (
+        <WorkspaceSidebar
+          active={chrome.active}
+          onNavigate={(screen) => setView({ screen })}
+          onOpenSettings={onOpenSettings}
+          onLock={onLock}
         />
       )}
-      {view.screen === "connect-tools" && <ConnectToolsScreen bridge={bridge} />}
-      {view.screen === "import" && <ImportScreen bridge={bridge} />}
-      {view.screen === "project" && (
-        <ProjectScreen
-          bridge={bridge}
-          project={view.project}
-          onBack={() => setView({ screen: "dashboard" })}
-          onViewPack={(project) => setView({ screen: "pack-preview", project })}
-        />
-      )}
-      {view.screen === "search" && <SearchScreen bridge={bridge} />}
-      {view.screen === "pack-preview" && (
-        <PackPreviewScreen
-          bridge={bridge}
-          project={view.project}
-          onBack={() => setView({ screen: "project", project: view.project })}
-        />
-      )}
-      {view.screen === "sync" && (
-        <SyncScreen
-          bridge={bridge}
-          onMoveVault={() => setView({ screen: "relocate-vault" })}
-          onCheckSetup={() => setView({ screen: "diagnostics" })}
-        />
-      )}
-      {view.screen === "diagnostics" && <DiagnosticsScreen bridge={bridge} />}
-      {view.screen === "relocate-vault" && (
-        // The move locks the vault as its first step (§4.7 step 31) — "Unlock
-        // again" hands control back to the Router's own "locked" screen
-        // rather than staying inside a workspace the vault can no longer back.
-        <RelocateVaultScreen bridge={bridge} onDone={onVaultRelocated} />
-      )}
+      <div className="workspace-content">
+        <Breadcrumb trail={chrome.trail} onNavigate={setView} />
+        {view.screen === "dashboard" && (
+          <DashboardScreen
+            bridge={bridge}
+            onSelectProject={(project) => setView({ screen: "project", project })}
+            onConnectTool={() => setView({ screen: "connect-tools" })}
+            onImportHistory={() => setView({ screen: "import" })}
+            onCheckSetup={() => setView({ screen: "diagnostics" })}
+          />
+        )}
+        {view.screen === "connect-tools" && <ConnectToolsScreen bridge={bridge} />}
+        {view.screen === "import" && <ImportScreen bridge={bridge} />}
+        {view.screen === "project" && (
+          <ProjectScreen
+            bridge={bridge}
+            project={view.project}
+            onViewPack={(project) => setView({ screen: "pack-preview", project })}
+          />
+        )}
+        {view.screen === "search" && <SearchScreen bridge={bridge} />}
+        {view.screen === "pack-preview" && (
+          <PackPreviewScreen bridge={bridge} project={view.project} />
+        )}
+        {view.screen === "sync" && (
+          <SyncScreen
+            bridge={bridge}
+            onMoveVault={() => setView({ screen: "relocate-vault" })}
+            onCheckSetup={() => setView({ screen: "diagnostics" })}
+          />
+        )}
+        {view.screen === "diagnostics" && <DiagnosticsScreen bridge={bridge} />}
+        {view.screen === "relocate-vault" && (
+          // The move locks the vault as its first step (§4.7 step 31) — "Unlock
+          // again" hands control back to the Router's own "locked" screen
+          // rather than staying inside a workspace the vault can no longer back.
+          <RelocateVaultScreen bridge={bridge} onDone={onVaultRelocated} />
+        )}
+      </div>
     </div>
   );
 }
