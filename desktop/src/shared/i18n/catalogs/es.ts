@@ -33,6 +33,13 @@ export const es: Catalog = {
     breadcrumb: "Ruta de navegación",
   },
 
+  entry: {
+    tagline: "Tu contexto de IA, cifrado y en tu equipo.",
+    trustEncrypted: "Cifrado de extremo a extremo en este equipo.",
+    trustPassphrase: "Tú tienes la frase de contraseña; no hay forma de restablecerla.",
+    trustTools: "Funciona con Claude, ChatGPT y Cursor.",
+  },
+
   noVault: {
     title: "Todavía no hay una bóveda en este equipo.",
     createVault: "Crear una bóveda",
