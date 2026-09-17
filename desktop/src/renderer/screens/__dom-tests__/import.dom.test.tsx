@@ -457,8 +457,9 @@ describe("ImportScreen (DOM)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Import" }));
     await screen.findByText(/Importing 6 items from 3 conversations…/);
 
-    expect(screen.getByRole("checkbox", { name: "Select all" })).toBeDisabled();
-    // All three rows are checked by default (allChecked) — the text link reads "Deselect all".
+    // All three rows are checked by default (allChecked) — both the header checkbox's
+    // aria-label and the text link swap to "Deselect all".
+    expect(screen.getByRole("checkbox", { name: "Deselect all" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Deselect all" })).toBeDisabled();
     expect(screen.getByRole("checkbox", { name: "Alpha chat" })).toBeDisabled();
     expect(screen.getByRole("checkbox", { name: "Beta chat" })).toBeDisabled();

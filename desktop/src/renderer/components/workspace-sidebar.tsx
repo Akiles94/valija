@@ -63,7 +63,7 @@ export function WorkspaceSidebar({
         <LockIcon />
         {t("common.lockNow")}
       </button>
-      <button type="button" className="settings-gear" onClick={onOpenSettings}>
+      <button type="button" className="sidebar-settings" onClick={onOpenSettings}>
         <GearIcon />
         {t("common.settings")}
       </button>

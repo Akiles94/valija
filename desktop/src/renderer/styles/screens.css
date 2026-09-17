@@ -96,7 +96,7 @@
   height: 4px;
   border-radius: 2px;
   background: var(--color-border);
-  margin: 20px auto 0;
+  margin: 32px auto 20px;
   max-width: 200px;
   overflow: hidden;
 }
@@ -467,6 +467,13 @@
   font-size: 0.85rem;
   cursor: pointer;
 }
+.chip input {
+  /* Visually hidden, not display:none — same treatment as .segmented input: the input stays in the tab order and keyboard-operable; the chip's own border/weight below is the visible state. */
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
 .chip:has(input:checked) {
   background: var(--color-accent);
   color: var(--color-accent-text);
@@ -632,6 +639,9 @@
   border-radius: 6px;
   background: var(--color-surface);
   padding: 16px;
+  /* D-13's rider: the rail scrolls internally rather than growing the page —
+     bounded so a long per-conversation failure list doesn't stretch the row. */
+  max-height: calc(100vh - 160px);
   overflow-y: auto;
 }
 .link-button {
@@ -678,7 +688,6 @@
 }
 .conversation-table .sort-arrow {
   display: inline-flex;
-  transition: transform 0.15s;
 }
 .conversation-table .sort-arrow.asc {
   transform: rotate(180deg);
@@ -732,35 +741,46 @@
   display: none;
 }
 
-/* settings.tsx — mini-tabs + segmented controls (GUI-LAYOUT §5.10, D-16). Still
-   a full-screen replacement (unchanged mount model), restyled as a bordered,
-   centred surface. */
+/* settings.tsx — a left mini-tab list with the section content on the right
+   (GUI-LAYOUT §5.10, D-16). Still a full-screen replacement (unchanged mount
+   model), restyled as a bordered, centred surface. `<h1>` and the Close
+   button are the only children spanning both columns; the tablist and
+   whichever tabpanel is mounted auto-place into columns 1 and 2 in document
+   order — no wrapper element needed. */
 .screen.settings {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 8px 24px;
   max-width: 640px;
   margin: 24px auto;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 24px;
 }
+.screen.settings > h1,
+.screen.settings > button {
+  grid-column: 1 / -1;
+}
 .settings-tabs {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: 4px;
-  border-bottom: 1px solid var(--color-border);
-  margin-bottom: 20px;
 }
 .settings-tabs [role="tab"] {
   border: none;
-  border-radius: 0;
+  border-radius: 6px;
   background: none;
-  padding: 8px 4px;
-  margin-bottom: -1px;
+  padding: 8px 12px;
+  text-align: left;
   color: var(--color-text-muted);
 }
-/* D-21c-style rule reused here (D-16): never colour alone — a bottom bar and bold weight carry the signal too. */
+/* D-21c-style rule reused here (D-16): never colour alone — an inset bar and bold weight carry the signal too. */
 .settings-tabs [aria-selected="true"] {
   color: var(--color-text);
   font-weight: 600;
-  border-bottom: 2px solid var(--color-accent);
+  background: var(--color-surface);
+  box-shadow: inset 3px 0 0 var(--color-accent);
 }
 .segmented {
   display: flex;

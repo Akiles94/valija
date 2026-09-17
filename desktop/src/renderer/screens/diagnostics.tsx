@@ -140,6 +140,7 @@ export function DiagnosticsScreen({ bridge }: { bridge: ValijaBridge }) {
             <section key={group.id} className="diagnostic-section">
               <h2>{t(SECTION_LABELS[group.id])}</h2>
               <table className="diagnostic-table">
+                <caption className="sr-only">{t(SECTION_LABELS[group.id])}</caption>
                 <tbody>
                   {group.rows.map((row) => (
                     <CheckRow

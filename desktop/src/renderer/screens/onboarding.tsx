@@ -42,6 +42,17 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         {t("common.skip")}
       </button>
 
+      <div
+        className="slide-progress"
+        role="progressbar"
+        aria-valuemin={1}
+        aria-valuemax={total}
+        aria-valuenow={current}
+        aria-label={t("onboarding.progressLabel", { current, total })}
+      >
+        <div className="slide-progress-fill" style={{ width: `${(current / total) * 100}%` }} />
+      </div>
+
       <div className="onboarding-nav">
         {previous !== null && (
           <button
@@ -73,17 +84,6 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
             {t("onboarding.getStarted")}
           </button>
         )}
-      </div>
-
-      <div
-        className="slide-progress"
-        role="progressbar"
-        aria-valuemin={1}
-        aria-valuemax={total}
-        aria-valuenow={current}
-        aria-label={t("onboarding.progressLabel", { current, total })}
-      >
-        <div className="slide-progress-fill" style={{ width: `${(current / total) * 100}%` }} />
       </div>
     </div>
   );

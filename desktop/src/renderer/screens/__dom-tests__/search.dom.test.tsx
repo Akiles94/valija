@@ -152,4 +152,23 @@ describe("SearchScreen (DOM) — master-detail", () => {
       "<img src=x onerror=alert(1)>",
     );
   });
+
+  it("an empty result set still renders the split: search.noResults on the left, search.noSelection in the detail panel", async () => {
+    const { bridge } = fakeBridge(() => []);
+    const { container } = renderScreen(bridge);
+
+    fireEvent.change(screen.getByPlaceholderText("Search your vault"), {
+      target: { value: "nothing matches" },
+    });
+    fireEvent.submit(
+      screen.getByPlaceholderText("Search your vault").closest("form") as HTMLElement,
+    );
+    await screen.findByText("No results.");
+
+    expect(container.querySelector(".search-split")).not.toBeNull();
+    expect(screen.queryByRole("list")).toBeNull();
+    expect(container.querySelector(".hit-detail")?.textContent).toBe(
+      "Select a result to see its full content.",
+    );
+  });
 });

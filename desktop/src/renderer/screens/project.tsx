@@ -82,6 +82,8 @@ export function ProjectScreen({
     );
   }
 
+  const { pinned, rest } = partitionPinnedItems(items ?? []);
+
   return (
     <div className="screen project">
       <h1>{project}</h1>
@@ -131,18 +133,20 @@ export function ProjectScreen({
       )}
       {items !== null &&
         items.length > 0 &&
-        (() => {
-          const { pinned, rest } = partitionPinnedItems(items);
-          if (pinned.length === 0) return itemList(items);
-          return (
-            <>
-              <h2 className="item-section-title">{t("project.pinnedSection")}</h2>
-              {itemList(pinned)}
-              <h2 className="item-section-title">{t("project.otherItems")}</h2>
-              {itemList(rest)}
-            </>
-          );
-        })()}
+        (pinned.length === 0 ? (
+          itemList(items)
+        ) : (
+          <>
+            <h2 className="item-section-title">{t("project.pinnedSection")}</h2>
+            {itemList(pinned)}
+            {rest.length > 0 && (
+              <>
+                <h2 className="item-section-title">{t("project.otherItems")}</h2>
+                {itemList(rest)}
+              </>
+            )}
+          </>
+        ))}
     </div>
   );
 }

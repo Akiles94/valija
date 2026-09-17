@@ -100,10 +100,10 @@ export function SearchScreen({
       {results !== null && (
         <>
           <p className="result-count">{t("search.resultCount", { count: results.length })}</p>
-          {results.length === 0 ? (
-            <p className="empty-title">{t("search.noResults")}</p>
-          ) : (
-            <div className="search-split">
+          <div className="search-split">
+            {results.length === 0 ? (
+              <p className="empty-title">{t("search.noResults")}</p>
+            ) : (
               <ul className="hit-list">
                 {results.map((row) => (
                   <li key={row.id}>
@@ -123,20 +123,20 @@ export function SearchScreen({
                   </li>
                 ))}
               </ul>
-              <div className="hit-detail">
-                {hit === null ? (
-                  <p className="empty-title">{t("search.noSelection")}</p>
-                ) : (
-                  <>
-                    <MarkdownContent content={hit.content} />
-                    <button type="button" onClick={() => onOpenProject(hit.project)}>
-                      {t("search.openProject")}
-                    </button>
-                  </>
-                )}
-              </div>
+            )}
+            <div className="hit-detail">
+              {hit === null ? (
+                <p className="empty-title">{t("search.noSelection")}</p>
+              ) : (
+                <>
+                  <MarkdownContent content={hit.content} />
+                  <button type="button" onClick={() => onOpenProject(hit.project)}>
+                    {t("search.openProject")}
+                  </button>
+                </>
+              )}
             </div>
-          )}
+          </div>
         </>
       )}
     </div>

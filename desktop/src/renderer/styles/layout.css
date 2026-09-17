@@ -5,10 +5,13 @@
  * new custom property, no url(...).
  */
 
+/* Pinned to the viewport height (not min-height) so .workspace-content's own
+   overflow-y actually engages — otherwise the grid row grows to fit its
+   content, the document itself scrolls, and the sidebar goes with it. */
 .workspace {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
-  min-height: 100vh;
+  height: 100vh;
 }
 
 .sidebar {
@@ -183,6 +186,10 @@
     grid-template-columns: 1fr;
   }
 
+  .import-rail {
+    max-height: none;
+  }
+
   /* Brand panel above, per source order — no reordering needed. */
   .entry-shell {
     grid-template-columns: 1fr;
@@ -191,5 +198,14 @@
   .entry-brand {
     border-right: none;
     border-bottom: 1px solid var(--color-border);
+  }
+
+  .screen.settings {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-tabs {
+    flex-direction: row;
+    flex-wrap: wrap;
   }
 }
