@@ -42,7 +42,11 @@ export function ConversationTable({
             <th>
               <input
                 type="checkbox"
-                aria-label={t("import.selectAllVisible")}
+                aria-label={
+                  headerState === "all"
+                    ? t("import.deselectAllVisible")
+                    : t("import.selectAllVisible")
+                }
                 disabled={disabled}
                 checked={headerState === "all"}
                 ref={(el) => {

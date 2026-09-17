@@ -113,6 +113,16 @@ describe("ProjectScreen (DOM)", () => {
     expect(plainRow?.textContent).not.toContain("Pinned");
   });
 
+  it("when every item is pinned, no empty 'Other items' section renders", async () => {
+    const bridge = fakeBridge([item({ id: "1", pinned: true }), item({ id: "2", pinned: true })]);
+    const { container } = renderScreen(bridge);
+    await screen.findAllByRole("listitem");
+
+    expect(screen.getByRole("heading", { name: "Pinned" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Other items" })).toBeNull();
+    expect(container.querySelectorAll("ul.item-list")).toHaveLength(1);
+  });
+
   it("the type label is the raw domain value, never translated", async () => {
     const bridge = fakeBridge([item({ id: "1", type: "decision", pinned: true })]);
     const { container } = renderScreen(bridge);
