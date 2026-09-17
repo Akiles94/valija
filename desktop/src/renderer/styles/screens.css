@@ -480,6 +480,12 @@
   border-color: var(--color-accent);
   font-weight: 600;
 }
+/* The input itself is visually hidden, so its own :focus-visible ring would
+   be invisible too — paint it on the chip instead. */
+.chip:has(input:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
 .item-section-title {
   margin-top: 24px;
 }
@@ -810,4 +816,10 @@
 }
 .segmented label:has(input:checked) {
   border-color: var(--color-accent);
+}
+/* The input itself is visually hidden, so its own :focus-visible ring would
+   be invisible too — paint it on the label instead. */
+.segmented label:has(input:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }

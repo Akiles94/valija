@@ -14,6 +14,14 @@
   height: 100vh;
 }
 
+/* §5.9: relocate-vault renders with no sidebar (workspaceChrome's
+   sidebar: false) — without this, .workspace-content becomes the grid's
+   only item and lands in the 220px sidebar track instead of the full-width
+   centred flow the screen expects. */
+.workspace:not(:has(.sidebar)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .sidebar {
   display: flex;
   flex-direction: column;
@@ -166,6 +174,10 @@
 @media (max-width: 900px) {
   .workspace {
     grid-template-columns: 1fr;
+    /* Grid's default align-content is "normal", which behaves as "stretch" —
+       without this, the two auto rows (sidebar strip, content) split any
+       leftover height on a short viewport, stretching the nav strip. */
+    align-content: start;
   }
 
   .sidebar {
