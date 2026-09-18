@@ -36,6 +36,35 @@ subagents — they run autonomously and cannot talk to you mid-run. The main
 5. **Ship** — `git-ops` commits, pushes, and merges (`--no-ff`). Push/merge are blocked
    unless `review.md` is `Verdict: PASS` (`.claude/hooks/guard-git-ops.sh`).
 
+## Fast-track (skip the ceremony)
+
+The five-phase ritual is the **default** for every advance. Oscar can skip it for a
+specific advance by saying so in chat — e.g. *"fast-track esto"* / *"sin ceremonia"* /
+*"saltá la ceremonia"*. It is a per-advance, explicit call each time, not a standing
+mode; say nothing and the full ritual applies.
+
+What fast-track changes:
+- **No `task-refiner`, `task-planner`, `change-reviewer`, or `git-ops` subagent runs.**
+  The main agent does refine, plan, review, and ship itself, in conversation, sized to
+  the change — a one-paragraph plan for a one-file fix, more if the change warrants it.
+- **No `review.md` and no `Verdict: PASS` required before shipping.** The main agent
+  reviews its own diff and may commit, push, and merge (`--no-ff`) directly, without
+  `git-ops`. It still shows the exact push/merge commands before running them, the same
+  discipline `git-ops` itself follows — merging to main is irreversible-enough to always
+  eyeball first.
+
+What fast-track does **not** change:
+- **The `Approved:` gate stays exactly as-is.** `advances/<ADV>/plan.md` must still
+  exist and still carry an `Approved: <name> <date>` line before any edit to `src/**`,
+  `desktop/**`, `package.json`, or build config — `guard-implementation.sh` isn't aware
+  of fast-track and still enforces this mechanically. The main agent writes that plan.md
+  itself (skipping `task-planner`), but the **Approval marker** rule below is untouched:
+  Oscar writes the line, or the agent does so solely on his explicit say-so — never on
+  its own initiative, ceremony or not.
+- Anything already in flight under the full ritual (an advance with a `refined.md`
+  already approved at Gate R, say) stays on that path unless Oscar explicitly fast-tracks
+  it too.
+
 ## Approval marker
 
 At **Gate P**, approval is recorded as a single line at the top of `plan.md`:

@@ -1,0 +1,93 @@
+import type { ImportListingRow } from "../../shared/ipc/messages.js";
+
+/**
+ * The checkbox column *is* `--pick` (D-S Option 2, §9 item 72): a comma-joined
+ * spec of the checked rows' original 1-based indices, stable regardless of
+ * how the list is currently sorted or filtered for display. `undefined` when
+ * nothing is checked — the caller disables Preview/Import on that, matching
+ * `NO_CONVERSATIONS_SELECTED`'s own rule that an empty selection is an error,
+ * never a silent no-op.
+ */
+export function buildPickSpec(checked: ReadonlySet<number>): string | undefined {
+  if (checked.size === 0) return undefined;
+  return [...checked].sort((a, b) => a - b).join(",");
+}
+
+/** Every row checked by default — the common case is "import everything," with individual opt-out. */
+export function allChecked(listing: readonly ImportListingRow[]): Set<number> {
+  return new Set(listing.map((row) => row.index));
+}
+
+export interface SelectionCounts {
+  conversationCount: number;
+  itemCount: number;
+}
+
+/**
+ * What the progress copy promises: how many conversations are checked and how
+ * many items they are estimated to produce (`estimatedChunks`, the same number
+ * the listing row already shows). An estimate by construction — the final
+ * count comes back from `ImportConversations` and may differ. Field names match
+ * the catalog placeholders so the result can be spread straight into `t()`.
+ */
+export function countSelection(
+  listing: readonly ImportListingRow[],
+  checked: ReadonlySet<number>,
+): SelectionCounts {
+  const selected = listing.filter((row) => checked.has(row.index));
+  return {
+    conversationCount: selected.length,
+    itemCount: selected.reduce((total, row) => total + row.estimatedChunks, 0),
+  };
+}
+
+export type VisibleSelectionState = "none" | "some" | "all";
+
+/** What the header checkbox shows: "all"/"none"/"some" over the *visible* rows only. An empty visible set is "none" — never "all" (an `every` over [] would lie). */
+export function visibleSelectionState(
+  checked: ReadonlySet<number>,
+  visible: readonly ImportListingRow[],
+): VisibleSelectionState {
+  if (visible.length === 0) return "none";
+  const checkedCount = visible.filter((row) => checked.has(row.index)).length;
+  if (checkedCount === 0) return "none";
+  if (checkedCount === visible.length) return "all";
+  return "some";
+}
+
+/**
+ * D-12 Option 2 — a union/difference over the visible rows only: selecting adds every visible
+ * row's original index, deselecting removes them, and a row the filter is hiding is never
+ * touched. Composes with buildPickSpec's original-index semantics unchanged.
+ */
+export function toggleVisibleSelection(
+  checked: ReadonlySet<number>,
+  visible: readonly ImportListingRow[],
+): Set<number> {
+  const next = new Set(checked);
+  const allVisibleChecked = visible.length > 0 && visible.every((row) => checked.has(row.index));
+  for (const row of visible) {
+    if (allVisibleChecked) {
+      next.delete(row.index);
+    } else {
+      next.add(row.index);
+    }
+  }
+  return next;
+}
+
+export type SortDirection = "asc" | "desc";
+
+/**
+ * Sortable by date *is* what covers `--since` here (§9 item 72): rather than
+ * a literal date-cutoff field, the row order lets a user sort newest-first
+ * and pick where to stop. A pure display reorder — it never touches the
+ * original indices `buildPickSpec` reads.
+ */
+export function sortListingByDate(
+  listing: readonly ImportListingRow[],
+  direction: SortDirection,
+): ImportListingRow[] {
+  const sorted = [...listing].sort((a, b) => a.date.localeCompare(b.date));
+  return direction === "asc" ? sorted : sorted.reverse();
+}

@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync } from "node:fs";
 import type { Clock, IdGenerator } from "../../shared/application/ports/clock.js";
 import { type DomainError, ok, type Result } from "../../shared/domain/result.js";
-import { migrate } from "../../shared/infra/migrations.js";
+import { migrate, schemaVersion } from "../../shared/infra/migrations.js";
 import { isWrongKeyError, openVaultDb } from "../../shared/infra/sqlite.js";
 import type { VaultPaths } from "../../shared/infra/vault-paths.js";
 import type { VaultHeaderData, VaultStore } from "../application/ports/vault-store.js";
@@ -60,6 +60,24 @@ export class FileVaultStore implements VaultStore {
       try {
         migrate(db, this.paths.db);
         return ok(new SqliteLineageStore(db, this.idGen, this.clock).read());
+      } finally {
+        db.close();
+      }
+    } catch (error) {
+      if (isWrongKeyError(error)) {
+        return vaultErr("WRONG_PASSPHRASE", "Wrong passphrase (or recovery key) for this vault.");
+      }
+      return vaultErr("STORAGE_ERROR", `Could not open vault db: ${(error as Error).message}`);
+    }
+  }
+
+  readSchemaVersion(keyHex: string): Result<number, DomainError> {
+    try {
+      const db = openVaultDb(this.paths.db, keyHex);
+      try {
+        // Deliberately not `migrate(db, ...)` — a read-only check must not
+        // touch the schema, or there would be nothing left to confirm.
+        return ok(schemaVersion(db));
       } finally {
         db.close();
       }

@@ -25,5 +25,11 @@ export interface VaultStore {
    * WRONG_PASSPHRASE if the key does not open the database.
    */
   readLineage(keyHex: string): Result<LineageStamp | null, DomainError>;
+  /**
+   * The database's current schema version, without migrating it. Used to gate
+   * unlock on an explicit upgrade confirmation (D-J(b)) — `readLineage` alone
+   * cannot answer this because it migrates as a side effect.
+   */
+  readSchemaVersion(keyHex: string): Result<number, DomainError>;
   dbPath(): string;
 }

@@ -3,6 +3,7 @@ import type {
   ImportItemsInput,
   ImportItemsOutput,
 } from "../../../context/application/use-cases/import-items.use-case.js";
+import { parseProjectName } from "../../../context/domain/values/project-name.js";
 import type { Clock } from "../../../shared/application/ports/clock.js";
 import type { UseCase } from "../../../shared/application/use-case.js";
 import { type DomainError, ok, type Result } from "../../../shared/domain/result.js";
@@ -98,6 +99,9 @@ export class ImportConversations
         }),
       );
     }
+
+    const name = parseProjectName(input.projectName ?? "");
+    if (!name.ok) return name;
 
     const selected = selectConversations(conversations, {
       ...(input.all === undefined ? {} : { all: input.all }),
