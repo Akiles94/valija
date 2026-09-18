@@ -28,7 +28,14 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: desktop/package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            desktop/package-lock.json
+      # desktop/src/main imports straight into the root src/ (shared vault/domain/infra
+      # code, not duplicated) — tsc follows that import graph and needs root's own
+      # node_modules resolvable from root/src/**, which only root's own npm ci provides.
+      - run: npm ci
+        working-directory: .
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
