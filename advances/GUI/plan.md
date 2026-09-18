@@ -1,46 +1,105 @@
 # GUI — desktop companion for valija · Implementation Plan
 
-**Spec:** `advances/GUI/refined.md` (Gate R approved — Oscar, 2026-08-20, fourth revision).
+Approved: Oscar 2026-08-25 (third revision — Gate P re-closed on the 12→13 split; second revision approved 2026-08-20)
+
+**Spec:** `advances/GUI/refined.md` (Gate R **closed** — Oscar, 2026-08-20, fifth revision; all
+eighteen items §0 originally flagged as open now carry `Decided:` lines).
 **Companion:** `advances/GUI/mockups.md` — validated direction (card dashboard, this colour/type
 language, dark mode, onboarding + settings in scope). **Not** pixel specs, not approved copy, not
 a commitment to markup. Where the two disagree, `refined.md` governs.
 
 **Branch (the implementer creates it after approval, not before):** `feat/desktop-GUI`
 
+**Second revision, 2026-08-20 — Gate P closed.** Oscar reviewed this plan and confirmed, one item
+at a time through an interactive prompt: every one of Group A's 18 defaults, exactly as adopted
+below; **P-D3** (modify `UnlockVault` for the D-J(b) confirmation gate) confirmed as written;
+**P-D5 reversed** — DOM-level tests are added for the recovery-kit and vault-relocation screens,
+not skipped; **P-D10 rejected** — there is no de-scope lever, all 12 slices ship, "todo junto, sin
+retirada" (the same scope, re-grouped into 13 slices by the third revision below — nothing dropped,
+nothing deferred); and, separately from Group A/B, Oscar caught a gap neither `refined.md`'s fourth
+revision nor this plan's first cut had: relocating the vault does nothing for the **separate OS
+process** every connected AI tool's MCP server runs as, unless that process's own config is also
+re-pointed. `refined.md`'s fifth revision closes that gap at the spec level (D-R(a), rewritten, and
+new D-W); this revision closes it at the plan level — Slice 1 gains a mandatory client-`env` spike,
+Slice 4 gains a shared client-config-writer change, and Slice 8 gains the re-pointing step itself.
+See the marginal **(2026-08-20)** notes throughout for exactly what moved.
+
+**Third revision, 2026-08-25 — Gate P re-closed. The tail re-grouped into three slices, at Oscar's
+request. No scope change.** Slices 1–10 are implemented on `feat/desktop-GUI` and each passed its own per-slice
+review; not one line of them changes here, and **no plan item is added, softened, cut or deferred**.
+What changed is the *shape* of the work left, for one reason Oscar named directly: the old Slice 12
+bundled ≈840 lines of documentation prose with cross-OS unsigned packaging **and** the final-gate
+verification pass — writing reviewable prose and building-and-verifying a release are different
+modes of work, and one heterogeneous diff makes every implement-and-review cycle expensive to run
+and hard to review well. The tail is now cut at that seam:
+
+- **Slice 11** keeps items 84–90 unchanged and picks up two items that were falling between slices:
+  **89a**, `review.md`'s **W4** — Diagnostics has no dashboard entry point although `refined.md`
+  §4.6 step 26 reaches it *"from the dashboard, or from Settings → Vault & sync"* — which lands here
+  because this slice already touches the dashboard and the navigation shell; and **89b**, the
+  stylesheet §8's line table (≈320 lines) and §9's tree have carried since the first revision but
+  which **no slice item ever created**, without which D-Q's *"the window re-themes immediately"*
+  cannot pass and Slice 12's screenshots photograph an unstyled window. Both are named scope finding
+  a home, not new scope; see **P-D13** in §6 if Slice 11's size is the wrong trade.
+- **Slice 12** is the documentation and contract-correction slice: items **91, 92, 93, 94, 96, 97**.
+- **Slice 13** is the packaging, release and final-gate slice: items **95** and **98**.
+
+**Item numbers are deliberately left as they were.** Every cross-reference in §4 and §6 therefore
+still points at the same content; only the slice each item belongs to moved, which is why Slice 13
+reads "95, then 98". The two slices depend on each other in **opposite directions**, so both are
+stated here rather than discovered mid-slice: Slice 13's final gate checks that the docs are
+complete, so **Slice 13 runs after Slice 12**; but `docs/gui.md`'s published SHA-256 per artifact can
+only come from Slice 13's tagged build, so **Slice 12 ships that one table with `pending` markers and
+Slice 13's Done-when greps them away** (R9 in §8, P-D16 in §6).
+
+**This was a structural change to an approved plan, and it needed Oscar's fresh call — given,
+2026-08-25.** Oscar confirmed, through an interactive prompt: the 12→13 split exactly as presented
+(item 89b's stylesheet stays in Slice 11, per P-D13's recommended default — Slice 11 is the largest
+of the three, which is the accepted trade); and, individually, all ten Group C decisions (§6),
+each exactly as recommended — **P-D11** through **P-D20**. P-D10 is not reopened by any of this:
+all **thirteen** slices ship, "todo junto, sin retirada" — the count changed, the scope did not.
+
 > **Implementation must NOT begin until Oscar has reviewed this file and recorded an `Approved:`
 > line at its top.** The gate is live and real for this advance: `guard-implementation.sh` matches
 > `*/src/*`, `*/package.json`, `*/tsconfig*.json` — which already covers `desktop/src/**`,
 > `desktop/package.json` and `desktop/tsconfig*.json` today, before the D-L hook change of Slice 1.
-> Do not work around it.
+> Do not work around it. **That line is now recorded above — updated for the third revision,
+> 2026-08-25.** Slices 1–10 are already implemented and reviewed and are untouched by this revision.
 
 ---
 
-## 0. One thing the planner must flag before anything else
+## 0. What this revision resolved
 
-**`refined.md` contradicts itself about what is still open, and this plan does not get to pick a
-side silently.**
+**The first cut of this plan flagged a contradiction: `refined.md`'s fourth revision claimed
+nothing was open while its own §7 body still marked 18 items `Open — Gate R`.** That plan adopted
+all 18 written defaults verbatim rather than guess which sentence was true, and listed them in §6
+for Oscar to confirm or overturn at Gate P.
 
-- Its header (lines 5–6) says: *"All `D-n` decisions in §7 carry a `Decided:` line; nothing remains
-  open. Planning may begin."*
-- Its own §1 preamble (lines 37–50), the body of §7, and §10's closing line say the opposite and
-  **enumerate 18 items as `Open — Gate R`**: D-J(a) · D-R(a) (b) (c) (d) · D-S · D-T · D-U(a) (b)
-  (c) (d) · D-V(b) (c) (d) (e) (g) · plus D-P's two parity gaps (`export --json`,
-  `unlock --recovery-key`).
+**Both things are now settled.** `refined.md`'s fifth revision closes all 18 items with dated
+`Decided:` lines (§7 there), and Oscar walked through every one of them individually through an
+interactive prompt at Gate P — recorded in §6 below, item by item. Seventeen of the eighteen landed
+exactly on the written default; **D-R(a) did not**, in the specific sense that Oscar's own question
+surfaced a requirement the default's *analysis* had missed entirely, not that he rejected the
+option it recommended. See A-2 in §6 for exactly what changed.
 
-I did not participate in refining, so I will not guess which sentence is the true one. What I did
-instead, because it is the only move that invents nothing:
+**One of the 18 was cheap to honour and one was not** — D-J(b)'s "pre-flight the schema before
+migrating" collides with the fact that `UnlockVault` already migrates as a side effect of
+`readLineage()`. That is a real code fact the spec did not have, it forces a change to the
+product's most safety-critical use case, and it is written up as **P-D3** in §6 rather than buried
+in a slice. Oscar confirmed P-D3 explicitly at Gate P.
 
-**Every one of those 18 items has a written `Default:` with its reasoning, and `refined.md` §7's
-own legend says a default "applies if he does not object". This plan adopts all 18 defaults
-verbatim, cites each one, and lists them in §6 "Decisions to confirm" so Oscar can confirm or
-overturn them at Gate P in one pass.** No default was reinterpreted, softened, or merged. If any
-of them is wrong, §6 names exactly which slices change.
-
-Two of the 18 turned out to be cheap to honour and one turned out **not** to be — D-J(b)'s
-"pre-flight the schema before migrating" collides with the fact that `UnlockVault` already migrates
-as a side effect of `readLineage()`. That is a real code fact the spec did not have, it forces a
-change to the product's most safety-critical use case, and it is written up as **P-D3** in §6
-rather than buried in a slice.
+**A second gap, caught by Oscar, not found by either refining pass.** The relocation wizard (D-R)
+was designed, through three planning passes, as a file-move-plus-memory operation. Oscar asked what
+happens to a connected AI tool after the vault moves, and the honest answer — verified in
+`src/delivery/cli/installer.ts` — is: **nothing**, because the MCP server every AI client talks to
+is a separate OS process (`npx -y valija mcp`) that reads its own config, never the desktop app's
+preferences. A relocated vault would silently detach every already-connected tool while the app
+reported success. `refined.md`'s fifth revision rewrote D-R(a) to require re-pointing every
+connected client's MCP config as part of relocation, and added D-W (the app must detect and warn
+when Node/npm is not runnable, since that is what the spawned MCP process needs). **This plan
+folds both into Slice 1 (a new mandatory spike), Slice 4 (a shared client-config-writer change),
+Slice 8 (the re-pointing step itself) and Slice 9 (the Node/npm warning in the connect flow) —
+see the `(2026-08-20)` marks in each.**
 
 ---
 
@@ -60,22 +119,28 @@ technical ones:
    items whose failure would invalidate work built on top of them. No substitution of `argon2`,
    `@napi-rs/keyring` or `better-sqlite3-multiple-ciphers` is permitted to make packaging easier
    (§8.1) — if the rebuild is hard, that is a finding, not a licence to swap a library.
-2. **i18n is Slice 2, not Slice 12** (`refined.md` §11's third risk, third bullet). D-V touches
+2. **i18n is Slice 2, not the last slice** (`refined.md` §11's third risk, third bullet). D-V touches
    every user-facing string, blocks on nothing in `src/` (D-V(f)), and costs one lookup call per
    string when it exists first. Every screen slice after this one writes keys, never sentences.
-3. **Relocation is Slice 8 of 12** — its own slice, with four slices of runway behind it. It is the
+3. **Relocation is Slice 8 of 13** — its own slice, with four slices of runway behind it. It is the
    advance's biggest risk (`refined.md` §11) and the only code here that moves the real vault's
-   files. It is deliberately not last, so it is never built under end-of-advance time pressure, and
-   the read shell (Slices 6–7) ships whole even if relocation has to be pulled.
-4. **`src/` is touched in exactly three places, all of them landed before the desktop needs them**
-   (Slice 4 and Slice 8): the relocation use case D-R(c) puts there, the schema-upgrade gate D-J(b)
-   forces, and three small shared-composition extractions that make "byte-identical to
-   `valija export`" and "the same checks `doctor` runs" *structural* rather than a test that rots.
+   files **and re-points every connected AI client's MCP config** (D-R(a), rewritten 2026-08-20). It
+   is deliberately not last, so it is never built under end-of-advance time pressure. **All 13
+   slices ship; there is no lever to drop the wizard under schedule pressure** — Oscar rejected that
+   option explicitly at Gate P (P-D10, §6), and the third revision's 12→13 split is a re-grouping
+   for review economy, not a re-opening of it.
+4. **`src/` is touched in exactly four places, all of them landed before the desktop needs them**
+   (Slices 4 and 8): the relocation use case D-R(c) puts there, the schema-upgrade gate D-J(b)
+   forces, three small shared-composition extractions that make "byte-identical to
+   `valija export`" and "the same checks `doctor` runs" *structural* rather than a test that rots,
+   and — **new 2026-08-20** — a `vaultPath` parameter on `installer.ts`'s `installIntoClient`, the
+   one piece of `src/` that D-R(a)'s companion step and the ordinary connect flow now share.
    Everything else in `desktop/` is a window over code that already ships.
 
-The advance is large: roughly **5,500 production lines**, ~1,300 test lines and ~800 documentation
-lines, across 12 slices. §8 treats that size as a first-class risk and names the de-scope lever
-`refined.md` §11 already sanctioned (ship the sync-status half, defer the wizard).
+The advance is large: roughly **5,600 production lines**, ~1,570 test lines and ~840 documentation
+lines, across 13 slices. §8 treats that size as a first-class risk (R2), and treats relocation's
+now-wider blast radius as the top risk (R1) — both **without** a de-scope lever, since Oscar
+rejected one at Gate P (P-D10, §6).
 
 ---
 
@@ -114,7 +179,9 @@ exists. Nothing user-facing ships in this slice; a throwaway spike window is del
    - `dependencies`: `better-sqlite3-multiple-ciphers`, `argon2`, `@napi-rs/keyring`, `ulid`,
      `zod`, `fflate` — **pinned to the exact versions in the root `package.json`**.
    - `devDependencies`: `electron`, `electron-vite`, `electron-builder`, `vite`, `react`,
-     `react-dom`, `@types/react`, `@types/react-dom`, `typescript`, `vitest`, `@electron/rebuild`.
+     `react-dom`, `@types/react`, `@types/react-dom`, `typescript`, `vitest`, `@electron/rebuild`,
+     **`jsdom`, `@testing-library/react`, `@testing-library/jest-dom`** (P-D5, reversed 2026-08-20 —
+     DOM-level tests for the recovery-kit and relocation-wizard screens only, Slices 6 and 8).
    - Scripts: `dev` (`electron-vite dev`), `build` (`electron-vite build`), `package`
      (`electron-builder`), `typecheck`, `test`, `lint`.
 3. **`desktop/src/main/infra/dependency-parity.test.ts`** — reads both `package.json` files and
@@ -163,16 +230,33 @@ exists. Nothing user-facing ships in this slice; a throwaway spike window is del
     time / fails* — needs one run on a real macOS desktop session, for **both** interactions D-H
     names: the GUI reading the entry `valija unlock` created, and the GUI creating the
     `doctor-probe` entry. No agent can do this.
+11a. **The client-`env` spike (D-R(a)'s mandatory spike, new 2026-08-20).** D-R(a)'s companion
+    step — re-pointing every connected client's MCP entry during relocation — only works if each
+    client actually **reads** a per-server `"env"` block in `mcpServers.valija` before spawning
+    `npx -y valija mcp`, rather than caching the process's inherited environment or ignoring the
+    key. This is answered **per client in `CLIENTS`** (`claude-code`, `claude-desktop`, `cursor`),
+    not assumed for all three: write a config entry with `"env": { "VALIJA_HOME": "<test path>" }`
+    pointing at a throwaway vault created from the golden fixture, launch the client, and confirm
+    it reads from that path rather than `~/.valija`. Record **honours / ignores / undocumented
+    behaviour** per client. A client that does not honour it gets that limitation named in
+    `docs/gui.md` (Slice 12) and falls back to the manual snippet at relocation time (§4.7 step
+    34', Slice 8) — the named-but-rejected fallback (a vault-path argument on `valija mcp`) stays
+    rejected, since it is new CLI surface. Closes §6 In item 20's mandatory-spike requirement.
+    Where a client cannot be exercised end-to-end in this environment, the spike record says so
+    explicitly rather than assuming success — the same honesty standard `spike.md` already holds
+    D-H's answer to.
 12. **`advances/GUI/spike.md`** (new, in `advances/M4/spike.md`'s idiom) — per-OS results, Electron
-    and Node ABI versions, which modules were rebuilt, the artifact SHA-256s, and the ACL answer
-    with the exact macOS version. §6 In item 19 and §9's "recorded, with the exact macOS version"
-    criterion are closed here, and the answer is carried into `docs/gui.md` in Slice 12.
+    and Node ABI versions, which modules were rebuilt, the artifact SHA-256s, the ACL answer with
+    the exact macOS version, **and the per-client `env`-honouring answer from step 11a**. §6 In
+    items 19 and 20, and §9's "recorded, with the exact macOS version" criterion, are closed here,
+    and both answers are carried into `docs/gui.md` in Slice 12.
 13. **`.gitignore`** — `desktop/node_modules`, `desktop/out`, `desktop/dist`, `desktop/release`.
     **`biome.json`** — exclude those same build outputs.
 
 **Done when:** the spike window opens on all three OSes from a packaged artifact (not only
 `electron-vite dev`), all three native modules load in the packaged app, `spike.md` records the
-per-OS results and the macOS ACL answer, root `npm ci`/`ci.yml` are provably unaffected, and the
+per-OS results, the macOS ACL answer, **and the per-client `env`-honouring answer from step 11a**,
+root `npm ci`/`ci.yml` are provably unaffected, and the
 spike renderer has been deleted.
 
 ---
@@ -285,17 +369,30 @@ adapter is testable with a temp dir).
 
 ---
 
-### Slice 4 — The `src/` changes the desktop needs (excluding relocation)
+### Slice 4 — The `src/` changes the desktop needs (excluding the relocation use case itself)
 
 **Goal:** land every gated-tree change the shell depends on, with the CLI's behaviour provably
-unchanged, before the IPC surface is written against it. Three items, each small, each making a
-§9 criterion structural instead of a test that rots.
+unchanged, before the IPC surface is written against it. Four items, each small, each making a
+§9 criterion structural instead of a test that rots. **One of the four (29a, new 2026-08-20) lands
+here rather than in Slice 8 because both Slice 8's relocation wizard and Slice 9's ordinary connect
+flow depend on it, and Slice 8 comes first.**
 
 29. **`src/delivery/container.ts` — `buildContainer(options?: { vaultRoot?: string })`.** The CLI
     keeps calling `buildContainer()`. The desktop passes the root Slice 3's policy resolved, and
     calls it again after a successful relocation. Also **expose the already-constructed
     `folder: VaultFolder`** on `Container` (it exists inside the function today), so the sync panel
     and `doctor.ts` stop constructing a second `FileVaultFolder`.
+29a. **`src/delivery/cli/installer.ts` — the shared client-config writer gains a vault-path
+    parameter** (D-R(a)'s companion requirement, new 2026-08-20). `installIntoClient` (and the
+    merge helper beneath it) takes an optional `vaultPath?: string`. When present, the written
+    `mcpServers.valija` entry gains `"env": { "VALIJA_HOME": vaultPath }` alongside the unchanged
+    `command`/`args`; when absent, the entry is written exactly as today, with no `env` block.
+    **The CLI's `install` command passes nothing, so its output is byte-identical** — the existing
+    `installer.test.ts` cases must still pass unchanged, which is the mechanical proof. **The GUI
+    always passes it**, from both the connect flow (Slice 9, every connect action, not only an
+    unusual vault location) and the relocation wizard's re-pointing step (Slice 8). This is one
+    function serving both call sites, per `refined.md` §5.1's "one function that knows how to
+    touch a client config" — Slice 8 does not get its own copy.
 30. **`src/delivery/context-pack-export.ts` (new)** — `exportProjectMarkdown(c, project)` and
     `exportProjectJson(c, project)`, lifted verbatim from the two private consts in
     `content-commands.ts`, which now calls them. This is what makes §9's "byte-identical to the
@@ -341,7 +438,10 @@ unchanged, before the IPC surface is written against it. Three items, each small
     unlocks and migrates with `upgradeConfirmed: true`; a current-schema vault never refuses;
     `CheckVaultUpgrade` reports `{ from: 2, to: 3, backsUpCiphertext: true }`; the CLI's
     `unlockCommand` path still migrates silently; `exportProjectMarkdown` equals the golden
-    fixture's `expected-export.md` under the fixed clock.
+    fixture's `expected-export.md` under the fixed clock; **`installIntoClient` called with no
+    `vaultPath` writes byte-identical output to today's fixtures (existing `installer.test.ts`
+    cases, unchanged), and called with a `vaultPath` writes the same entry plus an `"env"` block
+    naming it, for each client in `CLIENTS`.**
 34. **Specs, same commit** (`specs/README.md` rule 1): `specs/vault.md` gains the upgrade gate and
     `readSchemaVersion`; `specs/delivery.md` gains the container parameter and the pack-export
     helper.
@@ -444,7 +544,11 @@ rather than promised.
     passphrase mismatch never reaches IPC · after a scripted init, the preferences file contains
     exactly the four keys and no hex-looking 64-character string exists in any file the app wrote ·
     `VAULT_ALREADY_EXISTS` renders from the code, in both languages · the upgrade screen appears
-    only for a behind-schema vault.
+    only for a behind-schema vault · **(P-D5, reversed 2026-08-20) a DOM-level test
+    (`jsdom` + `@testing-library/react`) renders `recovery-kit.tsx` against the golden fixture's
+    key material, asserts the displayed text equals `renderRecoveryKit`'s output verbatim, asserts
+    Copy key and the acknowledgement checkbox are the only interactive elements reachable before
+    acknowledgement, and asserts no route change is possible until the checkbox is checked.**
 
 **Done when:** a real vault can be created and unlocked from the window in both languages, and
 `valija status` in a terminal reports the same vault, unlocked, with one keychain entry and one
@@ -490,10 +594,14 @@ their sync status — in English and in Spanish — with the pack byte-identical
 
 ---
 
-### Slice 8 — Vault relocation: the `src/` use case and the wizard
+### Slice 8 — Vault relocation: the `src/` use case, the wizard, and re-pointing connected clients
 
 **Goal:** the advance's biggest risk, in its own slice, with four slices of runway behind it and
-four still ahead. D-R(a) Option 1 · D-R(b) Option 2 · D-R(c) Option 1 · D-R(d) Option 1.
+four still ahead. D-R(a) Option 1 · D-R(b) Option 2 · D-R(c) Option 1 · D-R(d) Option 1. **Widened,
+2026-08-20:** D-R(a)'s rewrite makes this slice's scope "move the vault's files **and** re-point
+every already-connected AI client's MCP config" — one user action with three effects
+(`refined.md` §4.7's own framing), not two. Nothing about the file-move logic below changed; steps
+66–67 gained the re-pointing half, and a new step 67a states the failure-isolation rule plainly.
 
 **This slice lands in `src/vault/` as well as `desktop/`** (D-R(c) Option 1) — the plan says so at
 Gate P because it means gated code changes, as D-R(c)'s own note requires.
@@ -549,17 +657,39 @@ Gate P because it means gated code changes, as D-R(c)'s own note requires.
     (D-I(5), §8.4); the keychain entry is keyed by vault id, which does not change, so no entry is
     created, duplicated or orphaned — the only keychain effect is the deliberate lock (§8.12).
 66. **`desktop/src/renderer/screens/relocate-vault.tsx`** — the wizard, §4.7 steps 28–36:
-    the plain-words explainer (*valija does not talk to Dropbox, iCloud, OneDrive or anything else…*)
-    · the native folder picker (path originates in **main**, §8.6) · the sync-folder recognition
-    shown as **informational, never a gate** · the pre-flight refusals rendered **before anything is
-    written**, each from a typed code in the active language · the *"Valija will lock your vault
-    before moving it. You'll enter your passphrase again afterwards."* confirmation · the move · the
-    result · the **`export VALIJA_HOME="…"` line with a copy button**, because the CLI does not read
-    the app's preferences · the re-unlock.
+    the plain-words explainer (*valija does not talk to Dropbox, iCloud, OneDrive or anything else…
+    this moves it there, remembers where it went, and updates the AI tools you've connected so they
+    keep finding it*) · the native folder picker (path originates in **main**, §8.6) · the
+    sync-folder recognition shown as **informational, never a gate** · the pre-flight refusals
+    rendered **before anything is written**, each from a typed code in the active language, **plus
+    the list of which connected clients will be re-pointed and a warning, before anything is
+    written, for any client whose config could not be read or parsed** (§4.7 step 30, D-R(a)) · the
+    *"Valija will lock your vault before moving it. You'll enter your passphrase again afterwards."*
+    confirmation · the move · the result, **including a per-client re-point outcome — "Claude
+    Desktop, Cursor and Claude Code now point at the new folder. Restart them to pick it up," with
+    any client that could not be rewritten named individually alongside the manual snippet and a
+    Try again action** (§4.7 step 34') · the **`export VALIJA_HOME="…"` line with a copy button**,
+    because the CLI does not read the app's preferences and this wizard does not re-point it
+    (§4.7 step 35) · the re-unlock.
 67. **`desktop/src/main/ipc/handlers/relocation-handlers.ts`** — the orchestration the use-case rule
-    "no use case calls another" keeps out of `src/`: `lockVault.execute()` → `relocateVault.execute()`
-    → on success `preferences.write({ ...prefs, vaultPath: newRoot })` → **rebuild the container**
-    with the new root → the window re-renders locked. On any failure the preferences are untouched.
+    "no use case calls another" keeps out of `src/`, in the fixed order D-R(a)'s consequences bind
+    (`refined.md` §4.7 steps 30–34'): `lockVault.execute()` → `relocateVault.execute()` → **only on
+    success** `preferences.write({ ...prefs, vaultPath: newRoot })` → **rebuild the container** with
+    the new root → **re-point every currently-connected client** (67a) → the window re-renders
+    locked. On any failure **before** the move succeeds, the preferences are untouched and no client
+    config is read or written — client re-pointing is strictly the last step, never interleaved with
+    the move.
+67a. **Client re-pointing is a loop over `CLIENTS`, calling the same shared writer connect uses**
+    (`installIntoClient` with Slice 4 step 29a's `vaultPath`, through `installer.ts`'s existing
+    backup-and-merge discipline) — **not** a second config-writing implementation. Each client's
+    result (rewritten / not connected / config unreadable) is collected and returned individually to
+    the renderer, never summarized into one pass/fail. **The binding rule, stated once so no future
+    edit "simplifies" it away:** a client re-pointing failure is reported and is **never** a reason
+    to roll the vault move back or to touch the vault again — the vault has already moved
+    successfully and rolling it backwards to fix a third-party config file is strictly more
+    dangerous than a stale entry (D-R(a) rider 4). A client that fails is left exactly as it was,
+    named in the result, with the manual snippet and a **Try again** action that re-runs only the
+    writer for that one client.
 68. **The mirror flow** (§4.7's last line, reachable from `no-vault.tsx`): a user who already has a
     vault somewhere unusual picks that folder and the app **records the location without moving
     anything** — the pre-flight for this variant only checks that the chosen folder actually
@@ -580,29 +710,67 @@ Gate P because it means gated code changes, as D-R(c)'s own note requires.
       modified**;
     - the wizard refuses while a fork is unresolved;
     - the remembered location survives a relaunch, and `VALIJA_HOME` in the app's environment takes
-      precedence over it.
+      precedence over it;
+    - **(new, 2026-08-20) a client-config-writer failure for one client never touches the vault**:
+      given a mock writer that throws for `cursor` only, the vault has still moved, the source
+      folder is still gone, `claude-desktop` and `claude-code` are still rewritten, and `cursor`'s
+      result names the failure without retrying the move or discarding the destination;
+    - **(new) client configs are read and written only after `relocateVault.execute()` returns
+      `ok`** — a mock writer that would throw on *any* call is asserted never to be invoked when a
+      pre-flight refusal or a simulated move failure occurs first;
+    - **(new) the pre-flight lists exactly the clients currently in `mcpServers`**, and a client
+      with an unreadable or non-JSON config is named in that list before the move starts, not
+      discovered only afterward;
+    - **(P-D5, reversed 2026-08-20) a DOM-level test** (`jsdom` + `@testing-library/react`) drives
+      `relocate-vault.tsx` through a fake bridge across three runs — a pre-flight refusal (destination
+      occupied), a full successful move, and a move that succeeds but where the fake client-config
+      writer throws for exactly one client — asserting in the last case that the **Try again** button
+      rendered for that client's row calls the writer again for that client alone, and that the other
+      two clients' rows show their success state undisturbed.
 70. **Specs, same commit:** `specs/vault.md` gains the relocation contract — the refusal codes, the
-    ordering guarantee, and the rollback rule.
+    ordering guarantee, and the rollback rule. `specs/delivery.md` gains `installIntoClient`'s
+    `vaultPath` parameter (Slice 4 step 29a) and its call sites in both the connect flow and
+    relocation.
 
-**Done when:** all of step 69 is green, and a real vault can be moved into a real synced folder and
-opened there with the same passphrase.
+**Done when:** all of step 69 is green, a real vault can be moved into a real synced folder and
+opened there with the same passphrase, **and** a relocation against a real Claude Desktop / Cursor
+/ Claude Code config leaves each already-connected client pointing at the new folder (or, for a
+client the client-`env` spike found does not honour the block, produces the documented manual-
+snippet fallback instead).
 
 ---
 
 ### Slice 9 — Connect your AI tools, and import chat history
 
 **Goal:** the two remaining write paths, both wrapping code that already ships. D-P Option 5,
-D-S Option 2, D-J(a) Option 1.
+D-S Option 2, D-J(a) Option 1, **D-W (new 2026-08-20).**
 
 71. **`connect-tools.tsx`** (§4.4) — one card per `CLIENTS` entry, each showing connected / not
     connected using **the same check `doctor` makes** (`mcpServers.valija` present in that client's
-    config). **Connect** calls `installIntoClient` unchanged — backup, then merge — and reports the
-    config path, the backup path, and *"Restart <client> to pick it up."* Failures (client not
-    installed, config not valid JSON) render in plain language from the failure `installer.ts`
-    already surfaces, with `manualInstructions()`'s block offered as a fallback and a copy button.
-    **That block stays English** — it is a JSON snippet and paths meant to be pasted (D-V(d)).
-    A test proves a connect action **never opens `vault.db`, never touches the keychain**, and
-    leaves lock state and lineage untouched.
+    config), **and, for a connected client, which vault folder its entry currently names** (D-R(a),
+    read from the same config file). **Connect** calls `installIntoClient` with the app's **current**
+    vault path (Slice 4 step 29a) — backup, then merge — and reports the config path, the backup
+    path, and *"Restart <client> to pick it up."* **This is the first place `installIntoClient` is
+    ever called with a `vaultPath`, always, not only when the vault is somewhere unusual** (D-R(a)
+    rider 5) — so there is no class of client entry relocation later has to *add* the key to rather
+    than update. Failures (client not installed, config not valid JSON) render in plain language
+    from the failure `installer.ts` already surfaces, with `manualInstructions()`'s block offered as
+    a fallback and a copy button. **That block stays English** — it is a JSON snippet and paths
+    meant to be pasted (D-V(d)). A test proves a connect action **never opens `vault.db`, never
+    touches the keychain**, and leaves lock state and lineage untouched.
+71a. **The Node/npm check** (D-W, new 2026-08-20) — before offering to connect, a **real executable
+    probe**, not `process.versions.node` (which inside Electron is the bundled runtime, not the
+    system Node `npx` would use — `refined.md` §3 fact 6's specific trap): spawn `node --version`
+    and `npm --version` on `PATH` and check both resolve. `desktop/src/main/infra/node-probe.ts`,
+    behind a small port so it is fakeable in tests. If either is missing, the screen states plainly
+    that connected tools run valija through Node.js, that it is not installed, that connecting will
+    still write the setting but the tool will not reach the vault until Node is installed, with a
+    docs link — **and still allows Connect**, because the user may install Node minutes later
+    (§4.4 step 16', explicit non-block). This is a **warning only**: no CLI surface changes, no
+    Node runtime is bundled, and no MCP server is hosted by the app (both named as future work,
+    not designed here, per D-W's non-goals). A test asserts the probe is a genuine child-process
+    spawn (not a `process.versions` read) and that a missing Node does not disable the Connect
+    button.
 72. **`import.tsx`** (§4.5) — the explainer (this reads a file *you* downloaded; valija never
     contacts either service) · the native open dialog filtered to `.json`/`.zip` · format
     auto-detection with the format override appearing **only** when detection fails, mirroring
@@ -633,7 +801,9 @@ D-S Option 2, D-J(a) Option 1.
     `src/importers/infra/parsers/`.
 
 **Done when:** an export file can be listed, previewed and imported from the window, with one
-lineage bump, and a connect action wires Claude Desktop without touching the vault.
+lineage bump; a connect action wires Claude Desktop without touching the vault and always writes
+the current vault path into its entry; and a machine with no runnable Node/npm sees the warning
+without losing the ability to connect.
 
 ---
 
@@ -671,11 +841,27 @@ machine, the CLI's stdout is unchanged, and the report copies as English.
 
 ---
 
-### Slice 11 — The welcome tour and the Settings screen
+### Slice 11 — The welcome tour, the Settings screen, and the shell they need
 
 **Goal:** the two surfaces with no CLI counterpart, built on Slice 3's policies, writing one
 boolean and nothing else. D-U(a) Option 2 · D-U(b) Option 1 · D-U(c) with its guardrails ·
 D-U(d) Option 1.
+
+**Widened by two items, 2026-08-25 (third revision) — both are named scope finding a home, not new
+scope.** This slice already owns the dashboard and the navigation shell, so it is where
+`review.md`'s **W4** (Diagnostics has no dashboard entry point, though `refined.md` §4.6 step 26
+reaches it *"from the dashboard, or from Settings → Vault & sync"*) stops being a carried-forward
+finding and becomes item **89a**; and it is where the stylesheet §8's line table and §9's tree have
+always carried, but which no slice item ever created, becomes item **89b** — because *"the window
+re-themes immediately"* (§4.8 step 38) is **this slice's own** acceptance criterion, and because
+Slice 12's screenshots photograph whatever this slice leaves on screen.
+
+**Everything this slice needs on the main side already exists**, which is what keeps it small: the
+four-key store and its `preferences:read` / `preferences:write` channels (Slices 3 and 5),
+`policies/onboarding-tour.ts` with `SLIDE_IDS` / `nextSlide` / `previousSlide` / `markTourSeen` /
+`shouldPlayTour` (Slice 3), `canNavigateAwayFrom` (Slice 6), and both catalogs' complete
+`onboarding.*` and `settings.*` namespaces (Slice 2). Apart from the two catalog keys item 89a adds,
+this is a **renderer-only slice: no new IPC channel, no zod schema change, no `src/` change.**
 
 84. **`onboarding.tsx`** (§4.2 step 7') — four slides, position dots, **Back** / **Next**,
     **Get started** on the last, and **Skip on every slide**. Rendered from
@@ -713,20 +899,69 @@ D-U(d) Option 1.
 89. **The gear reaches the locked screen too** — Slice 6's `locked.tsx` gains its entry point here,
     because the unlock screen is one of the screens that has to be readable in the user's language
     and theme.
+89a. **Diagnostics gains its dashboard entry point** (new 2026-08-25 — `review.md` **W4**,
+    `refined.md` §4.6 step 26). Slice 10 shipped the Sync-panel entry only and named the other two
+    as this slice's (item 82). `dashboard.tsx` takes an `onCheckSetup: () => void` prop and renders
+    **Check my setup** in a header that shows in **every branch it already has** — loading, error,
+    empty and populated — because the empty first-run dashboard is exactly when a user needs it
+    most; `app.tsx` wires it to the **one existing** `DiagnosticsScreen` mount, and item 87's
+    Vault & sync section wires the second. Two new catalog keys (`dashboard.checkMySetup` in `en.ts`
+    **and** `es.ts` — a missing Spanish key is a typecheck failure, never a runtime blank). **No new
+    screen, no new channel, no second implementation.** *Test* —
+    `desktop/src/renderer/screens/diagnostics-entry-points.test.ts`, a source-scanning test in the
+    idiom of `screens/diagnostics.no-auto-run.test.ts`: `dashboard.tsx` and `settings.tsx` each
+    render the entry action, `app.tsx` passes both callbacks, and `app.tsx` contains **exactly one**
+    `<DiagnosticsScreen` occurrence — item 82's "second entry points, not second implementations",
+    made mechanical instead of reviewed by eye. **P-D5's two-screen jsdom boundary is not widened
+    for this** (P-D11, §6).
+89b. **The stylesheet D-Q needs — a gap this revision found, not scope it added.** §8's line table
+    has carried ≈320 lines of "styles (theme tokens, base, per-screen)" and §9's tree has shown
+    `renderer/styles/` since the first revision, but no slice item ever created them: `desktop/`
+    contains **no CSS at all** today, `useTheme()` has **no consumer**, and `data-theme` is set only
+    inside `recovery-kit.tsx`. So, here: `renderer/styles/tokens.css` (the light and dark
+    custom-property sets), `styles/base.css` (layout, typography, and the **system font stack** —
+    P-D6, no embedded face, no remote face), and per-screen rules sized to what the sixteen screens
+    already render; `app.tsx` applies the resolved theme **once**, as `data-theme` on the shell root,
+    which is the only place it is applied outside the recovery kit's permanent `dark`. *Tests* — a
+    source-scanning assertion that `app.tsx` applies `useTheme()`'s value as `data-theme` on the root
+    and that `recovery-kit.tsx` still hardcodes `dark` (D-Q's exception, still structural); and
+    `no-network-surface.test.ts`'s file glob extended to `.css`, so a remote `@font-face` or
+    background URL can never enter through a stylesheet (§8.5's "it's only a language file" in its
+    other disguise — P-D20, §6).
 90. **Tests:** tour shown automatically exactly once per installation, on both branches, driven by
     the flag · Skip sets the flag and returns the user where they were · replay changes nothing
     else · opening Settings and watching the tour do not extend the idle-lock clock (no session,
     no `recordActivity`) · switching language re-renders every visible string without a reload.
 
+**Routing, decided here rather than improvised** (P-D15, §6): the tour and Settings are **overlays**
+held in `app.tsx` above the phase switch — `useState<"tour" | "settings" | null>` — not
+`WorkspaceView` screens, because Settings must open **while the vault is locked** (§4.8 step 37) and
+a `WorkspaceView` only exists inside the unlocked workspace. The overlay renders only when
+`canNavigateAwayFrom(state)` is true, which is what makes item 86's invariant structural: nothing,
+including the tour, can appear between the recovery kit and its acknowledgement. Writing a
+preference is `bridge.preferences.write({ theme, language, tourSeen })` followed by a
+`bridge.preferences.read()` whose result replaces `App`'s `preferences` state — one source of truth,
+so the language and theme providers re-render live with no reload and no drift against the file.
+
 **Done when:** a first-run user sees the tour once, can skip it, can replay it from Settings, and
-can switch the app to Spanish live from the locked screen.
+can switch the app to Spanish live from the locked screen; **Diagnostics is reachable from the
+dashboard and from Settings → Vault & sync with exactly one diagnostics screen mounted (W4 closed);
+and the window re-themes immediately on an Appearance change while the recovery-kit screen stays
+permanently dark.**
 
 ---
 
-### Slice 12 — Documentation, `docs/SPEC.md` corrections, packaging, and the final gates
+### Slice 12 — Documentation, `docs/SPEC.md` corrections, and the bilingual screenshots
 
-**Goal:** the deliverables that make the advance reviewable and the artifacts installable, plus the
-contract corrections D-O requires.
+**Goal:** the deliverables that make the advance *reviewable* — prose, contracts and screenshots —
+in one diff that a reviewer reads rather than builds. **Split out of the old Slice 12 on 2026-08-25
+(third revision):** packaging, release and the final gates are now Slice 13. Nothing moved out of
+this advance; items 91, 92, 93, 94, 96 and 97 are here **verbatim in substance**, with their original
+numbers so every cross-reference in §4 and §6 still resolves.
+
+**Order:** this slice lands **before** Slice 13, whose final gate checks that these docs are
+complete. The one thing it cannot finish is the artifact checksums — see the `pending` rule under
+item 91 and R9 in §8.
 
 91. **`docs/gui.md` (new)** — for a non-technical reader (D-N), covering: install per OS **with the
     literal words the OS shows** (*"Valija can't be opened because Apple cannot check it for
@@ -742,6 +977,21 @@ contract corrections D-O requires.
     the GUI deliberately does not do** (curation, fork resolution, vault destruction, running an MCP
     server, provider artifacts, configuring environment-resolved behaviour, a third language) and
     where each of those lives.
+    - **The checksum table ships with markers, not values** (new 2026-08-25, R9): each artifact's
+      SHA-256 is written as the literal `pending — filled by Slice 13's tagged build`, because the
+      values only exist once Slice 13 builds. Slice 13's Done-when greps them away. This is the one
+      cross-slice loose end in the docs, and it is named rather than left to be noticed at the gate.
+    - **One sentence closing `review.md`'s W1** (new 2026-08-25, P-D17): the diagnostics screen's
+      `detail` column stays English — a **fourth** verbatim-English surface beyond D-V(d)'s three,
+      sanctioned by D-T Option 3's "check rows close to verbatim" — and the docs say so in the same
+      place they explain the other three. The app already behaves correctly; what was missing was
+      the sentence that says why.
+    - **One sentence closing `review.md`'s W3's second half** (P-D18): Diagnostics reports what
+      `valija doctor` reports (an `mcpServers.valija` entry exists), while the Connect screen calls a
+      client "connected" only when its entry names a vault folder. A client installed by the CLI is
+      therefore *OK* on one screen and *not connected* on the other; the docs name the difference
+      instead of leaving two screens contradicting each other. **No code change** — Slices 9 and 10
+      are merged and reviewed.
 92. **The environment gap, stated honestly** (this plan's §5 A6): an app launched from a dock or
     start-menu icon inherits no shell environment, so `VALIJA_HOME` set in a shell profile is
     invisible to it (the wizard's remembered location is the answer), and so are
@@ -765,15 +1015,53 @@ contract corrections D-O requires.
     observable behaviour: the enumerated IPC surface, the four-key preferences store, the language
     resolution rules, the tour's play/skip semantics, and the relocation wizard's refusals. This is
     the repo's own spec-driven rule applied to the one tree that would otherwise have no spec.
+96. **Screenshots** for `docs/gui.md`, in **both languages**, from
+    `src/testing/__fixtures__/golden-vault/` only — never a real vault, never a real key, never a
+    real recovery kit (§8.16), and labelled as published test data. **They need a running app**, and
+    therefore the `better-sqlite3-multiple-ciphers` rebuild `spike.md` still records as unverified in
+    the implementation container (A13, §5): where that rebuild cannot run, this is a **human gate to
+    schedule with Oscar**, exactly like D-H — recorded honestly in `spike.md`, never quietly skipped.
+97. **`CHANGELOG.md`** — one `[Unreleased]` entry: the desktop app, the relocation capability, the
+    schema-upgrade consent gate, and the corrected contract lines.
+
+**Done when:** `docs/gui.md` is complete in English (with only the checksum table carrying its
+`pending` markers), the three `SPEC.md` corrections are in, `specs/desktop.md` exists with its
+`specs/README.md` row, `CHANGELOG.md` carries its `[Unreleased]` entry, the bilingual screenshots are
+in `docs/images/gui/` and drawn only from the golden fixture — and both check commands are still
+green (this slice writes no production code, so a red suite here means something else moved).
+
+---
+
+### Slice 13 — Packaging, release, and the final gates
+
+**Goal:** the artifacts, their checksums, and the verification pass that proves the advance's hard
+guarantees against the **built** app rather than the source. **Split out of the old Slice 12 on
+2026-08-25 (third revision)** because build-and-verify is a different mode of work from writing
+prose, and reviewing them together produced one large heterogeneous diff. Items **95** and **98**
+are here verbatim in substance, with their original numbers.
+
+**This slice depends on Slice 12** — item 98's own Done-when asks that the docs be complete — and it
+**closes Slice 12's one loose end**, the `pending` checksum markers. It also closes the two things
+`spike.md` still records as open from Slice 1: whether the rebuilt native module actually loads
+under Electron (A3's second half), and the packaged artifacts themselves. That is item 95's existing
+requirement, not new scope; what this revision adds is naming *where* it gets answered.
+
 95. **Packaging and release** — unsigned artifacts for macOS (dmg, arm64 + x64), Windows (nsis,
     x64) and Linux (AppImage, x86_64), each with a published SHA-256, built by `desktop.yml` on
     tag. `electron-builder.yml` sets `asarUnpack` for the three native modules and **no
     `publish`/auto-update configuration of any kind**.
-96. **Screenshots** for `docs/gui.md`, in **both languages**, from
-    `src/testing/__fixtures__/golden-vault/` only — never a real vault, never a real key, never a
-    real recovery kit (§8.16), and labelled as published test data.
-97. **`CHANGELOG.md`** — one `[Unreleased]` entry: the desktop app, the relocation capability, the
-    schema-upgrade consent gate, and the corrected contract lines.
+    - What is already in the tree from Slice 1, and must not be re-derived: `electron-builder.yml`'s
+      three targets, `asarUnpack` for the three native modules, `npmRebuild: true`, `identity: null`,
+      and `desktop.yml`'s tag-gated `npm run package` step.
+    - What this slice adds: the tag job **computes and publishes each artifact's SHA-256** and
+      uploads the artifacts, so `docs/gui.md`'s table can be filled from a build rather than from a
+      developer's laptop; and a **guard test** asserting `electron-builder.yml` contains no `publish`
+      key and that no `electron-updater`-shaped dependency exists in `desktop/package.json` — the
+      mechanical form of "no auto-update configuration of any kind", in the idiom of Slice 1 step 7's
+      grep (P-D19, §6).
+    - **Native modules must load in the packaged app on every target**, not only in dev — the half of
+      A3 `spike.md` records as unverified. A target whose rebuild fails does not ship, and
+      **substituting the library is forbidden** (§8.1); that is a finding to escalate, never a swap.
 98. **Final gate checks, pasted into the PR description:**
     - `git diff main...HEAD --name-only` — `src/` changes confined to the files Slices 4 and 8 name;
     - `git diff main...HEAD -- src/delivery/mcp/` — **empty** (the MCP surface, byte-for-byte);
@@ -786,9 +1074,19 @@ contract corrections D-O requires.
     - **zero network requests verified against the built artifact**, not only the source: run the
       packaged app through a full walkthrough with the machine's network monitored, and record the
       result in `spike.md`.
+    - **(new 2026-08-25, ordering only)** the walkthrough runs **in both languages**, which is what
+      §4's "catalogs load from the bundle; zero network holds in both languages, verified against the
+      artifact" criterion has always asked of this step — it is one walkthrough per language, not a
+      second check.
 
-**Done when:** the artifacts exist with checksums, the docs are complete in English, the three
-`SPEC.md` corrections are in, and every final gate check is pasted.
+**Done when:** the three OS artifacts exist with published SHA-256s and their native modules load in
+the packaged app; **Slice 12 has landed and `grep -c "pending — filled by Slice 13" docs/gui.md`
+returns 0**, every checksum being a real digest from the tagged build; the zero-network walkthrough
+has been run against the **packaged** artifact on all three OSes, in both languages, and recorded in
+`spike.md`; and every final gate check above is pasted into the PR description. Anything Slice 1 left
+open in `spike.md` that this slice answers is updated there in the same commit; anything still
+unanswerable in the implementation environment is written down as still open, in `spike.md`'s own
+honesty standard, rather than reported as done.
 
 ---
 
@@ -888,6 +1186,7 @@ window; only packaging and the macOS ACL question are not.
 |---|---|---|
 | **`src/` unit + integration** | root `npm test` (vitest, existing suite) | The relocation use case and its refusals, the schema-upgrade gate, the pack-export helper, the extracted diagnostics module, the explicit busy timeout — all with fakes and temp directories, no Electron. |
 | **Desktop headless** | `desktop/` vitest, node environment | Policies (preferences, system-or-override, language, theme, tour, vault location), i18n (catalogs, plurals, formats, error copy), IPC (channel-set equality, schema rejection, no path-shaped argument), renderer state machines, the "no session outlives an action" and "no sidecar" assertions. **No window, no DOM.** |
+| **Desktop DOM-level** (P-D5, reversed 2026-08-20) | `desktop/` vitest, `jsdom` environment, `@testing-library/react` | **Exactly two screens, by name:** `recovery-kit.tsx` (kit renders verbatim, only Copy key + the checkbox are reachable pre-acknowledgement) and `relocate-vault.tsx` (pre-flight refusal, full success, and per-client re-point failure with an isolated Try again). Not a blanket policy — every other screen stays headless-only. |
 | **Cross-surface conformance** | root `npm test` | Byte-identity of the pack the GUI displays against `valija export` and against the golden fixture, in both languages; CLI-write-then-GUI-import is a fast-forward, not a fork; `doctor`'s stdout unchanged after the extraction. |
 | **Packaged-artifact checks** | `desktop.yml`, and by hand | Native modules load in the packaged app (not only in dev); zero network requests during a full walkthrough of the built artifact; artifact SHA-256s. |
 | **Human gate** | Oscar, one macOS desktop session | D-H's ACL answer for both the CLI-created entry and the `doctor-probe` entry, on a named macOS version. |
@@ -896,11 +1195,11 @@ window; only packaging and the macOS ACL question are not.
 
 | Criterion (§9) | Proven by |
 |---|---|
-| MCP surface byte-for-byte unchanged; no embedded MCP server | Slice 12 step 98 (`git diff -- src/delivery/mcp/` empty) + a grep test asserting `desktop/` never imports `mcp/server.js` |
+| MCP surface byte-for-byte unchanged; no embedded MCP server | Slice 13 step 98 (`git diff -- src/delivery/mcp/` empty) + a grep test asserting `desktop/` never imports `mcp/server.js` |
 | No schema/migration/format/`vault.json`/KDF/key/SQLCipher change | Slices 4 and 8 touch no migration and no crypto; the final diff review |
 | No change to `argon2` / `@napi-rs/keyring` / `better-sqlite3-multiple-ciphers` | Slice 1 step 3 (the version-parity test) + the final diff on both `package.json`s |
-| Every CLI command behaves as before; root checks pass; CI not slowed or gated | Slice 4 steps 33–34, Slice 10 step 78 (byte-identical `doctor` output), Slice 1 step 10 (separate workflow), Slice 12 step 98 |
-| Published npm package unchanged | Slice 12 step 98 (`git diff -- package.json` empty; `files` is an allow-list) |
+| Every CLI command behaves as before; root checks pass; CI not slowed or gated | Slice 4 steps 33–34, Slice 10 step 78 (byte-identical `doctor` output), Slice 1 step 10 (separate workflow), Slice 13 step 98 |
+| Published npm package unchanged | Slice 13 step 98 (`git diff -- package.json` empty; `files` is an allow-list) |
 | `SPEC.md` §1, §2, §10a corrected; D11 gains the preferences sentence; no milestone number | Slice 12 step 93 |
 | Every CLI command has its mapped GUI surface; `mcp` the only absence, stated in docs | Slices 6–10, plus `docs/gui.md` (Slice 12 step 91) |
 | Both parity gaps implemented or explicitly declined | Slice 7 step 55 (`--json` in the save dialog) and Slice 6 step 47 (recovery-key unlock) — both implemented per D-P's defaults |
@@ -948,6 +1247,10 @@ window; only packaging and the macOS ACL question are not.
 | Nothing under `VALIJA_STATE_HOME`, no preferences file, moved or created in the destination | Slice 8 step 65 |
 | New location survives relaunch; `VALIJA_HOME` takes precedence | Slice 3 step 28 + Slice 8 step 69 |
 | The `VALIJA_HOME` line with a copy action, and the docs explaining the CLI does not read preferences | Slice 8 step 66 + Slice 12 step 91 |
+| **(new, 2026-08-20)** Every already-connected client's MCP config is re-pointed after a successful move, through the same writer `connect` uses, never before the move succeeds | Slice 4 step 29a + Slice 8 steps 67, 67a, 69 |
+| **(new)** A client re-pointing failure is reported per client, never rolls the vault back, and offers a manual snippet + Try again | Slice 8 steps 66, 67a, 69 |
+| **(new)** Whether each `CLIENTS` entry honours a per-server `env` block is verified and recorded per client, with the exact macOS-spike-style honesty standard | Slice 1 step 11a |
+| **(new)** The app detects whether Node/npm are runnable (a real probe, not `process.versions`) and warns without blocking Connect | Slice 9 step 71a |
 | Preferences file has exactly four keys and nothing else | Slice 3 steps 22, 28 |
 | Tour shown automatically exactly once per installation, on both branches, driven by the flag | Slice 11 step 90 |
 | Skip on every slide, sets the flag, returns the user where they were; dots/Back/Next/Get started | Slice 11 steps 84, 90 |
@@ -956,6 +1259,8 @@ window; only packaging and the macOS ACL question are not.
 | Replay works any number of times and changes no other state | Slice 11 step 90 |
 | Settings reachable while locked; opens no session; touches no vault file | Slice 11 steps 87–89 |
 | Exactly four sections; Vault & sync navigates to existing screens; no editable env field | Slice 11 steps 87–88 |
+| Diagnostics reachable **from the dashboard** and from Settings → Vault & sync, with exactly one diagnostics screen mounted (§4.6 step 26, §4.8 step 40; `review.md` W4) | Slice 10 step 82 + Slice 11 step 89a |
+| Theme follows the OS with a persisted override, the window re-themes **immediately**, and the recovery-kit screen stays permanently dark (§4.8 step 38, D-Q) | Slice 3 step 28 + Slice 11 steps 87, 89b |
 | No path to destroying, re-keying or re-initializing | Slice 11 step 88 |
 | Docs state Settings has no CLI counterpart and why | Slice 12 step 91 |
 | App opens in the OS language when en/es, English otherwise; override persists | Slice 3 step 28 |
@@ -963,17 +1268,17 @@ window; only packaging and the macOS ACL question are not.
 | Identical key sets; no hardcoded string; no concatenated sentence; plural-aware counts | Slice 2 step 20 + a lint-style test asserting no `.tsx` under `screens/` contains a bare quoted sentence |
 | A Spanish walkthrough shows no English UI string but the three documented exceptions | Slice 12's bilingual screenshot pass + the key-set test |
 | Errors rendered from `code`, never `message`; every reachable code has copy or a code-naming fallback | Slice 2 steps 19–20 (the source-scanning coverage test) |
-| **No `src/` file modified for localization**; no `locale` parameter anywhere; CLI output unchanged | Slice 12 step 98's diff review — the `src/` changes in Slices 4 and 8 are relocation, the upgrade gate and composition extraction, and none of them mentions a locale |
-| Catalogs load from the bundle; zero network holds in both languages, verified against the artifact | Slice 12 step 98 |
+| **No `src/` file modified for localization**; no `locale` parameter anywhere; CLI output unchanged | Slice 13 step 98's diff review — the `src/` changes in Slices 4 and 8 are relocation, the upgrade gate and composition extraction, and none of them mentions a locale |
+| Catalogs load from the bundle; zero network holds in both languages, verified against the artifact | Slice 13 step 98 |
 | Dates, numbers and durations formatted for the active language | Slice 2 step 20 |
 | The four §8.17 surfaces reviewed in Spanish as security copy; `docs/` recorded as English | Slice 2 step 16 (content rule), Slice 12 steps 91–92 |
 | Renderer hardening flags; preload exposes a fixed enumerated API validating at the boundary | Slice 1 step 6 + Slice 5 steps 36–40 |
 | No channel accepts SQL/module/shell/path; all three paths come from native dialogs | Slice 5 steps 38–39 |
-| Zero network requests; CSP; navigation denied — verified against the built artifact | Slice 1 steps 6–7 + Slice 12 step 98 |
-| After quitting, no new plaintext file/cache/index/crash dump; preferences the only new file | Slice 6 step 51 + Slice 12 step 98 |
+| Zero network requests; CSP; navigation denied — verified against the built artifact | Slice 1 steps 6–7 + Slice 13 step 98 |
+| After quitting, no new plaintext file/cache/index/crash dump; preferences the only new file | Slice 6 step 51 + Slice 13 step 98 |
 | Screenshots and docs use only the golden fixture, in both languages | Slice 12 step 96 |
 | The busy/retry behaviour explicit in code; a contended write produces the documented outcome | Slice 4 step 32 + Slice 9 step 75 |
-| Unsigned artifacts for three OSes with SHA-256; native modules load in the packaged app | Slice 1 step 9 + Slice 12 step 95 |
+| Unsigned artifacts for three OSes with SHA-256; native modules load in the packaged app | Slice 1 step 9 + Slice 13 step 95 |
 | First-launch friction documented per OS in the OS's own words; run-from-source verified | Slice 12 step 91 |
 | Docs state what the GUI deliberately does not do, and where those live | Slice 12 step 91 |
 
@@ -1026,38 +1331,52 @@ window; only packaging and the macOS ACL question are not.
 - **A12 — `advances/GUI/plan.md` is the most recently modified `plan.md`**, so
   `guard-implementation.sh` resolves to it without `VALIJA_ADVANCE` being set. Exporting
   `VALIJA_ADVANCE=GUI` makes it deterministic and is recommended.
+- **A13 — Slice 12's bilingual screenshots need a machine where `better-sqlite3-multiple-ciphers`
+  rebuilds for Electron** (new 2026-08-25). `spike.md` records that rebuild as still unverified: the
+  implementation container cannot reach `electronjs.org`, so no vault file write succeeds there and
+  no screenshot of a populated golden-fixture dashboard can be taken. If the environment that
+  implements Slice 12 has the same limit, the screenshots become a human gate to schedule with Oscar
+  (the D-H pattern), recorded as open in `spike.md` — **not** a reason to ship `docs/gui.md` without
+  them, and not a reason to fabricate them from a hand-built window.
 
 ---
 
 ## 6. Decisions to confirm
 
-Two groups. **Group A** is `refined.md`'s own 18 open items, adopted at their written defaults —
-confirm or overturn. **Group B** is decisions this plan had to make that the spec does not cover.
+**Both groups are now closed.** Oscar confirmed every Group A row and every disputed Group B item
+individually, through an interactive prompt, on 2026-08-20. This section is kept — not deleted —
+because it is the map from each decision to the slice it binds, exactly as useful post-approval as
+it was at Gate P.
 
-### Group A — `refined.md` §7's open items, adopted at their defaults
+### Group A — `refined.md` §7's items, all confirmed 2026-08-20
 
-| # | Item | Default adopted (verbatim from `refined.md` §7) | If overturned |
+Seventeen of eighteen landed exactly on the written default, unchanged. **A-2 did not** — Oscar's
+own question surfaced a requirement the default's original analysis had missed, so what he
+confirmed is the *rewritten* D-R(a), not the plan's first-cut description of it. That row is
+marked below.
+
+| # | Item | Confirmed (2026-08-20) | Binds |
 |---|---|---|---|
-| A-1 | **D-J(a)** busy/retry | Option 1 — explicit timeout + bounded retry for import; relocation guarded by D-R(d) instead | Slice 4 step 32 and Slice 9 step 75 change |
-| A-2 | **D-R(a)** location memory | Option 1 — app-preferences file in Electron `userData`; **`VALIJA_HOME` always wins** | Slice 3 rewritten; Option 3 would change CLI resolution and belongs in its own advance |
-| A-3 | **D-R(b)** how the move happens | Option 2 — copy, verify, then delete the source; a destination with a vault is **refused, never merged** | Slice 8 steps 61–64 rewritten |
-| A-4 | **D-R(c)** where relocation lives | Option 1 — a `RelocateVault` use case in `src/vault/`, port + tech-named adapter | Option 2 moves Slice 8's `src/` half into `desktop/`; Option 3 adds a `valija relocate` command (real extra scope) |
-| A-5 | **D-R(d)** move discipline | Option 1 — lock first, verify at rest, then move | Slice 8 steps 63, 67 change |
-| A-6 | **D-S** import selection surface | Option 2 — behavioural parity (checkbox = `--pick`, filter = `--query`, sortable dates = `--since`, format override only when detection fails) | Slice 9 step 72 changes |
-| A-7 | **D-T** diagnostics presentation | Option 3 — split: plain-words Sync & safety panel, near-verbatim Diagnostics screen with Copy report | Slices 7 and 10 merge or diverge |
-| A-8 | **D-U(a)** when the tour plays | Option 2 — first time this installation reaches the dashboard, **either** branch | Slice 11 step 86 changes |
-| A-9 | **D-U(b)** where the seen-flag lives | Option 1 — the same preferences store, fourth key; **Skip sets it** | Slice 3 step 26 changes |
-| A-10 | **D-U(c)** slide content | The mockup's four slides with the three guardrails binding; slide 2 rewritten to point at connecting a tool | Slice 11 step 85's copy changes |
-| A-11 | **D-U(d)** Settings and the CLI | Option 1 — GUI-only chrome, **no CLI counterpart**, boundary stated in the docs | Option 2 would invent `valija config`, a contract change |
-| A-12 | **D-V(b)** catalog mechanism | Option 1 — static catalogs in the bundle, stable ids, English source and fallback, missing key fails the suite | Slice 2 rewritten |
-| A-13 | **D-V(c)** Spanish completeness | Option 1 — **structural** completeness is an acceptance criterion, literary quality is not; neutral LatAm Spanish, "tú", no voseo; **`docs/` stays English** (option (a)) | If (b) is wanted, `docs/gui.md` is one page and is scoped as one page — add ~350 lines to Slice 12 |
-| A-14 | **D-V(d)** never translated | Recovery kit body, manual install instructions, context-pack markdown, and `DomainError.message`; option (a) — one localized sentence of explanation | Slice 6 step 46 and Slice 7 step 55 change |
-| A-15 | **D-V(e)** dates/numbers/plurals | Option 1 — `Intl` against the **active UI language** | Slice 2 step 18 changes |
-| A-16 | **D-V(g)** OS-language detection | Option 1 — primary-subtag match, one region-neutral `es` catalog | Slice 2 step 14 changes |
-| A-17 | **D-P gap 1** `export --json` | Default (b) — a format choice in the save dialog | Slice 7 step 55 drops the JSON option and the docs record the decline |
-| A-18 | **D-P gap 2** `unlock --recovery-key` | Default (b) — a secondary "I only have my recovery key" path, masked, never persisted | Slice 6 step 47 drops it and the docs record the decline |
+| A-1 | **D-J(a)** busy/retry | **Confirmed**, Option 1 — explicit timeout + bounded retry for import; relocation guarded by D-R(d) instead | Slice 4 step 32, Slice 9 step 75 |
+| A-2 | **D-R(a)** location memory | **Confirmed, rewritten.** Option 1 for where the app itself remembers (app-preferences file, `VALIJA_HOME` always wins) **plus a mandatory companion step Oscar's own question forced**: relocation must also rewrite the vault path into every already-connected client's MCP config `env` block, through the same writer `installIntoClient` already uses. See §0's second gap and `refined.md` D-R(a) for the full analysis. | Slice 1 step 11a (spike), Slice 3 (unchanged — location memory itself), Slice 4 step 29a (shared writer), Slice 8 steps 66–67a (the re-pointing itself), Slice 9 step 71 (connect always writes the path) |
+| A-3 | **D-R(b)** how the move happens | **Confirmed**, Option 2 — copy, verify, then delete the source; a destination with a vault is **refused, never merged** | Slice 8 steps 61–64 |
+| A-4 | **D-R(c)** where relocation lives | **Confirmed**, Option 1 — a `RelocateVault` use case in `src/vault/`, port + tech-named adapter | Slice 8 |
+| A-5 | **D-R(d)** move discipline | **Confirmed**, Option 1 — lock first, verify at rest, then move | Slice 8 steps 63, 67 |
+| A-6 | **D-S** import selection surface | **Confirmed**, Option 2 — behavioural parity (checkbox = `--pick`, filter = `--query`, sortable dates = `--since`, format override only when detection fails) | Slice 9 step 72 |
+| A-7 | **D-T** diagnostics presentation | **Confirmed**, Option 3 — split: plain-words Sync & safety panel, near-verbatim Diagnostics screen with Copy report | Slices 7 and 10 |
+| A-8 | **D-U(a)** when the tour plays | **Confirmed**, Option 2 — first time this installation reaches the dashboard, **either** branch | Slice 11 step 86 |
+| A-9 | **D-U(b)** where the seen-flag lives | **Confirmed**, Option 1 — the same preferences store, fourth key; **Skip sets it** | Slice 3 step 26 |
+| A-10 | **D-U(c)** slide content | **Confirmed** — the mockup's four slides with the three guardrails binding; slide 2 rewritten to point at connecting a tool | Slice 11 step 85 |
+| A-11 | **D-U(d)** Settings and the CLI | **Confirmed**, Option 1 — GUI-only chrome, **no CLI counterpart**, boundary stated in the docs | Slice 11 steps 87–88 |
+| A-12 | **D-V(b)** catalog mechanism | **Confirmed**, Option 1 — static catalogs in the bundle, stable ids, English source and fallback, missing key fails the suite | Slice 2 |
+| A-13 | **D-V(c)** Spanish completeness | **Confirmed**, Option 1 — **structural** completeness is an acceptance criterion, literary quality is not; neutral LatAm Spanish, "tú", no voseo; **`docs/` stays English** (option (a)) | Slice 2 step 16, Slice 12 step 91 |
+| A-14 | **D-V(d)** never translated | **Confirmed** — recovery kit body, manual install instructions, context-pack markdown, and `DomainError.message`; option (a) — one localized sentence of explanation | Slice 6 step 46, Slice 7 step 55 |
+| A-15 | **D-V(e)** dates/numbers/plurals | **Confirmed**, Option 1 — `Intl` against the **active UI language** | Slice 2 step 18 |
+| A-16 | **D-V(g)** OS-language detection | **Confirmed**, Option 1 — primary-subtag match, one region-neutral `es` catalog | Slice 2 step 14 |
+| A-17 | **D-P gap 1** `export --json` | **Confirmed**, default (b) — a format choice in the save dialog | Slice 7 step 55 |
+| A-18 | **D-P gap 2** `unlock --recovery-key` | **Confirmed**, default (b) — a secondary "I only have my recovery key" path, masked, never persisted | Slice 6 step 47 |
 
-### Group B — decisions this plan had to make
+### Group B — decisions this plan had to make, confirmed or overturned 2026-08-20
 
 - **P-D1 — `desktop/` is a standalone package, not an npm workspace.**
   *Recommend:* its own `package.json` + `package-lock.json`, installed only by desktop work and by
@@ -1094,12 +1413,24 @@ confirm or overturn. **Group B** is decisions this plan had to make that the spe
   *Alternatives:* Preact (smaller, same API), or no framework at all (smallest, and hand-rolled
   DOM updates across 16 screens is its own maintenance cost).
 
-- **P-D5 — no DOM-level component tests.** *Recommend:* all logic in plain TS, tested headlessly;
-  no jsdom, no testing-library. *Why:* it matches §5.1's "testable without a window" literally and
-  adds no dependency. *Trade-off:* nothing mechanically proves a button is wired to the right
-  handler — that rests on review. *Alternative:* add `jsdom` + `@testing-library/react` (~2 more
-  devDependencies) and test the five security-critical screens at the DOM level. **Worth taking if
-  Oscar wants the recovery-kit and relocation screens machine-checked rather than reviewed.**
+- **P-D5 — DOM-level component tests, added for the two highest-risk screens (reversed,
+  2026-08-20).** Originally recommended against: all logic in plain TS, tested headlessly, no
+  jsdom, no testing-library, on the reasoning that §5.1's "testable without a window" already
+  covers the logic and a DOM layer adds dependencies for what review already catches. **Oscar
+  overturned this** — the recovery-kit and relocation-wizard screens are worth machine-checking,
+  not only reviewing. *Decided:* add `jsdom` + `@testing-library/react` (+ `@testing-library/
+  jest-dom`) as `desktop/` devDependencies, and add DOM-level tests for exactly
+  **`recovery-kit.tsx`** and **`relocate-vault.tsx`** — the one screen holding the product's only
+  unrecoverable secret and the one screen moving the product's only irreplaceable file. Every other
+  screen stays covered by the headless state-machine tests §5.1 already requires; this is a
+  targeted addition, not a blanket DOM-testing policy. Assertions worth naming: the recovery-kit
+  test renders the exact `renderRecoveryKit` fixture output and asserts the **Copy key** and
+  acknowledgement checkbox are the only interactive elements before acknowledgement, and that no
+  "Next"/tour-adjacent control is reachable from that DOM tree (the `session-state.ts` invariant,
+  now checked at the DOM level too); the relocation test drives the wizard through a pre-flight
+  refusal, a successful move, and a simulated per-client re-pointing failure, asserting the
+  **Try again** action targets only the failed client. **Binds:** Slice 1 step 2 (devDependencies),
+  Slice 6 step 51, Slice 8 step 69 (each gains a DOM-level counterpart), and §8/§9 below.
 
 - **P-D6 — fonts are the system UI stack; no font file is embedded.** *Recommend:* system stack.
   *Why:* §8.5 forbids remote fonts, and an embedded face adds a binary and a licence question for a
@@ -1129,13 +1460,93 @@ confirm or overturn. **Group B** is decisions this plan had to make that the spe
   (`copyFile`, `digest`, `remove`), which put the digest comparison in the use case at the cost of
   a longer, noisier method.
 
-- **P-D10 — the honest de-scope lever, named now rather than discovered in week three.**
-  `refined.md` §11 sanctions it: if D-R's sub-decisions look shaky during Slice 8, **ship the
-  sync-status half alone** (Slice 7 step 56, cheap and pure read) and defer the wizard to its own
-  advance with its own Gate R. *Recommend:* keep the wizard, and treat the end of Slice 8 as the
-  decision point — by then the `src/` use case and its tests exist, and pulling only the UI is
-  cheap. *Trade-off:* a half-implemented move is worse than no wizard, which is precisely why the
-  lever must be pulled at a slice boundary, never mid-slice.
+- **P-D10 — REJECTED, 2026-08-20. There is no de-scope lever.** Originally proposed as an escape
+  hatch: if D-R's sub-decisions looked shaky during Slice 8, ship the sync-status half alone
+  (Slice 7 step 56) and defer the wizard to its own advance. **Oscar rejected it outright** —
+  "todo junto, sin retirada" (all of it together, no retreat) — when asked directly whether to ship
+  the full 12-slice plan (as it then stood) or keep this lever available. **This advance therefore
+  commits to all 13 slices, including the relocation wizard and its D-R(a) companion step, with no
+  sanctioned partial ship** — the third revision re-grouped the tail into thirteen for review
+  economy and moved not one item out of the advance. R1 and R2 in §8 are not softened by this — the risk is real and stays real — but the
+  response to it discovered mid-Slice-8 is *fix it*, not *cut it*. If Slice 8 turns out to be
+  genuinely unshippable for a reason discovered during implementation, that is an escalation back to
+  Oscar, not a decision this plan pre-authorizes the implementer to make alone.
+
+### Group C — the third revision's decisions, all confirmed 2026-08-25
+
+These come from the 12→13 re-grouping and from the two carried-forward findings it picks up. None of
+them changes what ships; each changes *how*. **Oscar confirmed all ten, individually, through an
+interactive prompt — every one exactly as recommended below.**
+
+- **P-D11 — how item 89a's dashboard entry point is tested.** *Recommend:* the source-scanning test
+  named in 89a, in `diagnostics.no-auto-run.test.ts`'s established idiom, asserting exactly one
+  `<DiagnosticsScreen` mount and both callbacks wired. *Why:* P-D5 deliberately confined jsdom to two
+  named screens ("not a blanket DOM-testing policy"), and widening it to a third here would re-open a
+  confirmed decision for a navigation prop. *Trade-off:* a source scan proves the wiring exists, not
+  that a click navigates. *Alternative:* a third jsdom test over `dashboard.tsx` (~40 lines,
+  stronger, re-opens P-D5).
+
+- **P-D12 — what Settings' "Vault & sync" section actually shows.** Item 87 says "plus the
+  environment-resolved values shown read-only"; `refined.md` §4.8 step 40 says those values "are shown
+  read-only **in the Sync panel** and cannot be edited here". *Recommend:* Settings **links** to the
+  Sync panel (which already displays them, Slice 7 item 56) and does not re-render them — one
+  display, no second implementation, and the section stays two links plus a sentence. *Trade-off:* a
+  user in Settings takes one more click to see the resolved paths. *Alternative:* duplicate the
+  read-only block in Settings, which is a second rendering of the same data and the exact shape item
+  82 and step 40 both warn about.
+
+- **P-D13 — where the ≈320 style lines land (item 89b).** *Recommend:* Slice 11, as written —
+  D-Q's "re-themes immediately" is Slice 11's criterion and Slice 12's screenshots depend on it.
+  *Trade-off:* Slice 11 becomes the largest of the three remaining slices, which cuts against this
+  revision's own token-economy goal. *Alternatives:* (a) a fourteenth slice for the stylesheet alone
+  — contradicts Oscar's "three slices" instruction and adds a gate; (b) the head of Slice 12, which
+  puts CSS in the documentation diff and re-creates exactly the heterogeneity this split removed.
+  If Oscar prefers (a), say so at Gate P — it is a scheduling call, not a scope one.
+
+- **P-D14 — where `onboarding-tour.ts` is imported from.** *Recommend:* the renderer imports it from
+  `main/application/policies/` **as it already does** for `system-or-override.ts` (`i18n-context.tsx`)
+  and `theme-resolution.ts` (`theme-context.tsx`), both merged and reviewed, both carrying the same
+  "pure, dependency-free, no Electron import" comment. *Why:* consistency with the reviewed codebase
+  beats a tidier tree. *Trade-off:* a renderer module importing from `main/` reads as a layering leak
+  to a first-time reader; the comment is what answers it. *Alternative:* move it to
+  `shared/onboarding/`, which is arguably where it belongs and drags two other files with it for
+  consistency — churn inside a slice meant to be small.
+
+- **P-D15 — the tour and Settings are overlays in `app.tsx`, not `WorkspaceView` screens.**
+  *Recommend:* overlays, guarded by `canNavigateAwayFrom`. *Why:* Settings opens **while locked**
+  (§4.8 step 37), and `WorkspaceView` only exists inside the unlocked workspace; the guard is also
+  what keeps item 86's "nothing between the kit and its acknowledgement" structural. *Trade-off:* two
+  navigation mechanisms in one shell. *Alternative:* a `settings` `WorkspaceView` plus a second,
+  duplicate locked-screen route — two implementations of one screen.
+
+- **P-D16 — the checksum straddle.** *Recommend:* Slice 12 writes `pending — filled by Slice 13's
+  tagged build` in place of each digest; Slice 13's Done-when greps for zero occurrences.
+  *Trade-off:* `docs/gui.md` is briefly, visibly incomplete on the branch. *Alternatives:* (a) defer
+  the whole install section to Slice 13 — puts prose back in the packaging diff; (b) cut a
+  pre-release build before Slice 12 — a second packaging run for one table.
+
+- **P-D17 — W1's sentence in `docs/gui.md`.** *Recommend:* include it (one sentence, item 91).
+  *Why:* the app's behaviour is already correct and sanctioned by D-T Option 3; what was missing was
+  the explanation, and `docs/gui.md` is where the other three English surfaces are explained.
+  *Trade-off:* it documents a fourth English exception rather than removing it. *Alternative:*
+  W2's "cheapest shape" — give the two catch blocks an `errorCode` and localize — which is a code
+  change to a merged, reviewed slice inside a documentation slice. Refuse it here; if it is wanted,
+  it is a follow-up advance.
+
+- **P-D18 — W3's vocabulary sentence.** *Recommend:* one sentence in `docs/gui.md` naming why
+  Diagnostics can call a client OK while Connect calls it not connected. *Trade-off:* two screens
+  keep saying different words about one client. *Alternative:* change Slice 9's `connected`
+  definition — merged, reviewed code, and `refined.md` §9 criterion 5 forbids changing the rows
+  `doctor` prints. Not this advance.
+
+- **P-D19 — the "no publish/auto-update" guard test (item 95).** *Recommend:* yes, ~15 lines.
+  *Why:* §8.5's rule is currently kept by nobody adding a key; a test makes it kept by the suite.
+  *Trade-off:* one more file in a slice that is otherwise CI config. *Alternative:* rely on the final
+  diff review, which is a human reading YAML.
+
+- **P-D20 — extend `no-network-surface.test.ts`'s glob to `.css` (item 89b).** *Recommend:* yes, a
+  one-line change. *Why:* the first stylesheet in the tree is the first place a remote `@font-face`
+  or background URL can enter, and P-D6 already forbids remote faces. *Trade-off:* none material.
 
 ---
 
@@ -1160,6 +1571,9 @@ code wins — as `advances/MOBILE/plan.md` §7 established).**
 | Translation catalogs | `desktop/src/shared/i18n/catalogs/en.ts`, `es.ts` | A **new kind of thing** getting its own kind-named folder, as `refined.md` §5.1 requires — never loose files beside the runtime |
 | IPC contract | `desktop/src/shared/ipc/channels.ts`; schemas + handlers under `desktop/src/main/ipc/` with `handlers/` inside | A new kind (`ipc/`), with its own kind-named subfolder for the handlers |
 | Screens | `desktop/src/renderer/screens/*.tsx` | A new kind, kind-named folder; components in `components/`, view state in `state/`, styles in `styles/` |
+| The tour and Settings screens | `screens/onboarding.tsx`, `screens/settings.tsx` (Slice 11) | Same kind-named folder as the other fourteen screens; the slide sequence stays in `policies/onboarding-tour.ts`, so neither file holds a rule |
+| Styles | `renderer/styles/tokens.css` · `base.css` · per-screen files (Slice 11 step 89b) | The `styles/` folder this table and §9 have always named; `tokens.css` holds the light/dark custom properties `data-theme` selects between — no new abstraction, no CSS-in-JS, no second theme mechanism beside `theme-resolution.ts` |
+| The entry-point guard | `screens/diagnostics-entry-points.test.ts` (Slice 11 step 89a) | Test named for what it guards, beside `screens/diagnostics.no-auto-run.test.ts`, which established the source-scanning form |
 
 **File placement, checked against "no bare files at a layer's root."** Every new file inside a
 `domain/`, `application/` or `infra/` layer sits in a kind-named subfolder (`values/`, `services/`,
@@ -1170,6 +1584,11 @@ exception. The files that sit at a folder root are all outside those layers and 
 entry points), and `src/delivery/context-pack-export.ts` / `src/delivery/diagnostics.ts`
 (`delivery/` is a composition root whose tree in `SPEC.md` §10 already shows bare files —
 `container.ts`, `context-pack-markdown.ts`).
+
+**Placement check for the third revision's new files:** Slices 11–13 add nothing inside a `domain/`,
+`application/` or `infra/` layer — the new files are two screens and a stylesheet under `renderer/`'s
+existing kind-named folders, plus docs, specs and CI config at the repo root — so "no bare files at a
+layer's root" is not engaged by any of them.
 
 **Ubiquitous language.** No new domain term is coined. `vault`, `header`, `key`, `session`, `pack`,
 `item`, `project`, `lineage`, `generation`, `fork`, `device`, `sidecar`, `conflicted copy` all keep
@@ -1209,11 +1628,12 @@ Three naming risks worth a second look at review:
 | `src/` | `relocate-vault.use-case.ts` | ~90 |
 | `src/` | `file-vault-mover.ts` | ~70 |
 | `src/` | explicit busy timeout | ~4 |
-| | **`src/` production subtotal** | **≈ 470** |
+| `src/` | **(new, 2026-08-20) `installer.ts` `vaultPath` parameter** (Slice 4 step 29a) | ~20 |
+| | **`src/` production subtotal** | **≈ 490** |
 | `desktop/` | build config (package.json, electron.vite, electron-builder, 3 tsconfigs, vitest) | ~230 |
 | `desktop/` | main: bootstrap + window + hardening | ~200 |
-| `desktop/` | main: IPC (channels, schemas, 8 handler files, registration) | ~430 |
-| `desktop/` | main: application (ports, 5 policies, services) | ~280 |
+| `desktop/` | main: IPC (channels, schemas, 8 handler files, registration, **client-re-pointing loop in `relocation-handlers.ts`**) | ~460 |
+| `desktop/` | main: application (ports, 5 policies, services, **`node-probe.ts` + its port**) | ~310 |
 | `desktop/` | main: infra (preferences, file picker, clipboard, report builder) | ~230 |
 | `desktop/` | preload | ~70 |
 | `desktop/` | shared i18n runtime (translate, format, error-copy, languages) | ~190 |
@@ -1223,31 +1643,65 @@ Three naming risks worth a second look at review:
 | `desktop/` | renderer: components | ~320 |
 | `desktop/` | renderer: view state (plain TS) | ~380 |
 | `desktop/` | styles (theme tokens, base, per-screen) | ~320 |
-| | **`desktop/` production subtotal** | **≈ 5,030** |
-| | **Total estimated production lines** | **≈ 5,500** |
+| | **`desktop/` production subtotal** | **≈ 5,090** |
+| | **Total estimated production lines** | **≈ 5,600** |
 
-**Tests: ≈ 1,300** (~510 under `src/`, ~790 under `desktop/`).
-**Documentation: ≈ 830** (`docs/gui.md` ~380, `specs/desktop.md` ~180, `advances/GUI/spike.md` ~150,
-`specs/vault.md` + `specs/delivery.md` + `docs/SPEC.md` + `CHANGELOG.md` ~120), plus bilingual
-screenshots from the golden fixture.
+**Tests: ≈ 1,570** (~525 under `src/`, ~1,045 under `desktop/` — the increase over the first cut's
+≈1,300 is **P-D5's reversal**: ≈180 lines of DOM-level tests for `recovery-kit.tsx` and
+`relocate-vault.tsx`, plus ≈60 lines for the client-re-pointing scenarios in Slice 8 step 69, plus
+small additions for `installer.ts`'s `vaultPath` parameter and the Node probe).
+**Documentation: ≈ 840**, and the third revision assigns it to slices rather than leaving it in one
+lump: `docs/gui.md` ~380 (**Slice 12**) · `specs/desktop.md` + the `specs/README.md` row ~180
+(**Slice 12**) · `docs/SPEC.md` corrections + `CHANGELOG.md` ~70 (**Slice 12**) · `specs/vault.md` +
+`specs/delivery.md` ~50 (Slices 4, 8 and 10 — already landed) · `advances/GUI/spike.md` ~160, of
+which ~135 landed with Slice 1 and ~25 is **Slice 13**'s zero-network and checksum record. Plus the
+bilingual screenshots from the golden fixture (**Slice 12** step 96).
+
+**What the 12→13 split does to the totals: nothing.** Slice 12 carries ≈630 documentation lines and
+no build work. Slice 13 carries ≈30 lines of CI/release config (inside the ~230 build-config
+allowance above) and ≈35 test lines, plus a verification pass that produces artifacts, not source.
+Slice 11's two new items are already counted: 89b's stylesheet **is** the ~320 "styles" row, and
+89a's wiring plus two catalog keys sits inside the existing screens and catalog allowances. The
+total stands at **≈ 5,600 production lines** — this revision moves no code and adds none.
 
 ### Risks
 
 1. **R1 — Relocation is new filesystem-moving code operating on the one artifact the product cannot
-   afford to corrupt.** `refined.md` §11's top risk, unchanged by this plan. Its failure is **silent
-   and delayed**: a stale, openable `vault.db` left behind looks like success on the day and
-   surfaces weeks later as a fork. *Mitigated by:* its own slice with runway on both sides (Slice 8
-   of 12); the safety ordering living in one readable use case rather than an IPC handler; a fake
-   `VaultMover` that can fail at each stage; the explicit rollback rule for the awkward
-   "verified but could not delete the source" case (step 64); and P-D10's named de-scope lever at a
-   slice boundary.
-2. **R2 — Size. This is the largest advance the repo has attempted, at one gate.** ~5,500 production
-   lines across two trees, 12 slices, 18 adopted defaults and two new surfaces with no CLI
+   afford to corrupt, and its blast radius is wider than the fourth revision priced in.**
+   `refined.md` §11's top risk, **widened 2026-08-20**. The file-move half fails **silently and
+   delayed**: a stale, openable `vault.db` left behind looks like success on the day and surfaces
+   weeks later as a fork. The client-re-pointing half, discovered by Oscar's own question rather
+   than by either refining pass, fails the same way on the *other* side: a relocation that reports
+   success while every connected AI tool silently keeps resolving the old, now-empty folder — the
+   fourth revision's design would have shipped exactly this. *The sharpest form of this risk, stated
+   plainly:* "everything that remembers where the vault is" now has **three** members — the app's
+   preferences, connected clients' MCP configs, and the user's shell environment — and a fourth
+   discovered later during implementation is a blocker to escalate, not polish to defer.
+   *Mitigated by:* its own slice with runway on both sides (Slice 8 of 13); the safety ordering
+   living in one readable use case rather than an IPC handler; a fake `VaultMover` that can fail at
+   each stage; the explicit rollback rule for the awkward "verified but could not delete the source"
+   case (step 64); the fixed ordering that never touches a client config before the vault move is
+   verified (step 67); the binding rule that a client-config failure is reported and never rolls the
+   vault back (step 67a); the DOM-level test exercising exactly this failure mode (P-D5, step 69);
+   and the client-`env` spike (Slice 1 step 11a) answering *before* Slice 8 whether the mechanism
+   even works per client, rather than discovering it mid-slice. **Not mitigated by a de-scope
+   lever** — P-D10 was asked and rejected; if this risk materializes badly during Slice 8, the
+   response is fix-and-continue or an explicit escalation to Oscar, not a quiet partial ship.
+2. **R2 — Size. This is the largest advance the repo has attempted, at one gate.** ~5,500+ production
+   lines across two trees, 13 slices, 18 confirmed decisions and two new surfaces with no CLI
    counterpart. `refined.md` §11's third risk predicted exactly this. *Mitigated by:* the slice
    order — Slices 1–7 are a complete, shippable read shell plus first run; relocation, import,
-   diagnostics, tour and Settings each land whole and independently; **any slice from 8 onward can
-   be deferred to a follow-up advance without leaving a half-feature in the tree.** It is not
-   eliminated: this is the risk most likely to make the advance long rather than to make it fail.
+   diagnostics, tour and Settings each land whole and independently, so a slow slice delays without
+   destabilizing the ones already merged. **This describes schedule shape, not a licence to drop
+   scope:** P-D10 asked Oscar directly whether any slice should be treated as optional under
+   schedule pressure, and the answer was no — "todo junto, sin retirada." A slice running long is
+   a timeline conversation to have with Oscar, not a decision this plan pre-authorizes the
+   implementer to make by quietly shipping fewer than 13. This is the risk most likely to make the
+   advance long rather than to make it fail — and staying long, not shrinking, is the sanctioned
+   response. **The third revision's 12→13 split is part of that response, not an exception to it:**
+   smaller, single-mode slices cost less context to implement and less to review carefully, which is
+   how a long advance stays reviewable. A split is not a de-scope, and a slice that is now easy to
+   review is not a slice that has become optional.
 3. **R3 — Packaging and the macOS keychain ACL.** `refined.md` §11's second risk. Three native
    modules × three OSes × two macOS architectures, plus a keychain entry shared between two
    binaries where macOS may prompt on every read. *Mitigated by:* Slice 1 answering both **before**
@@ -1279,6 +1733,18 @@ screenshots from the golden fixture.
    exception, and D-V(b) names it. *Mitigated by:* CSP + navigation denial as the enforcement rather
    than a promise, and by the zero-network check running against the **built artifact** (step 98),
    not the source.
+9. **R9 — the docs/packaging seam has two dependencies running in opposite directions, and a third
+   that runs off-machine** (new 2026-08-25, created by the split — so it is stated here rather than
+   discovered mid-slice). Slice 13's final gate checks that the docs are complete, so **Slice 13 runs
+   after Slice 12**; but `docs/gui.md`'s per-artifact SHA-256 can only come from Slice 13's tagged
+   build, so **Slice 12 cannot finish that table**. *Mitigated by:* the `pending — filled by Slice
+   13's tagged build` marker (item 91) and the grep in Slice 13's Done-when — an incomplete table
+   fails a slice rather than shipping quietly. The third dependency is off-machine: item 96's
+   screenshots need a running app, which needs the native rebuild `spike.md` still lists as
+   unverified (A13). *Mitigated by:* naming it a human gate of the D-H kind, with `spike.md` as the
+   place it is recorded honestly. *Not mitigated:* if the rebuild cannot be run anywhere available,
+   Slice 12 cannot close on schedule — that is an escalation to Oscar, not a licence to ship
+   `docs/gui.md` without screenshots.
 
 ---
 
@@ -1290,42 +1756,50 @@ valija/
 │   └── guard-implementation.sh              (CHANGED: case gains */desktop/*|desktop/*  — D-L)
 ├── .github/workflows/
 │   ├── ci.yml                               (UNCHANGED — the existing matrix is untouched)
-│   └── desktop.yml                          (NEW: desktop typecheck/test/build on 3 OSes;
-│                                              electron-builder packaging on tag only)
+│   └── desktop.yml                          (NEW, Slice 1: desktop typecheck/test/build on 3 OSes;
+│                                              electron-builder packaging on tag only; CHANGED in
+│                                              Slice 13 step 95: the tag job publishes each
+│                                              artifact's SHA-256)
 ├── .gitignore                               (CHANGED: desktop/node_modules, out, dist, release)
 ├── biome.json                               (CHANGED: exclude desktop build outputs)
 ├── package.json                             (UNCHANGED — no workspaces field, no new script,
 │                                              "files" allow-list still ["dist","README.md","LICENSE"])
 ├── tsconfig.json · tsup.config.ts · vitest.config.ts   (UNCHANGED)
-├── CHANGELOG.md                             (CHANGED: one [Unreleased] entry)
+├── CHANGELOG.md                             (CHANGED, Slice 12 step 97: one [Unreleased] entry)
 │
 ├── docs/
-│   ├── SPEC.md                              (CHANGED: §1 "one binary surface" acknowledges the
-│   │                                          companion app · §2 Out line split, GUI shipped, no
-│   │                                          milestone number · §10a "import is CLI-only" →
-│   │                                          "import has no MCP surface" · D11 gains the
-│   │                                          preferences sentence: UI preferences + a location
+│   ├── SPEC.md                              (CHANGED, Slice 12 step 93: §1 "one binary surface"
+│   │                                          acknowledges the companion app · §2 Out line split,
+│   │                                          GUI shipped, no milestone number · §10a "import is
+│   │                                          CLI-only" → "import has no MCP surface" · D11 gains
+│   │                                          the preferences sentence: UI preferences + a location
 │   │                                          hint, VALIJA_HOME wins, not configuration)
-│   ├── gui.md                               (NEW: install per OS in the OS's own words, checksums,
-│   │                                          run-from-source, first run + recovery kit, tour,
-│   │                                          Settings and what it does not configure, language and
-│   │                                          the English-docs gap, import, connect, diagnostics,
-│   │                                          relocation + its VALIJA_HOME consequence, the macOS
-│   │                                          keychain answer, clipboard affordances, and what the
-│   │                                          GUI deliberately does not do)
+│   ├── gui.md                               (NEW, Slice 12 step 91: install per OS in the OS's own
+│   │                                          words, checksums, run-from-source, first run +
+│   │                                          recovery kit, tour, Settings and what it does not
+│   │                                          configure, language and the English-docs gap, import,
+│   │                                          connect, diagnostics, relocation + its VALIJA_HOME
+│   │                                          consequence, the macOS keychain answer, clipboard
+│   │                                          affordances, and what the GUI deliberately does not
+│   │                                          do; the checksum table ships with "pending" markers
+│   │                                          that Slice 13 fills from its tagged build)
 │   ├── sync.md · vault-format.md            (unchanged)
-│   └── images/gui/                          (NEW: bilingual screenshots, golden fixture only)
+│   └── images/gui/                          (NEW, Slice 12 step 96: bilingual screenshots, golden
+│                                              fixture only)
 │
 ├── specs/
-│   ├── README.md                            (CHANGED: a desktop.md row, noted as the one spec not
-│   │                                          mirroring a src/ module)
+│   ├── README.md                            (CHANGED, Slice 12 step 94: a desktop.md row, noted as
+│   │                                          the one spec not mirroring a src/ module)
 │   ├── vault.md                             (CHANGED: relocation contract + refusal codes +
 │   │                                          ordering guarantee + rollback rule; the schema
 │   │                                          upgrade gate and readSchemaVersion)
 │   ├── delivery.md                          (CHANGED: buildContainer parameter, the pack-export
-│   │                                          helper, the extracted diagnostics module)
-│   ├── desktop.md                           (NEW: the IPC surface, the four-key preferences store,
-│   │                                          language resolution, tour semantics, wizard refusals)
+│   │                                          helper, the extracted diagnostics module, and
+│   │                                          installIntoClient's vaultPath parameter — new
+│   │                                          2026-08-20, D-R(a)'s companion step)
+│   ├── desktop.md                           (NEW, Slice 12 step 94: the IPC surface, the four-key
+│   │                                          preferences store, language resolution, tour
+│   │                                          semantics, wizard refusals)
 │   └── context.md · importers.md · shared.md  (unchanged)
 │
 ├── src/                                     (the only tree the CLI and MCP server share)
@@ -1342,7 +1816,11 @@ valija/
 │   │   │   ├── content-commands.ts          (CHANGED: calls context-pack-export.ts)
 │   │   │   ├── vault-commands.ts            (CHANGED: passes upgradeConfirmed: true — behaviour
 │   │   │   │                                  byte-identical)
-│   │   │   └── program.ts · installer.ts · import-command.ts · prompt.ts · render.ts  (unchanged)
+│   │   │   ├── installer.ts                 (CHANGED, 2026-08-20: installIntoClient gains an
+│   │   │   │                                  optional vaultPath, writing an `env` block only when
+│   │   │   │                                  given; the CLI's own call site passes nothing, so its
+│   │   │   │                                  output is byte-identical — D-R(a)'s companion step)
+│   │   │   └── program.ts · import-command.ts · prompt.ts · render.ts  (unchanged)
 │   │   └── mcp/server.ts                    (UNCHANGED — byte-for-byte, asserted by the final diff)
 │   ├── shared/infra/
 │   │   ├── sqlite.ts                        (CHANGED: explicit SQLITE_BUSY_TIMEOUT_MS)
@@ -1365,8 +1843,14 @@ valija/
 │   ├── context/ · importers/ · testing/     (UNCHANGED)
 │
 ├── desktop/                                 (NEW — the whole workspace; excluded from npm "files")
-│   ├── package.json · package-lock.json     (standalone, NOT a root workspace)
-│   ├── electron.vite.config.ts · electron-builder.yml
+│   ├── package.json · package-lock.json     (standalone, NOT a root workspace; devDependencies
+│   │                                          gain jsdom, @testing-library/react and
+│   │                                          @testing-library/jest-dom — P-D5, reversed
+│   │                                          2026-08-20, for exactly two DOM-level test files)
+│   ├── electron.vite.config.ts · electron-builder.yml   (electron-builder.yml: three unsigned
+│   │                                          targets from Slice 1; Slice 13 step 95 adds the
+│   │                                          checksum publication and a test asserting no
+│   │                                          publish/auto-update key)
 │   ├── tsconfig.json · tsconfig.web.json · vitest.config.ts
 │   ├── resources/                           (app icons)
 │   └── src/
@@ -1385,7 +1869,9 @@ valija/
 │       │   │   └── handlers/                (vault · content · import · tools · diagnostics ·
 │       │   │                                  relocation · preferences · dialog)
 │       │   ├── application/
-│       │   │   ├── ports/app-preferences.ts · file-picker.ts
+│       │   │   ├── ports/app-preferences.ts · file-picker.ts ·
+│       │   │   │            node-probe.ts            (NEW, D-W: real executable probe, not
+│       │   │   │                                       process.versions — Slice 9 step 71a)
 │       │   │   ├── policies/system-or-override.ts · language-resolution.ts ·
 │       │   │   │            theme-resolution.ts · onboarding-tour.ts · vault-location.ts
 │       │   │   └── services/diagnostics-report.ts   (English support artifact)
@@ -1393,6 +1879,8 @@ valija/
 │       │       ├── file-app-preferences-store.ts    (atomic write, four keys, corrupt→defaults)
 │       │       ├── electron-file-picker.ts          (the ONLY origin of a filesystem path)
 │       │       ├── electron-clipboard.ts
+│       │       ├── child-process-node-probe.ts       (NEW: spawns `node --version` / `npm
+│       │       │                                       --version` on PATH — D-W, Slice 9 step 71a)
 │       │       └── dependency-parity.test.ts        (the two package.json files must agree)
 │       ├── preload/index.ts                 (contextBridge: one method per channel, hand-written)
 │       └── renderer/
@@ -1400,17 +1888,29 @@ valija/
 │           ├── screens/                     (no-vault · create-vault · recovery-kit · locked ·
 │           │                                  migration-confirm · dashboard · project · search ·
 │           │                                  pack-preview · sync · relocate-vault · connect-tools ·
-│           │                                  import · diagnostics · onboarding · settings)
+│           │                                  import · diagnostics · onboarding · settings (both
+│           │                                  Slice 11) + diagnostics-entry-points.test.ts
+│           │                                  (Slice 11 step 89a))
+│           ├── screens/__dom-tests__/       (NEW, P-D5 reversed 2026-08-20: recovery-kit.dom.test.tsx
+│           │                                  and relocate-vault.dom.test.tsx — jsdom +
+│           │                                  @testing-library/react, exactly these two screens)
 │           ├── components/                  (shared presentational pieces)
 │           ├── state/                       (plain TS view state + bridge client, all .test.ts'd)
-│           └── styles/                      (theme tokens, base, per-screen; system font stack)
+│           └── styles/                      (theme tokens, base, per-screen; system font stack —
+│                                              Slice 11 step 89b; carried in this tree and in §8's
+│                                              line table since the first revision, but claimed by
+│                                              no slice item until the third)
 │
 └── advances/GUI/
     ├── idea.md · refined.md · mockups.md    (unchanged)
     ├── plan.md                              (this file)
     ├── spike.md                             (NEW: per-OS native-module + ABI results, the macOS
     │                                          keychain-ACL answer with its exact version, artifact
-    │                                          SHA-256s, the zero-network verification)
+    │                                          SHA-256s, the zero-network verification; Slice 1
+    │                                          wrote it, Slice 13 step 98 adds the packaged-artifact
+    │                                          zero-network run (both languages), the artifact
+    │                                          SHA-256s, and the resolution of A3's open rebuild
+    │                                          half)
     └── review.md                            (NEW, written by change-reviewer)
 ```
 
@@ -1418,15 +1918,28 @@ valija/
 
 **Plan path:** `/home/user/valija/advances/GUI/plan.md`
 
-**Total estimated production lines: ≈ 5,500** — ≈ 470 under `src/` (the relocation use case, the
-schema-upgrade gate, and three shared-composition extractions) and ≈ 5,030 under `desktop/` — plus
-≈ 1,300 test lines, ≈ 830 documentation lines, and bilingual screenshots drawn only from the
-published golden-vault fixture.
+**Total estimated production lines: ≈ 5,600** — ≈ 490 under `src/` (the relocation use case, the
+schema-upgrade gate, three shared-composition extractions, and `installer.ts`'s new `vaultPath`
+parameter) and ≈ 5,090 under `desktop/` — plus ≈ 1,570 test lines (including P-D5's DOM-level
+tests for exactly two screens), ≈ 840 documentation lines, and bilingual screenshots drawn only
+from the published golden-vault fixture.
 
-Implementation must not begin until Oscar has reviewed this plan and recorded an `Approved:` line
-at its top; the orchestrator halts for that approval at Gate P. Two things to settle in that same
-pass: **§0's spec-status discrepancy** (the header says nothing is open; §7 and §10 mark 18 items
-open, and this plan adopted all 18 written defaults), and **§6's Group B decisions**, of which
-**P-D3** — the change to `UnlockVault` that D-J(b) forces — is the one with real consequences for
-the product's most safety-critical use case. Note also that this advance carries a **second,
-mid-implementation human gate**: Slice 1's macOS keychain-ACL run, which no agent can perform.
+**Gate P closed for the second revision on 2026-08-20, and re-closed for the third on 2026-08-25.**
+For the second revision, Oscar reviewed it and confirmed, item by item through an interactive
+prompt: all 18 Group A items (§6) — seventeen exactly as written, and A-2/D-R(a) as rewritten to
+require re-pointing every connected client's MCP config during relocation; **P-D3** (the change to
+`UnlockVault` that D-J(b) forces); **P-D5 reversed** (DOM-level tests for the recovery-kit and
+relocation-wizard screens); and **P-D10 rejected** (no de-scope lever — all slices ship).
+
+**The third revision (2026-08-25) re-groups the remaining work into Slices 11, 12 and 13 — thirteen
+slices, the same scope.** It changes no decision in Group A or B, adds no item, and removes none; it
+folds `review.md`'s W4 into Slice 11 as item 89a, gives the long-unassigned stylesheet a home as item
+89b, and splits the old Slice 12 into a documentation slice (91, 92, 93, 94, 96, 97) and a
+packaging/final-gate slice (95, 98). Oscar confirmed the split exactly as presented (89b stays in
+Slice 11, per P-D13's default) and, individually, all ten Group C decisions (§6) — **P-D11** through
+**P-D20**, every one exactly as recommended. The `Approved:` line at the top of this file now covers
+this revision. Two mid-implementation human gates remain,
+neither performable by an agent: **Slice 1 step 11** (the macOS keychain-ACL answer, D-H) and
+**Slice 1 step 11a** (the per-client `env`-block-honouring answer, D-R(a)'s mandatory spike) —
+both block Slice 8 and both should be scheduled together, on the same real macOS desktop session
+where practical.

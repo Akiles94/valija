@@ -1,0 +1,223 @@
+/*
+ * Shell-level layout only (GUI-LAYOUT D-17 Option 2) — the sidebar, the
+ * breadcrumb, and the two-column split shared by Search/Import/Connect. Every
+ * screen's own internals stay in screens.css. Existing tokens only (D-5); no
+ * new custom property, no url(...).
+ */
+
+/* Pinned to the viewport height (not min-height) so .workspace-content's own
+   overflow-y actually engages — otherwise the grid row grows to fit its
+   content, the document itself scrolls, and the sidebar goes with it. */
+.workspace {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  height: 100vh;
+}
+
+/* §5.9: relocate-vault renders with no sidebar (workspaceChrome's
+   sidebar: false) — without this, .workspace-content becomes the grid's
+   only item and lands in the 220px sidebar track instead of the full-width
+   centred flow the screen expects. */
+.workspace:not(:has(.sidebar)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 220px;
+  padding: 16px 12px;
+  border-right: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.sidebar .brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 16px;
+  font-weight: 600;
+}
+
+.sidebar button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-start;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+/* D-6: never colour alone — an inset bar and bold weight carry the signal too. */
+.sidebar button.active {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--color-accent-text);
+}
+
+.sidebar-spacer {
+  flex: 1;
+}
+
+.sidebar .lock-button {
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+}
+
+.sidebar .lock-button:hover {
+  background: var(--color-danger);
+  color: var(--color-bg);
+}
+
+.workspace-content {
+  overflow-y: auto;
+}
+
+.workspace-content > .screen {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 24px 0;
+  color: var(--color-text-muted);
+}
+
+.breadcrumb button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+}
+
+.breadcrumb [aria-current="page"] {
+  color: var(--color-text);
+}
+
+.crumb-sep {
+  color: var(--color-text-muted);
+}
+
+/* The entry cluster (No vault / Create vault / Locked / Migration confirm —
+   GUI-LAYOUT §5.11, D-20): a fixed-width dark brand panel beside the
+   screen's own content, never sharing the workspace grid. */
+.entry-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+}
+
+.entry-brand {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  padding: 48px;
+  /* D-20's rider: in the dark app theme the two panels are near-identical —
+     the split stays legible through a border, never a new colour. */
+  border-right: 1px solid var(--color-border);
+}
+
+.entry-brand-mark {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.entry-tagline {
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.entry-trust {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--color-text-muted);
+}
+
+.entry-content {
+  position: relative;
+  display: flex;
+}
+
+/* The centring `base.css`'s `.app-shell > .screen` rule no longer reaches
+   now that the entry screens are nested one level deeper. */
+.entry-content > .screen {
+  margin: auto;
+  max-width: 480px;
+  width: 100%;
+}
+
+.entry-content .settings-gear {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+}
+
+/* D-4's responsive floor: below this width every two-column split (Search, Import, Connect, the Dashboard grid) stacks to one column with the rail/detail panel below the primary content — review-by-eye, jsdom does not lay out. */
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 1fr;
+    /* Grid's default align-content is "normal", which behaves as "stretch" —
+       without this, the two auto rows (sidebar strip, content) split any
+       leftover height on a short viewport, stretching the nav strip. */
+    align-content: start;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .sidebar-spacer {
+    display: none;
+  }
+
+  .search-split,
+  .connect-body,
+  .import-body {
+    grid-template-columns: 1fr;
+  }
+
+  .import-rail {
+    max-height: none;
+  }
+
+  /* Brand panel above, per source order — no reordering needed. */
+  .entry-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .entry-brand {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .screen.settings {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-tabs {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}

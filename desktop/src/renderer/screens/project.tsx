@@ -1,0 +1,152 @@
+import { useEffect, useState } from "react";
+import { ITEM_TYPES } from "../../../../src/context/domain/values/item-type.js";
+import { ItemCard } from "../components/item-card.js";
+import type { ValijaBridge } from "../state/bridge.js";
+import { wireFocusRefresh } from "../state/focus-refresh.js";
+import { useErrorCopy, useT } from "../state/i18n-context.js";
+import { partitionPinnedItems } from "../state/pinned-partition.js";
+
+interface ItemRow {
+  id: string;
+  type: string;
+  content: string;
+  tags: string[];
+  pinned: boolean;
+  createdAt: string;
+}
+
+const ALL_TYPES = "";
+
+/**
+ * `ShowProject`, the same rows `valija show` prints, with a type filter
+ * mirroring `--type` — `imported` included (§9 item 53). The five real item
+ * types (`decision`/`progress`/`preference`/.../`handoff`) are domain
+ * vocabulary, shown as-is in both languages, exactly like the CLI's own
+ * output; only "All types" and "Imported" are catalog copy.
+ */
+export function ProjectScreen({
+  bridge,
+  project,
+  onViewPack,
+}: {
+  bridge: ValijaBridge;
+  project: string;
+  onViewPack: (project: string) => void;
+}) {
+  const t = useT();
+  const errorCopy = useErrorCopy();
+  const [typeFilter, setTypeFilter] = useState<string>(ALL_TYPES);
+  const [items, setItems] = useState<ItemRow[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: bridge and errorCopy are stable across renders; project/typeFilter are the real inputs
+  useEffect(() => {
+    let cancelled = false;
+    function load() {
+      setItems(null);
+      setError(null);
+      bridge.content
+        .show(typeFilter === ALL_TYPES ? { project } : { project, type: typeFilter })
+        .then((result) => {
+          if (cancelled) return;
+          if (!result.ok) {
+            setError(errorCopy(result.error.code));
+            return;
+          }
+          setItems(result.value);
+        });
+    }
+    load();
+    // No setInterval anywhere — refreshes on mount, on a filter change, and on window focus only.
+    const unwireFocus = wireFocusRefresh(window, load);
+    return () => {
+      cancelled = true;
+      unwireFocus();
+    };
+  }, [project, typeFilter]);
+
+  function itemList(rows: ItemRow[]) {
+    return (
+      <ul className="item-list">
+        {rows.map((item) => (
+          <ItemCard
+            key={item.id}
+            type={item.type}
+            content={item.content}
+            tags={item.tags}
+            pinned={item.pinned}
+            createdAt={item.createdAt}
+          />
+        ))}
+      </ul>
+    );
+  }
+
+  const { pinned, rest } = partitionPinnedItems(items ?? []);
+
+  return (
+    <div className="screen project">
+      <h1>{project}</h1>
+      <div className="project-toolbar">
+        <fieldset className="chip-row">
+          <legend className="sr-only">{t("project.typeFilterLabel")}</legend>
+          <label className="chip">
+            <input
+              type="radio"
+              name="type-filter"
+              value={ALL_TYPES}
+              checked={typeFilter === ALL_TYPES}
+              onChange={() => setTypeFilter(ALL_TYPES)}
+            />
+            {t("project.typeFilterAll")}
+          </label>
+          {ITEM_TYPES.map((type) => (
+            <label key={type} className="chip">
+              <input
+                type="radio"
+                name="type-filter"
+                value={type}
+                checked={typeFilter === type}
+                onChange={() => setTypeFilter(type)}
+              />
+              {type}
+            </label>
+          ))}
+          <label className="chip">
+            <input
+              type="radio"
+              name="type-filter"
+              value="imported"
+              checked={typeFilter === "imported"}
+              onChange={() => setTypeFilter("imported")}
+            />
+            {t("project.typeFilterImported")}
+          </label>
+        </fieldset>
+        <button type="button" onClick={() => onViewPack(project)}>
+          {t("pack.title")}
+        </button>
+      </div>
+      {error !== null && <p className="error">{error}</p>}
+      {items !== null && items.length === 0 && (
+        <p className="empty-title">{t("project.noItems")}</p>
+      )}
+      {items !== null &&
+        items.length > 0 &&
+        (pinned.length === 0 ? (
+          itemList(items)
+        ) : (
+          <>
+            <h2 className="item-section-title">{t("project.pinnedSection")}</h2>
+            {itemList(pinned)}
+            {rest.length > 0 && (
+              <>
+                <h2 className="item-section-title">{t("project.otherItems")}</h2>
+                {itemList(rest)}
+              </>
+            )}
+          </>
+        ))}
+    </div>
+  );
+}
