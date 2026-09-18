@@ -188,6 +188,14 @@ that's CLI-only plumbing.
 | `VALIJA_AUTOLOCK_MINUTES` | `15` | Idle auto-lock timeout in minutes; `0` or `off` disables it. |
 | `VALIJA_STATE_HOME` | `~/.valija-state` | Device-local state (device id, sync bookkeeping, idle timer). Never synced. |
 
+## Desktop app
+
+A companion window for people who'd rather not live in a terminal: browse and search your vault,
+connect Claude Code/Claude Desktop/Cursor with one click, import chat history, and move your vault
+into a synced folder safely. Same encrypted vault, same MCP server — the app adds a window, it
+doesn't replace the CLI. See **[docs/gui.md](docs/gui.md)** for installing it and what each screen
+does.
+
 ## Security model (short version)
 
 - Everything at rest is ciphertext: SQLCipher whole-database encryption, full-text search index
@@ -201,6 +209,7 @@ that's CLI-only plumbing.
 
 ## Docs
 
+- **[docs/gui.md](docs/gui.md)** — the desktop app: installing it, and what each screen does.
 - **[docs/sync.md](docs/sync.md)** — using one vault across devices, in depth.
 - **[docs/SPEC.md](docs/SPEC.md)** — the full specification.
 
