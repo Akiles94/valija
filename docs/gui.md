@@ -17,12 +17,14 @@ Unsigned builds for macOS, Windows and Linux are attached to each
 checksum below — check it against the file you downloaded before running anything, the same way
 you'd check any download from the internet.
 
+Current version: **0.1.0** (tag `desktop-v0.1.0`).
+
 | Artifact | SHA-256 |
 |---|---|
-| `Valija-<version>-arm64.dmg` (macOS, Apple Silicon) | `pending — filled by Slice 13's tagged build` |
-| `Valija-<version>-x64.dmg` (macOS, Intel) | `pending — filled by Slice 13's tagged build` |
-| `Valija-<version>-Setup.exe` (Windows) | `pending — filled by Slice 13's tagged build` |
-| `Valija-<version>.AppImage` (Linux) | `pending — filled by Slice 13's tagged build` |
+| `Valija-0.1.0-arm64.dmg` (macOS, Apple Silicon) | `296b6edc42769446035f178d93d8e970caa7334464d51276bd1e4c9b98790516` |
+| `Valija-0.1.0-x64.dmg` (macOS, Intel) | `6a7120b862d0cc5e0ac79c85e88c8559b21982b7549c9633365fa9d612a6f2e9` |
+| `Valija-0.1.0-Setup.exe` (Windows) | `efe3b564ddb0130fe712131bae8c436ce3cc95232b86928885161d78ea9c7e77` |
+| `Valija-0.1.0.AppImage` (Linux) | `904d9adbcfb7977ad0674094dffc62c5aec68bead09edafa8481aa2240551aec` |
 
 None of these builds are code-signed — that costs money neither of us has for an unmonetized
 project — so your OS will warn you before it lets you open one. Here is exactly what each warning
