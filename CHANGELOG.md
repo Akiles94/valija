@@ -8,13 +8,14 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
 
 - Context for AI coding agents: an [`AGENTS.md`](AGENTS.md) index plus [`.context/`](.context/) flows and gotchas, maintained with [easy-repo-context](https://github.com/Akiles94/easy-repo-context) and checked in CI by `npm run context:check`. No runtime behavior changed.
 - A generated developer guide ([`docs/guide/`](docs/guide/README.md)) — business flows with sequence diagrams, the code map and reference tables — checked in CI by `npm run docs:check`, which also requires TSDoc on every exported symbol. No runtime behavior changed.
-- **Valija Desktop** — an Electron companion app (`desktop/`, unpublished, not part of the npm
-  package) giving the vault a window: browse, search and export context packs; connect Claude Code,
-  Claude Desktop and Cursor with one click; import chat history; a bilingual (English/Spanish) UI
-  with a welcome tour and a Settings screen; a Diagnostics screen mirroring `valija doctor`; and a
+- **Valija Desktop** — an Electron companion app (`desktop/`, distributed as its own unsigned
+  [GitHub release](https://github.com/Akiles94/valija/releases/tag/desktop-v0.1.0), not part of the
+  npm package) giving the vault a window: browse, search and export context packs; connect Claude
+  Code, Claude Desktop and Cursor with one click; import chat history; a bilingual (English/Spanish)
+  UI with a welcome tour and a Settings screen; a Diagnostics screen mirroring `valija doctor`; and a
   **vault relocation wizard** — move your vault into a folder a sync client already keeps up to
   date, re-pointing every already-connected AI tool's config as part of the move. See
-  [`docs/gui.md`](docs/gui.md). No MCP tool, CLI command, or published package changed.
+  [`docs/gui.md`](docs/gui.md). No MCP tool, CLI command, or published npm package changed.
 - `src/vault`: a **schema-upgrade consent gate** — `UnlockVault` now refuses
   (`VAULT_UPGRADE_REQUIRED`) to migrate a behind-schema vault unless the caller confirms
   (`upgradeConfirmed: true`); the CLI passes this at its one call site, so `valija unlock`'s own
