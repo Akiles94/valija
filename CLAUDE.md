@@ -84,6 +84,16 @@ Approved: Oscar 2026-07-17
 approval — by Oscar, or by the agent solely on Oscar's explicit say-so. It is the one
 signal that lifts the implementation gate, so treat it as Oscar's, not yours.
 
+## Surface parity (every advance)
+
+- **The CLI and the desktop app are symmetric.** Anything a user can do from one, they can do
+  from the other. A refined spec or plan that ships a capability on only one of them is incomplete,
+  not a scoping choice — the refiner and planner must cover both, and the reviewer fails it otherwise.
+- **The MCP surface is deliberately narrower** (SPEC §7: five tools; no pinning, no hard removal by
+  a model). Parity does not extend to it.
+- Known gap, owed to a future advance: vault relocation exists only in the desktop app (no
+  `valija relocate` yet).
+
 ## Conventions
 
 - Module-first layout: one bounded context per top-level `src/` folder, each with
