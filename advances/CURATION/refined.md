@@ -1,7 +1,7 @@
 # CURATION — Pin, archive, edit and supersede saved context · Refined Spec
 
-**Status:** Draft, awaiting Gate R. Every open decision in §9 carries a recommended default; none
-of them is settled until Oscar approves.
+**Status:** Gate R approved by Oscar, 2026-10-17. All 16 decisions in §9 (D-A … D-P) were resolved
+to their recommended defaults; treat those defaults as settled.
 
 **Directory:** `CURATION`, a feature advance with no milestone number (same posture as `GUI`/`CARDS`).
 **Source:** Oscar's raw idea (agreed in chat), checked against the code on 2026-10-16.
