@@ -5,6 +5,13 @@ context to tools like Claude, ChatGPT, and Cursor through a local MCP server.
 Stack: TypeScript, Node 22, SQLCipher (`better-sqlite3-multiple-ciphers`), Argon2id,
 OS keychain. Work ships as reviewable **advances** under `advances/<ADV>/`.
 
+## Talking to Oscar
+
+- Reply in **neutral Spanish**: no voseo, no regional idioms.
+- Present every decision he must make (Gate R open decisions, Gate P *Decisions to confirm*,
+  any other choice) as **one-tap multiple-choice questions, one decision per question**
+  (`AskUserQuestion`), recommended option first — never as a prose list or table to answer by text.
+
 ## The advance ritual
 
 Every advance moves through five phases. **The refiner, planner, and reviewer are
