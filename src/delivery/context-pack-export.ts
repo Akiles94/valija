@@ -12,6 +12,7 @@ export function exportProjectMarkdown(c: Container, project: string): Result<str
   return pack.ok ? ok(renderContextPackMarkdown(pack.value)) : pack;
 }
 
+/** A project's items as JSON, for `valija export --json` and the desktop export. */
 export function exportProjectJson(c: Container, project: string): Result<string, DomainError> {
   const items = c.showProject.execute({ project });
   return items.ok ? ok(JSON.stringify({ project, items: items.value }, null, 2)) : items;

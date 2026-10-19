@@ -2,7 +2,9 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
+/** AI tools `valija install` knows how to wire the MCP server into. */
 export const CLIENTS = ["claude-code", "claude-desktop", "cursor"] as const;
+/** One of the supported AI tools. */
 export type ClientId = (typeof CLIENTS)[number];
 
 const MCP_COMMAND = "npx";
@@ -16,6 +18,7 @@ function mcpEntry(vaultPath?: string): Record<string, unknown> {
     : { command: MCP_COMMAND, args: MCP_ARGS, env: { VALIJA_HOME: vaultPath } };
 }
 
+/** Where a supported AI tool keeps its MCP configuration on this platform. */
 export function clientConfigPath(client: ClientId, platform = process.platform): string {
   const home = homedir();
   switch (client) {
@@ -37,6 +40,7 @@ export function clientConfigPath(client: ClientId, platform = process.platform):
   }
 }
 
+/** Which config file was updated, and where its previous version was backed up (if it existed). */
 export interface InstallResult {
   configPath: string;
   backupPath: string | null;
@@ -90,6 +94,7 @@ export function installIntoClient(client: ClientId, vaultPath?: string): Install
   return { configPath, backupPath };
 }
 
+/** The JSON a user can paste by hand when the automatic config update fails. */
 export function manualInstructions(client: ClientId): string {
   return (
     `Add this to the "mcpServers" object of ${clientConfigPath(client)}:\n\n` +

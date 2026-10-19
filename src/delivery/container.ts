@@ -32,6 +32,9 @@ import { OsKeychain } from "../vault/infra/keyring.js";
 const systemClock: Clock = { now: () => new Date() };
 const ulidIds: IdGenerator = { next: () => ulid() };
 
+/**
+ * Every use case and adapter the entry points (CLI, MCP, desktop) may call, built once per process.
+ */
 export interface Container {
   paths: VaultPaths;
   folder: VaultFolder;
@@ -50,6 +53,10 @@ export interface Container {
   importConversations: ImportConversations;
 }
 
+/**
+ * The composition root: wires each use case to its production adapters (SQLCipher files, Argon2, OS
+ * keychain, device state).
+ */
 export function buildContainer(options?: { vaultRoot?: string }): Container {
   const paths = resolveVaultPaths(options?.vaultRoot);
   const store = new FileVaultStore(paths, ulidIds, systemClock);

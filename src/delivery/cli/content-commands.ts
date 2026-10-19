@@ -3,6 +3,7 @@ import type { Container } from "../container.js";
 import { exportProjectJson, exportProjectMarkdown } from "../context-pack-export.js";
 import { fail, formatDate, truncate } from "./render.js";
 
+/** `valija projects`: prints each project with its item count and last activity. */
 export function projectsCommand(c: Container): void {
   const result = c.listProjects.execute();
   if (!result.ok) fail(result.error);
@@ -20,6 +21,7 @@ export function projectsCommand(c: Container): void {
   }
 }
 
+/** `valija show <project>`: prints a project's items, optionally of one type. */
 export function showCommand(c: Container, project: string, options: { type?: string }): void {
   const result = c.showProject.execute({
     project,
@@ -38,6 +40,7 @@ export function showCommand(c: Container, project: string, options: { type?: str
   }
 }
 
+/** `valija search <query>`: prints full-text hits, optionally within one project. */
 export function searchCommand(c: Container, query: string, options: { project?: string }): void {
   const result = c.searchContext.execute({
     query,
@@ -55,6 +58,10 @@ export function searchCommand(c: Container, query: string, options: { project?: 
   }
 }
 
+/**
+ * `valija export <project>`: prints or writes the whole project as Markdown (or JSON with
+ * `--json`).
+ */
 export function exportCommand(
   c: Container,
   project: string,

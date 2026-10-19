@@ -1,6 +1,7 @@
 import type { DomainError } from "../../shared/domain/result.js";
 import type { DeviceId } from "../../vault/domain/values/device-id.js";
 
+/** Prints a domain error as `error [CODE]: message` and exits with status 1. */
 export function fail(error: DomainError): never {
   console.error(`error [${error.code}]: ${error.message}`);
   process.exit(1);
@@ -20,11 +21,13 @@ export function writerLabel(
   return `${writerIsThisDevice ? "this" : "another"} device (${shortId})`;
 }
 
+/** Collapses whitespace and shortens text to one line of at most `max` characters. */
 export function truncate(text: string, max = 80): string {
   const oneLine = text.replace(/\s+/g, " ").trim();
   return oneLine.length <= max ? oneLine : `${oneLine.slice(0, max - 1)}…`;
 }
 
+/** Shows an ISO timestamp as its date, or a dash when there is none. */
 export function formatDate(iso: string | null): string {
   return iso === null ? "—" : iso.slice(0, 10);
 }

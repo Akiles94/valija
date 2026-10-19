@@ -3,6 +3,9 @@ import type { Container } from "../container.js";
 import { promptHidden } from "./prompt.js";
 import { fail, writerLabel } from "./render.js";
 
+/**
+ * `valija init`: asks for a passphrase twice, creates the vault and prints the recovery kit once.
+ */
 export async function initCommand(c: Container): Promise<void> {
   console.log("Creating your encrypted vault.\n");
   console.log("Choose a passphrase (min 8 chars). You will need it to unlock the vault.");
@@ -27,6 +30,10 @@ export async function initCommand(c: Container): Promise<void> {
   console.log('Next: run "valija install claude-code" (or claude-desktop, cursor).');
 }
 
+/**
+ * `valija unlock`: unlocks with a passphrase (or `--recovery-key`), upgrading the schema silently,
+ * and reports a multi-device fork.
+ */
 export async function unlockCommand(
   c: Container,
   options: { recoveryKey?: string },
@@ -46,6 +53,7 @@ export async function unlockCommand(
   }
 }
 
+/** `valija lock`: locks the vault and says whether it is safely at rest for the sync client. */
 export function lockCommand(c: Container): void {
   const result = c.lockVault.execute();
   if (!result.ok) fail(result.error);
@@ -78,6 +86,10 @@ export function lockCommand(c: Container): void {
   }
 }
 
+/**
+ * `valija status`: prints vault location, lock and auto-lock state, lineage and folder safety
+ * signals.
+ */
 export function statusCommand(c: Container): void {
   const result = c.vaultStatus.execute();
   if (!result.ok) fail(result.error);

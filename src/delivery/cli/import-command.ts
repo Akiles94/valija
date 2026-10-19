@@ -20,6 +20,10 @@ interface ImportOptions {
   dryRun?: boolean;
 }
 
+/**
+ * `valija import <file>`: lists the conversations in a chat export, or imports (or dry-runs) the
+ * selected ones into a project.
+ */
 export function importCommand(c: Container, file: string, options: ImportOptions): void {
   // A selection flag means a real import or dry-run preview, which report against a target,
   // so -p is required. With no selection the command just lists (a bare --dry-run lists too).
