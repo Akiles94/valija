@@ -27,6 +27,6 @@ src/<module>/application/    use cases + ports (interfaces)
 src/<module>/infra/          adapters implementing the ports
 ```
 
-Dependencies point one way only: **`shared ←` everyone · `vault → shared` · `context → shared, vault` · `importers → shared, context` · `delivery →` all**. `context` depends on `vault` solely through the `VaultSessions` bridge (a locked vault refuses a session); `importers` writes items solely through context's `ImportItems` use case and never touches `vault`. The product-level spec (scope, decisions, security model) lives in [../docs/SPEC.md](../docs/SPEC.md).
+Dependencies point one way only: **`shared ←` everyone · `vault → shared` · `context → shared, vault` · `importers → shared, context` · `delivery →` all**. `context` depends on `vault` solely through the `VaultSessions` bridge (a locked vault refuses a session); `importers` writes items solely through context's `ImportItems` use case and never touches `vault`. The product-level spec (scope, decisions, security model) lives in [../docs/SPEC.md](../docs/SPEC.md). The generated [architecture page](../docs/guide/architecture.md) shows the current module map, dependency graph and composition wiring.
 
 `desktop.md` is the one spec that doesn't mirror a `src/` module — the desktop app is a separate workspace whose main process composes `src/`'s existing container through an enumerated IPC surface, so its spec covers that surface plus its own renderer view state instead of a `domain/application/infra` stack.

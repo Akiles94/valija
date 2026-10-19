@@ -209,6 +209,7 @@ does.
 
 ## Docs
 
+- **[docs/guide/](docs/guide/README.md)** — developer guide: how Valija works, business flows and code map (generated).
 - **[docs/gui.md](docs/gui.md)** — the desktop app: installing it, and what each screen does.
 - **[docs/sync.md](docs/sync.md)** — using one vault across devices, in depth.
 - **[docs/SPEC.md](docs/SPEC.md)** — the full specification.
