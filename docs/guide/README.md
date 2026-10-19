@@ -55,6 +55,22 @@ machine can read the vault until it is unlocked again.
 - [Unlock the vault](flows/unlock-vault.md) — While the vault is locked, no AI tool can read or save context.
 - [Upgrade the vault on unlock](flows/upgrade-vault-on-unlock.md) — New versions sometimes change how data is stored.
 
+### Working with context
+
+- [Browse a project](flows/browse-project.md) — To review the project's memory item by item: what the AI tools saved, and the imported
+conversations, newest first.
+- [Export a project](flows/export-context-pack.md) — Context in Valija is never locked in.
+- [Hand off a conversation to another tool](flows/hand-off-conversation.md) — To package "where we are" (goal, what was done, blockers, the exact next step, relevant files) so
+the next tool can pick up seamlessly instead of starting from zero.
+- [List projects](flows/list-projects.md) — To see what the vault holds at a glance: every project, how many items it has, and when it was
+last active.
+- [Load a project's context pack](flows/load-context-pack.md) — To give the AI the right context at the start of a session (pinned notes, the latest handoff,
+decisions, preferences, progress, facts) without the user pasting anything.
+- [Save context from an AI tool](flows/save-context.md) — So that what was learned in one session (a decision and its reason, progress, a preference, a fact)
+is available to any other tool, in any later session, on any of the user's machines.
+- [Search saved context](flows/search-context.md) — To find a piece of context by its words, across every project or within one, including imported
+conversations that never appear in a context pack.
+
 ### Health and devices
 
 - [Use one vault on several devices](flows/multi-device-sync.md) — To have the same AI context on every machine without any Valija server or account: the encrypted

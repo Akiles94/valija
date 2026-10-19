@@ -10,15 +10,15 @@ What an AI client sees, listed at runtime through an in-memory MCP client. The s
 
 | Tool | Title | What it tells the AI | Arguments | Reaches | Cited by |
 |---|---|---|---|---|---|
-| <a id="mcp-get-context"></a>[get_context](../../../src/delivery/mcp/server.ts) | Get context pack | Load the saved context pack for a project before starting work on it. | `project`, `budget`? | [GetContextPack](use-cases.md#symbol-getcontextpack) | — |
-| <a id="mcp-list-projects"></a>[list_projects](../../../src/delivery/mcp/server.ts) | List projects | List existing projects with item counts and last activity. | — | [ListProjects](use-cases.md#symbol-listprojects) | — |
-| <a id="mcp-save-context"></a>[save_context](../../../src/delivery/mcp/server.ts) | Save context | Save durable context about a project for future sessions in any AI tool. | `project`, `content`, `type`?, `tags`? | [SaveContext](use-cases.md#symbol-savecontext) | — |
-| <a id="mcp-save-handoff"></a>[save_handoff](../../../src/delivery/mcp/server.ts) | Save handoff | Package the state of THIS conversation so another AI tool or session can continue seamlessly. | `project`, `content` | [SaveContext](use-cases.md#symbol-savecontext) | — |
-| <a id="mcp-search-context"></a>[search_context](../../../src/delivery/mcp/server.ts) | Search context | Full-text search across saved context. | `query`, `project`?, `limit`? | [SearchContext](use-cases.md#symbol-searchcontext) | — |
+| <a id="mcp-get-context"></a>[get_context](../../../src/delivery/mcp/server.ts) | Get context pack | Load the saved context pack for a project before starting work on it. | `project`, `budget`? | [GetContextPack](use-cases.md#symbol-getcontextpack) | [Hand off a conversation to another tool](../flows/hand-off-conversation.md), [Load a project's context pack](../flows/load-context-pack.md) |
+| <a id="mcp-list-projects"></a>[list_projects](../../../src/delivery/mcp/server.ts) | List projects | List existing projects with item counts and last activity. | — | [ListProjects](use-cases.md#symbol-listprojects) | [List projects](../flows/list-projects.md) |
+| <a id="mcp-save-context"></a>[save_context](../../../src/delivery/mcp/server.ts) | Save context | Save durable context about a project for future sessions in any AI tool. | `project`, `content`, `type`?, `tags`? | [SaveContext](use-cases.md#symbol-savecontext) | [Save context from an AI tool](../flows/save-context.md) |
+| <a id="mcp-save-handoff"></a>[save_handoff](../../../src/delivery/mcp/server.ts) | Save handoff | Package the state of THIS conversation so another AI tool or session can continue seamlessly. | `project`, `content` | [SaveContext](use-cases.md#symbol-savecontext) | [Hand off a conversation to another tool](../flows/hand-off-conversation.md) |
+| <a id="mcp-search-context"></a>[search_context](../../../src/delivery/mcp/server.ts) | Search context | Full-text search across saved context. | `query`, `project`?, `limit`? | [SearchContext](use-cases.md#symbol-searchcontext) | [Search saved context](../flows/search-context.md) |
 
 ## MCP prompts
 
 | Prompt | Title | What it does | Arguments | Reaches | Cited by |
 |---|---|---|---|---|---|
-| <a id="prompt-load-context"></a>[load-context](../../../src/delivery/mcp/server.ts) | Load project context from valija | Load a project's context pack and resume work. | `project` | — | — |
-| <a id="prompt-save-context"></a>[save-context](../../../src/delivery/mcp/server.ts) | Save session context to valija | Distill this session into a self-contained context save. | `project`? | — | — |
+| <a id="prompt-load-context"></a>[load-context](../../../src/delivery/mcp/server.ts) | Load project context from valija | Load a project's context pack and resume work. | `project` | — | [Load a project's context pack](../flows/load-context-pack.md) |
+| <a id="prompt-save-context"></a>[save-context](../../../src/delivery/mcp/server.ts) | Save session context to valija | Distill this session into a self-contained context save. | `project`? | — | [Save context from an AI tool](../flows/save-context.md) |
