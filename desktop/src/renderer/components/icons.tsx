@@ -28,6 +28,7 @@ export function BrandMark() {
   );
 }
 
+/** Sidebar glyph for the Dashboard destination. */
 export function DashboardIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
@@ -39,6 +40,7 @@ export function DashboardIcon() {
   );
 }
 
+/** Sidebar glyph for the Search destination. */
 export function SearchIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
@@ -48,6 +50,7 @@ export function SearchIcon() {
   );
 }
 
+/** Sidebar glyph for connecting AI tools. */
 export function ConnectIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
@@ -62,6 +65,7 @@ export function ConnectIcon() {
   );
 }
 
+/** Sidebar glyph for the Sync and devices destination. */
 export function SyncIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
@@ -77,6 +81,7 @@ export function SyncIcon() {
   );
 }
 
+/** Glyph on the lock button. */
 export function LockIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
@@ -95,6 +100,7 @@ export function LockIcon() {
   );
 }
 
+/** Glyph on the Settings button. */
 export function GearIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
@@ -109,6 +115,7 @@ export function GearIcon() {
   );
 }
 
+/** Glyph shown next to a project name. */
 export function ProjectIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
@@ -122,6 +129,7 @@ export function ProjectIcon() {
   );
 }
 
+/** Back or previous arrow glyph. */
 export function ArrowLeftIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
@@ -137,6 +145,7 @@ export function ArrowLeftIcon() {
   );
 }
 
+/** Forward or next arrow glyph. */
 export function ArrowRightIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
@@ -152,6 +161,7 @@ export function ArrowRightIcon() {
   );
 }
 
+/** Column sort direction glyph. */
 export function SortArrowIcon() {
   return (
     <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">

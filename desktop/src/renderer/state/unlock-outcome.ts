@@ -1,5 +1,6 @@
 import type { IpcResult, VaultUnlockResponse } from "../../shared/ipc/messages.js";
 
+/** What an unlock attempt means for navigation: unlocked, upgrade required, or an error to show. */
 export type UnlockOutcome =
   | { kind: "unlocked"; fork?: NonNullable<VaultUnlockResponse["fork"]> }
   | { kind: "upgrade-required" }

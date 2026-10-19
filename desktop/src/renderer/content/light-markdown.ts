@@ -18,6 +18,7 @@ export type Inline =
   | { kind: "bold"; text: string }
   | { kind: "code"; text: string };
 
+/** One block of item content as the app renders it: a paragraph, heading, list or code block. */
 export type Block =
   | { kind: "paragraph"; spans: Inline[] }
   | { kind: "heading"; spans: Inline[] }
@@ -30,6 +31,10 @@ const HEADING = /^#{1,3}[ \t]+(.*)$/;
 const ORDERED_ITEM = /^[ \t]*(\d{1,9})\.[ \t]+(.*)$/;
 const UNORDERED_ITEM = /^[ \t]*[-*][ \t]+(.*)$/;
 
+/**
+ * Parses the small Markdown subset context items use (headings, lists, bold, inline and fenced
+ * code) into blocks, never into raw HTML.
+ */
 export function parseLightMarkdown(content: string): Block[] {
   const lines = content.replace(/\r\n?/g, "\n").split("\n");
   const blocks: Block[] = [];

@@ -3,10 +3,12 @@ import type { ValijaBridge } from "../state/bridge.js";
 import { useErrorCopy, useT } from "../state/i18n-context.js";
 import { classifyUnlockResult } from "../state/unlock-outcome.js";
 
+/** What a successful unlock hands back to the app: a fork notice, when there is one. */
 export interface UnlockSuccess {
   fork?: { generation: number; writer: string; noticeCode: string };
 }
 
+/** What the user typed to unlock: passphrase or recovery key. */
 export interface UnlockCredential {
   passphrase?: string;
   recoveryKeyHex?: string;
@@ -19,6 +21,10 @@ export function toUnlockSuccess(fork: ForkNotice | undefined): UnlockSuccess {
   return fork === undefined ? {} : { fork };
 }
 
+/**
+ * Unlock screen: passphrase or recovery key, routing a pending schema upgrade to its own
+ * confirmation screen.
+ */
 export function LockedScreen({
   bridge,
   onUnlocked,

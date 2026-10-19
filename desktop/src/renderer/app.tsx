@@ -67,6 +67,11 @@ function ThemedRoot({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Root of the desktop UI: loads preferences, follows the session phase (checking, no vault,
+ * creating, recovery kit, locked, unlocked) and shows the matching screen plus the tour and
+ * Settings overlays.
+ */
 export function App() {
   const [preferences, setPreferences] = useState<AppPreferencesMessage | null>(null);
   const [state, setState] = useState<SessionState>(INITIAL_STATE);

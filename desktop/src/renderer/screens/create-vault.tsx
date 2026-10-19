@@ -3,6 +3,9 @@ import type { ValijaBridge } from "../state/bridge.js";
 import { validateNewPassphrase } from "../state/create-vault-validation.js";
 import { useErrorCopy, useT } from "../state/i18n-context.js";
 
+/**
+ * Form to create the vault: passphrase twice, checked before anything is sent to the main process.
+ */
 export function CreateVaultScreen({
   bridge,
   onCreated,

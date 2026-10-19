@@ -5,12 +5,14 @@ import type { SessionState } from "./session-state.js";
 /** The two screens with no CLI counterpart, held above the phase switch (P-D15) — neither is a `WorkspaceView` screen, because Settings must open while the vault is locked. */
 export type Overlay = "tour" | "settings" | null;
 
+/** Which overlay is open, and where it returns when closed. */
 export interface OverlayState {
   overlay: Overlay;
   /** Where a finished tour returns to: the workspace (`null`) when it auto-played, Settings when replayed from there — criterion 2/6's "returns the user to where the tour interrupted them." */
   returnTo: Overlay;
 }
 
+/** No overlay open. */
 export const CLOSED_OVERLAY: OverlayState = { overlay: null, returnTo: null };
 
 /**
@@ -30,6 +32,7 @@ export function autoTourOverlay(
   return { overlay: "tour", returnTo: null };
 }
 
+/** Opens the Settings overlay (it also works while the vault is locked). */
 export function openSettings(): OverlayState {
   return { overlay: "settings", returnTo: null };
 }
@@ -44,6 +47,7 @@ export function finishTourOverlay(current: OverlayState): OverlayState {
   return { overlay: current.returnTo, returnTo: null };
 }
 
+/** Closes whatever overlay is open. */
 export function closeOverlay(): OverlayState {
   return CLOSED_OVERLAY;
 }

@@ -1,5 +1,7 @@
+/** Shortest passphrase the create form accepts, mirroring the vault rule. */
 export const MIN_PASSPHRASE_LENGTH = 8;
 
+/** Why a new passphrase is rejected on screen, or `null` when it is fine. */
 export type PassphraseValidation = "tooShort" | "mismatch" | null;
 
 /**

@@ -18,6 +18,7 @@ interface I18nValue {
 
 const I18nContext = createContext<I18nValue | null>(null);
 
+/** Provides the active UI language (system or override) and its translator to every screen. */
 export function I18nProvider({
   preferences,
   children,
@@ -40,6 +41,7 @@ function useI18n(): I18nValue {
   return value;
 }
 
+/** Returns the translate function for the active UI language. */
 export function useT() {
   return useI18n().translator.t;
 }

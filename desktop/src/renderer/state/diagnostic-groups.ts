@@ -1,7 +1,9 @@
 import type { DiagnosticRow } from "./diagnostic-rows.js";
 
+/** Section of the Diagnostics screen a check belongs to. */
 export type DiagnosticGroupId = "system" | "vault" | "tools" | "other";
 
+/** One Diagnostics section and its rows. */
 export interface DiagnosticGroup {
   id: DiagnosticGroupId;
   rows: DiagnosticRow[];

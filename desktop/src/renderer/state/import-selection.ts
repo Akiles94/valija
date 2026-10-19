@@ -18,6 +18,7 @@ export function allChecked(listing: readonly ImportListingRow[]): Set<number> {
   return new Set(listing.map((row) => row.index));
 }
 
+/** How many conversations are checked and how many items they are estimated to produce. */
 export interface SelectionCounts {
   conversationCount: number;
   itemCount: number;
@@ -41,6 +42,7 @@ export function countSelection(
   };
 }
 
+/** What the select-all checkbox shows over the visible rows. */
 export type VisibleSelectionState = "none" | "some" | "all";
 
 /** What the header checkbox shows: "all"/"none"/"some" over the *visible* rows only. An empty visible set is "none" — never "all" (an `every` over [] would lie). */
@@ -76,6 +78,7 @@ export function toggleVisibleSelection(
   return next;
 }
 
+/** Ascending or descending order of the import listing. */
 export type SortDirection = "asc" | "desc";
 
 /**
