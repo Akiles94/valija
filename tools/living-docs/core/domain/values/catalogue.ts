@@ -1,5 +1,4 @@
 import { byCodeUnit } from "../result.js";
-import type { Reference } from "./reference.js";
 
 /** Identity of a citable catalogue item, e.g. `{ kind: "cli", name: "unlock" }`. */
 export interface ItemKey {
@@ -8,20 +7,20 @@ export interface ItemKey {
   readonly label: string;
 }
 
-/** A link to a guide page (guide-relative) or a repo file (repo-relative); see `Cell`. */
+/** A link to a guide page (guide-relative, anchors allowed) or, with `repo`, a repo file. */
 export interface Link {
   readonly text: string;
   readonly href: string;
+  readonly repo?: boolean;
 }
 
 /**
- * One table cell: plain text, optionally linking to a repo file (`href`, repo-relative), to a
- * cited item (`ref`), or to several guide pages at once (`links`, guide-relative).
+ * One table cell: plain text, optionally linking to a repo file (`href`, repo-relative) or to
+ * several targets at once (`links`).
  */
 export interface Cell {
   readonly text: string;
   readonly href?: string;
-  readonly ref?: Reference;
   readonly links?: readonly Link[];
 }
 
@@ -38,6 +37,8 @@ export interface Catalogue {
   readonly page: string;
   readonly title: string;
   readonly intro?: string;
+  /** Order among the items sharing a page (default 0); ties sort by id. */
+  readonly position?: number;
   readonly columns: readonly string[];
   readonly rows: readonly CatalogueRow[];
 }
@@ -48,6 +49,7 @@ export function createCatalogue(input: {
   page: string;
   title: string;
   intro?: string | undefined;
+  position?: number;
   columns: readonly string[];
   rows: readonly CatalogueRow[];
 }): Catalogue {

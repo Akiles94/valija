@@ -20,6 +20,8 @@ export interface Graph {
   readonly page: string;
   readonly title: string;
   readonly intro?: string;
+  /** Order among the items sharing a page (default 0); ties sort by id. */
+  readonly position?: number;
   readonly direction: "LR" | "TD";
   readonly nodes: readonly GraphNode[];
   readonly edges: readonly GraphEdge[];
@@ -31,6 +33,7 @@ export function createGraph(input: {
   page: string;
   title: string;
   intro?: string | undefined;
+  position?: number;
   direction: "LR" | "TD";
   nodes: readonly GraphNode[];
   edges: readonly GraphEdge[];

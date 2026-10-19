@@ -88,15 +88,11 @@ function page(path: string, body: string): GuidePage {
 function groupByPage(guide: Guide): Map<string, (Catalogue | Graph)[]> {
   const pages = new Map<string, (Catalogue | Graph)[]>();
   const items = [...guide.graphs, ...guide.catalogues].sort(
-    (a, b) => byCodeUnit(a.page, b.page) || order(a) - order(b) || byCodeUnit(a.id, b.id),
+    (a, b) =>
+      byCodeUnit(a.page, b.page) || (a.position ?? 0) - (b.position ?? 0) || byCodeUnit(a.id, b.id),
   );
   for (const item of items) pages.set(item.page, [...(pages.get(item.page) ?? []), item]);
   return new Map([...pages].sort(([a], [b]) => byCodeUnit(a, b)));
-}
-
-/** On a shared page, diagrams come before tables. */
-function order(item: Catalogue | Graph): number {
-  return "rows" in item ? 1 : 0;
 }
 
 function pageTitle(guide: Guide, path: string): string {
@@ -131,7 +127,12 @@ function table(guide: Guide, here: string, catalogue: Catalogue): string {
 
 function renderCell(guide: Guide, here: string, cell: Cell): string {
   if (cell.links) {
-    return cell.links.map((l) => `[${escapeCell(l.text)}](${relative(here, l.href)})`).join(", ");
+    return cell.links
+      .map((l) => {
+        const target = l.repo ? repoLink(guide, here, l.href) : relative(here, l.href);
+        return `[${escapeCell(l.text)}](${target})`;
+      })
+      .join(", ");
   }
   const text = escapeCell(cell.text);
   if (cell.href) return `[${text}](${repoLink(guide, here, cell.href)})`;
