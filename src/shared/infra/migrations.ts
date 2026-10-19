@@ -17,6 +17,7 @@ const MIGRATIONS: readonly Migration[] = [
   { version: 3, sql: MIGRATION_003, backup: true },
 ];
 
+/** Schema version a freshly migrated vault database reaches; vaults behind it need an upgrade. */
 export const LATEST_SCHEMA_VERSION = Math.max(...MIGRATIONS.map((m) => m.version));
 
 /** Which migrations a vault at `current` still needs, and whether any of them backs up the ciphertext first — for a GUI confirmation screen to name before running `migrate`. */
@@ -84,6 +85,7 @@ function setSchemaVersion(db: Database, version: number): void {
   ).run(String(version));
 }
 
+/** Reads the schema version recorded in the database's `meta` table (0 when none was recorded). */
 export function schemaVersion(db: Database): number {
   const row = db.prepare("SELECT value FROM meta WHERE key = 'schema_version'").get() as
     | { value: string }

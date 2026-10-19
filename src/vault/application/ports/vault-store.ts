@@ -2,6 +2,10 @@ import type { DomainError, Result } from "../../../shared/domain/result.js";
 import type { LineageStamp } from "../../domain/services/vault-lineage.js";
 import type { KdfParams } from "./crypto.js";
 
+/**
+ * The plaintext vault header: id, KDF parameters and salt — everything needed to derive the key,
+ * nothing secret.
+ */
 export interface VaultHeaderData {
   vaultId: string;
   schemaVersion: 1;

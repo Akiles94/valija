@@ -2,9 +2,12 @@ import { randomBytes } from "node:crypto";
 import argon2 from "argon2";
 import type { KdfParams, VaultCrypto } from "../application/ports/crypto.js";
 
+/** Vault key size in bytes (256-bit, as SQLCipher expects). */
 export const KEY_LENGTH = 32;
+/** Random salt size in bytes for key derivation. */
 export const SALT_LENGTH = 16;
 
+/** Argon2id key derivation (the `argon2` native module) with salts from the OS random source. */
 export class Argon2VaultCrypto implements VaultCrypto {
   async deriveKey(passphrase: string, salt: Uint8Array, params: KdfParams): Promise<Uint8Array> {
     const key = await argon2.hash(passphrase, {
@@ -24,5 +27,7 @@ export class Argon2VaultCrypto implements VaultCrypto {
   }
 }
 
+/** Encodes bytes as lowercase hex. */
 export const toHex = (bytes: Uint8Array): string => Buffer.from(bytes).toString("hex");
+/** Decodes a hex string to bytes. */
 export const fromHex = (hex: string): Uint8Array => new Uint8Array(Buffer.from(hex, "hex"));

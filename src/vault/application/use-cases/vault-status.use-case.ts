@@ -9,6 +9,10 @@ import type { KeychainPort } from "../ports/keychain.js";
 import type { VaultFolder } from "../ports/vault-folder.js";
 import type { VaultStore } from "../ports/vault-store.js";
 
+/**
+ * Idle auto-lock state: the configured timeout, how long the vault has been idle, and whether it
+ * already expired.
+ */
 export interface AutoLockStatus {
   ttlMinutes: number | null;
   idleForMinutes?: number;
@@ -33,6 +37,10 @@ export interface VaultStatusOutput {
   lastWriterIsThisDevice?: boolean;
 }
 
+/**
+ * Reports whether a vault exists, whether it is unlocked, its auto-lock state, lineage and folder
+ * safety signals — never its content.
+ */
 export class VaultStatus implements UseCase<void, VaultStatusOutput> {
   constructor(
     private readonly store: VaultStore,

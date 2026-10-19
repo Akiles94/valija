@@ -1,6 +1,10 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 
+/**
+ * Where this device keeps its own state (device id, last-seen lineage, last activity), outside any
+ * synced folder.
+ */
 export interface StatePaths {
   root: string;
   state: string;

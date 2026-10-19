@@ -4,6 +4,7 @@ import type { VaultFolderInspection } from "../../application/ports/vault-folder
 import type { VaultRootInspection } from "../../application/ports/vault-mover.js";
 import { vaultError } from "../errors.js";
 
+/** Everything the relocation safety rules look at: both folders and what is currently in them. */
 export interface RelocationRequest {
   sourceRoot: string;
   destinationRoot: string;

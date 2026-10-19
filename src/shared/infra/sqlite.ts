@@ -42,6 +42,10 @@ export function openVaultDb(dbPath: string, keyHex: string): Database {
   }
 }
 
+/**
+ * True when SQLCipher refused to open the database because the key is wrong (it reports
+ * `SQLITE_NOTADB`).
+ */
 export function isWrongKeyError(error: unknown): boolean {
   return (
     error instanceof Error &&

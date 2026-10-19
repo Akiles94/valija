@@ -1,3 +1,4 @@
+/** Initial schema: projects, context items, their full-text index and the `meta` table. */
 export const MIGRATION_001 = `
 CREATE TABLE projects (
   id TEXT PRIMARY KEY,

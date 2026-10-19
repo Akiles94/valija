@@ -5,6 +5,10 @@ import type { VaultCrypto } from "../ports/crypto.js";
 import type { VaultStore } from "../ports/vault-store.js";
 import { resolveUnlockKey, type UnlockKeyInput } from "../services/resolve-unlock-key.js";
 
+/**
+ * Whether a schema upgrade is pending, between which versions, and whether it backs up the
+ * ciphertext first.
+ */
 export interface VaultUpgradeOutput {
   required: boolean;
   from: number;

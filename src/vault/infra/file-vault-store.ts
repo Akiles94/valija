@@ -10,6 +10,10 @@ import type { LineageStamp } from "../domain/services/vault-lineage.js";
 import { SqliteLineageStore } from "./sqlite-lineage-store.js";
 import { readVaultHeader, writeVaultHeader } from "./vault-header.js";
 
+/**
+ * The vault on disk: a JSON header next to a SQLCipher database, opened, migrated and verified
+ * through the shared SQLite helpers.
+ */
 export class FileVaultStore implements VaultStore {
   constructor(
     private readonly paths: VaultPaths,
