@@ -43,6 +43,28 @@ flowchart LR
 
 Each flow page opens with the business view: who, why, the rules, what can go wrong.
 
+### Vault lifecycle
+
+- [Check vault status](flows/check-vault-status.md) — One glance answers "can my AI tools use the vault right now?" and "is it safe to switch devices?",
+without opening or changing any context.
+- [Create a vault](flows/create-vault.md) — To get an encrypted place for AI context that only their passphrase (or their recovery kit) can
+open.
+- [Idle auto-lock](flows/idle-auto-lock.md) — An unlocked vault left alone for a long time is a risk.
+- [Lock the vault](flows/lock-vault.md) — Locking removes the key from the OS keychain, so neither the user's tools nor anything else on the
+machine can read the vault until it is unlocked again.
+- [Unlock the vault](flows/unlock-vault.md) — While the vault is locked, no AI tool can read or save context.
+- [Upgrade the vault on unlock](flows/upgrade-vault-on-unlock.md) — New versions sometimes change how data is stored.
+
+### Health and devices
+
+- [Use one vault on several devices](flows/multi-device-sync.md) — To have the same AI context on every machine without any Valija server or account: the encrypted
+file travels through the sync client the user already trusts.
+
+### Desktop app
+
+- [Move the vault to another folder](flows/relocate-vault.md) — To use one vault on several machines, or simply to keep it in a better place, without exporting
+and re-importing anything, and without breaking the AI tools that already use it.
+
 ## I'm going to touch code
 
 Start with the architecture, then the reference tables; every flow page ends with
