@@ -33,8 +33,9 @@ NORM=$(printf '%s' "$FILE_PATH" | tr '\\' '/')
 
 # Gate implementation code only. Everything else (advances/**, docs, specs,
 # .claude/**, *.md — including plan.md and the approval marker itself) passes.
+# Also gates tools/** (living-docs generator, LIVING-DOCS D-1b).
 case "$NORM" in
-  */src/*|src/*|*/package.json|package.json|*/tsup.config.ts|*/tsconfig*.json|*/desktop/*|desktop/*)
+  */src/*|src/*|*/package.json|package.json|*/tsup.config.ts|*/tsconfig*.json|*/desktop/*|desktop/*|*/tools/*|tools/*)
     ;; # implementation file — check approval below
   *)
     exit 0 ;;
