@@ -42,6 +42,7 @@ export function assembleGuide(
   const index = buildReferenceIndex(facts.symbols, citable);
   const findings: Finding[] = [...facts.findings];
   const citedBy = new Map<string, Set<Flow>>();
+  let citations = 0;
 
   const sortedFlows = [...flows].sort((a, b) => byCodeUnit(a.slug, b.slug));
   const resolved: ResolvedFlow[] = sortedFlows.map((flow) => {
@@ -53,6 +54,7 @@ export function assembleGuide(
         continue;
       }
       resolutions.set(reference.raw, outcome);
+      citations++;
       const name = outcome.target === "symbol" ? outcome.symbol.name : reference.name;
       const key = citationKey(reference.kind, name);
       citedBy.set(key, (citedBy.get(key) ?? new Set()).add(flow));
@@ -77,7 +79,7 @@ export function assembleGuide(
       exports: required.length,
       documented: required.length - findings.filter(isDocFinding).length,
       flows: resolved.length,
-      citations: resolved.reduce((n, f) => n + f.resolutions.size, 0),
+      citations,
     },
   };
 }
