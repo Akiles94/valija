@@ -1,0 +1,179 @@
+import { describe, expect, it } from "vitest";
+import type { Container } from "../container.js";
+import { buildProgram } from "./build-program.js";
+
+/** A container that fails loudly if command construction ever reads it. */
+const inertContainer = new Proxy(
+  {},
+  {
+    get(_target, key) {
+      throw new Error(`buildProgram touched the container (${String(key)})`);
+    },
+  },
+) as Container;
+
+// Captured from `node dist/program.js <cmd> --help` before buildProgram was extracted, so these
+// are the pre-refactor truth, not whatever the new code prints.
+const ROOT_HELP = `Usage: valija [options] [command]
+
+Encrypted context vault for developers who use several AI tools.
+
+Options:
+  -V, --version               output the version number
+  -h, --help                  display help for command
+
+Commands:
+  init                        Create the encrypted vault (passphrase + recovery
+                              kit).
+  unlock [options]            Unlock the vault for this session (key goes to the
+                              OS keychain).
+  lock                        Lock the vault (remove the key from the OS
+                              keychain).
+  status                      Show vault location and lock state.
+  projects                    List projects with item counts and last activity.
+  show [options] <project>    Print the items of a project.
+  search [options] <query>    Full-text search across saved context.
+  export [options] <project>  Export a project's context pack (markdown by
+                              default).
+  import [options] <file>     Import chatbot history (ChatGPT/Claude/generic
+                              export) into the vault.
+  install <client>            Wire the valija MCP server into an AI tool's
+                              config.
+  mcp                         Run the MCP server on stdio (used by AI tools, not
+                              by humans).
+  doctor                      Check environment, vault, keychain, and client
+                              configs.
+  help [command]              display help for command
+`;
+
+const COMMAND_HELP: Record<string, string> = {
+  init: `Usage: valija init [options]
+
+Create the encrypted vault (passphrase + recovery kit).
+
+Options:
+  -h, --help  display help for command
+`,
+  unlock: `Usage: valija unlock [options]
+
+Unlock the vault for this session (key goes to the OS keychain).
+
+Options:
+  --recovery-key <hex>  unlock with the raw key from your recovery kit
+  -h, --help            display help for command
+`,
+  lock: `Usage: valija lock [options]
+
+Lock the vault (remove the key from the OS keychain).
+
+Options:
+  -h, --help  display help for command
+`,
+  status: `Usage: valija status [options]
+
+Show vault location and lock state.
+
+Options:
+  -h, --help  display help for command
+`,
+  projects: `Usage: valija projects [options]
+
+List projects with item counts and last activity.
+
+Options:
+  -h, --help  display help for command
+`,
+  show: `Usage: valija show [options] <project>
+
+Print the items of a project.
+
+Arguments:
+  project        project slug
+
+Options:
+  --type <type>  filter by type
+                 (decision|progress|preference|fact|handoff|imported)
+  -h, --help     display help for command
+`,
+  search: `Usage: valija search [options] <query>
+
+Full-text search across saved context.
+
+Arguments:
+  query                    search terms
+
+Options:
+  -p, --project <project>  limit to one project
+  -h, --help               display help for command
+`,
+  export: `Usage: valija export [options] <project>
+
+Export a project's context pack (markdown by default).
+
+Arguments:
+  project              project slug
+
+Options:
+  --json               export as JSON instead of markdown
+  -o, --output <file>  write to a file instead of stdout
+  -h, --help           display help for command
+`,
+  import: `Usage: valija import [options] <file>
+
+Import chatbot history (ChatGPT/Claude/generic export) into the vault.
+
+Arguments:
+  file                     path to an export file (.json or .zip)
+
+Options:
+  -p, --project <project>  target project (required to import; created if new)
+  --from <source>          chatgpt | claude | generic (auto-detected if omitted)
+  --list                   list conversations and exit (the default when no
+                           selection is given)
+  --pick <spec>            1-based indices/ranges into the list, e.g. 1,3-5
+  --query <text>           select conversations whose title contains this text
+  --since <date>           select conversations on or after YYYY-MM-DD
+  --all                    import every conversation
+  --dry-run                report what would be imported; write nothing
+  -h, --help               display help for command
+`,
+  install: `Usage: valija install [options] <client>
+
+Wire the valija MCP server into an AI tool's config.
+
+Arguments:
+  client      one of: claude-code, claude-desktop, cursor
+
+Options:
+  -h, --help  display help for command
+`,
+  mcp: `Usage: valija mcp [options]
+
+Run the MCP server on stdio (used by AI tools, not by humans).
+
+Options:
+  -h, --help  display help for command
+`,
+  doctor: `Usage: valija doctor [options]
+
+Check environment, vault, keychain, and client configs.
+
+Options:
+  -h, --help  display help for command
+`,
+};
+
+describe("buildProgram", () => {
+  const program = buildProgram(inertContainer);
+
+  it("builds the command tree without touching the container or parsing argv", () => {
+    expect(program.commands.map((c) => c.name())).toEqual(Object.keys(COMMAND_HELP));
+  });
+
+  it("prints exactly the pre-refactor help", () => {
+    expect(program.helpInformation()).toBe(ROOT_HELP);
+    for (const command of program.commands) {
+      expect(command.helpInformation()).toBe(COMMAND_HELP[command.name()]);
+    }
+  });
+});
