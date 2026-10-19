@@ -71,13 +71,27 @@ is available to any other tool, in any later session, on any of the user's machi
 - [Search saved context](flows/search-context.md) — To find a piece of context by its words, across every project or within one, including imported
 conversations that never appear in a context pack.
 
+### Bringing history in
+
+- [Import chat history](flows/import-chat-history.md) — A fresh vault is empty.
+
+### Connecting AI tools
+
+- [Connect an AI tool](flows/connect-ai-tool.md) — An AI tool can only use Valija once its configuration knows how to start Valija's MCP server.
+- [Serve AI tools over MCP](flows/serve-mcp.md) — MCP is how AI tools talk to Valija: through it they save, hand off, load, search and list context,
+whichever tool and machine the user is on.
+
 ### Health and devices
 
+- [Check my setup](flows/check-setup.md) — One command answers "is my Valija healthy?": the runtime, the encryption module, the keychain, the
+vault, sync safety, lineage, auto-lock, and whether each AI tool is connected.
 - [Use one vault on several devices](flows/multi-device-sync.md) — To have the same AI context on every machine without any Valija server or account: the encrypted
 file travels through the sync client the user already trusts.
 
 ### Desktop app
 
+- [Desktop preferences](flows/desktop-preferences.md) — The app follows the operating system's theme and language by default; the user can override both
+and have the choice remembered on this device.
 - [Move the vault to another folder](flows/relocate-vault.md) — To use one vault on several machines, or simply to keep it in a better place, without exporting
 and re-importing anything, and without breaking the AI tools that already use it.
 
