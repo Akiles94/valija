@@ -16,6 +16,10 @@ import { createToolsHandlers } from "./handlers/tools-handlers.js";
 import { createVaultHandlers } from "./handlers/vault-handlers.js";
 import { SCHEMAS } from "./schemas.js";
 
+/**
+ * What the IPC handlers need from the main process: the container (and how to rebuild it after a
+ * move) plus the desktop adapters.
+ */
 export interface RegisterHandlersDeps {
   getContainer: () => Container;
   rebuildContainer: (newRoot: string) => void;

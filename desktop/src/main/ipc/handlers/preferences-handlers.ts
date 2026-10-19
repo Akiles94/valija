@@ -4,6 +4,7 @@ import type {
 } from "../../../shared/ipc/messages.js";
 import type { AppPreferencesStore } from "../../application/ports/app-preferences.js";
 
+/** Handlers for the `preferences:*` channels; a write can never change the vault path. */
 export function createPreferencesHandlers(store: AppPreferencesStore) {
   return {
     "preferences:read": (): AppPreferencesMessage => store.read(),

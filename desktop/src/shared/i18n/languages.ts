@@ -1,3 +1,4 @@
+/** A UI language the app ships a catalog for. */
 export type Language = "en" | "es";
 
 /**

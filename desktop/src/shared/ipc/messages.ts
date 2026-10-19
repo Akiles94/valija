@@ -9,6 +9,7 @@ import type { Language } from "../i18n/languages.js";
  */
 export type IpcResult<T> = { ok: true; value: T } | { ok: false; error: { code: string } };
 
+/** Passphrase for the new vault. */
 export interface VaultInitRequest {
   passphrase: string;
 }
@@ -28,11 +29,13 @@ export interface RecoveryKitResponse {
   text: string;
 }
 
+/** Passphrase or recovery key, plus consent to upgrade an outdated schema. */
 export interface VaultUnlockRequest {
   passphrase?: string;
   recoveryKeyHex?: string;
   upgradeConfirmed?: boolean;
 }
+/** The unlocked vault's id and, on a multi-device fork, the fork's details. */
 export interface VaultUnlockResponse {
   vaultId: string;
   fork?: {
@@ -42,6 +45,7 @@ export interface VaultUnlockResponse {
   };
 }
 
+/** Whether the vault was unlocked, its lineage when locked, and any sidecar files left behind. */
 export interface VaultLockResponse {
   wasUnlocked: boolean;
   generation?: number;
@@ -50,6 +54,7 @@ export interface VaultLockResponse {
   sidecars: string[];
 }
 
+/** Wire form of the vault status: lock and auto-lock state, lineage and folder signals. */
 export interface VaultStatusResponse {
   initialized: boolean;
   unlocked: boolean;
@@ -63,10 +68,12 @@ export interface VaultStatusResponse {
   lastWriterIsThisDevice?: boolean;
 }
 
+/** Passphrase or recovery key, used only to read the schema version. */
 export interface VaultUpgradeCheckRequest {
   passphrase?: string;
   recoveryKeyHex?: string;
 }
+/** Whether an upgrade is pending, between which versions, and whether it backs up first. */
 export interface VaultUpgradeCheckResponse {
   required: boolean;
   from: number;
@@ -74,6 +81,7 @@ export interface VaultUpgradeCheckResponse {
   backsUpCiphertext: boolean;
 }
 
+/** Wire form of one context item. */
 export interface ContextItemMessage {
   id: string;
   project: string;
@@ -85,6 +93,7 @@ export interface ContextItemMessage {
   createdAt: string;
 }
 
+/** Wire form of one project in the project list. */
 export interface ProjectListEntryMessage {
   name: string;
   description?: string;
@@ -92,37 +101,45 @@ export interface ProjectListEntryMessage {
   lastActivityAt: string | null;
 }
 
+/** Which project to show, optionally filtered by item type. */
 export interface ContentShowRequest {
   project: string;
   type?: string;
 }
 
+/** Full-text query, optionally within one project and up to a number of hits. */
 export interface ContentSearchRequest {
   query: string;
   project?: string;
   limit?: number;
 }
 
+/** Which project's pack to render. */
 export interface ContentPackRequest {
   project: string;
 }
+/** The project's whole context pack as Markdown. */
 export interface ContentPackResponse {
   markdown: string;
 }
 
+/** Which project to export, and in which format. */
 export interface ContentExportRequest {
   project: string;
   format: "markdown" | "json";
 }
+/** Where the export was saved, or that the user cancelled the dialog. */
 export interface ContentExportResponse {
   cancelled: boolean;
   path?: string;
 }
 
+/** Text to put on the clipboard. */
 export interface ContentCopyRequest {
   text: string;
 }
 
+/** One conversation in an export file, as listed before importing. */
 export interface ImportListingRow {
   index: number;
   title: string;
@@ -140,15 +157,18 @@ export interface ImportListingRow {
  */
 export type ImportFormatOverride = "chatgpt" | "claude" | "generic";
 
+/** The chosen export file's handle, and an optional format override. */
 export interface ImportListRequest {
   handle: string;
   from?: ImportFormatOverride;
 }
+/** The detected format and the conversations found in the file. */
 export interface ImportListResponse {
   source: string;
   listing: ImportListingRow[];
 }
 
+/** Which conversations to import: all, by index, by title text, or by date. */
 export interface ImportSelection {
   pick?: string;
   query?: string;
@@ -157,18 +177,22 @@ export interface ImportSelection {
   from?: ImportFormatOverride;
 }
 
+/** A selection to dry-run against a target project. */
 export interface ImportPreviewRequest extends ImportSelection {
   handle: string;
   projectName: string;
 }
+/** A selection to import into a target project. */
 export interface ImportRunRequest extends ImportSelection {
   handle: string;
   projectName: string;
 }
+/** A conversation that could not be imported, and why. */
 export interface ImportFailureMessage {
   conversation: string;
   reason: string;
 }
+/** Counts of imported, skipped and failed conversations, with the failures. */
 export interface ImportOutcomeResponse {
   imported: number;
   conversations: number;
@@ -177,12 +201,14 @@ export interface ImportOutcomeResponse {
   failures: ImportFailureMessage[];
 }
 
+/** One AI tool: whether the MCP server is configured in it, and for which vault. */
 export interface ToolsStatusEntry {
   client: string;
   connected: boolean;
   vaultPath?: string;
 }
 
+/** Which AI tool to wire the MCP server into. */
 export interface ToolsConnectRequest {
   client: string;
 }
@@ -203,11 +229,13 @@ export interface ToolsConnectResponse {
   manualSnippet?: string;
 }
 
+/** Whether Node and npm can run on this machine. */
 export interface NodeStatusResponse {
   nodeRunnable: boolean;
   npmRunnable: boolean;
 }
 
+/** Wire form of the device-local UI preferences. */
 export interface AppPreferencesMessage {
   vaultPath: string | null;
   theme: SystemOr<"light" | "dark">;
@@ -229,6 +257,9 @@ export interface PreferencesWriteRequest {
   tourSeen: boolean;
 }
 
+/**
+ * What a native dialog returns: an opaque handle the main process can resolve, and a name to show.
+ */
 export interface DialogFileChoiceResponse {
   handle: string;
   displayName: string;
@@ -249,6 +280,7 @@ export interface RelocationClientEntry {
   configUnreadable: boolean;
 }
 
+/** Handle of the folder chosen as the move destination. */
 export interface RelocationPreflightRequest {
   handle: string;
 }
@@ -265,6 +297,7 @@ export interface RelocationPreflightResponse {
   clients: RelocationClientEntry[];
 }
 
+/** What happened to one AI tool's config after a move: re-pointed, not connected, or unreadable. */
 export interface RelocationClientResult {
   client: string;
   outcome: "rewritten" | "notConnected" | "configUnreadable";
@@ -272,28 +305,34 @@ export interface RelocationClientResult {
   manualSnippet?: string;
 }
 
+/** Handle of the folder to move the vault into. */
 export interface RelocationMoveRequest {
   handle: string;
 }
 
+/** Where the vault now lives and what happened to each AI tool's config. */
 export interface RelocationMoveResponse {
   root: string;
   clientResults: RelocationClientResult[];
 }
 
+/** Which AI tool to re-point again. */
 export interface RelocationRetryClientRequest {
   client: string;
 }
 
+/** Handle of a folder that already holds a vault. */
 export interface RelocationPointAtExistingRequest {
   handle: string;
 }
 
+/** The vault folder now in use and what happened to each AI tool's config. */
 export interface RelocationPointAtExistingResponse {
   root: string;
   clientResults: RelocationClientResult[];
 }
 
+/** Sync-safety signals for the vault folder, plus where this device keeps its own state. */
 export interface SyncStatusResponse {
   conflictedCopies: string[];
   staleBackups: string[];
@@ -321,6 +360,7 @@ export interface DiagnosticCheckMessage {
   errorCode?: string;
 }
 
+/** The diagnostic check rows, in order. */
 export interface DiagnosticsRunResponse {
   checks: DiagnosticCheckMessage[];
 }

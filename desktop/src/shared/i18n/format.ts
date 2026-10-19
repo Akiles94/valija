@@ -11,16 +11,19 @@ export function formatDate(date: Date, language: Language): string {
   return new Intl.DateTimeFormat(language, { dateStyle: "medium" }).format(date);
 }
 
+/** Formats a date and time in the active UI language. */
 export function formatDateTime(date: Date, language: Language): string {
   return new Intl.DateTimeFormat(language, { dateStyle: "medium", timeStyle: "short" }).format(
     date,
   );
 }
 
+/** Formats a number in the active UI language. */
 export function formatCount(count: number, language: Language): string {
   return new Intl.NumberFormat(language).format(count);
 }
 
+/** Formats a duration in minutes, spelled out in the active UI language. */
 export function formatMinutes(minutes: number, language: Language): string {
   return new Intl.NumberFormat(language, {
     style: "unit",

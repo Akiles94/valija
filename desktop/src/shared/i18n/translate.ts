@@ -18,6 +18,7 @@ type DottedKeys<T, Prefix extends string = ""> = {
         : never;
 }[keyof T & string];
 
+/** Dotted path of every text in the English catalog, so a mistyped key is a type error. */
 export type TranslationKey = DottedKeys<typeof en>;
 
 type Params = Record<string, string | number>;
@@ -54,6 +55,7 @@ function isPluralForm(value: Leaf): value is PluralForm {
   return typeof value === "object" && value !== null && "one" in value && "other" in value;
 }
 
+/** Looks up UI text by key in the active language, with parameters and plural forms. */
 export interface Translator {
   t(key: TranslationKey, params?: Params & { count?: number }): string;
 }

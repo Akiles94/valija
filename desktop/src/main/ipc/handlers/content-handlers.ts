@@ -19,6 +19,7 @@ import type { ClipboardPort } from "../../application/ports/clipboard.js";
 import type { FilePicker } from "../../application/ports/file-picker.js";
 import { toIpcResult } from "../to-ipc-result.js";
 
+/** Handlers for the `content:*` channels: browse, search, render, export and copy context. */
 export function createContentHandlers(
   getContainer: () => Container,
   filePicker: FilePicker,

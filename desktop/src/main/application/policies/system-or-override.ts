@@ -1,4 +1,6 @@
+/** The preference value meaning follow the operating system. */
 export const SYSTEM = "system";
+/** A preference that either follows the operating system or holds a manual override. */
 export type SystemOr<T> = typeof SYSTEM | T;
 
 /**
