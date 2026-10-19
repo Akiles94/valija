@@ -2,6 +2,7 @@ import type { UseCase } from "../../../shared/application/use-case.js";
 import { type DomainError, ok, type Result } from "../../../shared/domain/result.js";
 import type { VaultSessions } from "../ports/vault-session.js";
 
+/** One project as listed: name, item count and last activity. */
 export interface ProjectListEntry {
   name: string;
   description?: string;
@@ -9,6 +10,7 @@ export interface ProjectListEntry {
   lastActivityAt: string | null;
 }
 
+/** Lists every project in the vault with its item count and last activity. */
 export class ListProjects implements UseCase<void, ProjectListEntry[]> {
   constructor(private readonly sessions: VaultSessions) {}
 

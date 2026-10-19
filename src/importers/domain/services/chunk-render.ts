@@ -91,6 +91,10 @@ function provenanceHeader(
   return `> Imported from ${SOURCE_LABEL[source]} · "${title}" · ${date} · part ${part}/${total}`;
 }
 
+/**
+ * Renders a conversation as Markdown chunks that each fit an item's size cap, every chunk headed by
+ * its provenance (source, title, date, part n of m).
+ */
 export function renderConversationChunks(
   conversation: Conversation,
   source: ImportSource,

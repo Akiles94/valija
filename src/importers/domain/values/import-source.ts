@@ -8,8 +8,10 @@ import { importerErr } from "../errors.js";
  */
 export const IMPORT_SOURCES = ["chatgpt", "claude", "generic"] as const;
 
+/** Where an imported conversation came from. */
 export type ImportSource = (typeof IMPORT_SOURCES)[number];
 
+/** Accepts a known import source; fails with `UNSUPPORTED_SOURCE` otherwise. */
 export function parseImportSource(raw: string): Result<ImportSource, DomainError> {
   if ((IMPORT_SOURCES as readonly string[]).includes(raw)) {
     return ok(raw as ImportSource);

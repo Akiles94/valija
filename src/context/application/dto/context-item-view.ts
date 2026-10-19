@@ -18,6 +18,7 @@ export interface ContextItemView {
   createdAt: string;
 }
 
+/** Flattens a stored item and its project name into the view delivery renders. */
 export const toContextItemView = (
   item: ContextItem,
   projectName: ProjectName,

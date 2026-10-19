@@ -19,6 +19,9 @@ const toProject = (row: ProjectRow): Project => ({
   updatedAt: new Date(row.updated_at),
 });
 
+/**
+ * Projects in the encrypted SQLite database, with item counts and last activity computed in SQL.
+ */
 export class SqliteProjectRepository implements ProjectRepository {
   constructor(private readonly db: Database) {}
 

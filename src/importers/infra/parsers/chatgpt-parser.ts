@@ -80,6 +80,10 @@ function linearize(data: ChatgptConversationData, index: number): Conversation {
   };
 }
 
+/**
+ * Parses a ChatGPT data export (`conversations.json`), ordering each conversation's message tree
+ * by message time.
+ */
 export class ChatgptParser implements ConversationParser {
   readonly source = "chatgpt" as const;
 

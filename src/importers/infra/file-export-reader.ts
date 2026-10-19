@@ -10,6 +10,7 @@ import { importerErr } from "../domain/errors.js";
  * is ever inflated, so a tiny malicious archive cannot exhaust memory.
  */
 export const MAX_ENTRY_BYTES = 128 * 1024 * 1024;
+/** Cap on the uncompressed total of all kept zip entries. */
 export const MAX_TOTAL_BYTES = 256 * 1024 * 1024;
 
 const decoder = new TextDecoder();

@@ -10,14 +10,14 @@ Codes in `ContextErrorCode`. Raise sites are found statically; desktop handlers 
 
 | Code | Meaning | Raised in | Cited by |
 |---|---|---|---|
-| <a id="err-content-empty"></a>[CONTENT_EMPTY](../../../src/context/domain/errors.ts) | — | [content.ts](../../../src/context/domain/values/content.ts) | — |
-| <a id="err-content-too-large"></a>[CONTENT_TOO_LARGE](../../../src/context/domain/errors.ts) | — | [content.ts](../../../src/context/domain/values/content.ts) | — |
-| <a id="err-invalid-item-type"></a>[INVALID_ITEM_TYPE](../../../src/context/domain/errors.ts) | — | [item-type.ts](../../../src/context/domain/values/item-type.ts) | — |
-| <a id="err-invalid-project-name"></a>[INVALID_PROJECT_NAME](../../../src/context/domain/errors.ts) | — | [project-name.ts](../../../src/context/domain/values/project-name.ts) | — |
-| <a id="err-invalid-tag"></a>[INVALID_TAG](../../../src/context/domain/errors.ts) | — | [tag.ts](../../../src/context/domain/values/tag.ts) | — |
-| <a id="err-item-not-found"></a>[ITEM_NOT_FOUND](../../../src/context/domain/errors.ts) | — | declared, never raised (statically) | — |
-| <a id="err-project-not-found"></a>[PROJECT_NOT_FOUND](../../../src/context/domain/errors.ts) | — | [get-context-pack.use-case.ts](../../../src/context/application/use-cases/get-context-pack.use-case.ts), [search-context.use-case.ts](../../../src/context/application/use-cases/search-context.use-case.ts), [show-project.use-case.ts](../../../src/context/application/use-cases/show-project.use-case.ts) | — |
-| <a id="err-too-many-tags"></a>[TOO_MANY_TAGS](../../../src/context/domain/errors.ts) | — | [tag.ts](../../../src/context/domain/values/tag.ts) | — |
+| <a id="err-content-empty"></a>[CONTENT_EMPTY](../../../src/context/domain/errors.ts) | Content is empty once trimmed. | [content.ts](../../../src/context/domain/values/content.ts) | — |
+| <a id="err-content-too-large"></a>[CONTENT_TOO_LARGE](../../../src/context/domain/errors.ts) | Content is larger than 32 KB and should be distilled. | [content.ts](../../../src/context/domain/values/content.ts) | — |
+| <a id="err-invalid-item-type"></a>[INVALID_ITEM_TYPE](../../../src/context/domain/errors.ts) | An item type is not one of the allowed types. | [item-type.ts](../../../src/context/domain/values/item-type.ts) | — |
+| <a id="err-invalid-project-name"></a>[INVALID_PROJECT_NAME](../../../src/context/domain/errors.ts) | A project name is not a valid slug (1-64 lowercase letters, digits or hyphens). | [project-name.ts](../../../src/context/domain/values/project-name.ts) | — |
+| <a id="err-invalid-tag"></a>[INVALID_TAG](../../../src/context/domain/errors.ts) | A tag is not 1-32 lowercase letters, digits or hyphens. | [tag.ts](../../../src/context/domain/values/tag.ts) | — |
+| <a id="err-item-not-found"></a>[ITEM_NOT_FOUND](../../../src/context/domain/errors.ts) | No item with that id exists. | declared, never raised (statically) | — |
+| <a id="err-project-not-found"></a>[PROJECT_NOT_FOUND](../../../src/context/domain/errors.ts) | No project with that name exists. | [get-context-pack.use-case.ts](../../../src/context/application/use-cases/get-context-pack.use-case.ts), [search-context.use-case.ts](../../../src/context/application/use-cases/search-context.use-case.ts), [show-project.use-case.ts](../../../src/context/application/use-cases/show-project.use-case.ts) | — |
+| <a id="err-too-many-tags"></a>[TOO_MANY_TAGS](../../../src/context/domain/errors.ts) | More tags than allowed on one item. | [tag.ts](../../../src/context/domain/values/tag.ts) | — |
 
 ## importers errors
 
@@ -25,14 +25,14 @@ Codes in `ImporterErrorCode`. Raise sites are found statically; desktop handlers
 
 | Code | Meaning | Raised in | Cited by |
 |---|---|---|---|
-| <a id="err-corrupt-archive"></a>[CORRUPT_ARCHIVE](../../../src/importers/domain/errors.ts) | — | [file-export-reader.ts](../../../src/importers/infra/file-export-reader.ts) | — |
-| <a id="err-empty-export"></a>[EMPTY_EXPORT](../../../src/importers/domain/errors.ts) | — | [import-conversations.use-case.ts](../../../src/importers/application/use-cases/import-conversations.use-case.ts), [file-export-reader.ts](../../../src/importers/infra/file-export-reader.ts), [chatgpt-parser.ts](../../../src/importers/infra/parsers/chatgpt-parser.ts), [claude-parser.ts](../../../src/importers/infra/parsers/claude-parser.ts), [generic-parser.ts](../../../src/importers/infra/parsers/generic-parser.ts) | — |
-| <a id="err-invalid-selection"></a>[INVALID_SELECTION](../../../src/importers/domain/errors.ts) | — | [selection.ts](../../../src/importers/domain/services/selection.ts) | — |
-| <a id="err-malformed-export"></a>[MALFORMED_EXPORT](../../../src/importers/domain/errors.ts) | — | [file-export-reader.ts](../../../src/importers/infra/file-export-reader.ts), [chatgpt-parser.ts](../../../src/importers/infra/parsers/chatgpt-parser.ts), [claude-parser.ts](../../../src/importers/infra/parsers/claude-parser.ts), [generic-parser.ts](../../../src/importers/infra/parsers/generic-parser.ts) | — |
-| <a id="err-no-conversations-selected"></a>[NO_CONVERSATIONS_SELECTED](../../../src/importers/domain/errors.ts) | — | [selection.ts](../../../src/importers/domain/services/selection.ts) | — |
-| <a id="err-unreadable-file"></a>[UNREADABLE_FILE](../../../src/importers/domain/errors.ts) | — | [import-handlers.ts](../../../desktop/src/main/ipc/handlers/import-handlers.ts), [file-export-reader.ts](../../../src/importers/infra/file-export-reader.ts) | — |
-| <a id="err-unsupported-generic-version"></a>[UNSUPPORTED_GENERIC_VERSION](../../../src/importers/domain/errors.ts) | — | [generic-parser.ts](../../../src/importers/infra/parsers/generic-parser.ts) | — |
-| <a id="err-unsupported-source"></a>[UNSUPPORTED_SOURCE](../../../src/importers/domain/errors.ts) | — | [tools-handlers.ts](../../../desktop/src/main/ipc/handlers/tools-handlers.ts), [import-conversations.use-case.ts](../../../src/importers/application/use-cases/import-conversations.use-case.ts), [import-source.ts](../../../src/importers/domain/values/import-source.ts) | — |
+| <a id="err-corrupt-archive"></a>[CORRUPT_ARCHIVE](../../../src/importers/domain/errors.ts) | The zip archive is damaged, or an entry exceeds the decompression caps. | [file-export-reader.ts](../../../src/importers/infra/file-export-reader.ts) | — |
+| <a id="err-empty-export"></a>[EMPTY_EXPORT](../../../src/importers/domain/errors.ts) | The export contains no conversations. | [import-conversations.use-case.ts](../../../src/importers/application/use-cases/import-conversations.use-case.ts), [file-export-reader.ts](../../../src/importers/infra/file-export-reader.ts), [chatgpt-parser.ts](../../../src/importers/infra/parsers/chatgpt-parser.ts), [claude-parser.ts](../../../src/importers/infra/parsers/claude-parser.ts), [generic-parser.ts](../../../src/importers/infra/parsers/generic-parser.ts) | — |
+| <a id="err-invalid-selection"></a>[INVALID_SELECTION](../../../src/importers/domain/errors.ts) | The conversation selection (pick, query or since) is invalid. | [selection.ts](../../../src/importers/domain/services/selection.ts) | — |
+| <a id="err-malformed-export"></a>[MALFORMED_EXPORT](../../../src/importers/domain/errors.ts) | The file is not a valid export of the stated format. | [file-export-reader.ts](../../../src/importers/infra/file-export-reader.ts), [chatgpt-parser.ts](../../../src/importers/infra/parsers/chatgpt-parser.ts), [claude-parser.ts](../../../src/importers/infra/parsers/claude-parser.ts), [generic-parser.ts](../../../src/importers/infra/parsers/generic-parser.ts) | — |
+| <a id="err-no-conversations-selected"></a>[NO_CONVERSATIONS_SELECTED](../../../src/importers/domain/errors.ts) | No conversation matches the selection. | [selection.ts](../../../src/importers/domain/services/selection.ts) | — |
+| <a id="err-unreadable-file"></a>[UNREADABLE_FILE](../../../src/importers/domain/errors.ts) | The export file could not be read. | [import-handlers.ts](../../../desktop/src/main/ipc/handlers/import-handlers.ts), [file-export-reader.ts](../../../src/importers/infra/file-export-reader.ts) | — |
+| <a id="err-unsupported-generic-version"></a>[UNSUPPORTED_GENERIC_VERSION](../../../src/importers/domain/errors.ts) | The generic import envelope has a version this Valija does not support. | [generic-parser.ts](../../../src/importers/infra/parsers/generic-parser.ts) | — |
+| <a id="err-unsupported-source"></a>[UNSUPPORTED_SOURCE](../../../src/importers/domain/errors.ts) | The export format could not be detected, or the named source is unknown. | [tools-handlers.ts](../../../desktop/src/main/ipc/handlers/tools-handlers.ts), [import-conversations.use-case.ts](../../../src/importers/application/use-cases/import-conversations.use-case.ts), [import-source.ts](../../../src/importers/domain/values/import-source.ts) | — |
 
 ## vault errors
 

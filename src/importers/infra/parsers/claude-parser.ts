@@ -49,6 +49,7 @@ function messageText(message: ClaudeMessageData): string {
     .join("\n");
 }
 
+/** Parses a Claude.ai data export, keeping the text blocks of each message. */
 export class ClaudeParser implements ConversationParser {
   readonly source = "claude" as const;
 

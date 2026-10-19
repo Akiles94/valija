@@ -44,6 +44,7 @@ const toFtsQuery = (query: string): string =>
     .map((term) => `"${term.replace(/"/g, '""')}"`)
     .join(" ");
 
+/** Context items in the encrypted SQLite database, searched through its FTS5 index. */
 export class SqliteContextItemRepository implements ContextItemRepository {
   constructor(private readonly db: Database) {}
 
