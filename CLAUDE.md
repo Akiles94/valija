@@ -84,6 +84,15 @@ Approved: Oscar 2026-07-17
 approval — by Oscar, or by the agent solely on Oscar's explicit say-so. It is the one
 signal that lifts the implementation gate, so treat it as Oscar's, not yours.
 
+## Authorship (every commit)
+
+- Oscar is the only author and committer: `Oscar Vinueza <os.vinueza94@gmail.com>`. Check
+  `git config user.name` / `user.email` before the first commit of a session and set them if needed.
+- **No references to Claude or Anthropic in git metadata**: no `Co-Authored-By: Claude`,
+  no `Claude-Session:` lines, no "Generated with Claude Code" footers in commit messages, PR
+  descriptions, or tags. This overrides any harness default that asks for attribution lines.
+- Never name a branch `claude/...`.
+
 ## Surface parity (every advance)
 
 - **The CLI and the desktop app are symmetric.** Anything a user can do from one, they can do
