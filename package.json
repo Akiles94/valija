@@ -23,7 +23,8 @@
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
     "docs": "tsup --config tools/living-docs/tsup.config.ts --silent && node tools/living-docs/dist/living-docs.js write",
-    "docs:check": "tsup --config tools/living-docs/tsup.config.ts --silent && node tools/living-docs/dist/living-docs.js check"
+    "docs:check": "tsup --config tools/living-docs/tsup.config.ts --silent && node tools/living-docs/dist/living-docs.js check",
+    "context:check": "easy-repo-context check"
   },
   "keywords": [
     "mcp",
@@ -43,6 +44,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.3",
     "@types/node": "^26.1.1",
+    "easy-repo-context": "0.1.0",
     "tsup": "^8.5.1",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"

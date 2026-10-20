@@ -20,7 +20,7 @@ Thanks for your interest. valija is early — the best contribution right now is
 - **Spec-driven:** behavior changes update the matching file in [`specs/`](specs/) in the same PR. Tests are co-located (`foo.ts` + `foo.test.ts`).
 - **No new dependencies** without discussion in an issue first.
 - **Security-sensitive code** (crypto, keychain, SQL) requires tests and gets extra review scrutiny.
-- Quality gates must pass: `npm run lint && npm run typecheck && npm test && npm run docs:check`.
+- Quality gates must pass: `npm run lint && npm run typecheck && npm test && npm run docs:check && npm run context:check`.
 - **Every exported symbol has TSDoc** that says what it does or why (not just its name), and every use case, CLI command, MCP tool or prompt and desktop IPC channel is cited by a flow. `npm run docs:check` enforces both — see [How to add or update a flow](#how-to-add-or-update-a-flow).
 
 ## Development
@@ -33,6 +33,7 @@ npm run lint        # biome
 npm run typecheck   # tsc --noEmit
 npm run docs        # regenerate docs/guide/ from the code and docs/flows/
 npm run docs:check  # fail if the guide, the code and the flows disagree (runs in CI)
+npm run context:check  # fail if .context/ (agent docs) points at a file or symbol that is gone (runs in CI)
 ```
 
 ## How to add or update a flow
@@ -63,6 +64,20 @@ source, then run `npm run docs` and commit both.
 - a flow cites something that no longer exists, or misses a required section;
 - a CLI command or desktop channel has no counterpart and no parity declaration;
 - `docs/guide/` is not what `npm run docs` would produce.
+
+## Context for AI agents
+
+[`AGENTS.md`](AGENTS.md) and [`.context/`](.context/) hold short, agent-facing notes: cross-module
+flows and the invariants that break silently. They are maintained with
+[easy-repo-context](https://github.com/Akiles94/easy-repo-context) and are separate from the human
+guide above.
+
+- If your change makes a `.context/` doc false, fix it in the same commit.
+  `npx easy-repo-context context <file>` lists the docs that cover a file.
+- `npm run context:check` (in CI) fails when a doc references a file or symbol that no longer
+  exists. `npx easy-repo-context update` lists docs whose code changed since they were verified.
+  After you check them, run `npx easy-repo-context stamp`.
+- `npx easy-repo-context hooks install` adds the same check as a local pre-commit hook.
 
 ## Non-goals (please don't PR these)
 

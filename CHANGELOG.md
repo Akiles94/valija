@@ -6,6 +6,7 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
 
 ### Added
 
+- Context for AI coding agents: an [`AGENTS.md`](AGENTS.md) index plus [`.context/`](.context/) flows and gotchas, maintained with [easy-repo-context](https://github.com/Akiles94/easy-repo-context) and checked in CI by `npm run context:check`. No runtime behavior changed.
 - A generated developer guide ([`docs/guide/`](docs/guide/README.md)) — business flows with sequence diagrams, the code map and reference tables — checked in CI by `npm run docs:check`, which also requires TSDoc on every exported symbol. No runtime behavior changed.
 - **Valija Desktop** — an Electron companion app (`desktop/`, unpublished, not part of the npm
   package) giving the vault a window: browse, search and export context packs; connect Claude Code,
