@@ -28,7 +28,11 @@ export function formatGuideReport(report: GuideReport): string[] {
   const { exports, documented, flows, citations } = report.stats;
   if (report.findings.length > 0) {
     const noun = report.findings.length === 1 ? "problem" : "problems";
-    lines.push(`${report.findings.length} ${noun}. Guide not up to date.`);
+    lines.push(
+      report.mode === "write"
+        ? `${report.findings.length} ${noun}. Guide written; docs:check fails until they are fixed.`
+        : `${report.findings.length} ${noun}. Guide not up to date.`,
+    );
   } else {
     lines.push(
       `✓ Guide ${report.mode === "write" ? "written" : "up to date"}: ${flows} flows, ${citations} citations, ${documented}/${exports} exports documented.`,

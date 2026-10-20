@@ -5,12 +5,15 @@ import {
 } from "../../core/application/ports/extractor.js";
 import { SYMBOL_ROW_KIND } from "../../core/domain/services/guide-assembly.js";
 import { type Cell, createCatalogue, itemAnchor } from "../../core/domain/values/catalogue.js";
-import { createFinding } from "../../core/domain/values/finding.js";
 import type { SourceFile } from "../../core/infra/typescript-exports-extractor.js";
 import { type ParityDeclaration, pairSurfaces } from "../services/surface-parity.js";
 import { indexCallables, readContainerUseCases } from "../services/use-case-reach.js";
 import { BUILD_PROGRAM_FILE, readCliCommands } from "../surfaces/cli-surface.js";
-import { CHANNELS_FILE, readIpcChannels } from "../surfaces/ipc-surface.js";
+import {
+  CHANNELS_FILE,
+  findUndocumentedChannels,
+  readIpcChannels,
+} from "../surfaces/ipc-surface.js";
 import { MCP_SERVER_FILE, readMcpSurface } from "../surfaces/mcp-surface.js";
 import { firstSentence } from "./use-cases.extractor.js";
 
@@ -53,17 +56,7 @@ export class EntryPointsExtractor implements Extractor {
       file: "tools/living-docs/valija/composition/valija-guide.ts",
     });
 
-    const undocumentedChannels = ipc
-      .filter((c) => c.doc === null || c.doc.trim() === "")
-      .map((c) =>
-        createFinding({
-          rule: "undocumented-export",
-          file: CHANNELS_FILE,
-          line: c.line,
-          subject: `ChannelMap › ${c.name}`,
-          message: `IPC channel "${c.name}" has no one-line doc on its ChannelMap member (P-D9)`,
-        }),
-      );
+    const undocumentedChannels = findUndocumentedChannels(ipc);
 
     return createExtractedFacts({
       catalogues: [

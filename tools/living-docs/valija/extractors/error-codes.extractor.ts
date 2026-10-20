@@ -44,12 +44,16 @@ export function readErrorCodes(files: readonly SourceFile[]): ErrorCode[] {
             rest = rest.slice(end + 2).trim();
             continue;
           }
+          if (rest.startsWith("|")) {
+            rest = rest.slice(1).trim();
+            continue;
+          }
           if (rest.startsWith("/**")) {
             collecting = [];
             rest = rest.slice(3);
             continue;
           }
-          const member = /^\|?\s*"([A-Z0-9_]+)"/.exec(rest);
+          const member = /^"([A-Z0-9_]+)"/.exec(rest);
           if (member) {
             codes.push({
               code: member[1] as string,

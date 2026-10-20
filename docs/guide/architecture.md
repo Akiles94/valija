@@ -6,12 +6,13 @@
 
 ## Modules and layers
 
-One bounded context per `src/` folder, each split into **domain** (pure rules) ← **application** (use cases and ports) ← **infra** (adapters: SQLCipher, Argon2, keychain, files). `delivery` (CLI, MCP) and the desktop app are the entry points. Each cell lists the kind folders found in that layer.
+One bounded context per `src/` folder, each split into **domain** (pure rules) ← **application** (use cases and ports) ← **infra** (adapters: SQLCipher, Argon2, keychain, files). `delivery` (CLI, MCP) and the desktop app are the entry points. Each cell lists the kind folders found in that layer; `delivery` has no layers of its own. Module names link to their behaviour spec.
 
 | Module | domain | application | infra |
 |---|---|---|---|
 | [context](../../specs/context.md) | entities/, services/, values/, 1 file(s) | dto/, ports/, use-cases/ | 3 file(s) |
-| [desktop](../../desktop/src) | — (uses the src/ use cases) | policies/, ports/, services/ | main/infra/, main/ipc/, preload/, renderer/, shared/ |
+| [delivery](../../specs/delivery.md) | entry points: cli/, mcp/, 5 file(s) | — | — |
+| [desktop](../../specs/desktop.md) | — (uses the src/ use cases) | policies/, ports/, services/ | main/infra/, main/ipc/, preload/, renderer/, shared/ |
 | [importers](../../specs/importers.md) | entities/, services/, values/, 1 file(s) | ports/, use-cases/ | parsers/, 2 file(s) |
 | [shared](../../specs/shared.md) | 1 file(s) | ports/, 1 file(s) | migrations/, 4 file(s) |
 | [vault](../../specs/vault.md) | services/, values/, 1 file(s) | policies/, ports/, services/, use-cases/ | 9 file(s) |

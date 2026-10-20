@@ -38,13 +38,14 @@ const CALL = /\b([A-Za-z_$][\w$]*)\s*\(/g;
 
 /**
  * Container keys whose `.execute(` the code reaches, following calls into known callables for
- * up to `depth` hops (CLI action → command function → delivery helper → use case).
+ * up to `depth` hops: a CLI action → its command function → a delivery helper (e.g. `export` →
+ * `exportCommand` → `exportProjectMarkdown`) is the deepest real chain.
  */
 export function reachContainerKeys(
   code: string,
   file: string,
   index: CallableIndex,
-  depth = 3,
+  depth = 2,
 ): string[] {
   const keys = new Set<string>();
   const visited = new Set<string>();

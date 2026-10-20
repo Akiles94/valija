@@ -13,6 +13,7 @@ import {
   findMissingSections,
   findUndocumentedSymbols,
   findUnreferencedItems,
+  isTrivialDoc,
 } from "./guide-rules.js";
 import { buildReferenceIndex, type Resolution, resolveReference } from "./reference-index.js";
 
@@ -77,15 +78,11 @@ export function assembleGuide(
     findings: findings.sort(compareFindings),
     stats: {
       exports: required.length,
-      documented: required.length - findings.filter(isDocFinding).length,
+      documented: required.filter((s) => s.doc !== null && !isTrivialDoc(s.doc, s.name)).length,
       flows: resolved.length,
       citations,
     },
   };
-}
-
-function isDocFinding(f: Finding): boolean {
-  return f.rule === "undocumented-export" || f.rule === "trivial-doc";
 }
 
 function withBackLinks(catalogue: Catalogue, citedBy: Map<string, Set<Flow>>): Catalogue {

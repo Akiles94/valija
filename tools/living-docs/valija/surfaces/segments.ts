@@ -17,3 +17,23 @@ export function segmentByMarker(
   });
   return segments;
 }
+
+/** Fails closed when the runtime registry and the static scan disagree on entry-point names. */
+export function assertSameNames(
+  what: string,
+  file: string,
+  runtime: readonly string[],
+  scanned: readonly string[],
+): void {
+  const left = new Set(runtime);
+  const right = new Set(scanned);
+  const mismatch = [
+    ...runtime.filter((x) => !right.has(x)),
+    ...scanned.filter((x) => !left.has(x)),
+  ];
+  if (mismatch.length > 0) {
+    throw new Error(
+      `${what} at runtime and in ${file} disagree on: ${[...new Set(mismatch)].sort().join(", ")}`,
+    );
+  }
+}

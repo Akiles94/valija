@@ -1,3 +1,4 @@
+import { createFinding, type Finding } from "../../core/domain/values/finding.js";
 import type { SourceFile } from "../../core/infra/typescript-exports-extractor.js";
 import { type CallableIndex, reachContainerKeys } from "../services/use-case-reach.js";
 
@@ -104,4 +105,19 @@ function readChannelMap(
     pendingDoc = null;
   });
   return members;
+}
+
+/** P-D9: every channel's `ChannelMap` member carries a one-line doc. */
+export function findUndocumentedChannels(channels: readonly IpcChannel[]): Finding[] {
+  return channels
+    .filter((c) => c.doc === null || c.doc.trim() === "")
+    .map((c) =>
+      createFinding({
+        rule: "undocumented-export",
+        file: CHANNELS_FILE,
+        line: c.line,
+        subject: `ChannelMap › ${c.name}`,
+        message: `IPC channel "${c.name}" has no one-line doc on its ChannelMap member (P-D9)`,
+      }),
+    );
 }

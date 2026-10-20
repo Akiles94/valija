@@ -3,9 +3,8 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { buildMcpServer } from "../../../../src/delivery/mcp/server.js";
 import type { SourceFile } from "../../core/infra/typescript-exports-extractor.js";
 import { type CallableIndex, reachContainerKeys } from "../services/use-case-reach.js";
-import { symmetricDifference } from "./cli-surface.js";
 import { createInertContainer } from "./inert-container.js";
-import { segmentByMarker } from "./segments.js";
+import { assertSameNames, segmentByMarker } from "./segments.js";
 
 /** Where `buildMcpServer` lives; the static half of MCP discovery reads it. */
 export const MCP_SERVER_FILE = "src/delivery/mcp/server.ts";
@@ -40,13 +39,15 @@ export async function readMcpSurface(
     if (!build) throw new Error(`cannot find buildMcpServer in ${MCP_SERVER_FILE}`);
     const toolCode = segmentByMarker(build.span, /registerTool\(\s*"([\w-]+)"/g);
     const promptCode = segmentByMarker(build.span, /registerPrompt\(\s*"([\w-]+)"/g);
-    assertSame(
-      "tools",
+    assertSameNames(
+      "MCP tools",
+      MCP_SERVER_FILE,
       tools.map((t) => t.name),
       [...toolCode.keys()],
     );
-    assertSame(
-      "prompts",
+    assertSameNames(
+      "MCP prompts",
+      MCP_SERVER_FILE,
       prompts.map((p) => p.name),
       [...promptCode.keys()],
     );
@@ -78,14 +79,5 @@ export async function readMcpSurface(
   } finally {
     await client.close();
     await server.close();
-  }
-}
-
-function assertSame(what: string, runtime: string[], scanned: string[]): void {
-  const mismatch = symmetricDifference(runtime, scanned);
-  if (mismatch.length > 0) {
-    throw new Error(
-      `MCP ${what} at runtime and in ${MCP_SERVER_FILE} disagree on: ${mismatch.join(", ")}`,
-    );
   }
 }

@@ -36,7 +36,7 @@ export class ArchitectureExtractor implements Extractor {
 
   private moduleMap() {
     const modules = readdirSync(join(this.repoRoot, "src"), { withFileTypes: true })
-      .filter((d) => d.isDirectory() && existsSync(join(this.repoRoot, "src", d.name, "domain")))
+      .filter((d) => d.isDirectory() && d.name !== "testing")
       .map((d) => d.name)
       .sort(byCodeUnit);
     const rows = modules.map((module) => {
@@ -46,13 +46,21 @@ export class ArchitectureExtractor implements Extractor {
           existsSync(join(this.repoRoot, spec))
             ? { text: module, href: spec }
             : { text: module, href: `src/${module}` },
-          ...LAYERS.map((layer) => ({ text: this.kinds(`src/${module}/${layer}`) })),
+          ...(LAYERS.some((layer) => existsSync(join(this.repoRoot, "src", module, layer)))
+            ? LAYERS.map((layer) => ({ text: this.kinds(`src/${module}/${layer}`) }))
+            : [
+                { text: `entry points: ${this.kinds(`src/${module}`)}` },
+                { text: "—" },
+                { text: "—" },
+              ]),
         ],
       };
     });
     rows.push({
       cells: [
-        { text: "desktop", href: "desktop/src" },
+        existsSync(join(this.repoRoot, "specs/desktop.md"))
+          ? { text: "desktop", href: "specs/desktop.md" }
+          : { text: "desktop", href: "desktop/src" },
         { text: "— (uses the src/ use cases)" },
         { text: this.kinds("desktop/src/main/application") },
         { text: "main/infra/, main/ipc/, preload/, renderer/, shared/" },
@@ -64,7 +72,7 @@ export class ArchitectureExtractor implements Extractor {
       position: 0,
       title: "Modules and layers",
       intro:
-        "One bounded context per `src/` folder, each split into **domain** (pure rules) ← **application** (use cases and ports) ← **infra** (adapters: SQLCipher, Argon2, keychain, files). `delivery` (CLI, MCP) and the desktop app are the entry points. Each cell lists the kind folders found in that layer.",
+        "One bounded context per `src/` folder, each split into **domain** (pure rules) ← **application** (use cases and ports) ← **infra** (adapters: SQLCipher, Argon2, keychain, files). `delivery` (CLI, MCP) and the desktop app are the entry points. Each cell lists the kind folders found in that layer; `delivery` has no layers of its own. Module names link to their behaviour spec.",
       columns: ["Module", "domain", "application", "infra"],
       rows,
     });
@@ -117,7 +125,7 @@ export class ArchitectureExtractor implements Extractor {
 }
 
 /** `UseCase -->|Port| Adapter`, from `buildContainer` and each use case's constructor types. */
-function wiring(files: readonly SourceFile[]) {
+export function wiring(files: readonly SourceFile[]) {
   const container = files.find((f) => f.path === CONTAINER_FILE);
   const build = container?.scanned.declarations.find((d) => d.name === "buildContainer");
   if (!build) throw new Error(`cannot find buildContainer in ${CONTAINER_FILE}`);
