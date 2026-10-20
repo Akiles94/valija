@@ -1,0 +1,14 @@
+# Flow: unlock-vault
+Summary: CLI `valija unlock` / desktop `vault:unlock` → resolve key (Argon2id or raw recovery key) → schema-version gate → open+migrate+verify via lineage read → key into OS keychain → fork check.
+Trigger: `src/delivery/cli/build-program.ts:buildProgram()` command `unlock` → `src/delivery/cli/vault-commands.ts:unlockCommand()`; desktop IPC `vault:unlock` / `vault:upgradeCheck` in `desktop/src/main/ipc/handlers/vault-handlers.ts:createVaultHandlers()` (registered by `desktop/src/main/ipc/register-handlers.ts:registerHandlers()`, zod-validated against `desktop/src/main/ipc/schemas.ts`).
+Path:
+1. `src/vault/application/use-cases/unlock-vault.use-case.ts:UnlockVault.execute()` — reads JSON header (salt, KDF params, vaultId).
+2. `src/vault/application/services/resolve-unlock-key.ts:resolveUnlockKey()` — recovery key used raw (64 hex); passphrase → `src/vault/infra/argon2.ts:Argon2VaultCrypto.deriveKey()`.
+3. `src/vault/infra/file-vault-store.ts:FileVaultStore.readSchemaVersion()` — opens SQLCipher (`src/shared/infra/sqlite.ts:openVaultDb()`) WITHOUT migrating; schema < `LATEST_SCHEMA_VERSION` and no `upgradeConfirmed` → `VAULT_UPGRADE_REQUIRED`.
+4. `src/vault/infra/file-vault-store.ts:FileVaultStore.readLineage()` — open + `src/shared/infra/migrations.ts:migrate()` + read lineage; this is the key check (`WRONG_PASSPHRASE`).
+5. `UnlockVault.execute()` — `src/vault/infra/keyring.ts:OsKeychain` stores key, `recordActivity`; `src/vault/domain/services/vault-lineage.ts:classifyLineage()` vs last-seen.
+6. Fork → still unlocked, returns `VAULT_FORK_DETECTED` notice, last-seen NOT updated; else `recordSeen`.
+Desktop upgrade loop: `desktop/src/renderer/state/unlock-outcome.ts:classifyUnlockResult()` routes `VAULT_UPGRADE_REQUIRED` to `desktop/src/renderer/screens/migration-confirm.tsx`, which calls `vault:upgradeCheck` (`src/vault/application/use-cases/check-vault-upgrade.use-case.ts:CheckVaultUpgrade.execute()`, read-only) then re-unlocks with `upgradeConfirmed: true`.
+Side effects: OS keychain key, device-state file (activity, last-seen), schema migration; `*.pre-NNN.bak` ciphertext copy only for `backup` migrations, deleted on success, kept on failure.
+Gotchas: CLI always sends `upgradeConfirmed: true` (silent migrate); desktop must not. Any new pre-gate read must not call `migrate()` (readLineage does) or the confirm screen has nothing to confirm. "Unlocked" = key present in keychain; no daemon. IPC errors carry only `code`, never `message` (`desktop/src/main/ipc/to-ipc-result.ts:toIpcResult()`). Upgrade path runs Argon2 three times (by design).
+Related: `.context/flows/save-context.md`, `docs/flows/unlock-vault.md`, `docs/flows/upgrade-vault-on-unlock.md`, `docs/flows/lock-vault.md`, `docs/flows/multi-device-sync.md`, `docs/SPEC.md`
