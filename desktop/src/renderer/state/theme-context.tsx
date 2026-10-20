@@ -4,6 +4,7 @@ import type { AppPreferencesMessage } from "../../shared/ipc/messages.js";
 
 const ThemeContext = createContext<Theme | null>(null);
 
+/** Provides the colour theme (system or override) to the app shell. */
 export function ThemeProvider({
   preferences,
   children,

@@ -10,12 +10,17 @@ import {
 import { parseProjectName } from "../../domain/values/project-name.js";
 import type { VaultSessions } from "../ports/vault-session.js";
 
+/** Which project's pack to build, and how many tokens it may spend. */
 export interface GetContextPackInput {
   project: string;
   /** Defaults to DEFAULT_BUDGET_TOKENS. Pass Infinity for the whole project (export). */
   budgetTokens?: number;
 }
 
+/**
+ * Builds the context pack an AI loads to resume work on a project: pinned items first, then the
+ * latest handoff, then a section per type, newest first, within a token budget.
+ */
 export class GetContextPack implements UseCase<GetContextPackInput, ContextPack> {
   constructor(
     private readonly sessions: VaultSessions,

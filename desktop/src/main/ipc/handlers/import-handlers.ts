@@ -13,6 +13,7 @@ import { toIpcResult } from "../to-ipc-result.js";
 
 /** D-J(a): constants, not inherited library defaults — a short, bounded wait for a contended write to clear. */
 export const IMPORT_BUSY_RETRY_ATTEMPTS = 2;
+/** Pause between retries when an import write finds the database busy. */
 export const IMPORT_BUSY_RETRY_BACKOFF_MS = 200;
 
 function isSqliteBusyError(error: unknown): boolean {

@@ -9,6 +9,7 @@ import type { Container } from "./container.js";
 
 type StatusResult = Result<VaultStatusOutput, DomainError>;
 
+/** One health check result: what was checked, whether it passed, and whether a failure is fatal. */
 export interface DiagnosticCheck {
   name: string;
   ok: boolean;

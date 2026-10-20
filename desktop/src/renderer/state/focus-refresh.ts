@@ -1,3 +1,7 @@
+/**
+ * Something that reports regaining focus (the window), so screens can refresh when the user comes
+ * back.
+ */
 export interface FocusTarget {
   addEventListener(type: "focus", listener: () => void): void;
   removeEventListener(type: "focus", listener: () => void): void;

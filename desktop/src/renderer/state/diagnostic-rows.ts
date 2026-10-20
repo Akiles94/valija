@@ -6,6 +6,7 @@ import type {
 } from "../../shared/ipc/messages.js";
 import { checkRowDetail } from "./diagnostic-detail.js";
 
+/** A diagnostic check prepared for display: translated name, status, explanation and detail. */
 export interface DiagnosticRow {
   key: string;
   name: string;

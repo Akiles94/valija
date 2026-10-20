@@ -165,7 +165,7 @@ Within a module: `domain/` (entities, values, services, module errors — no I/O
 
 Use cases implement `UseCase<In, Out>` — a contract, not a base class. Cross-cutting plumbing is composed in through the port that owns it (`VaultSessions.withSession`), never inherited. Logic that spans entities lives in `domain/services/`, so no use case ever calls another. Rendering (markdown, JSON, tables) belongs to `delivery/`: the domain decides *what* is in a context pack and in what order, delivery decides how it *reads*.
 
-**Dependency rule:** `shared ←` everyone · `vault → shared` · `context → shared, vault` · `importers → shared, context` · `delivery →` all. `context` reaches `vault` only through the `VaultSessions` bridge (a locked vault refuses a session, which is why the content context is downstream of the vault context); `importers` writes items only through context's `ImportItems` use case and never touches `vault`.
+**Dependency rule:** `shared ←` everyone · `vault → shared` · `context → shared, vault` · `importers → shared, context` · `delivery →` all. `context` reaches `vault` only through the `VaultSessions` bridge (a locked vault refuses a session, which is why the content context is downstream of the vault context); `importers` writes items only through context's `ImportItems` use case and never touches `vault`. The generated [architecture page](guide/architecture.md) shows the current module map, dependency graph and composition wiring.
 
 Tests are co-located with their subject (`foo.ts` + `foo.test.ts`). Behavior specs live in [`specs/`](../specs/), one file per module. Use cases receive ports via plain constructor injection — no DI framework.
 

@@ -2,6 +2,7 @@ import { type DomainError, ok, type Result } from "../../../shared/domain/result
 import type { Conversation } from "../entities/conversation.js";
 import { importerErr } from "../errors.js";
 
+/** How the user picked conversations to import: all, by index, by title text, or by date. */
 export interface SelectionFilters {
   all?: boolean;
   pick?: string;

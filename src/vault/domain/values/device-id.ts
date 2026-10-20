@@ -10,6 +10,7 @@ import { vaultErr } from "../errors.js";
  */
 export type DeviceId = string & { readonly __brand: "DeviceId" };
 
+/** Accepts any non-empty device id (trimmed); fails with `INVALID_DEVICE_ID` otherwise. */
 export function parseDeviceId(raw: string): Result<DeviceId, DomainError> {
   const trimmed = raw.trim();
   if (trimmed.length === 0) {
@@ -18,4 +19,5 @@ export function parseDeviceId(raw: string): Result<DeviceId, DomainError> {
   return ok(trimmed as DeviceId);
 }
 
+/** Mints a new device id for this installation. */
 export const createDeviceId = (idGen: IdGenerator): DeviceId => idGen.next() as DeviceId;

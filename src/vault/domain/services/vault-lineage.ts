@@ -16,6 +16,10 @@ export interface LineageSeen {
   readonly writeStamp: WriteStamp;
 }
 
+/**
+ * How the vault's current lineage relates to what this device last saw: unchanged, moved forward,
+ * or forked.
+ */
 export type LineageClassification = "in-sync" | "fast-forward" | "fork";
 
 /**

@@ -107,6 +107,7 @@ declare global {
   }
 }
 
+/** The typed IPC bridge the preload script exposes as `window.valija`. */
 export function getBridge(): ValijaBridge {
   return window.valija;
 }

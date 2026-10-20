@@ -1,6 +1,8 @@
 import type { AppPreferences } from "../ports/app-preferences.js";
 
+/** The welcome tour's slides, in order. */
 export const SLIDE_IDS = ["slide1", "slide2", "slide3", "slide4"] as const;
+/** One welcome-tour slide. */
 export type SlideId = (typeof SLIDE_IDS)[number];
 
 /**
@@ -13,11 +15,13 @@ export function shouldPlayTour(preferences: AppPreferences): boolean {
   return !preferences.tourSeen;
 }
 
+/** The slide after `current`, or `null` at the end of the tour. */
 export function nextSlide(current: SlideId): SlideId | null {
   const index = SLIDE_IDS.indexOf(current);
   return SLIDE_IDS[index + 1] ?? null;
 }
 
+/** The slide before `current`, or `null` on the first slide. */
 export function previousSlide(current: SlideId): SlideId | null {
   const index = SLIDE_IDS.indexOf(current);
   return index <= 0 ? null : (SLIDE_IDS[index - 1] ?? null);

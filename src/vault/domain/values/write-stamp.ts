@@ -10,6 +10,7 @@ import { vaultErr } from "../errors.js";
  */
 export type WriteStamp = string & { readonly __brand: "WriteStamp" };
 
+/** Accepts any non-empty write stamp (trimmed); fails with `INVALID_WRITE_STAMP` otherwise. */
 export function parseWriteStamp(raw: string): Result<WriteStamp, DomainError> {
   const trimmed = raw.trim();
   if (trimmed.length === 0) {
@@ -18,4 +19,5 @@ export function parseWriteStamp(raw: string): Result<WriteStamp, DomainError> {
   return ok(trimmed as WriteStamp);
 }
 
+/** Mints the random stamp a write leaves on the vault's lineage. */
 export const createWriteStamp = (idGen: IdGenerator): WriteStamp => idGen.next() as WriteStamp;

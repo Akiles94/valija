@@ -1,3 +1,6 @@
+/**
+ * Renders the printable recovery kit: the raw vault key plus what it is and how to keep it safe.
+ */
 export function renderRecoveryKit(vaultId: string, keyHex: string, createdAt: string): string {
   return `================================================================
                     VALIJA RECOVERY KIT

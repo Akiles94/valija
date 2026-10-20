@@ -1,6 +1,7 @@
 import type { AppPreferences } from "../ports/app-preferences.js";
 import { resolveSystemOrOverride } from "./system-or-override.js";
 
+/** The colour theme the window actually uses. */
 export type Theme = "light" | "dark";
 
 /**

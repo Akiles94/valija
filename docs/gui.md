@@ -123,6 +123,8 @@ from the locked screen, since Settings doesn't require an unlocked vault.
 
 ## Unlocking, and vault upgrades
 
+> How it works: [Unlock the vault](guide/flows/unlock-vault.md) · [Upgrade the vault on unlock](guide/flows/upgrade-vault-on-unlock.md)
+
 Unlocking works exactly like `valija unlock` — enter your passphrase, or, if you kept only your
 recovery key, choose **I only have my recovery key** and enter that instead.
 
@@ -144,6 +146,8 @@ and jump back to any step in between.
 ---
 
 ## Browsing, searching, and taking a pack
+
+> How it works: [Browse a project](guide/flows/browse-project.md) · [Search saved context](guide/flows/search-context.md) · [Load a project's context pack](guide/flows/load-context-pack.md) · [Export a project](guide/flows/export-context-pack.md)
 
 Once unlocked, the **Dashboard** lists your projects the same way `valija projects` does. Opening
 one shows its items, filterable by type — including items you've imported — with any pinned items
@@ -175,6 +179,8 @@ different side by side.
 
 ## Connecting your AI tools
 
+> How it works: [Connect an AI tool](guide/flows/connect-ai-tool.md)
+
 **Connect an AI tool** shows a card per supported client (Claude Code, Claude Desktop, Cursor),
 each showing whether it's already connected. **Connect** writes the same config change
 `valija install <client>` does — backing up the previous file first — and tells you which client to
@@ -193,6 +199,8 @@ clickable link, since this app never opens a URL or makes a network request of a
 ---
 
 ## Importing your chat history
+
+> How it works: [Import chat history](guide/flows/import-chat-history.md)
 
 Reachable from the dashboard header, beside **Check my setup**, whether your vault is empty or
 already holds projects: **Import your chat history** reads an export file you've already downloaded
@@ -230,6 +238,8 @@ still fails, because a CLI flag is an address a script relies on, not prose a pe
 
 ## Diagnostics — "Check my setup"
 
+> How it works: [Check my setup](guide/flows/check-setup.md)
+
 Reachable from the dashboard's own **Check my setup** button, or from **Settings → Vault & sync**,
 this runs the same checks `valija doctor` does — Node.js, the encryption engine, your OS keychain,
 the vault file, your sync folder, and one row per connected AI tool — each with a plain-language
@@ -262,6 +272,8 @@ only shows you it's happened.
 
 ## Moving your vault
 
+> How it works: [Move the vault to another folder](guide/flows/relocate-vault.md)
+
 **Move my vault…**, reachable from the Sync panel or from Settings, walks you through relocating
 your vault folder — typically into a folder a sync client (Dropbox, iCloud Drive, OneDrive,
 Syncthing…) already keeps up to date. The wizard is explicit that valija itself never talks to any
@@ -289,6 +301,8 @@ across terminal sessions.
 ---
 
 ## Settings
+
+> How it works: [Desktop preferences](guide/flows/desktop-preferences.md)
 
 Reachable by clicking the gear — from the dashboard, any project view, or even the locked screen,
 since Settings needs no unlocked vault at all. Four sections, and no fifth:

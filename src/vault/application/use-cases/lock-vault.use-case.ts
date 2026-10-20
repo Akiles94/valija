@@ -7,6 +7,10 @@ import type { KeychainPort } from "../ports/keychain.js";
 import type { VaultFolder } from "../ports/vault-folder.js";
 import type { VaultStore } from "../ports/vault-store.js";
 
+/**
+ * Whether the vault was unlocked, its lineage at that moment, and any sidecar files that mean it is
+ * not safely at rest.
+ */
 export interface LockOutput {
   wasUnlocked: boolean;
   /** The vault's lineage as of locking, when it could be read (unlocked and already written to). */
@@ -17,6 +21,10 @@ export interface LockOutput {
   sidecars: string[];
 }
 
+/**
+ * Locks the vault by removing its key from the OS keychain, reporting the lineage and folder state
+ * for a clean hand-off to another device.
+ */
 export class LockVault implements UseCase<void, LockOutput> {
   constructor(
     private readonly store: VaultStore,

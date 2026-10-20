@@ -1,11 +1,16 @@
 import { type DomainError, ok, type Result } from "../../../shared/domain/result.js";
 import { contextErr } from "../errors.js";
 
+/** Largest item body accepted, in UTF-8 bytes (32 KB). */
 export const MAX_CONTENT_BYTES = 32 * 1024;
 
 /** The body of a context item: trimmed, non-empty, at most 32 KB of UTF-8. */
 export type Content = string & { readonly __brand: "Content" };
 
+/**
+ * Trims the body and accepts it when non-empty and within the size cap; fails with `CONTENT_EMPTY`
+ * or `CONTENT_TOO_LARGE`.
+ */
 export function parseContent(raw: string): Result<Content, DomainError> {
   const trimmed = raw.trim();
   if (trimmed.length === 0) {

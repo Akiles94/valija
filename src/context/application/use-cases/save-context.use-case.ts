@@ -9,6 +9,7 @@ import { type ProjectName, parseProjectName } from "../../domain/values/project-
 import { parseTags, type Tag } from "../../domain/values/tag.js";
 import type { VaultSession, VaultSessions } from "../ports/vault-session.js";
 
+/** What to remember: project, content, and optionally type, tags, pin and source. */
 export interface SaveContextInput {
   project: string;
   content: string;
@@ -18,6 +19,7 @@ export interface SaveContextInput {
   source?: string;
 }
 
+/** The stored item's id and type, and whether its project was created on the fly. */
 export interface SaveContextOutput {
   itemId: string;
   project: string;
@@ -34,6 +36,10 @@ interface ValidatedSave {
   source?: string;
 }
 
+/**
+ * Stores one piece of context (a decision, progress note, preference, fact or handoff) in a
+ * project, creating the project when it does not exist yet.
+ */
 export class SaveContext implements UseCase<SaveContextInput, SaveContextOutput> {
   constructor(
     private readonly sessions: VaultSessions,

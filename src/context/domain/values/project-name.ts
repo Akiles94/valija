@@ -6,6 +6,7 @@ const PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 /** Unique project slug: 1-64 chars, lowercase letters, digits, hyphens (not leading). */
 export type ProjectName = string & { readonly __brand: "ProjectName" };
 
+/** Normalises (trim, lowercase) and validates a project slug; fails with `INVALID_PROJECT_NAME`. */
 export function parseProjectName(raw: string): Result<ProjectName, DomainError> {
   const normalized = raw.trim().toLowerCase();
   if (!PATTERN.test(normalized)) {

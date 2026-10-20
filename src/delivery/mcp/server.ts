@@ -36,6 +36,10 @@ const DESCRIPTIONS = {
     "project the user means before saving or loading.",
 } as const;
 
+/**
+ * Builds the MCP server AI tools talk to: five tools (save, hand off, load, search, list) and two
+ * prompts, each a thin call into one use case.
+ */
 export function buildMcpServer(c: Container): McpServer {
   const server = new McpServer({ name: "valija", version: VERSION });
   const clientName = (): string | undefined => server.server.getClientVersion()?.name;
@@ -215,6 +219,7 @@ export function buildMcpServer(c: Container): McpServer {
   return server;
 }
 
+/** Serves the MCP server over stdio; this is what `valija mcp` runs when an AI tool spawns it. */
 export async function runMcpServer(c: Container): Promise<void> {
   const server = buildMcpServer(c);
   await server.connect(new StdioServerTransport());

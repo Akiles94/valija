@@ -10,8 +10,10 @@
  * show a needless toggle, never hide content.
  */
 export const LONG_CONTENT_CHARS = 420;
+/** Line count from which an item card starts collapsed. */
 export const LONG_CONTENT_NEWLINES = 6;
 
+/** True when an item is long enough that its card starts collapsed behind a Show more toggle. */
 export function isLongContent(content: string): boolean {
   if (content.length > LONG_CONTENT_CHARS) return true;
   const newlineCount = content.split("\n").length - 1;

@@ -4,6 +4,7 @@ import { bytesToHex, isKeyHex } from "../../domain/values/key-hex.js";
 import type { VaultCrypto } from "../ports/crypto.js";
 import type { VaultHeaderData } from "../ports/vault-store.js";
 
+/** How the user proves they own the vault: a passphrase, or the raw key from their recovery kit. */
 export interface UnlockKeyInput {
   passphrase?: string;
   recoveryKeyHex?: string;

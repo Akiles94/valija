@@ -9,6 +9,7 @@ import type { DeviceIdentity } from "../ports/device-identity.js";
 import type { KeychainPort } from "../ports/keychain.js";
 import type { VaultHeaderData, VaultStore } from "../ports/vault-store.js";
 
+/** The new vault's id and creation time, plus its raw key — shown once, as the recovery kit. */
 export interface CreateVaultOutput {
   vaultId: string;
   keyHex: string;
@@ -20,6 +21,10 @@ interface ForgedVault {
   keyHex: string;
 }
 
+/**
+ * Creates the encrypted vault from a passphrase: mints its id and salt, derives the key, writes the
+ * header and database, and leaves it unlocked. Refuses when a vault already exists.
+ */
 export class CreateVault implements AsyncUseCase<string, CreateVaultOutput> {
   constructor(
     private readonly store: VaultStore,

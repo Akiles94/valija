@@ -21,6 +21,8 @@ same passphrase derives the same key on every device. Nothing about unlocking ch
 
 ## The ritual: lock, wait, unlock
 
+> How it works: [Use one vault on several devices](guide/flows/multi-device-sync.md)
+
 **On device A, when you're done:**
 
 ```
@@ -101,6 +103,8 @@ still sitting in the folder, the upgrade didn't finish cleanly: your current `va
 device and let that deletion sync, like any other change.
 
 ## Idle auto-lock
+
+> How it works: [Idle auto-lock](guide/flows/idle-auto-lock.md)
 
 By default, an unlocked vault automatically re-locks itself after **15 minutes** of
 inactivity — the key is dropped from the OS keychain the next time any command runs after

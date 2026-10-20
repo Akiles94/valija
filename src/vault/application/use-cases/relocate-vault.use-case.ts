@@ -9,6 +9,7 @@ import type { VaultFolder } from "../ports/vault-folder.js";
 import type { VaultMover } from "../ports/vault-mover.js";
 import type { VaultStore } from "../ports/vault-store.js";
 
+/** Where the vault now lives, and its (unchanged) id. */
 export interface RelocateVaultOutput {
   root: string;
   vaultId: string;

@@ -2,6 +2,7 @@ import type { ContextItem } from "../entities/context-item.js";
 import type { ItemType } from "../values/item-type.js";
 import type { ProjectName } from "../values/project-name.js";
 
+/** Token budget a context pack uses unless the caller asks for more (or for everything). */
 export const DEFAULT_BUDGET_TOKENS = 4000;
 
 /** Cheap token estimate: ~4 chars per token. Good enough for a budget, no tokenizer dep. */
@@ -16,11 +17,15 @@ export const estimateItemTokens = (item: ContextItem): number =>
 /** Types that get their own section, in the order they appear in the pack. */
 const SECTION_TYPE_ORDER = ["decision", "preference", "progress", "fact"] as const;
 
+/** One section of a pack: the pinned items, the latest handoff, or all items of one type. */
 export type PackSection =
   | { readonly kind: "pinned"; readonly items: readonly ContextItem[] }
   | { readonly kind: "latest-handoff"; readonly items: readonly ContextItem[] }
   | { readonly kind: "by-type"; readonly type: ItemType; readonly items: readonly ContextItem[] };
 
+/**
+ * What an AI receives for a project: ordered sections plus how much of the project fit the budget.
+ */
 export interface ContextPack {
   readonly projectName: ProjectName;
   readonly generatedAt: Date;
@@ -30,6 +35,7 @@ export interface ContextPack {
   readonly estimatedTokens: number;
 }
 
+/** A project's items (newest first) and the budget to fit them into. */
 export interface AssembleContextPackInput {
   readonly projectName: ProjectName;
   /** Newest first, archived excluded — the repository contract. */

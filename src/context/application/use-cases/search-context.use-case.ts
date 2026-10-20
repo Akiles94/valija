@@ -5,6 +5,7 @@ import { parseProjectName } from "../../domain/values/project-name.js";
 import { type ContextItemView, toContextItemView } from "../dto/context-item-view.js";
 import type { VaultSession, VaultSessions } from "../ports/vault-session.js";
 
+/** Full-text query, optionally limited to one project and a number of hits. */
 export interface SearchContextInput {
   query: string;
   project?: string;
@@ -14,6 +15,7 @@ export interface SearchContextInput {
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 20;
 
+/** Full-text search across saved context, everywhere or within one existing project. */
 export class SearchContext implements UseCase<SearchContextInput, ContextItemView[]> {
   constructor(private readonly sessions: VaultSessions) {}
 

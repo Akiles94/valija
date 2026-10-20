@@ -40,6 +40,9 @@ function parseDate(iso: string | undefined): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+/**
+ * Parses Valija's own versioned generic import envelope, for sources without a dedicated parser.
+ */
 export class GenericParser implements ConversationParser {
   readonly source = "generic" as const;
 

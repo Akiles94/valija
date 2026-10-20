@@ -17,6 +17,7 @@ export function parseAutoLockTtl(raw?: string): number | null {
   return Number.isInteger(value) && value > 0 ? value : DEFAULT_TTL_MINUTES;
 }
 
+/** True when the vault has been idle for at least the auto-lock timeout. */
 export function isIdleExpired(lastActivity: Date, now: Date, ttlMinutes: number): boolean {
   const elapsedMinutes = (now.getTime() - lastActivity.getTime()) / 60_000;
   return elapsedMinutes >= ttlMinutes;

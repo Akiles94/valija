@@ -6,12 +6,14 @@
  */
 export type Role = "user" | "assistant" | "system";
 
+/** One message of a conversation, tagged with who wrote it. */
 export interface Message {
   readonly role: Role;
   readonly content: string;
   readonly createdAt?: Date;
 }
 
+/** A chat conversation normalised from any provider's export. */
 export interface Conversation {
   readonly id: string;
   readonly title: string;

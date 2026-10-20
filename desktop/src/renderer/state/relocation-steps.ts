@@ -1,5 +1,7 @@
+/** Where the move-vault wizard is: choosing, checking, moving, failed, or done. */
 export type RelocationStageName = "choose" | "preflight" | "moving" | "moveFailed" | "done";
 
+/** Which of the wizard's three steps to highlight, and whether it is still working. */
 export interface RelocationProgress {
   current: 1 | 2 | 3;
   inProgress: boolean;

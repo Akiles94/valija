@@ -1,10 +1,13 @@
 import { type DomainError, ok, type Result } from "../../../shared/domain/result.js";
 import { contextErr } from "../errors.js";
 
+/** The item types a user or an AI may save. */
 export const ITEM_TYPES = ["decision", "progress", "preference", "fact", "handoff"] as const;
 
+/** One of the savable item types. */
 export type ItemType = (typeof ITEM_TYPES)[number];
 
+/** Accepts a savable item type; fails with `INVALID_ITEM_TYPE` otherwise. */
 export function parseItemType(raw: string): Result<ItemType, DomainError> {
   if ((ITEM_TYPES as readonly string[]).includes(raw)) {
     return ok(raw as ItemType);
@@ -23,8 +26,10 @@ export function parseItemType(raw: string): Result<ItemType, DomainError> {
  */
 export const STORABLE_ITEM_TYPES = [...ITEM_TYPES, "imported"] as const;
 
+/** Any type an item may have in storage, including `imported`. */
 export type StorableItemType = (typeof STORABLE_ITEM_TYPES)[number];
 
+/** Accepts any storable item type (used for filters); fails with `INVALID_ITEM_TYPE` otherwise. */
 export function parseStorableItemType(raw: string): Result<StorableItemType, DomainError> {
   if ((STORABLE_ITEM_TYPES as readonly string[]).includes(raw)) {
     return ok(raw as StorableItemType);

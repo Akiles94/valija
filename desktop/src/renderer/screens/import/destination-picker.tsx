@@ -1,5 +1,6 @@
 import { useT } from "../../state/i18n-context.js";
 
+/** Value of the destination option that means create a new project. */
 export const NEW_PROJECT = "__new__";
 
 /** The project-destination controls, moved verbatim from import.tsx (GUI-LAYOUT slice 10c) — the existing DOM tests find them by `getByLabelText("Import into")` / `"Project name"`, which must keep working. */

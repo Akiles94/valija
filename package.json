@@ -21,7 +21,9 @@
     "test:watch": "vitest",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "docs": "tsup --config tools/living-docs/tsup.config.ts --silent && node tools/living-docs/dist/living-docs.js write",
+    "docs:check": "tsup --config tools/living-docs/tsup.config.ts --silent && node tools/living-docs/dist/living-docs.js check"
   },
   "keywords": [
     "mcp",

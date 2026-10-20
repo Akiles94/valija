@@ -422,4 +422,5 @@ export const en = {
 // hold different text at every key while still being checked for the same key
 // set. `as const` would freeze every leaf to its literal English value and
 // make a real translation a type error.
+/** Shape every translation catalog must match: the English catalog's keys, with any text. */
 export type Catalog = typeof en;

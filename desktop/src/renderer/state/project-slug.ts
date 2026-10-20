@@ -26,6 +26,10 @@ export function slugifyProjectName(raw: string): string {
   return parsed.ok ? parsed.value : "";
 }
 
+/**
+ * What the new-project field shows under the input: nothing, a prompt, the slug that will be used,
+ * or that it already exists.
+ */
 export type ProjectSlugHint =
   | { kind: "hidden" }
   | { kind: "empty" }

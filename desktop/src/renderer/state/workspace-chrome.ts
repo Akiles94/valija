@@ -1,14 +1,20 @@
 import type { TranslationKey } from "../../shared/i18n/translate.js";
 import type { NavDestination, WorkspaceView } from "./workspace-nav.js";
 
+/** A breadcrumb's text: a catalog key, or raw text such as a project name. */
 export type BreadcrumbLabel = { key: TranslationKey } | { raw: string };
 
+/** One breadcrumb and where clicking it goes. */
 export interface BreadcrumbSegment {
   label: BreadcrumbLabel;
   /** Where this segment navigates; `null` on the final segment, which is plain text with aria-current="page". */
   target: WorkspaceView | null;
 }
 
+/**
+ * The shell around a workspace screen: whether the sidebar shows, which destination is active, and
+ * the breadcrumb trail.
+ */
 export interface WorkspaceChrome {
   sidebar: boolean;
   active: NavDestination | null;

@@ -1,3 +1,4 @@
+/** Items split into pinned ones and the rest, each keeping its original order. */
 export interface PinnedPartition<T> {
   pinned: T[];
   rest: T[];

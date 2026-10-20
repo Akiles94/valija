@@ -17,8 +17,10 @@ const headerSchema = z.object({
   createdAt: z.string(),
 });
 
+/** The header as stored in `vault.json` (same shape as `VaultHeaderData`). */
 export type VaultHeader = VaultHeaderData;
 
+/** Writes the plaintext header as JSON, with the salt in base64. */
 export function writeVaultHeader(path: string, header: VaultHeader): void {
   const json = {
     vaultId: header.vaultId,
@@ -30,6 +32,7 @@ export function writeVaultHeader(path: string, header: VaultHeader): void {
   writeFileSync(path, `${JSON.stringify(json, null, 2)}\n`, "utf8");
 }
 
+/** Reads and validates `vault.json`; fails with `VAULT_NOT_FOUND` or `STORAGE_ERROR`. */
 export function readVaultHeader(path: string): Result<VaultHeader, DomainError> {
   if (!existsSync(path)) {
     return vaultErr("VAULT_NOT_FOUND", `No vault header found at ${path}. Run "valija init".`);

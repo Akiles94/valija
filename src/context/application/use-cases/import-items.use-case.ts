@@ -18,16 +18,19 @@ export interface ImportedItemInput {
   tags: string[];
 }
 
+/** The target project and the imported chunks to store in it. */
 export interface ImportItemsInput {
   projectName: string;
   items: ImportedItemInput[];
 }
 
+/** A chunk that could not be stored, and why. */
 export interface ImportItemFailure {
   conversationId: string;
   reason: string;
 }
 
+/** How many chunks were stored or failed, and whether the project had to be created. */
 export interface ImportItemsOutput {
   projectCreated: boolean;
   imported: number;

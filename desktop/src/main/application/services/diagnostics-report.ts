@@ -1,5 +1,6 @@
 import type { DiagnosticCheckMessage } from "../../../shared/ipc/messages.js";
 
+/** Everything a copied diagnostics report contains: check rows plus app, OS and vault facts. */
 export interface DiagnosticsReportInput {
   checks: DiagnosticCheckMessage[];
   appVersion: string;

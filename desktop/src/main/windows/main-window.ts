@@ -12,6 +12,10 @@ const CSP = [
   "frame-src 'none'",
 ].join("; ");
 
+/**
+ * Opens the app window locked down: sandboxed, isolated, a strict content security policy, no
+ * navigation away, no new windows, no permission grants.
+ */
 export function createMainWindow(loadUrl: string, preloadPath: string): BrowserWindow {
   const window = new BrowserWindow({
     width: 1100,
@@ -49,4 +53,5 @@ export function createMainWindow(loadUrl: string, preloadPath: string): BrowserW
   return window;
 }
 
+/** Path of the built preload script inside a directory. */
 export const preloadFile = (dir: string): string => join(dir, "index.js");

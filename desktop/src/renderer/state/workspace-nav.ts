@@ -10,8 +10,10 @@ export type WorkspaceView =
   | { screen: "import" }
   | { screen: "diagnostics" };
 
+/** Screen shown right after unlocking: the dashboard. */
 export const INITIAL_WORKSPACE_VIEW: WorkspaceView = { screen: "dashboard" };
 
+/** One of the sidebar's top-level destinations. */
 export type NavDestination = "dashboard" | "search" | "connect-tools" | "sync";
 /** Today's order, unchanged (§5.0). Driven from a list, not four hardcoded entries, so CONNECT can add a lock indicator / a fifth entry without a rewrite (D-21a). */
 export const NAV_DESTINATIONS: readonly NavDestination[] = [

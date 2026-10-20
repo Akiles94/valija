@@ -1,3 +1,4 @@
+/** Sync-safety signals about the vault folder on disk, read without decrypting anything. */
 export interface VaultFolderInspection {
   /** Which of vault.db-wal / -shm / -journal exist right now (absolute). Non-empty at rest is a red flag. */
   readonly sidecars: string[];

@@ -107,6 +107,10 @@ function previewRefusal(
   return refusal === null ? null : refusal.code;
 }
 
+/**
+ * Handlers for the `relocation:*` channels: check a destination, move the vault, re-point AI tools,
+ * or switch to an existing vault.
+ */
 export function createRelocationHandlers(
   getContainer: () => Container,
   rebuildContainer: (newRoot: string) => void,

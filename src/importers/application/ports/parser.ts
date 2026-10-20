@@ -8,6 +8,7 @@ export interface ConversationFailure {
   readonly reason: string;
 }
 
+/** Everything one export yielded: the conversations that parsed and the ones that did not. */
 export interface ParsedExport {
   readonly conversations: Conversation[];
   readonly failures: ConversationFailure[];

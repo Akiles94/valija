@@ -12,6 +12,7 @@ import type { KeychainPort } from "../ports/keychain.js";
 import type { VaultStore } from "../ports/vault-store.js";
 import { resolveUnlockKey, type UnlockKeyInput } from "../services/resolve-unlock-key.js";
 
+/** Passphrase or recovery key, plus the caller's consent to upgrade an outdated schema. */
 export interface UnlockInput extends UnlockKeyInput {
   /**
    * Required to proceed once the vault's schema is behind
@@ -33,11 +34,17 @@ export interface ForkNotice {
   notice: DomainError;
 }
 
+/** The unlocked vault's id and, when another device wrote in parallel, a fork notice. */
 export interface UnlockOutput {
   vaultId: string;
   fork?: ForkNotice;
 }
 
+/**
+ * Opens the vault: derives or accepts the key, gates a pending schema upgrade on consent, verifies
+ * the key against the database, stores it in the OS keychain and checks for a multi-device fork.
+ * Never deletes anything on a fork.
+ */
 export class UnlockVault implements AsyncUseCase<UnlockInput, UnlockOutput> {
   constructor(
     private readonly store: VaultStore,

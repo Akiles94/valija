@@ -18,11 +18,13 @@ export interface AppPreferences {
   tourSeen: boolean;
 }
 
+/** Persistence port for the device-local UI preferences. */
 export interface AppPreferencesStore {
   read(): AppPreferences;
   write(next: AppPreferences): void;
 }
 
+/** Preferences of a fresh installation: follow the system, no remembered vault, tour not seen. */
 export const DEFAULT_PREFERENCES: AppPreferences = {
   vaultPath: null,
   theme: "system",

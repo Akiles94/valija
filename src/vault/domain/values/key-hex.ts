@@ -6,4 +6,5 @@
 export const bytesToHex = (bytes: Uint8Array): string =>
   Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 
+/** True when a string is a well-formed vault key: exactly 64 hex characters. */
 export const isKeyHex = (value: string): boolean => /^[0-9a-f]{64}$/i.test(value);

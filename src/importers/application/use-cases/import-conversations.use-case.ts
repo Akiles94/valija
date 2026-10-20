@@ -16,6 +16,10 @@ import type { ExportReader } from "../ports/export-reader.js";
 import type { ConversationParser } from "../ports/parser.js";
 import type { ParserRegistry } from "../ports/parser-registry.js";
 
+/**
+ * The export file, the target project, and how to select conversations (list, pick, query, since,
+ * all) or dry-run.
+ */
 export interface ImportConversationsInput {
   filePath: string;
   projectName?: string;
@@ -28,6 +32,10 @@ export interface ImportConversationsInput {
   dryRun?: boolean;
 }
 
+/**
+ * One conversation as listed before importing: its 1-based index, title, date, size and estimated
+ * chunks.
+ */
 export interface ListingRow {
   index: number;
   title: string;
@@ -36,13 +44,18 @@ export interface ListingRow {
   estimatedChunks: number;
 }
 
+/** A conversation that could not be imported, and why. */
 export interface ImportFailure {
   conversation: string;
   reason: string;
 }
 
+/** What a run did: only list, simulate, or actually import. */
 export type ImportMode = "list" | "dry-run" | "import";
 
+/**
+ * What a run did and found: the listing, or counts of imported, skipped and failed conversations.
+ */
 export interface ImportConversationsOutput {
   mode: ImportMode;
   source: ImportSource;

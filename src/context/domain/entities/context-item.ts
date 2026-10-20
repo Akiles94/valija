@@ -3,6 +3,7 @@ import type { Content } from "../values/content.js";
 import type { ItemType, StorableItemType } from "../values/item-type.js";
 import type { Tag } from "../values/tag.js";
 
+/** One stored piece of memory about a project; archived items are kept but no longer served. */
 export interface ContextItem {
   readonly id: string;
   readonly projectId: string;
@@ -16,6 +17,7 @@ export interface ContextItem {
   readonly updatedAt: Date;
 }
 
+/** Already-parsed fields for minting an item through the save path. */
 export interface NewContextItem {
   readonly id: string;
   readonly projectId: string;
@@ -47,6 +49,7 @@ export function createContextItem(input: NewContextItem): ContextItem {
   };
 }
 
+/** Already-parsed fields for minting an item from an imported conversation chunk. */
 export interface NewImportedContextItem {
   readonly projectId: string;
   /** The import source, e.g. "chatgpt" — kept as a plain string so the entity owes nothing to the importers module. */

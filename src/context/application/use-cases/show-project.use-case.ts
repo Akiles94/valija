@@ -6,6 +6,7 @@ import { type ProjectName, parseProjectName } from "../../domain/values/project-
 import { type ContextItemView, toContextItemView } from "../dto/context-item-view.js";
 import type { VaultSessions } from "../ports/vault-session.js";
 
+/** Which project to show, optionally filtered by item type. */
 export interface ShowProjectInput {
   project: string;
   type?: string;
@@ -16,6 +17,7 @@ interface ShowFilters {
   type?: StorableItemType;
 }
 
+/** Lists a project's items, newest first, optionally of a single type. */
 export class ShowProject implements UseCase<ShowProjectInput, ContextItemView[]> {
   constructor(private readonly sessions: VaultSessions) {}
 
