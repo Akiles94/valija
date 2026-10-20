@@ -112,3 +112,7 @@ signal that lifts the implementation gate, so treat it as Oscar's, not yours.
   name, e.g. `SqliteXRepository`, `FileX`). A new *kind* of thing — e.g. an application-layer
   policy that is neither a port nor a `UseCase` — gets its own new subfolder, never a loose
   file dropped next to the existing ones.
+
+<!-- easy-repo-context:begin -->
+Repo index for AI agents (flows, gotchas, where things live): @AGENTS.md
+<!-- easy-repo-context:end -->
