@@ -1,0 +1,17 @@
+# Flow: desktop-ipc-call
+Summary: screen → `ValijaBridge` → preload `ipcRenderer.invoke` → zod-validated channel → handler → container use case → `IpcResult` (`{ error: { code } }`) → catalog error copy
+Trigger: any screen calling `bridge.<area>.<method>()`, e.g. `desktop/src/renderer/screens/pack-preview.tsx:PackPreviewScreen()` → `bridge.content.pack()`
+Path:
+1. Screens take a `ValijaBridge` prop (`desktop/src/renderer/state/bridge.ts:ValijaBridge`), never `window.valija`, so tests inject fakes. `desktop/src/renderer/app.tsx:App()` wraps it once with `desktop/src/renderer/state/lock-aware-bridge.ts:withLockDetection()`: any `VAULT_LOCKED` result routes the app to the locked screen (idle auto-lock has no push event).
+2. `desktop/src/preload/index.ts`: `contextBridge.exposeInMainWorld("valija", …)`, one hand-written method per channel, deliberately never a loop over `CHANNELS`.
+3. `desktop/src/shared/ipc/channels.ts`: closed `CHANNELS` tuple + `ChannelMap` request/response contract; wire types in `desktop/src/shared/ipc/messages.ts`.
+4. `desktop/src/main/ipc/register-handlers.ts:registerHandlers()`: for each channel, `SCHEMAS[channel].safeParse` (`desktop/src/main/ipc/schemas.ts`), then the handler; missing handler throws at startup. Invalid request throws → renderer promise rejects (not an `IpcResult`).
+5. Handler in `desktop/src/main/ipc/handlers/*-handlers.ts` calls `getContainer().<useCase>.execute()`; `getContainer()` per call because `rebuildContainer` swaps it after relocation (`desktop/src/main/index.ts`).
+6. `desktop/src/main/ipc/to-ipc-result.ts:toIpcResult()`: drops `DomainError.message`, keeps `code`.
+7. Screen renders `useErrorCopy()(code)` → `desktop/src/shared/i18n/error-copy.ts:copyForErrorCode()`; unknown code → generic sentence naming the code.
+Side effects: whatever the use case does; `content:export` writes a file the main process chose.
+Gotchas: new channel = `CHANNELS` + `ChannelMap` + message types + `SCHEMAS` entry (`satisfies Record<Channel, …>`) + handler key in exactly one `*-handlers.ts` (living-docs `tools/living-docs/valija/surfaces/ipc-surface.ts:readIpcChannels()` throws on 0 or 2+) + spread into `buildHandlerMap()` if new file + preload method + `ValijaBridge` method + error copy in `desktop/src/shared/i18n/catalogs/en.ts` (and `es.ts`) for new codes + CLI parity (pair it in `tools/living-docs/valija/composition/valija-guide.ts` if it reaches no use case a CLI command reaches).
+Gotchas: no channel takes a filesystem path. `dialog:*` returns `{ handle, displayName }`; `desktop/src/main/infra/electron-file-picker.ts:ElectronFilePicker` keeps handle→path in memory; handlers call `resolveHandle()` and fail (`UNREADABLE_FILE` / `STORAGE_ERROR`) when it is unknown, e.g. after restart.
+Gotchas: some channels return raw values, not `IpcResult` (`vault:readRecoveryKit`, `content:copy`, `sync:status`, `diagnostics:*`, `tools:status`, `tools:nodeStatus`, `preferences:*`, `dialog:*`); check `ChannelMap` before assuming `.ok`.
+Gotchas: workspace view must be reset with `desktop/src/renderer/state/workspace-nav.ts:resetWorkspaceView()` at each exit from "unlocked" (`relocationFinished`, `lockNow` in `app.tsx`); the `withLockDetection` auto-lock path only calls `afterLock()`, so the view survives an idle lock.
+Related: `.context/flows/unlock-vault.md`, `.context/flows/context-pack.md`, `specs/desktop.md`, `docs/SPEC.md`
