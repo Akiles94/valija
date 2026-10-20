@@ -34,7 +34,7 @@ subagents — they run autonomously and cannot talk to you mid-run. The main
 
 3. **Implement** — the main agent creates the branch named in the plan
    (`{feature}/{ADVANCE}`, e.g. `feat/importers-M2`), then implements it slice by slice,
-   running `npm run typecheck && npm run lint && npm run test` as it goes.
+   running `npm run typecheck && npm run lint && npm run test && npm run docs:check` as it goes.
 
 4. **Review** — `change-reviewer` writes `advances/<ADV>/review.md`, whose first line is
    `Verdict: PASS` or `Verdict: FAIL`. It may only write `review.md`
