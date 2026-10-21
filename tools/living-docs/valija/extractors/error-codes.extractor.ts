@@ -1,12 +1,13 @@
+import type { SourceFile } from "living-docs";
 import {
+  byCodeUnit,
+  createCatalogue,
   createExtractedFacts,
+  createFinding,
   type ExtractedFacts,
   type Extractor,
-} from "../../core/application/ports/extractor.js";
-import { byCodeUnit } from "../../core/domain/result.js";
-import { createCatalogue } from "../../core/domain/values/catalogue.js";
-import { createFinding, type Finding } from "../../core/domain/values/finding.js";
-import type { SourceFile } from "../../core/infra/typescript-exports-extractor.js";
+  type Finding,
+} from "living-docs";
 
 /** One member of an `XErrorCode` union with its one-line meaning (D-11). */
 export interface ErrorCode {

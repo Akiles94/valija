@@ -2,8 +2,8 @@
 version: 1
 docs:
   .context/flows/context-pack.md:
-    commit: fb984e1343aa
-    stamped: 2026-10-20
+    commit: eb804744ca91
+    stamped: 2026-10-21
     sources:
       desktop/src/main/ipc/handlers/content-handlers.ts: 6736f4f082d32527
       desktop/src/renderer/screens/pack-preview.tsx: 8f35bd8e5e2c667c
@@ -16,8 +16,8 @@ docs:
       src/delivery/context-pack-markdown.ts: 111aebd49c06b1a9
       src/delivery/mcp/server.ts: cd605df764e525a6
   .context/flows/desktop-ipc-call.md:
-    commit: fb984e1343aa
-    stamped: 2026-10-20
+    commit: eb804744ca91
+    stamped: 2026-10-21
     sources:
       desktop/src/main/index.ts: 65bf9dfa97254290
       desktop/src/main/infra/electron-file-picker.ts: ee84210d08e578d3
@@ -35,11 +35,11 @@ docs:
       desktop/src/shared/i18n/error-copy.ts: 660ee9ec510806b0
       desktop/src/shared/ipc/channels.ts: a922a0e8cd304317
       desktop/src/shared/ipc/messages.ts: 6714026eb56b724d
-      tools/living-docs/valija/composition/valija-guide.ts: ca793690afa79540
-      tools/living-docs/valija/surfaces/ipc-surface.ts: a26b2d3bbe1e5bdd
+      tools/living-docs/valija/composition/valija-guide.ts: c9099e67e684ad04
+      tools/living-docs/valija/surfaces/ipc-surface.ts: 4ebc9e2925ac8eff
   .context/flows/import-chat-history.md:
-    commit: fb984e1343aa
-    stamped: 2026-10-20
+    commit: eb804744ca91
+    stamped: 2026-10-21
     sources:
       desktop/src/main/infra/electron-file-picker.ts: ee84210d08e578d3
       desktop/src/main/ipc/handlers/import-handlers.ts: 6a1683fd51488691
@@ -54,8 +54,8 @@ docs:
       src/importers/infra/file-export-reader.ts: 536b8859f2b139a3
       src/importers/infra/parser-registry.ts: 4a0c8bcb2798d600
   .context/flows/multi-device-sync.md:
-    commit: fb984e1343aa
-    stamped: 2026-10-20
+    commit: eb804744ca91
+    stamped: 2026-10-21
     sources:
       desktop/src/main/ipc/handlers/sync-handlers.ts: 38ea7c8c48a6b7ff
       desktop/src/main/ipc/handlers/vault-handlers.ts: 84a5b193cb77bab6
@@ -74,8 +74,8 @@ docs:
       src/vault/infra/file-vault-store.ts: 7cd27b15c9a14eba
       src/vault/infra/sqlite-lineage-store.ts: 55c3b97c8283f00e
   .context/flows/save-context.md:
-    commit: fb984e1343aa
-    stamped: 2026-10-20
+    commit: eb804744ca91
+    stamped: 2026-10-21
     sources:
       src/context/application/use-cases/save-context.use-case.ts: 42842961e751f64e
       src/context/infra/item-repo.ts: 08e4de117a71b129
@@ -85,8 +85,8 @@ docs:
       src/vault/application/policies/session-guard.ts: b99568ee81764405
       src/vault/infra/sqlite-lineage-store.ts: 55c3b97c8283f00e
   .context/flows/unlock-vault.md:
-    commit: fb984e1343aa
-    stamped: 2026-10-20
+    commit: eb804744ca91
+    stamped: 2026-10-21
     sources:
       desktop/src/main/ipc/handlers/vault-handlers.ts: 84a5b193cb77bab6
       desktop/src/main/ipc/register-handlers.ts: 780bca7b4dc60959
@@ -106,8 +106,8 @@ docs:
       src/vault/infra/file-vault-store.ts: 7cd27b15c9a14eba
       src/vault/infra/keyring.ts: c5659f598b6bdfcb
   .context/gotchas.md:
-    commit: fb984e1343aa
-    stamped: 2026-10-20
+    commit: eb804744ca91
+    stamped: 2026-10-21
     sources:
       .claude/hooks/guard-git-ops.sh: 59294a42c694999c
       .claude/hooks/guard-implementation.sh: 4ac0bd7f739e821b
@@ -145,13 +145,13 @@ docs:
       src/vault/domain/services/vault-lineage.ts: 1c78db599fd33bd3
       src/vault/domain/services/vault-relocation.ts: bf1ea6b84e2d524c
       src/vault/infra/file-vault-store.ts: 7cd27b15c9a14eba
-      tools/living-docs/valija/composition/valija-guide.ts: ca793690afa79540
+      tools/living-docs/valija/composition/valija-guide.ts: c9099e67e684ad04
       tools/living-docs/valija/surfaces/inert-container.ts: 9d6aa62567d81daf
       tsup.config.ts: d725c427c7a574a2
       vitest.config.ts: 0c9f375fdc8c77a5
   .context/overview.md:
-    commit: fb984e1343aa
-    stamped: 2026-10-20
+    commit: eb804744ca91
+    stamped: 2026-10-21
     sources:
       desktop/package.json: 8efa41413b32f579
       desktop/src/main/index.ts: 65bf9dfa97254290
@@ -174,13 +174,13 @@ docs:
       src/vault/infra/file-device-identity.ts: 76f56ede0f8e77cc
       src/vault/infra/keyring.ts: c5659f598b6bdfcb
       src/vault/infra/vault-header.ts: 4c4d223a05df9a58
-      tools/living-docs/valija/composition/main.ts: f9fd0742c72441d4
-      tools/living-docs/valija/composition/valija-guide.ts: ca793690afa79540
+      tools/living-docs/valija/composition/main.ts: fccf68312c185317
+      tools/living-docs/valija/composition/valija-guide.ts: c9099e67e684ad04
   .context/presentation.md:
-    commit: fb984e1343aa
-    stamped: 2026-10-20
+    commit: eb804744ca91
+    stamped: 2026-10-21
     sources: {}
   AGENTS.md:
-    commit: fb984e1343aa
-    stamped: 2026-10-20
+    commit: eb804744ca91
+    stamped: 2026-10-21
     sources: {}

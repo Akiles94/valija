@@ -1,11 +1,12 @@
-import { byCodeUnit } from "../../core/domain/result.js";
 import {
+  byCodeUnit,
   type Catalogue,
   type CatalogueRow,
   createCatalogue,
+  createFinding,
+  type Finding,
   itemAnchor,
-} from "../../core/domain/values/catalogue.js";
-import { createFinding, type Finding } from "../../core/domain/values/finding.js";
+} from "living-docs";
 
 /** A hand-maintained parity statement; every one must say why (D-12). */
 export type ParityDeclaration =

@@ -1,6 +1,5 @@
-import type { Extractor } from "../../core/application/ports/extractor.js";
-import type { GuideSettings } from "../../core/domain/values/guide-settings.js";
-import { TypeScriptExportsExtractor } from "../../core/infra/typescript-exports-extractor.js";
+import type { Extractor, GuideSettings } from "living-docs";
+import { TypeScriptExportsExtractor } from "living-docs";
 import { ArchitectureExtractor } from "../extractors/architecture.extractor.js";
 import { EntryPointsExtractor } from "../extractors/entry-points.extractor.js";
 import { ErrorCodesExtractor } from "../extractors/error-codes.extractor.js";
@@ -21,6 +20,8 @@ export const VALIJA_GUIDE_SETTINGS: GuideSettings = {
     "Desktop app",
   ],
   referenceKinds: ["cli", "mcp", "prompt", "ipc", "err"],
+  entryPointSurfaces: ["CLI", "Desktop"],
+  regenerateCommand: "npm run docs",
 };
 
 /**

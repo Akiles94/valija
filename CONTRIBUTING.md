@@ -39,7 +39,8 @@ npm run context:check  # fail if .context/ (agent docs) points at a file or symb
 ## How to add or update a flow
 
 The developer guide in [`docs/guide/`](docs/guide/README.md) is **generated** by
-`tools/living-docs` from the code and from hand-written flow sources in
+[living-docs](https://github.com/Akiles94/living-docs), driven by Valija's adapter in
+`tools/living-docs/valija/`, from the code and from hand-written flow sources in
 [`docs/flows/`](docs/flows/README.md). Never edit `docs/guide/` by hand: edit the code or a flow
 source, then run `npm run docs` and commit both.
 

@@ -1,8 +1,8 @@
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { scanTypeScript } from "living-docs";
 import { describe, expect, it } from "vitest";
-import { scanTypeScript } from "../../core/infra/typescript-scanner.js";
 import { createValijaExtractors } from "./valija-guide.js";
 
 const repoRoot = join(import.meta.dirname, "../../../..");

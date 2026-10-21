@@ -1,5 +1,5 @@
+import type { SourceFile } from "living-docs";
 import { buildProgram } from "../../../../src/delivery/cli/build-program.js";
-import type { SourceFile } from "../../core/infra/typescript-exports-extractor.js";
 import { type CallableIndex, reachContainerKeys } from "../services/use-case-reach.js";
 import { createInertContainer } from "./inert-container.js";
 import { assertSameNames, segmentByMarker } from "./segments.js";

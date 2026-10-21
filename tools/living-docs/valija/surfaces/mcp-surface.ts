@@ -1,7 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import type { SourceFile } from "living-docs";
 import { buildMcpServer } from "../../../../src/delivery/mcp/server.js";
-import type { SourceFile } from "../../core/infra/typescript-exports-extractor.js";
 import { type CallableIndex, reachContainerKeys } from "../services/use-case-reach.js";
 import { createInertContainer } from "./inert-container.js";
 import { assertSameNames, segmentByMarker } from "./segments.js";

@@ -1,4 +1,4 @@
-import type { SourceFile } from "../../core/infra/typescript-exports-extractor.js";
+import type { SourceFile } from "living-docs";
 
 /** A function whose body may call use cases: a same-file helper or a `src/delivery` export. */
 export interface Callable {

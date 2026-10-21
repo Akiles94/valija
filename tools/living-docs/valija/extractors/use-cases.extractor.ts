@@ -1,11 +1,11 @@
+import type { SourceFile } from "living-docs";
 import {
+  createCatalogue,
   createExtractedFacts,
   type ExtractedFacts,
   type Extractor,
-} from "../../core/application/ports/extractor.js";
-import { SYMBOL_ROW_KIND } from "../../core/domain/services/guide-assembly.js";
-import { createCatalogue } from "../../core/domain/values/catalogue.js";
-import type { SourceFile } from "../../core/infra/typescript-exports-extractor.js";
+  SYMBOL_ROW_KIND,
+} from "living-docs";
 
 /** A use-case class: one actor intent, one entry point (CONTRIBUTING). */
 export interface UseCaseInfo {

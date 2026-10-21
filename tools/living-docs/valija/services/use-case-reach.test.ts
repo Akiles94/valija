@@ -1,6 +1,6 @@
+import type { SourceFile } from "living-docs";
+import { scanTypeScript } from "living-docs";
 import { describe, expect, it } from "vitest";
-import type { SourceFile } from "../../core/infra/typescript-exports-extractor.js";
-import { scanTypeScript } from "../../core/infra/typescript-scanner.js";
 import { indexCallables, reachContainerKeys, readContainerUseCases } from "./use-case-reach.js";
 
 const file = (path: string, text: string): SourceFile => {

@@ -1,5 +1,5 @@
-import { createFinding, type Finding } from "../../core/domain/values/finding.js";
-import type { SourceFile } from "../../core/infra/typescript-exports-extractor.js";
+import type { SourceFile } from "living-docs";
+import { createFinding, type Finding } from "living-docs";
 import { type CallableIndex, reachContainerKeys } from "../services/use-case-reach.js";
 
 /** Where the closed IPC surface is declared. */

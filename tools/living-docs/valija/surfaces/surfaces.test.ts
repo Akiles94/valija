@@ -1,6 +1,6 @@
 import { join } from "node:path";
+import { TypeScriptExportsExtractor } from "living-docs";
 import { describe, expect, it } from "vitest";
-import { TypeScriptExportsExtractor } from "../../core/infra/typescript-exports-extractor.js";
 import { indexCallables } from "../services/use-case-reach.js";
 import { readCliCommands } from "./cli-surface.js";
 import { readIpcChannels } from "./ipc-surface.js";

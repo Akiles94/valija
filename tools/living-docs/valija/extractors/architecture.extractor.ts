@@ -1,14 +1,15 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join, posix } from "node:path";
+import type { SourceFile } from "living-docs";
 import {
+  byCodeUnit,
+  createCatalogue,
   createExtractedFacts,
+  createGraph,
   type ExtractedFacts,
   type Extractor,
-} from "../../core/application/ports/extractor.js";
-import { byCodeUnit } from "../../core/domain/result.js";
-import { createCatalogue } from "../../core/domain/values/catalogue.js";
-import { createGraph, type GraphEdge } from "../../core/domain/values/graph.js";
-import type { SourceFile } from "../../core/infra/typescript-exports-extractor.js";
+  type GraphEdge,
+} from "living-docs";
 import { findUseCases } from "./use-cases.extractor.js";
 
 const LAYERS = ["domain", "application", "infra"] as const;

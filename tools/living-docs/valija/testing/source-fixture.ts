@@ -1,5 +1,5 @@
-import type { SourceFile } from "../../core/infra/typescript-exports-extractor.js";
-import { scanTypeScript } from "../../core/infra/typescript-scanner.js";
+import type { SourceFile } from "living-docs";
+import { scanTypeScript } from "living-docs";
 
 /** A scanned in-memory source file for extractor tests (no fixture files on disk, P-D17). */
 export function sourceFile(path: string, text: string): SourceFile {

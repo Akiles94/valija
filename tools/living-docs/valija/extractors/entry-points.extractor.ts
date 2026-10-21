@@ -1,11 +1,13 @@
+import type { SourceFile } from "living-docs";
 import {
+  type Cell,
+  createCatalogue,
   createExtractedFacts,
   type ExtractedFacts,
   type Extractor,
-} from "../../core/application/ports/extractor.js";
-import { SYMBOL_ROW_KIND } from "../../core/domain/services/guide-assembly.js";
-import { type Cell, createCatalogue, itemAnchor } from "../../core/domain/values/catalogue.js";
-import type { SourceFile } from "../../core/infra/typescript-exports-extractor.js";
+  itemAnchor,
+  SYMBOL_ROW_KIND,
+} from "living-docs";
 import { type ParityDeclaration, pairSurfaces } from "../services/surface-parity.js";
 import { indexCallables, readContainerUseCases } from "../services/use-case-reach.js";
 import { BUILD_PROGRAM_FILE, readCliCommands } from "../surfaces/cli-surface.js";

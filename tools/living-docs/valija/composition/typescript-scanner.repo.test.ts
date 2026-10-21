@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
+import { scanTypeScript } from "living-docs";
 import { describe, expect, it } from "vitest";
-import { scanTypeScript } from "./typescript-scanner.js";
 
 const repoRoot = join(import.meta.dirname, "../../../..");
 

@@ -8,7 +8,7 @@ Purpose: Local-first, end-to-end encrypted (SQLCipher + Argon2id) AI-context vau
 - `src/delivery` — composition root `src/delivery/container.ts:buildContainer()`; CLI `src/delivery/cli/build-program.ts:buildProgram()` (bin `src/delivery/cli/program.ts`); MCP `src/delivery/mcp/server.ts:buildMcpServer()`.
 - `src/testing` — golden-vault fixture and fakes for the format-conformance test (`src/testing/golden-vault.ts`).
 - `desktop/` — Electron app, own `desktop/package.json`; main `desktop/src/main/index.ts`, IPC `desktop/src/main/ipc/register-handlers.ts:registerHandlers()`, preload `desktop/src/preload/index.ts`, renderer `desktop/src/renderer/app.tsx`.
-- `tools/living-docs` — generator/checker for `docs/guide/` from code + `docs/flows/`; entry `tools/living-docs/valija/composition/main.ts`, config `tools/living-docs/valija/composition/valija-guide.ts`.
+- `tools/living-docs` — Valija's adapter for the `living-docs` package (devDependency; generic core lives there), which generates/checks `docs/guide/` from code + `docs/flows/`; entry `tools/living-docs/valija/composition/main.ts`, config `tools/living-docs/valija/composition/valija-guide.ts`.
 - `advances/` — per-advance refined/plan/review records (decision log).
 ## Data stores
 | Store | Where | Holds |
