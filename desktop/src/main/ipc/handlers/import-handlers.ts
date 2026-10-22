@@ -1,4 +1,5 @@
 import type { Container } from "../../../../../src/delivery/container.js";
+import type { ImportConversationsOutput } from "../../../../../src/importers/application/use-cases/import-conversations.use-case.js";
 import { importerErr } from "../../../../../src/importers/domain/errors.js";
 import { DomainError, err, type Result } from "../../../../../src/shared/domain/result.js";
 import type {
@@ -134,6 +135,7 @@ export function createImportHandlers(getContainer: () => Container, filePicker: 
           ...(req.since === undefined ? {} : { since: req.since }),
           ...(req.all === undefined ? {} : { all: req.all }),
           ...(req.from === undefined ? {} : { from: req.from }),
+          ...(req.allowSecrets === true ? { allowSecrets: true } : {}),
         }),
       );
       return toIpcResult(result, toOutcome);
@@ -141,16 +143,36 @@ export function createImportHandlers(getContainer: () => Container, filePicker: 
   };
 }
 
-function toOutcome(v: {
-  imported: number;
-  conversations: number;
-  skipped: number;
-  failed: number;
-  failures: { conversation: string; reason: string }[];
-}): ImportOutcomeResponse {
-  return v;
+/** Field by field, never a spread: a future domain field cannot cross IPC by accident (§10.5). */
+function toOutcome(v: ImportConversationsOutput): ImportOutcomeResponse {
+  return {
+    imported: v.imported,
+    conversations: v.conversations,
+    skipped: v.skipped,
+    failed: v.failed,
+    failures: v.failures.map((f) => ({ conversation: f.conversation, reason: f.reason })),
+    refused: v.refused,
+    blockingChunks: v.blockingChunks.map((c) => ({
+      conversationIndex: c.conversationIndex,
+      title: c.title,
+      part: c.part,
+      findings: c.findings.map((f) => ({
+        kind: f.kind,
+        firstLine: f.firstLine,
+        lastLine: f.lastLine,
+      })),
+    })),
+  };
 }
 
 function emptyOutcome(): ImportOutcomeResponse {
-  return { imported: 0, conversations: 0, skipped: 0, failed: 0, failures: [] };
+  return {
+    imported: 0,
+    conversations: 0,
+    skipped: 0,
+    failed: 0,
+    failures: [],
+    refused: false,
+    blockingChunks: [],
+  };
 }

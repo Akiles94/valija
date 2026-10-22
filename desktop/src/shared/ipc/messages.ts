@@ -128,6 +128,8 @@ export interface ContentEditRequest {
   content?: string;
   tags?: string[];
   type?: string;
+  /** A human's Save anyway: store content that looks like it contains a secret (SECRET-WARN). */
+  allowSecrets?: boolean;
 }
 
 /** No content crosses back — the renderer reloads `content:show`. */
@@ -220,11 +222,26 @@ export interface ImportPreviewRequest extends ImportSelection {
 export interface ImportRunRequest extends ImportSelection {
   handle: string;
   projectName: string;
+  /** A human's Import anyway: import chunks that look like they contain secrets (SECRET-WARN). */
+  allowSecrets?: boolean;
 }
 /** A conversation that could not be imported, and why. */
 export interface ImportFailureMessage {
   conversation: string;
   reason: string;
+}
+/** Kind + lines only: there is no field that could carry matched text (§10.1). `kind` is a SecretKind id (F7). */
+export interface SecretFindingMessage {
+  kind: string;
+  firstLine: number;
+  lastLine: number;
+}
+/** One chunk that blocks an import. `title` is null when the title itself looks like a secret. */
+export interface BlockingChunkMessage {
+  conversationIndex: number;
+  title: string | null;
+  part: number;
+  findings: SecretFindingMessage[];
 }
 /** Counts of imported, skipped and failed conversations, with the failures. */
 export interface ImportOutcomeResponse {
@@ -233,6 +250,10 @@ export interface ImportOutcomeResponse {
   skipped: number;
   failed: number;
   failures: ImportFailureMessage[];
+  /** Preview: a real import would be refused. Run: it was refused and nothing was written. */
+  refused: boolean;
+  /** The chunks that block the import; crosses as data, never inside an error message. */
+  blockingChunks: BlockingChunkMessage[];
 }
 
 /** One AI tool: whether the MCP server is configured in it, and for which vault. */

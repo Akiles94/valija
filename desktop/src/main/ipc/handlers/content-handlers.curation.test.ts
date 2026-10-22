@@ -7,6 +7,7 @@ import { SetItemArchived } from "../../../../../src/context/application/use-case
 import { SetItemPinned } from "../../../../../src/context/application/use-cases/set-item-pinned.use-case.js";
 import { ShowProject } from "../../../../../src/context/application/use-cases/show-project.use-case.js";
 import type { Container } from "../../../../../src/delivery/container.js";
+import { ONE_PER_TIER, PLANTED } from "../../../../../src/testing/fake-secrets.js";
 import { makeUnlockedVault, SeqIds } from "../../../../../src/testing/test-vault.js";
 import type { ClipboardPort } from "../../application/ports/clipboard.js";
 import type { FilePicker } from "../../application/ports/file-picker.js";
@@ -111,5 +112,36 @@ describe("content:setPinned / content:setArchived", () => {
     const request = { id, ...fields };
     expect(SCHEMAS["content:edit"].safeParse(request).success).toBe(true);
     expect(handlers["content:edit"](request)).toEqual({ ok: false, error: { code } });
+  });
+});
+
+describe("content:edit — possible secrets (SECRET-WARN)", () => {
+  const secretContent = `deploy notes\nkey ${PLANTED.awsAccessKey}`;
+
+  it("refuses with the code only, and nothing in the reply carries the secret", () => {
+    const id = saved("an untouched quokka note");
+    const r = handlers["content:edit"]({ id, content: secretContent });
+    expect(r).toEqual({ ok: false, error: { code: "POSSIBLE_SECRET" } });
+    for (const secret of ONE_PER_TIER) expect(JSON.stringify(r)).not.toContain(secret);
+    expect(shown().find((i) => i.id === id)?.content).toBe("an untouched quokka note");
+  });
+
+  it("allowSecrets (Save anyway) stores it", () => {
+    const id = saved("to be replaced");
+    const request = { id, content: secretContent, allowSecrets: true };
+    const parsed = SCHEMAS["content:edit"].safeParse(request);
+    expect(parsed.success && parsed.data).toEqual(request);
+    expect(handlers["content:edit"](request)).toEqual({
+      ok: true,
+      value: { changed: true, changedFields: ["content"] },
+    });
+  });
+
+  it("main refuses on its own: only allowSecrets: true overrides, whatever the renderer did", () => {
+    const id = saved("raw call target");
+    expect(handlers["content:edit"]({ id, content: secretContent, allowSecrets: false })).toEqual({
+      ok: false,
+      error: { code: "POSSIBLE_SECRET" },
+    });
   });
 });

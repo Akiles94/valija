@@ -142,6 +142,31 @@ describe("content:edit schema", () => {
   });
 });
 
+describe("allowSecrets — a strict, optional boolean on two schemas only (SECRET-WARN)", () => {
+  const importRequest = { handle: "fh-1", projectName: "p", all: true };
+
+  it("content:edit accepts allowSecrets: true and keeps it (F6: dropping it would loop Save anyway)", () => {
+    const parsed = SCHEMAS["content:edit"].safeParse({ id: "01SEQ000001", allowSecrets: true });
+    expect(parsed.success && parsed.data).toEqual({ id: "01SEQ000001", allowSecrets: true });
+    expect(
+      SCHEMAS["content:edit"].safeParse({ id: "01SEQ000001", allowSecrets: "true" }).success,
+    ).toBe(false);
+  });
+
+  it("import:run accepts allowSecrets: true and rejects a string", () => {
+    const parsed = SCHEMAS["import:run"].safeParse({ ...importRequest, allowSecrets: true });
+    expect(parsed.success && parsed.data).toEqual({ ...importRequest, allowSecrets: true });
+    expect(
+      SCHEMAS["import:run"].safeParse({ ...importRequest, allowSecrets: "true" }).success,
+    ).toBe(false);
+  });
+
+  it("import:preview strips it: Preview never overrides", () => {
+    const parsed = SCHEMAS["import:preview"].safeParse({ ...importRequest, allowSecrets: true });
+    expect(parsed.success && parsed.data).toEqual(importRequest);
+  });
+});
+
 describe("bindings channel schemas", () => {
   it("bindings:link takes a handle, a project name and a closed `by`", () => {
     const schema = SCHEMAS["bindings:link"];

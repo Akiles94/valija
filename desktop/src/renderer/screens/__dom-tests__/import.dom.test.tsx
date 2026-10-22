@@ -53,6 +53,8 @@ const OUTCOME: ImportOutcomeResponse = {
   skipped: 0,
   failed: 0,
   failures: [],
+  refused: false,
+  blockingChunks: [],
 };
 
 function fakeBridge(overrides: {
@@ -277,6 +279,8 @@ describe("ImportScreen (DOM)", () => {
       skipped: 0,
       failed: 1,
       failures: [{ conversation: "Broken chat", reason: "bad shape" }],
+      refused: false,
+      blockingChunks: [],
     };
     const bridge = fakeBridge({
       run: vi.fn(

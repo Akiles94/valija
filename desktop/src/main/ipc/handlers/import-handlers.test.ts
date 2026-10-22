@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { GetContextPack } from "../../../../../src/context/application/use-cases/get-context-pack.use-case.js";
 import { ImportItems } from "../../../../../src/context/application/use-cases/import-items.use-case.js";
+import { ShowProject } from "../../../../../src/context/application/use-cases/show-project.use-case.js";
 import { createContextItem } from "../../../../../src/context/domain/entities/context-item.js";
 import { parseContent } from "../../../../../src/context/domain/values/content.js";
 import { parseProjectName } from "../../../../../src/context/domain/values/project-name.js";
@@ -12,6 +13,7 @@ import { ImportConversations } from "../../../../../src/importers/application/us
 import { FileExportReader } from "../../../../../src/importers/infra/file-export-reader.js";
 import { parserRegistry } from "../../../../../src/importers/infra/parser-registry.js";
 import { ok } from "../../../../../src/shared/domain/result.js";
+import { ONE_PER_TIER, PLANTED } from "../../../../../src/testing/fake-secrets.js";
 import { makeUnlockedVault } from "../../../../../src/testing/test-vault.js";
 import type { FilePicker } from "../../application/ports/file-picker.js";
 import { createImportHandlers, IMPORT_BUSY_RETRY_ATTEMPTS } from "./import-handlers.js";
@@ -287,7 +289,15 @@ describe("import-handlers", () => {
           if (calls <= IMPORT_BUSY_RETRY_ATTEMPTS) {
             throw Object.assign(new Error("database is locked"), { code: "SQLITE_BUSY" });
           }
-          return ok({ imported: 1, conversations: 1, skipped: 0, failed: 0, failures: [] });
+          return ok({
+            imported: 1,
+            conversations: 1,
+            skipped: 0,
+            failed: 0,
+            failures: [],
+            refused: false,
+            blockingChunks: [],
+          });
         }),
       },
       // biome-ignore lint/suspicious/noExplicitAny: only importConversations is exercised here
@@ -377,5 +387,156 @@ describe("import-handlers", () => {
     expect(container.importConversations.execute).toHaveBeenCalledTimes(1);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe("STORAGE_ERROR");
+  });
+});
+
+/** Three conversations: #2 carries an AWS key on line 5, #3 a credential assignment on line 3. */
+function secretGenericExport(): string {
+  const convo = (n: number, title: string, user: string, assistant: string) => ({
+    id: `conv-${n}`,
+    title,
+    createdAt: `2024-05-0${n}T09:00:00Z`,
+    messages: [
+      { role: "user", content: user },
+      { role: "assistant", content: assistant },
+    ],
+  });
+  return JSON.stringify({
+    valija_import_version: 1,
+    conversations: [
+      convo(1, "Kickoff notes", "Plan the sprint.", "Here is a plan."),
+      convo(
+        2,
+        "Deploy debugging",
+        "The deploy fails.",
+        `Your key is ${PLANTED.awsAccessKey} there.`,
+      ),
+      convo(
+        3,
+        "Database setup",
+        PLANTED.credentialAssignment.line,
+        `Value ${PLANTED.highEntropy}.`,
+      ),
+    ],
+  });
+}
+
+describe("import-handlers — possible secrets (SECRET-WARN)", () => {
+  const filePath = join(tmp, "secret-export.json");
+  writeFileSync(filePath, secretGenericExport(), "utf8");
+  const request = (projectName: string) => ({
+    handle: "fh-secret",
+    projectName,
+    all: true,
+    from: "generic" as const,
+  });
+  const setup = () => {
+    const vault = makeUnlockedVault();
+    const handlers = createImportHandlers(
+      () => realImportContainer(vault),
+      fakeFilePicker({ "fh-secret": filePath }),
+    );
+    return { vault, handlers };
+  };
+  const EXPECTED_BLOCKING = [
+    {
+      conversationIndex: 2,
+      title: "Deploy debugging",
+      part: 1,
+      findings: [{ kind: "aws-access-key", firstLine: 5, lastLine: 5 }],
+    },
+    {
+      conversationIndex: 3,
+      title: "Database setup",
+      part: 1,
+      findings: [
+        { kind: "credential-assignment", firstLine: 3, lastLine: 3 },
+        { kind: "high-entropy-string", firstLine: 5, lastLine: 5 },
+      ],
+    },
+  ];
+  const leaksNothing = (value: unknown) => {
+    const json = JSON.stringify(value);
+    for (const secret of ONE_PER_TIER) expect(json).not.toContain(secret);
+  };
+
+  it("import:preview reports refused and the blocking list", () => {
+    const { handlers } = setup();
+    const result = handlers["import:preview"](request("p"));
+    expect(result.ok && result.value.refused).toBe(true);
+    if (result.ok) expect(result.value.blockingChunks).toEqual(EXPECTED_BLOCKING);
+    leaksNothing(result);
+  });
+
+  it("import:run is refused whole: nothing written, no project", async () => {
+    const { vault, handlers } = setup();
+    const result = await handlers["import:run"](request("refused"));
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        imported: 0,
+        conversations: 0,
+        skipped: 0,
+        failed: 0,
+        failures: [],
+        refused: true,
+        blockingChunks: EXPECTED_BLOCKING,
+      },
+    });
+    const shown = new ShowProject(vault.sessions).execute({ project: "refused" });
+    expect(!shown.ok && shown.error.code).toBe("PROJECT_NOT_FOUND");
+    leaksNothing(result);
+  });
+
+  it("the preview list equals the run list", async () => {
+    const { handlers } = setup();
+    const preview = handlers["import:preview"](request("same"));
+    const run = await handlers["import:run"](request("same"));
+    expect(preview.ok && run.ok).toBe(true);
+    if (preview.ok && run.ok)
+      expect(run.value.blockingChunks).toEqual(preview.value.blockingChunks);
+  });
+
+  it("import:run with allowSecrets imports every chunk", async () => {
+    const { handlers } = setup();
+    const result = await handlers["import:run"]({ ...request("allowed"), allowSecrets: true });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).toMatchObject({ imported: 3, refused: false, blockingChunks: [] });
+    }
+    leaksNothing(result);
+  });
+
+  it("the outcome is mapped field by field: an unknown domain field never crosses", async () => {
+    const container = {
+      importConversations: {
+        execute: vi.fn(() =>
+          ok({
+            mode: "import",
+            source: "generic",
+            imported: 0,
+            conversations: 0,
+            skipped: 0,
+            failed: 0,
+            failures: [],
+            refused: true,
+            blockingChunks: [
+              {
+                conversationIndex: 1,
+                title: null,
+                part: 1,
+                findings: [{ kind: "jwt", firstLine: 1, lastLine: 1, extra: "x" }],
+                extra: "x",
+              },
+            ],
+            extra: "x",
+          }),
+        ),
+      },
+      // biome-ignore lint/suspicious/noExplicitAny: only importConversations is exercised here
+    } as any as Container;
+    const handlers = createImportHandlers(() => container, fakeFilePicker({ "fh-x": "/x" }));
+    const result = await handlers["import:run"]({ handle: "fh-x", projectName: "p" });
+    expect(JSON.stringify(result)).not.toContain("extra");
   });
 });
