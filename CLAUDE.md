@@ -100,6 +100,7 @@ signal that lifts the implementation gate, so treat it as Oscar's, not yours.
   not a scoping choice — the refiner and planner must cover both, and the reviewer fails it otherwise.
 - **The MCP surface is deliberately narrower** (SPEC §7: five tools; no pinning, no hard removal by
   a model). Parity does not extend to it.
+- **The SDK (`valija/sdk`) is, like MCP, a deliberately narrower surface outside the CLI↔desktop parity rule.**
 - Known gap, owed to a future advance: vault relocation exists only in the desktop app (no
   `valija relocate` yet).
 
