@@ -7,6 +7,8 @@ import {
 import type {
   ContentCopyRequest,
   ContentCurationResponse,
+  ContentEditRequest,
+  ContentEditResponse,
   ContentExportRequest,
   ContentExportResponse,
   ContentPackRequest,
@@ -75,6 +77,12 @@ export function createContentHandlers(
       toIpcResult(
         getContainer().setItemArchived.execute({ item: req.id, archived: req.archived }),
         (v): ContentCurationResponse => ({ changed: v.changed }),
+      ),
+
+    "content:edit": ({ id, ...fields }: ContentEditRequest) =>
+      toIpcResult(
+        getContainer().editItem.execute({ item: id, ...fields }),
+        (v): ContentEditResponse => ({ changed: v.changed, changedFields: [...v.changedFields] }),
       ),
   };
 }

@@ -4,8 +4,8 @@ import { type ItemAction, itemActionsFor, performItemAction } from "./item-actio
 
 describe("itemActionsFor", () => {
   it.each([
-    ["a live item", { type: "decision", pinned: false }, ["pin", "archive"]],
-    ["a pinned item", { type: "decision", pinned: true }, ["unpin", "archive"]],
+    ["a live item", { type: "decision", pinned: false }, ["pin", "edit", "archive"]],
+    ["a pinned item", { type: "decision", pinned: true }, ["unpin", "edit", "archive"]],
     ["an archived item", { type: "decision", pinned: false, archived: true }, ["unarchive"]],
     ["an archived, pinned item", { type: "fact", pinned: true, archived: true }, ["unarchive"]],
     ["an imported item", { type: "imported", pinned: false }, ["archive"]],

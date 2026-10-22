@@ -2,6 +2,8 @@ import type {
   AppPreferencesMessage,
   ContentCopyRequest,
   ContentCurationResponse,
+  ContentEditRequest,
+  ContentEditResponse,
   ContentExportRequest,
   ContentExportResponse,
   ContentPackRequest,
@@ -70,6 +72,7 @@ export interface ValijaBridge {
     copy(req: ContentCopyRequest): Promise<void>;
     setPinned(req: ContentSetPinnedRequest): Promise<IpcResult<ContentCurationResponse>>;
     setArchived(req: ContentSetArchivedRequest): Promise<IpcResult<ContentCurationResponse>>;
+    edit(req: ContentEditRequest): Promise<IpcResult<ContentEditResponse>>;
   };
   sync: {
     status(): Promise<SyncStatusResponse>;

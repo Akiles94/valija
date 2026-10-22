@@ -52,6 +52,10 @@ function fakeBridge(items: ContextItemMessage[]): ValijaBridge {
       copy: vi.fn(),
       setPinned: vi.fn(changed),
       setArchived: vi.fn(changed),
+      edit: vi.fn(
+        (): Promise<IpcResult<{ changed: boolean; changedFields: string[] }>> =>
+          Promise.resolve({ ok: true, value: { changed: true, changedFields: ["content"] } }),
+      ),
     },
     sync: { status: vi.fn() },
     diagnostics: { run: vi.fn(), copyReport: vi.fn() },
@@ -291,8 +295,8 @@ describe("ProjectScreen curation (DOM)", () => {
       [...(screen.getByText(text).closest("li")?.querySelectorAll(".item-action") ?? [])].map(
         (b) => b.textContent,
       );
-    expect(actionsOf("live item")).toEqual(["Pin", "Archive"]);
-    expect(actionsOf("pinned item")).toEqual(["Unpin", "Archive"]);
+    expect(actionsOf("live item")).toEqual(["Pin", "Edit", "Archive"]);
+    expect(actionsOf("pinned item")).toEqual(["Unpin", "Edit", "Archive"]);
     expect(actionsOf("imported item")).toEqual(["Archive"]);
     expect(container.querySelectorAll(".item-row")).toHaveLength(3);
   });
@@ -371,5 +375,93 @@ describe("ProjectScreen curation (DOM)", () => {
     await screen.findByText("contenido");
     expect(button("Fijar")).toBeTruthy();
     expect(screen.getByRole("checkbox", { name: "Mostrar archivados" })).toBeTruthy();
+  });
+});
+
+describe("ProjectScreen edit dialog (DOM)", () => {
+  const editable = () =>
+    item({ id: "e1", content: "old text", tags: ["db", "crypto"], type: "decision" });
+
+  async function openDialog(bridge: ValijaBridge) {
+    renderScreen(bridge);
+    await screen.findByText("old text");
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    return screen.getByRole("dialog", { name: "Edit item" });
+  }
+
+  it("opens a modal pre-filled with the item's content, tags and type", async () => {
+    const dialog = await openDialog(fakeBridge([editable()]));
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+    expect((screen.getByLabelText("Content") as HTMLTextAreaElement).value).toBe("old text");
+    expect((screen.getByLabelText(/^Tags/) as HTMLInputElement).value).toBe("db, crypto");
+    expect((screen.getByLabelText("Type") as HTMLSelectElement).value).toBe("decision");
+  });
+
+  it("saves only the changed fields, closes, and reloads", async () => {
+    const bridge = fakeBridge([editable()]);
+    await openDialog(bridge);
+    fireEvent.change(screen.getByLabelText("Content"), { target: { value: "new text" } });
+    fireEvent.change(screen.getByLabelText(/^Tags/), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(bridge.content.edit).toHaveBeenCalledWith({ id: "e1", content: "new text", tags: [] });
+    await waitFor(() => expect(bridge.content.show).toHaveBeenCalledTimes(2));
+  });
+
+  it("closes without a call when nothing changed", async () => {
+    const bridge = fakeBridge([editable()]);
+    await openDialog(bridge);
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(bridge.content.edit).not.toHaveBeenCalled();
+  });
+
+  it("Escape and Cancel close without saving", async () => {
+    const bridge = fakeBridge([editable()]);
+    const dialog = await openDialog(bridge);
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(bridge.content.edit).not.toHaveBeenCalled();
+  });
+
+  it("keeps the dialog open with the user's text on a refused save", async () => {
+    const bridge = fakeBridge([editable()]);
+    vi.mocked(bridge.content.edit).mockResolvedValueOnce({
+      ok: false,
+      error: { code: "TOO_MANY_TAGS" },
+    });
+    await openDialog(bridge);
+    fireEvent.change(screen.getByLabelText(/^Tags/), {
+      target: { value: "a,b,c,d,e,f,g,h,i,j,k" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await screen.findByText("Too many tags on that item.");
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect((screen.getByLabelText(/^Tags/) as HTMLInputElement).value).toBe(
+      "a,b,c,d,e,f,g,h,i,j,k",
+    );
+  });
+
+  it("offers no Edit on archived or imported items", async () => {
+    const bridge = fakeBridge([
+      item({ id: "arc", content: "archived one", archived: true }),
+      item({ id: "imp", content: "imported one", type: "imported" }),
+    ]);
+    renderScreen(bridge);
+    await screen.findByText("imported one");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Show archived" }));
+    await screen.findByText("archived one");
+    expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
+  });
+
+  it("speaks Spanish when the app does", async () => {
+    renderScreen(fakeBridge([editable()]), { language: "es" });
+    await screen.findByText("old text");
+    fireEvent.click(screen.getByRole("button", { name: "Editar" }));
+    expect(screen.getByRole("dialog", { name: "Editar elemento" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Guardar" })).toBeTruthy();
   });
 });

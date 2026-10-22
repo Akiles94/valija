@@ -134,6 +134,14 @@ export const en = {
     archivedBadge: "Archived",
     archivedNotice: "Archived — hidden from packs and search.",
     undo: "Undo",
+    edit: "Edit",
+    editTitle: "Edit item",
+    editContent: "Content",
+    editTags: "Tags",
+    editTagsHint: "Separate tags with commas. Leave empty to remove them all.",
+    editType: "Type",
+    save: "Save",
+    cancel: "Cancel",
   },
 
   search: {

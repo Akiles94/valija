@@ -120,6 +120,20 @@ export interface ContentSetArchivedRequest {
   archived: boolean;
 }
 
+/** Only the fields that changed are sent; `tags: []` clears the tags (parity with `valija edit --tags ""`). */
+export interface ContentEditRequest {
+  id: string;
+  content?: string;
+  tags?: string[];
+  type?: string;
+}
+
+/** No content crosses back — the renderer reloads `content:show`. */
+export interface ContentEditResponse {
+  changed: boolean;
+  changedFields: string[];
+}
+
 /** Deliberately only `changed`: no content and no project cross back — the renderer reloads `content:show`. */
 export interface ContentCurationResponse {
   changed: boolean;

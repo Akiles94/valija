@@ -114,3 +114,24 @@ describe("curation channel schemas", () => {
     );
   });
 });
+
+describe("content:edit schema", () => {
+  const schema = SCHEMAS["content:edit"];
+
+  it("accepts an id with any subset of fields", () => {
+    expect(schema.safeParse({ id: "01SEQ000001" }).success).toBe(true);
+    expect(
+      schema.safeParse({ id: "01SEQ000001", content: "x", tags: [], type: "fact" }).success,
+    ).toBe(true);
+  });
+
+  it("rejects wrong types and oversized values", () => {
+    expect(schema.safeParse({}).success).toBe(false);
+    expect(schema.safeParse({ id: "01SEQ000001", tags: "a,b" }).success).toBe(false);
+    expect(schema.safeParse({ id: "01SEQ000001", content: "x".repeat(40_001) }).success).toBe(
+      false,
+    );
+    expect(schema.safeParse({ id: "01SEQ000001", tags: Array(11).fill("t") }).success).toBe(false);
+    expect(schema.safeParse({ id: "a".repeat(65) }).success).toBe(false);
+  });
+});

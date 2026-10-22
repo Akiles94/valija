@@ -3,6 +3,8 @@ import type {
   AppPreferencesMessage,
   ContentCopyRequest,
   ContentCurationResponse,
+  ContentEditRequest,
+  ContentEditResponse,
   ContentExportRequest,
   ContentExportResponse,
   ContentPackRequest,
@@ -86,6 +88,8 @@ contextBridge.exposeInMainWorld("valija", {
       ipcRenderer.invoke("content:setPinned", req),
     setArchived: (req: ContentSetArchivedRequest): Promise<IpcResult<ContentCurationResponse>> =>
       ipcRenderer.invoke("content:setArchived", req),
+    edit: (req: ContentEditRequest): Promise<IpcResult<ContentEditResponse>> =>
+      ipcRenderer.invoke("content:edit", req),
   },
   sync: {
     status: (): Promise<SyncStatusResponse> => ipcRenderer.invoke("sync:status"),

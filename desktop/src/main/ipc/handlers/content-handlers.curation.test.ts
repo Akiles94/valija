@@ -1,5 +1,6 @@
 import { rmSync } from "node:fs";
 import { afterAll, describe, expect, it } from "vitest";
+import { EditItem } from "../../../../../src/context/application/use-cases/edit-item.use-case.js";
 import { GetContextPack } from "../../../../../src/context/application/use-cases/get-context-pack.use-case.js";
 import { SaveContext } from "../../../../../src/context/application/use-cases/save-context.use-case.js";
 import { SetItemArchived } from "../../../../../src/context/application/use-cases/set-item-archived.use-case.js";
@@ -25,6 +26,7 @@ const container = {
   getContextPack: new GetContextPack(vault.sessions, vault.clock),
   setItemPinned: new SetItemPinned(vault.sessions, vault.clock),
   setItemArchived: new SetItemArchived(vault.sessions, vault.clock),
+  editItem: new EditItem(vault.sessions, vault.clock),
   // biome-ignore lint/suspicious/noExplicitAny: only the fields above are exercised
 } as any as Container;
 const filePicker: FilePicker = {
@@ -78,5 +80,22 @@ describe("content:setPinned / content:setArchived", () => {
   it("returns only the error code for an unknown id", () => {
     const r = handlers["content:setPinned"]({ id: "01NOSUCHITEM", pinned: true });
     expect(r).toEqual({ ok: false, error: { code: "ITEM_NOT_FOUND" } });
+  });
+
+  it("content:edit edits in place and returns only what changed", () => {
+    const id = saved("draft wording");
+    const r = handlers["content:edit"]({ id, content: "final wording", tags: ["final"] });
+    expect(r).toEqual({ ok: true, value: { changed: true, changedFields: ["content", "tags"] } });
+    const after = shown().find((i) => i.id === id);
+    expect(after).toMatchObject({ content: "final wording", tags: ["final"] });
+  });
+
+  it("content:edit returns only the error code on a refused edit", () => {
+    const id = saved("archived before edit");
+    handlers["content:setArchived"]({ id, archived: true });
+    expect(handlers["content:edit"]({ id, type: "fact" })).toEqual({
+      ok: false,
+      error: { code: "ITEM_ARCHIVED" },
+    });
   });
 });

@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
 import { ITEM_TYPES } from "../../../../src/context/domain/values/item-type.js";
 import { ItemCard } from "../components/item-card.js";
+import { ItemEditDialog } from "../components/item-edit-dialog.js";
 import type { ValijaBridge } from "../state/bridge.js";
 import { wireFocusRefresh } from "../state/focus-refresh.js";
 import { useErrorCopy, useT } from "../state/i18n-context.js";
-import { type ItemAction, itemActionsFor, performItemAction } from "../state/item-actions.js";
+import {
+  type CardAction,
+  type ItemAction,
+  itemActionsFor,
+  performItemAction,
+} from "../state/item-actions.js";
+import { draftFor, type EditDraft, editRequestFor } from "../state/item-edit.js";
 import { partitionPinnedItems } from "../state/pinned-partition.js";
 
 interface ItemRow {
@@ -50,6 +57,10 @@ export function ProjectScreen({
   const [notice, setNotice] = useState<string | null>(null);
   // Kept apart from `error`, which every reload clears — a refused action must outlive the reload it triggers.
   const [actionError, setActionError] = useState<string | null>(null);
+  // The item in the edit dialog, plus its save state — in memory only, like everything above.
+  const [editing, setEditing] = useState<ItemRow | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: bridge and errorCopy are stable across renders; project/typeFilter/showArchived/reloadToken are the real inputs
   useEffect(() => {
@@ -94,6 +105,36 @@ export function ProjectScreen({
     }
   }
 
+  function onCardAction(item: ItemRow, action: CardAction) {
+    if (action === "edit") {
+      setEditError(null);
+      setEditing(item);
+      return;
+    }
+    void runAction(item.id, action);
+  }
+
+  async function saveEdit(item: ItemRow, draft: EditDraft) {
+    const request = editRequestFor(item.id, item, draft);
+    if (request === null) {
+      setEditing(null);
+      return;
+    }
+    setSaving(true);
+    try {
+      const result = await bridge.content.edit(request);
+      if (!result.ok) {
+        setEditError(errorCopy(result.error.code));
+        return;
+      }
+      setEditing(null);
+      setNotice(null);
+      setReloadToken((n) => n + 1);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function itemList(rows: ItemRow[]) {
     return (
       <ul className="item-list">
@@ -107,7 +148,7 @@ export function ProjectScreen({
             createdAt={item.createdAt}
             archived={item.archived === true}
             actions={itemActionsFor(item)}
-            onAction={(action) => runAction(item.id, action)}
+            onAction={(action) => onCardAction(item, action)}
             busy={busyId === item.id}
           />
         ))}
@@ -207,6 +248,15 @@ export function ProjectScreen({
           <h2 className="item-section-title">{t("project.archivedSection")}</h2>
           {itemList(archived)}
         </>
+      )}
+      {editing !== null && (
+        <ItemEditDialog
+          initial={draftFor(editing)}
+          error={editError}
+          saving={saving}
+          onSave={(draft) => void saveEdit(editing, draft)}
+          onCancel={() => setEditing(null)}
+        />
       )}
     </div>
   );

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { formatDate } from "../../shared/i18n/format.js";
 import { isLongContent } from "../content/long-content.js";
 import { useLanguage, useT } from "../state/i18n-context.js";
-import type { ItemAction } from "../state/item-actions.js";
+import type { CardAction } from "../state/item-actions.js";
 import { MarkdownContent } from "./markdown-content.js";
 
 /**
@@ -37,8 +37,8 @@ export function ItemCard({
   pinned: boolean;
   createdAt: string;
   archived?: boolean;
-  actions?: ItemAction[];
-  onAction?: (action: ItemAction) => void;
+  actions?: CardAction[];
+  onAction?: (action: CardAction) => void;
   busy?: boolean;
 }) {
   const t = useT();

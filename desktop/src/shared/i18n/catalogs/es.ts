@@ -135,6 +135,14 @@ export const es: Catalog = {
     archivedBadge: "Archivado",
     archivedNotice: "Archivado: oculto en los paquetes y la búsqueda.",
     undo: "Deshacer",
+    edit: "Editar",
+    editTitle: "Editar elemento",
+    editContent: "Contenido",
+    editTags: "Etiquetas",
+    editTagsHint: "Separa las etiquetas con comas. Déjalo vacío para quitarlas todas.",
+    editType: "Tipo",
+    save: "Guardar",
+    cancel: "Cancelar",
   },
 
   search: {

@@ -41,6 +41,13 @@ export const SCHEMAS = {
   "content:copy": z.object({ text: z.string() }),
   "content:setPinned": z.object({ id: z.string().max(64), pinned: z.boolean() }),
   "content:setArchived": z.object({ id: z.string().max(64), archived: z.boolean() }),
+  // Only length caps here; EditItem's parsers own the real grammar (32 KB content, tag syntax, types).
+  "content:edit": z.object({
+    id: z.string().max(64),
+    content: z.string().max(40_000).optional(),
+    tags: z.array(z.string().max(32)).max(10).optional(),
+    type: z.string().max(32).optional(),
+  }),
   "sync:status": z.void(),
   "diagnostics:run": z.void(),
   "diagnostics:copyReport": z.object({

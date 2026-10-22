@@ -1,4 +1,5 @@
 Approved: Oscar 2026-10-17 — all Decisions to confirm (P-1 … P-10) at their recommended defaults; class names stay suffix-free (`SetItemPinned`), matching the repo.
+Approved (Amendment A1): Oscar 2026-10-17 — edit form in a modal dialog, not inline.
 
 # CURATION — Pin, archive, edit and supersede saved context · Implementation Plan
 
@@ -1294,8 +1295,7 @@ use-case or MCP change: `EditItem` already exists and is the only write path.
 | `desktop/src/preload/index.ts`, `renderer/state/bridge.ts` | + `edit` bridge method | +4 |
 | `desktop/src/renderer/state/item-edit.ts` | new: `editableItem`, `parseTagsInput`, `editRequestFor` (pure) | ~35 |
 | `desktop/src/renderer/state/item-actions.ts` | + `"edit"` action (live, non-imported items only) | +4 |
-| `desktop/src/renderer/components/item-edit-form.tsx` | new: inline form — textarea, tags input, type select, Save / Cancel | ~70 |
-| `desktop/src/renderer/components/item-card.tsx` | render the form in place of the content while editing | +12 |
+| `desktop/src/renderer/components/item-edit-dialog.tsx` | new: modal dialog — textarea, tags input, type select, Save / Cancel | ~80 |
 | `desktop/src/renderer/screens/project.tsx` | `editingId` state; save → `content:edit` → reload | +15 |
 | `desktop/src/shared/i18n/catalogs/en.ts`, `es.ts` | + `project.edit/save/cancel/editContent/editTags/editType/editTagsHint` | +14 |
 | tests: schemas, handlers (real vault), `item-edit.test.ts`, `item-actions.test.ts`, DOM | | ~150 (test) |
@@ -1304,8 +1304,9 @@ use-case or MCP change: `EditItem` already exists and is the only write path.
 
 - `itemActionsFor` adds `"edit"` for live, non-imported items (archived → still only Unarchive;
   imported → still only Archive), mirroring `applyEdit`'s refusals.
-- Clicking **Edit** swaps the card's content for the form, pre-filled with the current content,
-  tags (comma-separated) and type. One card edits at a time.
+- Clicking **Edit** opens a modal dialog (Oscar's call at A1 approval), pre-filled with the current
+  content, tags (comma-separated) and type. Escape or Cancel closes it without saving; focus returns
+  to the Edit button. One item edits at a time.
 - **Save** sends `content:edit { id, content?, tags?, type? }` with only the fields that differ from
   the original (`editRequestFor`). Nothing changed → no call, form closes. `--tags ""` parity: an
   emptied tags field clears the tags.
