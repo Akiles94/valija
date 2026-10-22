@@ -1,8 +1,9 @@
 # PROJECT-DETECT — Slice 0 spike: how each client tells a server where the work is (D-C)
 
 **Status:** sections 1 and 4 are verified in this container; section 2 is **unverified** until Oscar
-runs the probe in section 3 (P-1 (a): Slices 1–8 proceed on these assumptions; the rows are turned
-from `ASSUMED` into `OBSERVED` before `change-reviewer` runs).
+runs the probe in section 3 (P-1 (a): Slices 1–8 proceed on these assumptions; the review ran with the rows still
+`ASSUMED`, and they are turned into `OBSERVED` in a follow-up commit, before merge, once Oscar runs
+the probe).
 
 This spike ran in a headless cloud container with no Claude Code, Claude Desktop or Cursor
 installed, so it cannot observe the clients. It records what the SDK proves, labels everything else,

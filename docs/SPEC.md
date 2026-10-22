@@ -164,7 +164,7 @@ never creates a project.
 
 **Protects against:** reading `vault.db` without the passphrase (lost/stolen laptop, another OS user, third-party backup storage). Everything at rest is ciphertext, FTS index included.
 
-**Does not protect against:** a compromised OS / malware while unlocked; and **any MCP client you connect receives plaintext** of loaded context, processed by that AI provider. Encryption protects data *at rest*; per-tool scoping arrives in M4.
+**Does not protect against:** a compromised OS / malware while unlocked; and **any MCP client you connect receives plaintext** of loaded context, processed by that AI provider. Encryption protects data *at rest*; per-tool scoping arrives in M4. Nor against a **planted `.git`**: a downloaded archive carrying its own `.git/config` can claim a remote the user linked, so detection there routes to that project — name the project explicitly in folders you did not clone.
 
 **Rules:** no telemetry, no network calls at runtime, tool descriptions instruct models to refuse secrets. Project links (folder paths, git remotes) live only inside the encrypted vault and never appear in an MCP response; detection reads local `.git` files only — it never spawns a process (no `git`) and never touches the network. Losing passphrase + recovery kit = unrecoverable data.
 

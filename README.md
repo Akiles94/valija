@@ -291,6 +291,10 @@ does.
 - Any MCP client you connect receives plaintext of the context you ask it to load. Encryption
   protects data *at rest*.
 - No telemetry, no network calls at runtime, no daemon.
+- Project detection trusts a folder's own `.git` files. A downloaded archive that ships its own
+  `.git/config` can claim a remote you already linked, and an AI tool working there would load that
+  project's context. Pass `project` explicitly (or don't connect an AI tool) in folders you didn't
+  clone yourself.
 
 ## Docs
 
