@@ -15,7 +15,8 @@ const inertContainer = new Proxy(
 // Captured from `node dist/program.js <cmd> --help` before buildProgram was extracted, so these
 // are the pre-refactor truth, not whatever the new code prints. Commands and options added by later
 // advances (CURATION: pin, unpin, archive, unarchive, edit, show --archived; PROJECT-DETECT: which,
-// link, unlink, links, optional project on show/export) are recorded the same way.
+// link, unlink, links, optional project on show/export; SECRET-WARN: edit and import --allow-secrets)
+// are recorded the same way.
 const ROOT_HELP = `Usage: valija [options] [command]
 
 Encrypted context vault for developers who use several AI tools.
@@ -173,6 +174,8 @@ Options:
   --tags <tags>          comma-separated tags, replacing the current ones (""
                          clears them)
   --type <type>          new type (decision|progress|preference|fact|handoff)
+  --allow-secrets        save even if the content looks like it contains a
+                         secret
   -h, --help             display help for command
 `,
   search: `Usage: valija search [options] <query>
@@ -260,6 +263,8 @@ Options:
   --since <date>           select conversations on or after YYYY-MM-DD
   --all                    import every conversation
   --dry-run                report what would be imported; write nothing
+  --allow-secrets          import even if some chunks look like they contain
+                           secrets
   -h, --help               display help for command
 `,
   install: `Usage: valija install [options] <client>
