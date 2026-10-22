@@ -46,6 +46,8 @@ The six PROJECT-DETECT codes follow one invariant: a message may name project sl
 
 - `context-item-view.ts` — `ContextItemView`, the one shape every read use case returns: primitives only, no value objects and no `Date`. Carries `source` so an export loses nothing. `archived` is present **only when true** (only `ShowProject` with `includeArchived` can return such an item), so every live view and every export stays byte-identical.
 - `item-curation-output.ts` — `ItemCurationOutput { itemId, project, type, changed }` and `EditItemOutput` (+ `changedFields`). `changed: false` means nothing was written.
+- `project-binding-view.ts` (PROJECT-DETECT) — `ProjectBindingView { id, project, kind, target, createdAt }`, primitives only; `toProjectBindingView(bound)`. `target` is a folder path or a normalized remote: the CLI and desktop may show it, the MCP adapter never reads it.
+- `project-resolution-output.ts` (PROJECT-DETECT) — `DetectionKind = folder | repository | env`; `WorkspaceLocationView { folder, repositoryRoot, repository, tooBroadToLink }` (`toWorkspaceLocationView`); `ProjectResolutionOutput` = `detected { project, detectedBy, binding?, locations }` (no `binding` when `VALIJA_PROJECT` decided) · `none { hint?, locations }` · `ambiguous { projects, locations }`. `locations` exist for `which` and the desktop inspect panel only.
 
 ## application use cases
 
@@ -64,6 +66,16 @@ Each implements `UseCase<In, Out>` (or `AsyncUseCase`) from `shared/application/
 **ImportItems** — the batch write path used by the importers module. Parses the project name **before** opening a session, find-or-creates the project, then in **one session, one `session.write(...)` (M3)** re-validates each chunk's tags and content (defense in depth), mints an imported item via `createImportedContextItem`, and upserts it — keeping the chunk archived if the user archived it (CURATION D-H) — so one import bumps the vault's lineage once, not per item. A single bad chunk is collected into `failures` (never aborts the batch). Returns `{ projectCreated, imported, failed, failures }`. This keeps `context` the sole guardian of `ContextItem` and the `imported` type — importers hand it drafts, nothing more.
 
 **Imported items and the pack:** `assembleContextPack` only ever includes pinned items, the latest handoff, and the four section types. Imported items are never pinned and are none of those types, so they are **automatically excluded** from every pack — searchable via FTS, but never auto-loaded through `get_context`.
+
+**ResolveProject({ directories, envProject? })** (PROJECT-DETECT) — parses `envProject` (`VALIJA_PROJECT`; blank = unset; a bad value → `INVALID_PROJECT_NAME` naming the variable, never echoing it) **before** the session, then always opens the session first — so a locked vault is `VAULT_LOCKED` before any directory is probed, `VALIJA_PROJECT` or not — then probes every directory (`INVALID_WORKSPACE_PATH` on the first unreadable one). **`VALIJA_PROJECT` beats bindings** and is not checked for existence (it behaves like an explicit name downstream); otherwise `resolveFromBindings`. On `none`, the first `hintCandidates` name that is an *existing* project becomes `hint` — a read, never a create. No directories and no env → `none`. Read-only: never bumps the lineage.
+
+**LinkWorkspace({ project, directory, by? })** (PROJECT-DETECT) — parses the slug before the session, then checks, in this order: the project exists (`PROJECT_NOT_FOUND`; linking never creates one), the path (`INVALID_WORKSPACE_PATH`, including home/root as a folder link), the remote (`chooseLinkTarget`: `NO_GIT_REMOTE` for `by: repository` without one), and an existing binding on that target (`bindingOnTarget`): same project → `{ changed: false }` with **no write**; another project → `BINDING_CONFLICT` naming that project's slug and the binding id. Only then one `session.write` adds the binding (one lineage bump); a lost race (`add` → `false`) is an `err`, so the write rolls back unbumped. Returns `{ binding: ProjectBindingView, changed }`.
+
+**UnlinkWorkspace({ bindingId } | { directory, by? })** (PROJECT-DETECT) — a union, so an id and a directory can never both arrive. By id: `parseBindingId` before the session, then the binding in `session.bindings.list()`. By directory: probe it in the session, then `bindingFor` over the bindings of kind `by` (all kinds when omitted) — which can be an ancestor's folder binding or the repository's (W3). Nothing found → `BINDING_NOT_FOUND`, zero bumps. One `session.write` removes it; returns the removed `ProjectBindingView`, so a surface always names what went.
+
+**ListProjectBindings({ project? })** (PROJECT-DETECT) — every binding, or one project's (slug parsed before the session; unknown → `PROJECT_NOT_FOUND`), as `ProjectBindingView[]` ordered by project, kind, target. Read-only.
+
+No use case calls another: `which`, `show`/`export` detection and the MCP surface compose `ResolveProject` with the existing use cases in delivery (D-O).
 
 There is no ExportPack use case: exporting is a rendering choice over these two, made in `delivery`.
 

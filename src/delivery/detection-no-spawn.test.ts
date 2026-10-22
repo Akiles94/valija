@@ -13,6 +13,10 @@ const DETECTION_FILES = [
   "context/domain/values/repository-target.ts",
   "context/domain/services/project-resolution.ts",
   "context/application/ports/workspace-probe.ts",
+  "context/application/use-cases/resolve-project.use-case.ts",
+  "context/application/use-cases/link-workspace.use-case.ts",
+  "context/application/use-cases/unlink-workspace.use-case.ts",
+  "context/application/use-cases/list-project-bindings.use-case.ts",
   "context/infra/file-workspace-probe.ts",
   "context/infra/git/git-config.ts",
 ] as const;

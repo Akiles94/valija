@@ -74,9 +74,11 @@ Key property of MCP to keep in mind: **the server never sees the conversation**.
 
 **ContextItem:** `id: Ulid` · `projectId: Ulid` · `type: decision | progress | preference | fact | handoff` · `content: string` (markdown, self-contained, max 32 KB) · `tags: Tag[]` (lowercase, max 10) · `pinned: boolean` · `source?: string` (MCP client name) · `archived: boolean` · `createdAt / updatedAt`
 
-**Ports** (defined in domain, implemented in infrastructure): `ProjectRepository`, `ContextItemRepository`, `VaultCrypto`, `KeychainPort`, `Clock`, `IdGenerator`.
+**ProjectBinding** (PROJECT-DETECT): `id: Ulid` · `projectId: Ulid` · `kind: folder | repository` · `target` (a canonical folder path, or a normalized `host/owner/repo` remote with credentials stripped) · `createdAt`. A user-made link — the only thing besides an explicit name or `VALIJA_PROJECT` that can route a call to a project. Stored inside the encrypted vault only.
 
-**Use cases:** `CreateVault`, `UnlockVault`, `LockVault`, `VaultStatus`, `SaveContext`, `GetContextPack`, `SearchContext`, `ListProjects`, `ExportPack`, and (CURATION) `SetItemPinned`, `SetItemArchived`, `EditItem`.
+**Ports** (defined in domain, implemented in infrastructure): `ProjectRepository`, `ContextItemRepository`, `ProjectBindingRepository`, `WorkspaceProbe` (directory → canonical folder, enclosing repository, its remote; read-only, no process spawn), `VaultCrypto`, `KeychainPort`, `Clock`, `IdGenerator`.
+
+**Use cases:** `CreateVault`, `UnlockVault`, `LockVault`, `VaultStatus`, `SaveContext`, `GetContextPack`, `SearchContext`, `ListProjects`, `ExportPack`, (CURATION) `SetItemPinned`, `SetItemArchived`, `EditItem`, and (PROJECT-DETECT) `ResolveProject` (which project a workspace belongs to: `VALIJA_PROJECT`, then the deepest folder binding, then the repository binding), `LinkWorkspace`, `UnlinkWorkspace`, `ListProjectBindings`. An explicit project name never reaches `ResolveProject`; delivery short-circuits it, and detection never creates a project.
 
 ### Context pack assembly
 

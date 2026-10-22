@@ -2,12 +2,17 @@ import { ulid } from "ulid";
 import { EditItem } from "../context/application/use-cases/edit-item.use-case.js";
 import { GetContextPack } from "../context/application/use-cases/get-context-pack.use-case.js";
 import { ImportItems } from "../context/application/use-cases/import-items.use-case.js";
+import { LinkWorkspace } from "../context/application/use-cases/link-workspace.use-case.js";
+import { ListProjectBindings } from "../context/application/use-cases/list-project-bindings.use-case.js";
 import { ListProjects } from "../context/application/use-cases/list-projects.use-case.js";
+import { ResolveProject } from "../context/application/use-cases/resolve-project.use-case.js";
 import { SaveContext } from "../context/application/use-cases/save-context.use-case.js";
 import { SearchContext } from "../context/application/use-cases/search-context.use-case.js";
 import { SetItemArchived } from "../context/application/use-cases/set-item-archived.use-case.js";
 import { SetItemPinned } from "../context/application/use-cases/set-item-pinned.use-case.js";
 import { ShowProject } from "../context/application/use-cases/show-project.use-case.js";
+import { UnlinkWorkspace } from "../context/application/use-cases/unlink-workspace.use-case.js";
+import { FileWorkspaceProbe } from "../context/infra/file-workspace-probe.js";
 import { SqliteVaultSessions } from "../context/infra/vault-sessions.js";
 import { ImportConversations } from "../importers/application/use-cases/import-conversations.use-case.js";
 import { FileExportReader } from "../importers/infra/file-export-reader.js";
@@ -57,6 +62,12 @@ export interface Container {
   setItemArchived: SetItemArchived;
   editItem: EditItem;
   importConversations: ImportConversations;
+  resolveProject: ResolveProject;
+  linkWorkspace: LinkWorkspace;
+  unlinkWorkspace: UnlinkWorkspace;
+  listProjectBindings: ListProjectBindings;
+  /** `VALIJA_PROJECT`, read once at build time; absent when unset. Delivery passes it to `ResolveProject`. */
+  envProject?: string;
 }
 
 /**
@@ -82,6 +93,8 @@ export function buildContainer(options?: { vaultRoot?: string }): Container {
     systemClock,
   );
   const importItems = new ImportItems(sessions, systemClock, ulidIds);
+  const workspaceProbe = new FileWorkspaceProbe();
+  const envProject = process.env.VALIJA_PROJECT;
   return {
     paths,
     folder,
@@ -106,5 +119,10 @@ export function buildContainer(options?: { vaultRoot?: string }): Container {
       importItems,
       systemClock,
     ),
+    resolveProject: new ResolveProject(sessions, workspaceProbe),
+    linkWorkspace: new LinkWorkspace(sessions, workspaceProbe, systemClock, ulidIds),
+    unlinkWorkspace: new UnlinkWorkspace(sessions, workspaceProbe),
+    listProjectBindings: new ListProjectBindings(sessions),
+    ...(envProject === undefined ? {} : { envProject }),
   };
 }

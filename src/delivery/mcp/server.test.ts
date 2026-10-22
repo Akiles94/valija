@@ -5,16 +5,21 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { EditItem } from "../../context/application/use-cases/edit-item.use-case.js";
 import { GetContextPack } from "../../context/application/use-cases/get-context-pack.use-case.js";
 import { ImportItems } from "../../context/application/use-cases/import-items.use-case.js";
+import { LinkWorkspace } from "../../context/application/use-cases/link-workspace.use-case.js";
+import { ListProjectBindings } from "../../context/application/use-cases/list-project-bindings.use-case.js";
 import { ListProjects } from "../../context/application/use-cases/list-projects.use-case.js";
+import { ResolveProject } from "../../context/application/use-cases/resolve-project.use-case.js";
 import { SaveContext } from "../../context/application/use-cases/save-context.use-case.js";
 import { SearchContext } from "../../context/application/use-cases/search-context.use-case.js";
 import { SetItemArchived } from "../../context/application/use-cases/set-item-archived.use-case.js";
 import { SetItemPinned } from "../../context/application/use-cases/set-item-pinned.use-case.js";
 import { ShowProject } from "../../context/application/use-cases/show-project.use-case.js";
+import { UnlinkWorkspace } from "../../context/application/use-cases/unlink-workspace.use-case.js";
 import { ImportConversations } from "../../importers/application/use-cases/import-conversations.use-case.js";
 import { FileExportReader } from "../../importers/infra/file-export-reader.js";
 import { parserRegistry } from "../../importers/infra/parser-registry.js";
 import { ok } from "../../shared/domain/result.js";
+import { FakeWorkspaceProbe } from "../../testing/fake-workspace-probe.js";
 import { FixedClock, makeUnlockedVault, SeqIds } from "../../testing/test-vault.js";
 import { CheckVaultUpgrade } from "../../vault/application/use-cases/check-vault-upgrade.use-case.js";
 import { CreateVault } from "../../vault/application/use-cases/create-vault.use-case.js";
@@ -35,6 +40,7 @@ const crypto = new Argon2VaultCrypto();
 
 const folder = new FileVaultFolder(vault.paths);
 const mover = new FileVaultMover();
+const probe = new FakeWorkspaceProbe();
 
 const container: Container = {
   paths: vault.paths,
@@ -74,6 +80,10 @@ const container: Container = {
     new ImportItems(vault.sessions, clock, ids),
     clock,
   ),
+  resolveProject: new ResolveProject(vault.sessions, probe),
+  linkWorkspace: new LinkWorkspace(vault.sessions, probe, clock, ids),
+  unlinkWorkspace: new UnlinkWorkspace(vault.sessions, probe),
+  listProjectBindings: new ListProjectBindings(vault.sessions),
 };
 
 const client = new Client({ name: "vitest-client", version: "1.0.0" });
