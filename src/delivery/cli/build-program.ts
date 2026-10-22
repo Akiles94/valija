@@ -1,7 +1,15 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
+import { BINDING_KINDS } from "../../context/domain/values/binding-target.js";
 import type { Container } from "../container.js";
 import { runMcpServer } from "../mcp/server.js";
 import { VERSION } from "../version.js";
+import {
+  type BindingOptions,
+  linkCommand,
+  linksCommand,
+  unlinkCommand,
+  whichCommand,
+} from "./binding-commands.js";
 import { exportCommand, projectsCommand, searchCommand, showCommand } from "./content-commands.js";
 import {
   archiveCommand,
@@ -58,10 +66,10 @@ export function buildProgram(container: Container): Command {
   program
     .command("show")
     .description("Print the items of a project.")
-    .argument("<project>", "project slug")
+    .argument("[project]", "project slug (detected from this folder when omitted)")
     .option("--type <type>", "filter by type (decision|progress|preference|fact|handoff|imported)")
     .option("--archived", "include archived items, marked [archived]")
-    .action((project: string, options: { type?: string; archived?: boolean }) =>
+    .action((project: string | undefined, options: { type?: string; archived?: boolean }) =>
       showCommand(container, project, options),
     );
 
@@ -114,12 +122,51 @@ export function buildProgram(container: Container): Command {
   program
     .command("export")
     .description("Export a project's context pack (markdown by default).")
-    .argument("<project>", "project slug")
+    .argument("[project]", "project slug (detected from this folder when omitted)")
     .option("--json", "export as JSON instead of markdown")
     .option("-o, --output <file>", "write to a file instead of stdout")
-    .action((project: string, options: { json?: boolean; output?: string }) =>
+    .action((project: string | undefined, options: { json?: boolean; output?: string }) =>
       exportCommand(container, project, options),
     );
+
+  const DIR_OPTION = ["--dir <path>", "the folder to use instead of the current one"] as const;
+  const byOption = () =>
+    new Option(
+      "--by <kind>",
+      "repository or folder (default: the repository when it has a remote)",
+    ).choices(BINDING_KINDS);
+
+  program
+    .command("which")
+    .description("Show which project this folder resolves to, and why.")
+    .option(...DIR_OPTION)
+    .action((options: { dir?: string }) => whichCommand(container, options));
+
+  program
+    .command("link")
+    .description(
+      "Link this folder's git repository (or only the folder, --by folder) to an existing project.",
+    )
+    .argument("<project>", "an existing project slug")
+    .option(...DIR_OPTION)
+    .addOption(byOption())
+    .action((project: string, options: BindingOptions) => linkCommand(container, project, options));
+
+  program
+    .command("unlink")
+    .description("Remove a link, by id (see valija links) or by the folder it applies to.")
+    .argument("[binding-id]", "a binding id from valija links")
+    .option(...DIR_OPTION)
+    .addOption(byOption())
+    .action((bindingId: string | undefined, options: BindingOptions) =>
+      unlinkCommand(container, bindingId, options),
+    );
+
+  program
+    .command("links")
+    .description("List folder and repository links.")
+    .argument("[project]", "only this project's links")
+    .action((project: string | undefined) => linksCommand(container, project));
 
   program
     .command("import")

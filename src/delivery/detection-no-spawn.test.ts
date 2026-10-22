@@ -19,6 +19,7 @@ const DETECTION_FILES = [
   "context/application/use-cases/list-project-bindings.use-case.ts",
   "context/infra/file-workspace-probe.ts",
   "context/infra/git/git-config.ts",
+  "delivery/project-detection.ts",
 ] as const;
 
 /**

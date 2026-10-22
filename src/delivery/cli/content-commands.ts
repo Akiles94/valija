@@ -1,7 +1,18 @@
 import { writeFileSync } from "node:fs";
 import type { Container } from "../container.js";
 import { exportProjectJson, exportProjectMarkdown } from "../context-pack-export.js";
+import { chooseProject } from "../project-detection.js";
 import { fail, formatDate, itemHeaderLine, truncate } from "./render.js";
+
+/** What a detection failure tells the user to do. `show`/`export` print no detection note: their output is the vault-format contract. */
+const CLI_REMEDY = "Pass a project name, or link this folder: valija link <project>.";
+
+/** An explicit project is used untouched; an omitted one is detected from the working directory. */
+function projectFor(c: Container, project: string | undefined): string {
+  const choice = chooseProject(c, project, [process.cwd()], CLI_REMEDY);
+  if (!choice.ok) fail(choice.error);
+  return choice.value.project;
+}
 
 /** `valija projects`: prints each project with its item count and last activity. */
 export function projectsCommand(c: Container): void {
@@ -24,11 +35,11 @@ export function projectsCommand(c: Container): void {
 /** `valija show <project>`: prints a project's items with their ids, optionally of one type; `--archived` includes archived items. */
 export function showCommand(
   c: Container,
-  project: string,
+  project: string | undefined,
   options: { type?: string; archived?: boolean },
 ): void {
   const result = c.showProject.execute({
-    project,
+    project: projectFor(c, project),
     ...(options.type === undefined ? {} : { type: options.type }),
     ...(options.archived ? { includeArchived: true } : {}),
   });
@@ -67,9 +78,10 @@ export function searchCommand(c: Container, query: string, options: { project?: 
  */
 export function exportCommand(
   c: Container,
-  project: string,
+  explicit: string | undefined,
   options: { json?: boolean; output?: string },
 ): void {
+  const project = projectFor(c, explicit);
   const format = options.json ? "json" : "md";
   const result = options.json ? exportProjectJson(c, project) : exportProjectMarkdown(c, project);
   if (!result.ok) fail(result.error);

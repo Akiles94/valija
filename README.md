@@ -59,9 +59,11 @@ valija status                     # where the vault is, lock state, sync/idle in
 valija unlock                     # unlock for this session (asks for your passphrase)
 valija lock                       # lock again (drops the key from the OS keychain)
 valija projects                   # list projects with item counts and last activity
-valija show my-project            # print a project's items (--type to filter)
+valija show my-project            # print a project's items (--type to filter; omit the name inside a linked folder)
 valija search "auth"              # full-text search (-p to scope to one project)
 valija export my-project          # print the context pack (paste into any non-MCP tool)
+valija link my-project            # link this folder's git repository to a project (once)
+valija which                      # which project this folder resolves to, and why
 valija pin <id>                   # keep an item at the top of every pack (unpin to undo)
 valija archive <id>               # hide an outdated item from packs and search (unarchive to undo)
 valija edit <id> --content-file - # rewrite an item in place, reading the new text from stdin
@@ -75,6 +77,43 @@ Useful flags:
 - `valija show <project> --type <decision|progress|preference|fact|handoff|imported>` — filter items.
 - `valija search <query> -p <project>` — restrict the search to one project.
 - `valija export <project> --json` / `-o <file>` — export as JSON, or write to a file instead of stdout.
+
+### Working inside a project folder
+
+Link a folder once and valija knows which project you mean there, so `valija show` and
+`valija export` work without a project name.
+
+```
+$ cd ~/code/valija
+$ valija which
+No project detected here.
+Hint: a project named "valija" matches this repository's name. Link it with: valija link valija
+
+$ valija link valija
+Linked repository github.com/oscar/valija → project "valija".
+(Any clone of this repository, on any device that syncs this vault, now resolves to "valija".)
+
+$ valija which
+valija  (linked repository github.com/oscar/valija)
+```
+
+- **Repository or folder.** Inside a git repository with a remote, `link` links the *repository*
+  (its normalized remote, credentials stripped), so every clone of it resolves, on every device that
+  syncs this vault. `--by folder` links only that folder (and everything under it). Outside a
+  repository, a folder link is the only kind. The project must already exist: linking never creates one.
+- **Monorepos.** A folder link on a sub-folder beats the repository link, so
+  `cd ~/code/acme/services/billing && valija link acme-billing --by folder` routes that sub-folder
+  to its own project while the rest of the repo keeps the repository's.
+- **See and undo.** `valija links [project]` lists links with their ids; `valija unlink <id>`
+  removes one, or `valija unlink` (with `--dir`/`--by` if needed) removes the one this folder resolves
+  through. `--dir <path>` works on `which`, `link` and `unlink` instead of the current folder.
+- **A project name you type always wins.** Detection only fills in an omitted name, and only from
+  links you made — never from a folder's name, which can at most produce a hint. `valija search`
+  without `-p` stays vault-wide, and `valija import` still needs `-p`.
+- **`VALIJA_PROJECT`** names the project to use whenever one is omitted, ahead of any link — handy
+  in a shell profile or a per-project env file.
+- Links (folder paths, remotes) live only inside the encrypted vault, never in `~/.valija-state` or
+  any log, and detection only reads `.git` files — it never runs `git` or touches the network.
 
 ### Curating your context
 
@@ -210,6 +249,7 @@ that's CLI-only plumbing.
 | `VALIJA_HOME` | `~/.valija` | Vault folder (`vault.db` + `vault.json`). Point it at a synced folder to sync. |
 | `VALIJA_AUTOLOCK_MINUTES` | `15` | Idle auto-lock timeout in minutes; `0` or `off` disables it. |
 | `VALIJA_STATE_HOME` | `~/.valija-state` | Device-local state (device id, sync bookkeeping, idle timer). Never synced. |
+| `VALIJA_PROJECT` | unset | The project to use whenever a command omits one, ahead of any linked folder or repository. Must be a valid project slug. |
 
 ## Desktop app
 

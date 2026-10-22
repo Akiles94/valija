@@ -8,6 +8,14 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
 
 - Context for AI coding agents: an [`AGENTS.md`](AGENTS.md) index plus [`.context/`](.context/) flows and gotchas, maintained with [easy-repo-context](https://github.com/Akiles94/easy-repo-context) and checked in CI by `npm run context:check`. No runtime behavior changed.
 - A generated developer guide ([`docs/guide/`](docs/guide/README.md)) — business flows with sequence diagrams, the code map and reference tables — checked in CI by `npm run docs:check`, which also requires TSDoc on every exported symbol. No runtime behavior changed.
+- **Project detection from the CLI** (`advances/PROJECT-DETECT/`): `valija link <project>` links the
+  current folder's git repository (or only the folder, `--by folder`) to an existing project;
+  `valija which` shows what a folder resolves to and why; `valija links [project]` lists links with
+  their ids, and `valija unlink <id>` (or `--dir`/`--by`) removes one. `valija show` and
+  `valija export` now take an optional project, detected from the current folder when omitted —
+  `VALIJA_PROJECT` first, then the deepest linked folder, then the linked repository. A given
+  project always wins; `search` and `import` are unchanged; detection never creates a project and
+  never runs `git`. New env var `VALIJA_PROJECT`.
 - **Curation in Valija Desktop**: each project card gets **Pin**/**Unpin**, **Edit** (a dialog for
   content, tags and type — the same `EditItem` as `valija edit`) and **Archive**, with an
   **Undo** notice after archiving and a **Show archived** toggle that lists archived items in their own

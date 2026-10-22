@@ -133,15 +133,28 @@ Full descriptions live in the tool source — they are the product's real prompt
 ```
 valija init | unlock | lock | status
 valija projects
-valija show <project> [--type] [--archived]
+valija show [project] [--type] [--archived]
 valija pin | unpin | archive | unarchive <id>
 valija edit <id> [--content-file <file|->] [--tags a,b] [--type <t>]
 valija search <query> [-p proj]
-valija export <project> [--md|--json] [-o file]
+valija export [project] [--md|--json] [-o file]
+valija which [--dir <path>]
+valija link <project> [--dir <path>] [--by repository|folder]
+valija unlink [binding-id] [--dir <path>] [--by repository|folder]
+valija links [project]
 valija install <claude-code|claude-desktop|cursor>
 valija mcp
 valija doctor
 ```
+
+**Project detection (PROJECT-DETECT).** `show` and `export` take an optional project: when it is
+omitted, the project is detected from the current folder — `VALIJA_PROJECT`, then the deepest linked
+folder, then the linked git repository — or the command fails with `PROJECT_NOT_DETECTED` /
+`PROJECT_AMBIGUOUS`. A given project always wins, untouched. `search -p` and `import -p` do not
+detect. `which` shows what a folder resolves to and why; `link` links a folder's repository (the
+default when it has a usable remote) or only the folder to an **existing** project; `unlink` removes a
+link by id or by the folder it applies to; `links` lists them (`ID PROJECT KIND TARGET`). Detection
+never creates a project.
 
 ---
 
