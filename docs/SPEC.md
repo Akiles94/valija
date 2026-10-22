@@ -15,6 +15,11 @@ vault a window for the parts a terminal doesn't reach — it composes the existi
 an enumerated IPC surface and adds no MCP tool, no CLI command, and no change to the published
 package.
 
+The same package also ships **`valija/sdk`** (advance SDK, see [`docs/sdk.md`](sdk.md)): a library
+entry through which another Node product reads and writes the user's own vault, with MCP's five
+operations plus open, create, lock and close. Like MCP it is a deliberately narrower surface than
+the CLI and the desktop app.
+
 ---
 
 ## 2. MVP scope
@@ -44,6 +49,8 @@ package.
 ## 3. Architecture
 
 Both entry points (MCP server and CLI) are thin adapters over the same use cases. The vault is a single SQLCipher-encrypted SQLite file; the session key lives in the OS keychain between `valija unlock` and `valija lock`.
+
+A third adapter, the SDK (`src/delivery/sdk/`, exported as `valija/sdk`), composes the same container two ways. **Mode K** uses it as the CLI does: the key is read from the OS keychain per call. **Mode P** swaps in an in-memory keychain and keeps idle activity in memory, so a key derived from a passphrase the product received lives only in that process — it never reaches the OS keychain and never unlocks MCP. No use case knows which mode it runs in. Every surface refuses a vault whose schema is newer than its own (`VAULT_SCHEMA_TOO_NEW`), without touching it.
 
 Key property of MCP to keep in mind: **the server never sees the conversation**. It only receives what the model puts in the tool arguments. Therefore the vault stores *distilled* context, and the quality of what gets saved is driven by the tool descriptions (§7), which act as extraction prompts.
 
@@ -197,7 +204,7 @@ src/
 ├── shared/     domain/(Result, DomainError)  application/(Clock, UseCase)  infra/(sqlite, migrations, paths)
 ├── vault/      domain/(errors, values)  application/(use-cases + ports)  infra/(argon2, keyring, header, store)
 ├── context/    domain/(entities, values, services, errors)  application/(use-cases + ports + dto)  infra/(repos, vault-sessions)
-└── delivery/   container.ts + context-pack-markdown.ts + cli/ + mcp/   (composition root + entry points)
+└── delivery/   container.ts + context-pack-markdown.ts + cli/ + mcp/ + sdk/   (composition root + entry points)
 ```
 
 Within a module: `domain/` (entities, values, services, module errors — no I/O), `application/` (use cases, the ports they need, and the DTOs they return), `infra/` (adapters implementing those ports). Technical ports (crypto, keychain, store, repositories) live in `application/`, following Hexagonal; only the branded domain types and invariants live in `domain/`.
@@ -205,6 +212,8 @@ Within a module: `domain/` (entities, values, services, module errors — no I/O
 Use cases implement `UseCase<In, Out>` — a contract, not a base class. Cross-cutting plumbing is composed in through the port that owns it (`VaultSessions.withSession`), never inherited. Logic that spans entities lives in `domain/services/`, so no use case ever calls another. Rendering (markdown, JSON, tables) belongs to `delivery/`: the domain decides *what* is in a context pack and in what order, delivery decides how it *reads*.
 
 **Dependency rule:** `shared ←` everyone · `vault → shared` · `context → shared, vault` · `importers → shared, context` · `delivery →` all. `context` reaches `vault` only through the `VaultSessions` bridge (a locked vault refuses a session, which is why the content context is downstream of the vault context); `importers` writes items only through context's `ImportItems` use case and never touches `vault`. The generated [architecture page](guide/architecture.md) shows the current module map, dependency graph and composition wiring.
+
+`delivery/sdk/` is the `valija/sdk` library entry: `facade/` (open, create, the handle, the Mode P idle timer), `dto/` (the public types and the closed error-code list), `mapping/` (domain errors to public ones) and `validation/` (input schemas). It imports no `cli/` or `mcp/` module.
 
 Tests are co-located with their subject (`foo.ts` + `foo.test.ts`). Behavior specs live in [`specs/`](../specs/), one file per module. Use cases receive ports via plain constructor injection — no DI framework.
 

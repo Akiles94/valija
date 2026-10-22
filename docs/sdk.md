@@ -18,6 +18,7 @@ own CLI and desktop app, where the user curates their context.
 
 ## Contents
 
+- [Install](#install)
 - [Quick example](#quick-example)
 - [Two ways to open a vault](#two-ways-to-open-a-vault)
 - [Creating a vault, and the recovery kit](#creating-a-vault-and-the-recovery-kit)
@@ -26,6 +27,25 @@ own CLI and desktop app, where the user curates their context.
 - [Versions: when the vault and the SDK disagree](#versions-when-the-vault-and-the-sdk-disagree)
 - [Concurrency](#concurrency)
 - [What Valija guarantees, and what it cannot](#what-valija-guarantees-and-what-it-cannot)
+- [Electron and native modules](#electron-and-native-modules)
+
+---
+
+## Install
+
+```sh
+npm install valija
+```
+
+- **Node 22 or newer, ESM only, Node only** (no browser, Deno, Bun or React Native build).
+- Import from the `valija/sdk` subpath; the package has no root entry. The `valija` command is
+  installed alongside but your product does not need it.
+- TypeScript declarations ship with it. Use `"module": "nodenext"` and
+  `"moduleResolution": "nodenext"` (or `"bundler"`) so the `exports` map resolves.
+- You install the whole package, including the CLI's dependencies; importing `valija/sdk` never
+  loads the CLI or the MCP server.
+- It depends on three native modules: `better-sqlite3-multiple-ciphers` (SQLCipher), `argon2` and
+  `@napi-rs/keyring` (see [Electron](#electron-and-native-modules)).
 
 ---
 
@@ -279,3 +299,30 @@ This release supports **schema 4**.
 - **JavaScript cannot reliably erase a string from memory.** While a Mode P vault is open, the key
   is in your process's memory, and may end up in swap or a crash dump. Dropping it is best effort.
 - `client` is self-declared: it says who claims to have saved an item, not who did.
+
+---
+
+## Electron and native modules
+
+The SDK runs in Node, which in an Electron app means the **main process** (or a utility process /
+worker) — never a renderer.
+
+- `better-sqlite3-multiple-ciphers` is a classic native addon built against one Node ABI. Electron
+  has its own, so rebuild it for your Electron version after installing, e.g. with
+  `@electron/rebuild`:
+
+  ```sh
+  npx @electron/rebuild -f -w better-sqlite3-multiple-ciphers
+  ```
+
+  and unpack it from `asar` (`asarUnpack: ["**/node_modules/better-sqlite3-multiple-ciphers/**"]`
+  with electron-builder).
+- `argon2` and `@napi-rs/keyring` are N-API modules: they load in Electron without a rebuild, but
+  must also stay outside `asar` (unpack them the same way).
+- Mode P and `createVault` need `argon2` and never **call** the keychain. Mode K needs
+  `@napi-rs/keyring` and a working OS keychain (Keychain on macOS, Credential Manager on Windows, the
+  Secret Service on Linux). The keychain module is still loaded by the SDK in both modes, so it must
+  be present and loadable.
+- Keep these three external if you bundle your main process (they are loaded from `node_modules` at
+  runtime).
+

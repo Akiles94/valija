@@ -8,6 +8,27 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
 
 - Context for AI coding agents: an [`AGENTS.md`](AGENTS.md) index plus [`.context/`](.context/) flows and gotchas, maintained with [easy-repo-context](https://github.com/Akiles94/easy-repo-context) and checked in CI by `npm run context:check`. No runtime behavior changed.
 - A generated developer guide ([`docs/guide/`](docs/guide/README.md)) — business flows with sequence diagrams, the code map and reference tables — checked in CI by `npm run docs:check`, which also requires TSDoc on every exported symbol. No runtime behavior changed.
+- **`valija/sdk`: embed Valija in your product** (`advances/SDK/`, experimental `0.x`). A Node 22
+  product can `import { openVault, createVault } from "valija/sdk"` and give its user's context a
+  home in **the user's own vault** — the same `vault.json` + `vault.db` the CLI, desktop app and MCP
+  use, found the same way (`vaultRoot`, `VALIJA_HOME`, `~/.valija`). Two ways in: **Mode K** reuses
+  the session the user unlocked with Valija (recommended — the product never sees a secret);
+  **Mode P** takes a passphrase or recovery key and keeps the derived key in the product's process
+  only, never in the OS keychain, so it never unlocks the user's AI tools. `createVault` makes a new
+  vault in `valija init`'s format and returns the recovery kit once. The operations are MCP's five —
+  `save`, `saveHandoff`, `getContextPack` (byte-identical to `get_context`), `search`,
+  `listProjects` — plus `lock` and `close`; secrets are refused with no override, and there is no
+  curation, export or status. Every call returns a `Result` with a closed list of error codes and
+  never throws for an expected condition. A vault behind the SDK's schema is not migrated without
+  `allowUpgrade`. No network calls, no files besides the vault, nothing printed. Ships as the
+  `./sdk` subpath export with TypeScript declarations; the `valija` bin is unchanged. **Supports
+  vault schema 4.** See [docs/sdk.md](docs/sdk.md).
+- **Desktop "Update Valija" screen** (`advances/SDK/`): when the desktop app is older than the vault
+  (a newer Valija upgraded it), it stops on one screen that explains it, shows the vault's schema and
+  the highest one this app supports, says nothing was changed, and offers only **Lock vault** and
+  **Quit Valija** (Settings stays open for language and theme). It is reached at startup or from any
+  refused call, in English or Spanish. The app never opens, downgrades or changes such a vault. Same
+  37 IPC channels.
 - **Secret check on every write (CLI)** (`advances/SECRET-WARN/`): `valija edit --content-file` and
   `valija import` refuse content that looks like it contains a secret (private keys, provider API
   keys and tokens, JWTs, passwords in URLs or assignments, long random-looking strings) with
@@ -114,7 +135,8 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
   the schema were its own.
 - A write that stays blocked by another valija process for more than 5 s now fails with
   `STORAGE_ERROR` "The vault is busy … Nothing was saved. Try again." instead of an uncaught SQLite
-  error (`advances/SDK/`).
+  error (`advances/SDK/`). A contended write now also **waits** for that timeout: writes take the
+  vault's write lock up front, where before one that had read first was refused at once.
 
 - `docs/vault-format.md` corrected in five places where a real second implementation (the Kotlin proof of concept in `advances/MOBILE/`) proved the contract wrong or under-specified: the markdown concatenation rule, the three distinct section-label budgeting rules, latest-handoff selection, `estimateTokens`'s UTF-16 code-unit semantics, and the preamble's ISO timestamp format. Documentation only — this describes existing behavior; no code, fixture, or output changed.
 

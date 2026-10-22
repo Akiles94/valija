@@ -293,6 +293,25 @@ into a synced folder safely. Same encrypted vault, same MCP server — the app a
 doesn't replace the CLI. See **[docs/gui.md](docs/gui.md)** for installing it and what each screen
 does.
 
+## Embed Valija in your product
+
+Building a Node 22 app that wants to remember things for its user? `valija/sdk` lets it read and
+write **the user's own vault** — the same one their CLI, desktop app and AI tools use — instead of
+keeping a second store:
+
+```ts
+import { openVault } from "valija/sdk";
+
+const vault = await openVault({ client: "acme-notes" }); // reuse the user's Valija session
+if (vault.ok) await vault.value.save({ project: "acme", content: "We ship offline mode first." });
+```
+
+It does exactly what an AI tool can do over MCP (save, save a handoff, get a context pack, search,
+list projects), can create a vault, and refuses secrets the same way. A product can also unlock with
+a passphrase the user types into it; the key then stays in that product's process and never unlocks
+the user's AI tools. It is experimental (`0.x`). See **[docs/sdk.md](docs/sdk.md)** — including what
+a product that asks for the passphrase is trusted with.
+
 ## Security model (short version)
 
 - Everything at rest is ciphertext: SQLCipher whole-database encryption, full-text search index
@@ -319,6 +338,7 @@ does.
 - **[docs/guide/](docs/guide/README.md)** — developer guide: how Valija works, business flows and code map (generated).
 - **[docs/gui.md](docs/gui.md)** — the desktop app: installing it, and what each screen does.
 - **[docs/sync.md](docs/sync.md)** — using one vault across devices, in depth.
+- **[docs/sdk.md](docs/sdk.md)** — `valija/sdk`, embedding the vault in your own Node product.
 - **[docs/SPEC.md](docs/SPEC.md)** — the full specification.
 
 ## License

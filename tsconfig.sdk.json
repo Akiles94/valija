@@ -1,0 +1,13 @@
+{
+  "//": "Declarations for valija/sdk only (P-5): an unbundled .d.ts tree under dist/types. See tsup.config.ts.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "rootDir": "src",
+    "outDir": "dist/types"
+  },
+  "files": ["src/delivery/sdk/index.ts"],
+  "include": []
+}
