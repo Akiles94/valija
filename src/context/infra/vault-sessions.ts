@@ -1,13 +1,19 @@
 import type { Database } from "better-sqlite3-multiple-ciphers";
 import type { Clock, IdGenerator } from "../../shared/application/ports/clock.js";
 import { type DomainError, err, ok, type Result } from "../../shared/domain/result.js";
-import { migrate } from "../../shared/infra/migrations.js";
-import { isWrongKeyError, openVaultDb } from "../../shared/infra/sqlite.js";
+import { compareSchema } from "../../shared/domain/services/schema-compatibility.js";
+import {
+  LATEST_SCHEMA_VERSION,
+  migrate,
+  SchemaTooNewError,
+  schemaVersion,
+} from "../../shared/infra/migrations.js";
+import { isBusyError, isWrongKeyError, openVaultDb } from "../../shared/infra/sqlite.js";
 import type { VaultPaths } from "../../shared/infra/vault-paths.js";
 import type { SessionGuard } from "../../vault/application/policies/session-guard.js";
 import type { DeviceIdentity } from "../../vault/application/ports/device-identity.js";
 import type { KeychainPort } from "../../vault/application/ports/keychain.js";
-import { LOCKED_MESSAGE, vaultErr } from "../../vault/domain/errors.js";
+import { LOCKED_MESSAGE, schemaTooNewErr, vaultErr } from "../../vault/domain/errors.js";
 import type { LineageStamp } from "../../vault/domain/services/vault-lineage.js";
 import type { DeviceId } from "../../vault/domain/values/device-id.js";
 import { SqliteLineageStore } from "../../vault/infra/sqlite-lineage-store.js";
@@ -42,6 +48,15 @@ class WriteFailedSentinel extends Error {
   }
 }
 
+/** A write still contended past the busy timeout (P-8): the transaction already rolled back, lineage included. */
+export const BUSY_MESSAGE =
+  "The vault is busy: another valija process held it for more than 5 s. Nothing was saved. Try again.";
+
+export interface VaultSessionsOptions {
+  /** `false` (SDK without allowUpgrade, D-H): a behind vault is refused, never migrated. */
+  autoMigrate: boolean;
+}
+
 /**
  * Implements the context-owned VaultSessions port by wiring vault concerns
  * (keychain, header, lineage) to the shared SQLite engine. This is the one
@@ -55,6 +70,7 @@ export class SqliteVaultSessions implements VaultSessions {
     private readonly guard: SessionGuard,
     private readonly idGen: IdGenerator,
     private readonly clock: Clock,
+    private readonly options: VaultSessionsOptions = { autoMigrate: true },
   ) {}
 
   withSession<T>(
@@ -63,17 +79,28 @@ export class SqliteVaultSessions implements VaultSessions {
     return runWithSession(() => this.open(), action);
   }
 
+  /**
+   * Header → key → database (a newer schema is refused here, before the idle
+   * guard: the key is kept and nothing is written, F3/P-7) → upgrade gate →
+   * idle guard → migrate → repositories.
+   */
   private open(): Result<VaultSession, DomainError> {
     const header = readVaultHeader(this.paths.header);
     if (!header.ok) return header;
+    const vaultId = header.value.vaultId;
 
-    const keyHex = this.requireKey(header.value.vaultId);
+    const keyHex = this.requireKey(vaultId);
     if (!keyHex.ok) return keyHex;
 
-    const guarded = this.guard.guard(header.value.vaultId);
-    if (!guarded.ok) return guarded;
+    const db = this.openDb(vaultId, keyHex.value);
+    if (!db.ok) return db;
 
-    return this.openRepositories(header.value.vaultId, keyHex.value);
+    const ready = this.prepare(db.value, vaultId);
+    if (!ready.ok) {
+      db.value.close();
+      return ready;
+    }
+    return ok(this.sessionOver(db.value, vaultId));
   }
 
   /** The session key must be present in the OS keychain — otherwise the vault is locked. */
@@ -83,28 +110,57 @@ export class SqliteVaultSessions implements VaultSessions {
     return ok(keyHex);
   }
 
-  private openRepositories(vaultId: string, keyHex: string): Result<VaultSession, DomainError> {
+  private openDb(vaultId: string, keyHex: string): Result<Database, DomainError> {
     try {
-      const db = openVaultDb(this.paths.db, keyHex);
-      migrate(db, this.paths.db);
-      const lineageStore = new SqliteLineageStore(db, this.idGen, this.clock);
-      const writer = this.deviceIdentity.deviceId();
-      return ok({
-        projects: new SqliteProjectRepository(db),
-        items: new SqliteContextItemRepository(db),
-        bindings: new SqliteProjectBindingRepository(db),
-        write: <T>(mutate: () => Result<T, DomainError>) =>
-          this.commitWrite(db, lineageStore, writer, vaultId, mutate),
-        close: () => db.close(),
-      });
+      return ok(openVaultDb(this.paths.db, keyHex));
     } catch (error) {
       if (isWrongKeyError(error)) {
         // Stale key in the keychain (e.g. vault file replaced) — treat as locked.
         this.keychain.deleteKey(vaultId);
         return vaultErr("VAULT_LOCKED", LOCKED_MESSAGE);
       }
+      if (error instanceof SchemaTooNewError) {
+        // Keychain untouched: an updated valija can still use this session.
+        return schemaTooNewErr(error.vaultVersion, error.supportedVersion);
+      }
+      if (isBusyError(error)) return vaultErr("STORAGE_ERROR", BUSY_MESSAGE);
       return vaultErr("STORAGE_ERROR", `Could not open vault: ${(error as Error).message}`);
     }
+  }
+
+  /** Upgrade gate (no-auto-migrate mode only) → idle guard → migrate. */
+  private prepare(db: Database, vaultId: string): Result<void, DomainError> {
+    const current = schemaVersion(db);
+    if (!this.options.autoMigrate && compareSchema(current, LATEST_SCHEMA_VERSION) === "behind") {
+      return vaultErr(
+        "VAULT_UPGRADE_REQUIRED",
+        `This vault's schema (version ${current}) is behind the current version ` +
+          `(${LATEST_SCHEMA_VERSION}). Open it with allowUpgrade to upgrade it.`,
+      );
+    }
+
+    const guarded = this.guard.guard(vaultId);
+    if (!guarded.ok) return guarded;
+
+    try {
+      migrate(db, this.paths.db);
+      return ok(undefined);
+    } catch (error) {
+      return vaultErr("STORAGE_ERROR", `Could not open vault: ${(error as Error).message}`);
+    }
+  }
+
+  private sessionOver(db: Database, vaultId: string): VaultSession {
+    const lineageStore = new SqliteLineageStore(db, this.idGen, this.clock);
+    const writer = this.deviceIdentity.deviceId();
+    return {
+      projects: new SqliteProjectRepository(db),
+      items: new SqliteContextItemRepository(db),
+      bindings: new SqliteProjectBindingRepository(db),
+      write: <T>(mutate: () => Result<T, DomainError>) =>
+        this.commitWrite(db, lineageStore, writer, vaultId, mutate),
+      close: () => db.close(),
+    };
   }
 
   /**
@@ -130,6 +186,7 @@ export class SqliteVaultSessions implements VaultSessions {
       })();
     } catch (error) {
       if (error instanceof WriteFailedSentinel) return err(error.error);
+      if (isBusyError(error)) return vaultErr("STORAGE_ERROR", BUSY_MESSAGE);
       throw error;
     }
     // Recorded only after the transaction has actually committed.
