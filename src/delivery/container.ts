@@ -21,6 +21,8 @@ import type { Clock, IdGenerator } from "../shared/application/ports/clock.js";
 import { resolveStatePaths } from "../shared/infra/state-paths.js";
 import { resolveVaultPaths, type VaultPaths } from "../shared/infra/vault-paths.js";
 import { SessionGuard } from "../vault/application/policies/session-guard.js";
+import type { DeviceIdentity } from "../vault/application/ports/device-identity.js";
+import type { KeychainPort } from "../vault/application/ports/keychain.js";
 import type { VaultFolder } from "../vault/application/ports/vault-folder.js";
 import type { VaultMover } from "../vault/application/ports/vault-mover.js";
 import { CheckVaultUpgrade } from "../vault/application/use-cases/check-vault-upgrade.use-case.js";
@@ -35,6 +37,7 @@ import { FileDeviceIdentity } from "../vault/infra/file-device-identity.js";
 import { FileVaultFolder } from "../vault/infra/file-vault-folder.js";
 import { FileVaultMover } from "../vault/infra/file-vault-mover.js";
 import { FileVaultStore } from "../vault/infra/file-vault-store.js";
+import { InMemoryActivityDeviceIdentity } from "../vault/infra/in-memory-activity-device-identity.js";
 import { OsKeychain } from "../vault/infra/keyring.js";
 
 const systemClock: Clock = { now: () => new Date() };
@@ -68,20 +71,38 @@ export interface Container {
   listProjectBindings: ListProjectBindings;
   /** `VALIJA_PROJECT`, read once at build time; absent when unset. Delivery passes it to `ResolveProject`. */
   envProject?: string;
+  /** The identity every use case here shares — the in-memory-activity wrapper when `keepActivityInMemory` (F11). */
+  deviceIdentity: DeviceIdentity;
+  /** `VALIJA_AUTOLOCK_MINUTES` parsed once at build time; `null` = auto-lock off (F11). */
+  autoLockMinutes: number | null;
+}
+
+/** CLI, MCP and the desktop pass no options beyond `vaultRoot`; the rest exists for the SDK. */
+export interface ContainerOptions {
+  vaultRoot?: string;
+  /** SDK Mode P / createVault: an in-process key store. When given, OsKeychain is never constructed (§11.1). */
+  keychain?: KeychainPort;
+  /** SDK Mode P (⚑ D-A.3): idle activity stays in memory, never in the shared state.json. */
+  keepActivityInMemory?: boolean;
+  /** false: sessions refuse a behind-schema vault instead of migrating it (D-H). Default true. */
+  autoMigrate?: boolean;
 }
 
 /**
  * The composition root: wires each use case to its production adapters (SQLCipher files, Argon2, OS
  * keychain, device state).
  */
-export function buildContainer(options?: { vaultRoot?: string }): Container {
-  const paths = resolveVaultPaths(options?.vaultRoot);
+export function buildContainer(options: ContainerOptions = {}): Container {
+  const paths = resolveVaultPaths(options.vaultRoot);
   const store = new FileVaultStore(paths, ulidIds, systemClock);
   const crypto = new Argon2VaultCrypto();
-  const keychain = new OsKeychain();
+  const keychain = options.keychain ?? new OsKeychain();
   const folder = new FileVaultFolder(paths);
   const mover = new FileVaultMover();
-  const deviceIdentity = new FileDeviceIdentity(resolveStatePaths(), ulidIds);
+  const sharedIdentity = new FileDeviceIdentity(resolveStatePaths(), ulidIds);
+  const deviceIdentity = options.keepActivityInMemory
+    ? new InMemoryActivityDeviceIdentity(sharedIdentity)
+    : sharedIdentity;
   const ttlMinutes = parseAutoLockTtl(process.env.VALIJA_AUTOLOCK_MINUTES);
   const guard = new SessionGuard(deviceIdentity, keychain, systemClock, ttlMinutes);
   const sessions = new SqliteVaultSessions(
@@ -91,6 +112,7 @@ export function buildContainer(options?: { vaultRoot?: string }): Container {
     guard,
     ulidIds,
     systemClock,
+    { autoMigrate: options.autoMigrate ?? true },
   );
   const importItems = new ImportItems(sessions, systemClock, ulidIds);
   const workspaceProbe = new FileWorkspaceProbe();
@@ -123,6 +145,8 @@ export function buildContainer(options?: { vaultRoot?: string }): Container {
     linkWorkspace: new LinkWorkspace(sessions, workspaceProbe, systemClock, ulidIds),
     unlinkWorkspace: new UnlinkWorkspace(sessions, workspaceProbe),
     listProjectBindings: new ListProjectBindings(sessions),
+    deviceIdentity,
+    autoLockMinutes: ttlMinutes,
     ...(envProject === undefined ? {} : { envProject }),
   };
 }

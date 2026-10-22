@@ -19,7 +19,10 @@ export class Argon2VaultCrypto implements VaultCrypto {
       parallelism: params.parallelism,
       hashLength: KEY_LENGTH,
     });
-    return new Uint8Array(key);
+    // P-16: hand back a copy and zero argon2's own buffer — best effort, the copy is the caller's.
+    const copy = new Uint8Array(key);
+    key.fill(0);
+    return copy;
   }
 
   generateSalt(): Uint8Array {

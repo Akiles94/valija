@@ -84,6 +84,8 @@ const container: Container = {
   linkWorkspace: new LinkWorkspace(vault.sessions, probe, clock, ids),
   unlinkWorkspace: new UnlinkWorkspace(vault.sessions, probe),
   listProjectBindings: new ListProjectBindings(vault.sessions),
+  deviceIdentity: vault.deviceIdentity,
+  autoLockMinutes: 15,
 };
 
 const client = new Client({ name: "vitest-client", version: "1.0.0" });
