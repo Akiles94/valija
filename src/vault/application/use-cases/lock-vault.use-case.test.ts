@@ -1,7 +1,9 @@
 import { rmSync, writeFileSync } from "node:fs";
 import { afterAll, describe, expect, it } from "vitest";
+import { LATEST_SCHEMA_VERSION } from "../../../shared/infra/migrations.js";
 import { openVaultDb } from "../../../shared/infra/sqlite.js";
 import { resolveVaultPaths } from "../../../shared/infra/vault-paths.js";
+import { setStoredSchemaVersion, snapshotVaultFiles } from "../../../testing/schema-skew.js";
 import {
   FakeKeychain,
   FixedClock,
@@ -69,5 +71,30 @@ describe("LockVault", () => {
       rmSync(walPath, { force: true });
       vault.keychain.setKey(vault.vaultId, vault.keyHex);
     }
+  });
+});
+
+describe("LockVault — a vault newer than this build (F8)", () => {
+  it("still drops the key; lineage is omitted and the files are unchanged", () => {
+    const newer = makeUnlockedVault();
+    const db = openVaultDb(newer.paths.db, newer.keyHex);
+    new SqliteLineageStore(db, newer.idGen, newer.clock).bump(newer.deviceIdentity.deviceId());
+    db.close();
+    setStoredSchemaVersion(newer.paths.db, newer.keyHex, LATEST_SCHEMA_VERSION + 1);
+    const before = snapshotVaultFiles(newer.paths);
+
+    const r = new LockVault(
+      newer.store,
+      newer.keychain,
+      new FileVaultFolder(newer.paths),
+      newer.deviceIdentity,
+    ).execute();
+
+    expect(r.ok && r.value.wasUnlocked).toBe(true);
+    expect(newer.keychain.getKey(newer.vaultId)).toBeNull();
+    expect(r.ok && r.value.generation).toBeUndefined();
+    expect(r.ok && r.value.writer).toBeUndefined();
+    expect(snapshotVaultFiles(newer.paths)).toEqual(before);
+    rmSync(newer.paths.root, { recursive: true, force: true });
   });
 });

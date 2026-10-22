@@ -1,6 +1,7 @@
 import type { Clock } from "../../../shared/application/ports/clock.js";
 import type { UseCase } from "../../../shared/application/use-case.js";
 import { type DomainError, ok, type Result } from "../../../shared/domain/result.js";
+import { VaultSchemaTooNewError } from "../../domain/errors.js";
 import { isIdleExpired } from "../../domain/values/auto-lock-ttl.js";
 import type { DeviceId } from "../../domain/values/device-id.js";
 import type { Generation } from "../../domain/values/generation.js";
@@ -35,6 +36,8 @@ export interface VaultStatusOutput {
   generation?: Generation;
   lastWriter?: DeviceId;
   lastWriterIsThisDevice?: boolean;
+  /** Present only when the vault's schema is newer than this build — reported, not fatal (D-G). */
+  schemaTooNew?: { vaultVersion: number; supportedVersion: number };
 }
 
 /**
@@ -78,6 +81,9 @@ export class VaultStatus implements UseCase<void, VaultStatusOutput> {
     // WRONG_PASSPHRASE on a stale key, so `unlocked` follows from its result —
     // a separate verifyKey would only open the db a second time for nothing.
     const lineage = this.store.readLineage(keyHex);
+    if (!lineage.ok && lineage.error instanceof VaultSchemaTooNewError) {
+      return ok({ ...base, ...tooNewStatus(lineage.error), vaultId, autoLock });
+    }
     if (!lineage.ok) {
       return ok({ ...base, initialized: true, unlocked: false, vaultId, autoLock });
     }
@@ -108,4 +114,16 @@ export class VaultStatus implements UseCase<void, VaultStatusOutput> {
       expired: isIdleExpired(lastActivity, now, this.ttlMinutes),
     };
   }
+}
+
+/**
+ * The key opens the vault (the refusal comes after key verification), so the session is
+ * still "unlocked" — but nothing past the schema marker is read: no lineage fields (D-G).
+ */
+function tooNewStatus(error: VaultSchemaTooNewError) {
+  return {
+    initialized: true,
+    unlocked: true,
+    schemaTooNew: { vaultVersion: error.vaultVersion, supportedVersion: error.supportedVersion },
+  };
 }

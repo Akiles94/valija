@@ -1,6 +1,8 @@
 import type { AsyncUseCase } from "../../../shared/application/use-case.js";
 import { type DomainError, ok, type Result } from "../../../shared/domain/result.js";
+import { compareSchema } from "../../../shared/domain/services/schema-compatibility.js";
 import { LATEST_SCHEMA_VERSION, pendingMigrations } from "../../../shared/infra/migrations.js";
+import { schemaTooNewErr } from "../../domain/errors.js";
 import type { VaultCrypto } from "../ports/crypto.js";
 import type { VaultStore } from "../ports/vault-store.js";
 import { resolveUnlockKey, type UnlockKeyInput } from "../services/resolve-unlock-key.js";
@@ -38,6 +40,9 @@ export class CheckVaultUpgrade implements AsyncUseCase<UnlockKeyInput, VaultUpgr
 
     const schema = this.store.readSchemaVersion(keyHex.value);
     if (!schema.ok) return schema;
+    if (compareSchema(schema.value, LATEST_SCHEMA_VERSION) === "newer") {
+      return schemaTooNewErr(schema.value, LATEST_SCHEMA_VERSION);
+    }
 
     const pending = pendingMigrations(schema.value);
     return ok({

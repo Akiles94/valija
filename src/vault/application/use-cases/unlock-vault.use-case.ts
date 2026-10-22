@@ -1,8 +1,9 @@
 import type { Clock } from "../../../shared/application/ports/clock.js";
 import type { AsyncUseCase } from "../../../shared/application/use-case.js";
 import { type DomainError, ok, type Result } from "../../../shared/domain/result.js";
+import { compareSchema } from "../../../shared/domain/services/schema-compatibility.js";
 import { LATEST_SCHEMA_VERSION } from "../../../shared/infra/migrations.js";
-import { vaultErr, vaultError } from "../../domain/errors.js";
+import { schemaTooNewErr, vaultErr, vaultError } from "../../domain/errors.js";
 import { classifyLineage } from "../../domain/services/vault-lineage.js";
 import type { DeviceId } from "../../domain/values/device-id.js";
 import type { Generation } from "../../domain/values/generation.js";
@@ -64,10 +65,14 @@ export class UnlockVault implements AsyncUseCase<UnlockInput, UnlockOutput> {
     // Gate before readLineage, which migrates as a side effect (D-J(b)) — a
     // behind-schema vault must not be touched until the caller has confirmed
     // the upgrade. Nothing here changes the CLI's behaviour: unlockCommand
-    // always passes upgradeConfirmed: true.
+    // always passes upgradeConfirmed: true. A newer schema is refused first,
+    // before any key, activity or last-seen is set — and upgradeConfirmed
+    // never bypasses it (D-E).
     const schema = this.store.readSchemaVersion(keyHex.value);
     if (!schema.ok) return schema;
-    if (schema.value < LATEST_SCHEMA_VERSION && input.upgradeConfirmed !== true) {
+    const compatibility = compareSchema(schema.value, LATEST_SCHEMA_VERSION);
+    if (compatibility === "newer") return schemaTooNewErr(schema.value, LATEST_SCHEMA_VERSION);
+    if (compatibility === "behind" && input.upgradeConfirmed !== true) {
       return vaultErr(
         "VAULT_UPGRADE_REQUIRED",
         `This vault's schema (version ${schema.value}) is behind the current version ` +

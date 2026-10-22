@@ -1,8 +1,10 @@
 import { randomBytes } from "node:crypto";
 import { rmSync } from "node:fs";
 import { afterAll, describe, expect, it } from "vitest";
+import { LATEST_SCHEMA_VERSION } from "../../../shared/infra/migrations.js";
 import { openVaultDb } from "../../../shared/infra/sqlite.js";
 import { resolveVaultPaths } from "../../../shared/infra/vault-paths.js";
+import { setStoredSchemaVersion } from "../../../testing/schema-skew.js";
 import {
   FakeKeychain,
   FixedClock,
@@ -93,5 +95,44 @@ describe("VaultStatus", () => {
     expect(r.value.autoLock.expired).toBe(true);
 
     vault.clock.advanceMinutes(-20); // restore for any later test relying on the fixed clock
+  });
+
+  it("a current vault carries no schemaTooNew key", () => {
+    const r = vaultStatus.execute();
+    expect(r.ok && Object.hasOwn(r.value, "schemaTooNew")).toBe(false);
+  });
+});
+
+describe("VaultStatus — a vault newer than this build (D-G)", () => {
+  it("reports unlocked with schemaTooNew and no lineage fields — reported, not fatal", () => {
+    const newer = makeUnlockedVault();
+    const db = openVaultDb(newer.paths.db, newer.keyHex);
+    new SqliteLineageStore(db, newer.idGen, newer.clock).bump(newer.deviceIdentity.deviceId());
+    db.close();
+    setStoredSchemaVersion(newer.paths.db, newer.keyHex, LATEST_SCHEMA_VERSION + 1);
+
+    const r = new VaultStatus(
+      newer.store,
+      newer.keychain,
+      newer.deviceIdentity,
+      new FileVaultFolder(newer.paths),
+      newer.clock,
+      15,
+    ).execute();
+    rmSync(newer.paths.root, { recursive: true, force: true });
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value).toMatchObject({
+      initialized: true,
+      unlocked: true,
+      vaultId: newer.vaultId,
+      schemaTooNew: {
+        vaultVersion: LATEST_SCHEMA_VERSION + 1,
+        supportedVersion: LATEST_SCHEMA_VERSION,
+      },
+    });
+    expect(r.value.generation).toBeUndefined();
+    expect(r.value.lastWriter).toBeUndefined();
   });
 });

@@ -33,6 +33,11 @@ export interface VaultStore {
    * The database's current schema version, without migrating it. Used to gate
    * unlock on an explicit upgrade confirmation (D-J(b)) — `readLineage` alone
    * cannot answer this because it migrates as a side effect.
+   *
+   * Read-only (SDK, D-F): no migration, no journal pragma, no write — and it
+   * reports a newer schema's number instead of refusing it, so the use case
+   * can refuse with `VAULT_SCHEMA_TOO_NEW` itself. Every other method that
+   * opens the database returns `VAULT_SCHEMA_TOO_NEW` on a newer vault.
    */
   readSchemaVersion(keyHex: string): Result<number, DomainError>;
   dbPath(): string;

@@ -1,14 +1,16 @@
 import { existsSync, mkdirSync } from "node:fs";
 import type { Clock, IdGenerator } from "../../shared/application/ports/clock.js";
 import { type DomainError, ok, type Result } from "../../shared/domain/result.js";
-import { migrate, schemaVersion } from "../../shared/infra/migrations.js";
-import { isWrongKeyError, openVaultDb } from "../../shared/infra/sqlite.js";
+import { migrate, SchemaTooNewError } from "../../shared/infra/migrations.js";
+import { isWrongKeyError, openVaultDb, probeSchemaVersion } from "../../shared/infra/sqlite.js";
 import type { VaultPaths } from "../../shared/infra/vault-paths.js";
 import type { VaultHeaderData, VaultStore } from "../application/ports/vault-store.js";
-import { vaultErr } from "../domain/errors.js";
+import { schemaTooNewErr, vaultErr } from "../domain/errors.js";
 import type { LineageStamp } from "../domain/services/vault-lineage.js";
 import { SqliteLineageStore } from "./sqlite-lineage-store.js";
 import { readVaultHeader, writeVaultHeader } from "./vault-header.js";
+
+const WRONG_KEY_MESSAGE = "Wrong passphrase (or recovery key) for this vault.";
 
 /**
  * The vault on disk: a JSON header next to a SQLCipher database, opened, migrated and verified
@@ -41,6 +43,7 @@ export class FileVaultStore implements VaultStore {
       db.close();
       return ok(undefined);
     } catch (error) {
+      if (error instanceof SchemaTooNewError) return this.toStoreError(error);
       return vaultErr("STORAGE_ERROR", `Could not create vault db: ${(error as Error).message}`);
     }
   }
@@ -51,10 +54,7 @@ export class FileVaultStore implements VaultStore {
       db.close();
       return ok(undefined);
     } catch (error) {
-      if (isWrongKeyError(error)) {
-        return vaultErr("WRONG_PASSPHRASE", "Wrong passphrase (or recovery key) for this vault.");
-      }
-      return vaultErr("STORAGE_ERROR", `Could not open vault db: ${(error as Error).message}`);
+      return this.toStoreError(error);
     }
   }
 
@@ -68,32 +68,29 @@ export class FileVaultStore implements VaultStore {
         db.close();
       }
     } catch (error) {
-      if (isWrongKeyError(error)) {
-        return vaultErr("WRONG_PASSPHRASE", "Wrong passphrase (or recovery key) for this vault.");
-      }
-      return vaultErr("STORAGE_ERROR", `Could not open vault db: ${(error as Error).message}`);
+      return this.toStoreError(error);
     }
   }
 
+  /** Read-only (D-F): the probe never migrates, settles the journal, or refuses a newer schema. */
   readSchemaVersion(keyHex: string): Result<number, DomainError> {
     try {
-      const db = openVaultDb(this.paths.db, keyHex);
-      try {
-        // Deliberately not `migrate(db, ...)` — a read-only check must not
-        // touch the schema, or there would be nothing left to confirm.
-        return ok(schemaVersion(db));
-      } finally {
-        db.close();
-      }
+      return ok(probeSchemaVersion(this.paths.db, keyHex));
     } catch (error) {
-      if (isWrongKeyError(error)) {
-        return vaultErr("WRONG_PASSPHRASE", "Wrong passphrase (or recovery key) for this vault.");
-      }
-      return vaultErr("STORAGE_ERROR", `Could not open vault db: ${(error as Error).message}`);
+      return this.toStoreError(error);
     }
   }
 
   dbPath(): string {
     return this.paths.db;
+  }
+
+  /** One mapping for every open: wrong key, newer schema, or anything else. */
+  private toStoreError(error: unknown): Result<never, DomainError> {
+    if (isWrongKeyError(error)) return vaultErr("WRONG_PASSPHRASE", WRONG_KEY_MESSAGE);
+    if (error instanceof SchemaTooNewError) {
+      return schemaTooNewErr(error.vaultVersion, error.supportedVersion);
+    }
+    return vaultErr("STORAGE_ERROR", `Could not open vault db: ${(error as Error).message}`);
   }
 }
