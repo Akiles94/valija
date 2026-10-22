@@ -29,7 +29,13 @@ export type ContextErrorCode =
   /** The item is imported, so it can only be archived or unarchived. */
   | "ITEM_NOT_CURATABLE"
   /** An edit named no field to change (content, tags or type). */
-  | "NOTHING_TO_EDIT";
+  | "NOTHING_TO_EDIT"
+  | "PROJECT_NOT_DETECTED"
+  | "PROJECT_AMBIGUOUS"
+  | "BINDING_CONFLICT"
+  | "BINDING_NOT_FOUND"
+  | "NO_GIT_REMOTE"
+  | "INVALID_WORKSPACE_PATH";
 
 /** Fails with a CONTEXT error code, as a `Result`. */
 export const contextErr = (code: ContextErrorCode, message: string): Result<never, DomainError> =>

@@ -7,6 +7,10 @@
 - `Result<T, E>` — every fallible operation returns `{ ok: true, value }` or `{ ok: false, error }`. **No exceptions cross layer boundaries.**
 - `DomainError` — carries a machine-readable `code: string` and a human message. Each context narrows the codes via its own constructor (`vaultErr`, `contextErr`).
 
+## domain/services/path-containment.ts (PROJECT-DETECT P-6)
+
+One path rule for the whole repo, lifted unchanged from `vault-relocation.ts` so relocation and project detection can never disagree: `isCaseInsensitivePlatform(platform)` (`win32 | darwin`), `pathModuleFor(platform)` (`win32` or `posix` — the `platform` argument, never the host, decides path semantics), and `isSameOrInside(root, candidate, platform)` (true for the folder itself or anything nested in it, after `resolve()`, case-folded on win32/darwin; `/a/bc` is not inside `/a/b`). Pure, no I/O.
+
 ## application/ports/clock.ts
 
 - `Clock.now()` and `IdGenerator.next()` — the two ambient dependencies both contexts inject, so time and ids are deterministic in tests.
@@ -35,4 +39,4 @@
 
 - `resolveStatePaths(override?)` → `{ root, state }`. Root precedence: explicit override → `VALIJA_STATE_HOME` env → `~/.valija-state`. Deliberately **independent** of `vault-paths.ts` / `VALIJA_HOME`, so device-local state (device id, per-vault last-seen lineage, last-activity timestamp — see [vault.md](vault.md)) never lands inside a folder a sync client watches.
 
-Proof: `src/shared/infra/sqlite.test.ts`, `src/shared/infra/migrations.test.ts`, `src/shared/infra/migrations/003-lineage.test.ts`, `src/shared/infra/upgrade-wal.test.ts` (a populated pre-M3 WAL vault upgrades without data/search loss).
+Proof: `src/shared/domain/services/path-containment.test.ts`, `src/shared/infra/sqlite.test.ts`, `src/shared/infra/migrations.test.ts`, `src/shared/infra/migrations/003-lineage.test.ts`, `src/shared/infra/upgrade-wal.test.ts` (a populated pre-M3 WAL vault upgrades without data/search loss).

@@ -37,6 +37,8 @@ Pure, no I/O. `refuseUnsafeRelocation(request, platform?): DomainError | null` �
 
 Returns `null` when none apply — nothing has been written either way; the caller (`RelocateVault`, or a preflight preview that never calls it) decides what happens next.
 
+The containment and case rule in step 3 is `isSameOrInside` from `shared/domain/services/path-containment.ts` (PROJECT-DETECT P-6), the same rule project detection uses.
+
 ## application/ports (this module owns its technical ports)
 
 - `crypto.ts` — `VaultCrypto`: Argon2id derivation to a 32-byte key + salt generation. Default KDF: 64 MiB, t=3, p=1.

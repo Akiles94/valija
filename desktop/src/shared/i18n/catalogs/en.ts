@@ -414,6 +414,15 @@ export const en = {
     ITEM_PINNED: "That item is pinned — unpin it first.",
     ITEM_NOT_CURATABLE: "Imported items can only be archived or unarchived.",
     NOTHING_TO_EDIT: "There's nothing to change on that item.",
+    PROJECT_NOT_DETECTED: "No project is linked to this folder.",
+    PROJECT_AMBIGUOUS: "These folders are linked to different projects.",
+    BINDING_CONFLICT:
+      "That folder or repository is already linked to another project. Unlink it there first.",
+    BINDING_NOT_FOUND: "That link no longer exists.",
+    NO_GIT_REMOTE:
+      "That folder isn't in a git repository with a remote. Link only the folder instead.",
+    INVALID_WORKSPACE_PATH:
+      "That folder can't be linked — it's missing, unreadable, or too broad (your home folder or the disk root).",
     UNSUPPORTED_SOURCE: "Valija doesn't recognize that export format. Pick the format manually.",
     MALFORMED_EXPORT: "That export file looks corrupted.",
     EMPTY_EXPORT: "That export file has nothing to import.",

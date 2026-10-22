@@ -418,6 +418,15 @@ export const es: Catalog = {
     ITEM_PINNED: "Ese elemento está fijado; desfíjalo primero.",
     ITEM_NOT_CURATABLE: "Los elementos importados solo se pueden archivar o desarchivar.",
     NOTHING_TO_EDIT: "No hay nada que cambiar en ese elemento.",
+    PROJECT_NOT_DETECTED: "Ningún proyecto está vinculado a esta carpeta.",
+    PROJECT_AMBIGUOUS: "Estas carpetas están vinculadas a proyectos distintos.",
+    BINDING_CONFLICT:
+      "Esa carpeta o repositorio ya está vinculado a otro proyecto. Desvincúlalo allí primero.",
+    BINDING_NOT_FOUND: "Ese vínculo ya no existe.",
+    NO_GIT_REMOTE:
+      "Esa carpeta no está en un repositorio git con un remoto. Vincula solo la carpeta.",
+    INVALID_WORKSPACE_PATH:
+      "No se puede vincular esa carpeta: no existe, no se puede leer o es demasiado amplia (tu carpeta personal o la raíz del disco).",
     UNSUPPORTED_SOURCE:
       "Valija no reconoce ese formato de exportación. Elige el formato manualmente.",
     MALFORMED_EXPORT: "Ese archivo de exportación parece dañado.",
