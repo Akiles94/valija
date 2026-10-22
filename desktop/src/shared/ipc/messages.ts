@@ -1,18 +1,18 @@
 import type { SystemOr } from "../../main/application/policies/system-or-override.js";
 import type { Language } from "../i18n/languages.js";
 
-/**
- * Every response backed by a `Result`-returning use case crosses the
- * boundary as this shape — `error` carries only a `code`, never
- * `DomainError.message` (D-V(d), §5.1). The renderer maps `code` to catalog
- * copy; it never renders a raw message.
- */
 /** A vault's schema and the highest one this app supports — numbers only, never a message (P-21). */
 export interface SchemaVersionsMessage {
   vaultVersion: number;
   supportedVersion: number;
 }
 
+/**
+ * Every response backed by a `Result`-returning use case crosses the
+ * boundary as this shape — `error` carries only a `code`, never
+ * `DomainError.message` (D-V(d), §5.1). The renderer maps `code` to catalog
+ * copy; it never renders a raw message.
+ */
 export type IpcResult<T> =
   | { ok: true; value: T }
   | {

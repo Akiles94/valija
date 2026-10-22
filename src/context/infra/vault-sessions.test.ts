@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { readdirSync, rmSync } from "node:fs";
 import { Worker } from "node:worker_threads";
 import SqliteDatabase from "better-sqlite3-multiple-ciphers";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { type DomainError, ok, type Result } from "../../shared/domain/result.js";
 import { LATEST_SCHEMA_VERSION, schemaVersion } from "../../shared/infra/migrations.js";
 import { openVaultDb } from "../../shared/infra/sqlite.js";
@@ -139,6 +139,30 @@ describe("SqliteVaultSessions — schema guard, open order, modes and busy write
     vault.deviceIdentity.recordActivity(vault.vaultId, vault.clock.now());
     vault.clock.advanceMinutes(24 * 60);
   };
+
+  it("a throw while the connection is open closes it and maps to STORAGE_ERROR (review W1)", () => {
+    const vault = openVault();
+    const close = vi.spyOn(SqliteDatabase.prototype, "close");
+    cleanups.push(() => close.mockRestore());
+    const throwingGuard = {
+      guard: () => {
+        throw new Error("state.json write failed");
+      },
+    } as unknown as TestVault["guard"];
+    const sessions = new SqliteVaultSessions(
+      vault.paths,
+      vault.keychain,
+      vault.deviceIdentity,
+      throwingGuard,
+      vault.idGen,
+      vault.clock,
+    );
+
+    const result = readOnly(sessions);
+
+    expect(!result.ok && result.error.code).toBe("STORAGE_ERROR");
+    expect(close).toHaveBeenCalledTimes(1);
+  });
 
   it("a newer schema → VAULT_SCHEMA_TOO_NEW; files unchanged, key kept, activity unchanged", () => {
     const vault = openVault(LATEST_SCHEMA_VERSION + 1);

@@ -48,6 +48,12 @@ class WriteFailedSentinel extends Error {
   }
 }
 
+/** Busy maps to BUSY_MESSAGE; anything else to "Could not open vault". */
+function storageErr(error: unknown): Result<never, DomainError> {
+  if (isBusyError(error)) return vaultErr("STORAGE_ERROR", BUSY_MESSAGE);
+  return vaultErr("STORAGE_ERROR", `Could not open vault: ${(error as Error).message}`);
+}
+
 /** A write still contended past the busy timeout (P-8): the transaction already rolled back, lineage included. */
 export const BUSY_MESSAGE =
   "The vault is busy: another valija process held it for more than 5 s. Nothing was saved. Try again.";
@@ -95,12 +101,18 @@ export class SqliteVaultSessions implements VaultSessions {
     const db = this.openDb(vaultId, keyHex.value);
     if (!db.ok) return db;
 
-    const ready = this.prepare(db.value, vaultId);
-    if (!ready.ok) {
+    // Anything that throws while the connection is open closes it and maps to a Result (review W1).
+    try {
+      const ready = this.prepare(db.value, vaultId);
+      if (!ready.ok) {
+        db.value.close();
+        return ready;
+      }
+      return ok(this.sessionOver(db.value, vaultId));
+    } catch (error) {
       db.value.close();
-      return ready;
+      return storageErr(error);
     }
-    return ok(this.sessionOver(db.value, vaultId));
   }
 
   /** The session key must be present in the OS keychain — otherwise the vault is locked. */
@@ -123,8 +135,7 @@ export class SqliteVaultSessions implements VaultSessions {
         // Keychain untouched: an updated valija can still use this session.
         return schemaTooNewErr(error.vaultVersion, error.supportedVersion);
       }
-      if (isBusyError(error)) return vaultErr("STORAGE_ERROR", BUSY_MESSAGE);
-      return vaultErr("STORAGE_ERROR", `Could not open vault: ${(error as Error).message}`);
+      return storageErr(error);
     }
   }
 
@@ -146,7 +157,7 @@ export class SqliteVaultSessions implements VaultSessions {
       migrate(db, this.paths.db);
       return ok(undefined);
     } catch (error) {
-      return vaultErr("STORAGE_ERROR", `Could not open vault: ${(error as Error).message}`);
+      return storageErr(error);
     }
   }
 

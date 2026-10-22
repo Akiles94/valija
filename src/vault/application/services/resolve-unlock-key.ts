@@ -28,7 +28,9 @@ export async function resolveUnlockKey(
   }
   if (input.passphrase !== undefined) {
     const key = await crypto.deriveKey(input.passphrase, header.salt, header.kdf);
-    return ok(bytesToHex(key));
+    const keyHex = bytesToHex(key);
+    key.fill(0); // best effort (P-16): the hex string itself cannot be wiped
+    return ok(keyHex);
   }
   return vaultErr("WRONG_PASSPHRASE", "Provide a passphrase or a recovery key.");
 }
