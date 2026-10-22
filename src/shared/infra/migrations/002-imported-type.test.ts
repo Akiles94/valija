@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Database } from "better-sqlite3-multiple-ciphers";
 import { afterAll, describe, expect, it } from "vitest";
-import { migrate, schemaVersion } from "../migrations.js";
+import { LATEST_SCHEMA_VERSION, migrate, schemaVersion } from "../migrations.js";
 import { openVaultDb } from "../sqlite.js";
 import { MIGRATION_001 } from "./001-init.js";
 
@@ -74,7 +74,7 @@ describe("migration 002 — imported type", () => {
 
     migrate(db, path);
 
-    expect(schemaVersion(db)).toBe(3); // 002 + 003 both apply from a fresh migrate() call
+    expect(schemaVersion(db)).toBe(LATEST_SCHEMA_VERSION); // 002 onward all apply from one migrate() call
     expect(db.prepare(`SELECT ${columns} FROM context_items ORDER BY id`).all()).toEqual(before);
     expect(ftsHits(db, "sqlcipher")).toHaveLength(1); // FTS index survived the rebuild
     db.close();
@@ -108,7 +108,7 @@ describe("migration 002 — imported type", () => {
     const db = buildV1(path);
     migrate(db, path);
     migrate(db, path);
-    expect(schemaVersion(db)).toBe(3);
+    expect(schemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     db.close();
   });
 

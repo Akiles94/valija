@@ -14,7 +14,7 @@ describe("Migrations", () => {
     const db = openVaultDb(join(tmp, "idempotent.db"), randomBytes(32).toString("hex"));
     migrate(db);
     migrate(db);
-    expect(schemaVersion(db)).toBe(3);
+    expect(schemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     db.close();
   });
 
@@ -58,8 +58,12 @@ describe("Migrations", () => {
       { version: 1, backsUpCiphertext: false },
       { version: 2, backsUpCiphertext: true },
       { version: 3, backsUpCiphertext: true },
+      { version: 4, backsUpCiphertext: true },
     ]);
-    expect(pendingMigrations(2)).toEqual([{ version: 3, backsUpCiphertext: true }]);
+    expect(pendingMigrations(2)).toEqual([
+      { version: 3, backsUpCiphertext: true },
+      { version: 4, backsUpCiphertext: true },
+    ]);
     expect(pendingMigrations(LATEST_SCHEMA_VERSION)).toEqual([]);
   });
 });

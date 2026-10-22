@@ -8,7 +8,7 @@ import SqliteDatabase from "better-sqlite3-multiple-ciphers";
 import { afterAll, describe, expect, it } from "vitest";
 import { MIGRATION_001 } from "./migrations/001-init.js";
 import { MIGRATION_002 } from "./migrations/002-imported-type.js";
-import { migrate, schemaVersion } from "./migrations.js";
+import { LATEST_SCHEMA_VERSION, migrate, schemaVersion } from "./migrations.js";
 import { openVaultDb } from "./sqlite.js";
 
 const tmp = mkdtempSync(join(tmpdir(), "valija-upgrade-wal-"));
@@ -53,7 +53,7 @@ const ROW_SQL =
  * Note: SQLite auto-checkpoints (and removes -wal/-shm) when the last
  * connection to a WAL database closes cleanly, so this builder — which closes
  * normally — proves the ordinary upgrade path: a vault created and used in WAL
- * mode upgrades correctly (journal switches, schema reaches 3, lineage seeds,
+ * mode upgrades correctly (journal switches, schema reaches the latest version, lineage seeds,
  * no data or search lost). The harder case — a literal dangling -wal left by a
  * process killed mid-flight — is covered separately by the crashed-process test
  * below, which spawns a real writer and SIGKILLs it.
@@ -86,7 +86,7 @@ describe("upgrading a pre-M3 populated WAL vault", () => {
     migrate(db, path);
 
     expect(db.pragma("journal_mode", { simple: true })).toBe("delete");
-    expect(schemaVersion(db)).toBe(3);
+    expect(schemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     const generation = db
       .prepare("SELECT value FROM meta WHERE key = 'lineage_generation'")
       .get() as { value: string } | undefined;

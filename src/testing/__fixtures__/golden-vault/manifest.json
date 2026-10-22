@@ -10,7 +10,7 @@
     "iterations": 3,
     "parallelism": 1
   },
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "headerSchemaVersion": 1,
   "createdAt": "2026-07-26T00:00:00.000Z",
   "generatedAt": "2026-07-26T12:00:00.000Z",
@@ -31,7 +31,7 @@
     "plaintext_header_size": "0",
     "legacy": "0",
     "legacy_page_size": "4096",
-    "cipher_salt": "EC9F1BEE32529ADFBD1D6A0A1AEA05AF"
+    "cipher_salt": "CD1945CFD8800B8BEB944492B2394B13"
   },
-  "fileSaltHex": "EC9F1BEE32529ADFBD1D6A0A1AEA05AF"
+  "fileSaltHex": "CD1945CFD8800B8BEB944492B2394B13"
 }

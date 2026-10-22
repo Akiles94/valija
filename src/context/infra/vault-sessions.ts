@@ -15,6 +15,7 @@ import { readVaultHeader } from "../../vault/infra/vault-header.js";
 import type { VaultSession, VaultSessions } from "../application/ports/vault-session.js";
 import { SqliteContextItemRepository } from "./item-repo.js";
 import { SqliteProjectRepository } from "./project-repo.js";
+import { SqliteProjectBindingRepository } from "./sqlite-project-binding-repository.js";
 
 /**
  * Open a session, run the action, and always close the session — even when the
@@ -91,6 +92,7 @@ export class SqliteVaultSessions implements VaultSessions {
       return ok({
         projects: new SqliteProjectRepository(db),
         items: new SqliteContextItemRepository(db),
+        bindings: new SqliteProjectBindingRepository(db),
         write: <T>(mutate: () => Result<T, DomainError>) =>
           this.commitWrite(db, lineageStore, writer, vaultId, mutate),
         close: () => db.close(),

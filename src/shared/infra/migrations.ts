@@ -3,6 +3,7 @@ import type { Database } from "better-sqlite3-multiple-ciphers";
 import { MIGRATION_001 } from "./migrations/001-init.js";
 import { MIGRATION_002 } from "./migrations/002-imported-type.js";
 import { MIGRATION_003 } from "./migrations/003-lineage.js";
+import { MIGRATION_004 } from "./migrations/004-project-bindings.js";
 
 interface Migration {
   version: number;
@@ -15,6 +16,7 @@ const MIGRATIONS: readonly Migration[] = [
   { version: 1, sql: MIGRATION_001 },
   { version: 2, sql: MIGRATION_002, backup: true },
   { version: 3, sql: MIGRATION_003, backup: true },
+  { version: 4, sql: MIGRATION_004, backup: true },
 ];
 
 /** Schema version a freshly migrated vault database reaches; vaults behind it need an upgrade. */

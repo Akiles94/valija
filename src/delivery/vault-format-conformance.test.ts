@@ -8,7 +8,7 @@ import type { VaultSessions } from "../context/application/ports/vault-session.j
 import { GetContextPack } from "../context/application/use-cases/get-context-pack.use-case.js";
 import { SearchContext } from "../context/application/use-cases/search-context.use-case.js";
 import { DEFAULT_BUDGET_TOKENS, estimateTokens } from "../context/domain/services/context-pack.js";
-import { migrate, schemaVersion } from "../shared/infra/migrations.js";
+import { LATEST_SCHEMA_VERSION, migrate, schemaVersion } from "../shared/infra/migrations.js";
 import { openVaultDb } from "../shared/infra/sqlite.js";
 import {
   buildGoldenVault,
@@ -143,11 +143,23 @@ describe("vault format conformance", () => {
     const paths = copyGoldenVaultTo(tempRoot("open"));
     const db = openVaultDb(paths.db, manifest.keyHex);
     migrate(db, paths.db);
-    expect(schemaVersion(db)).toBe(3);
+    expect(schemaVersion(db)).toBe(manifest.schemaVersion);
     const projectCount = db.prepare("SELECT count(*) AS n FROM projects").get() as { n: number };
     const itemCount = db.prepare("SELECT count(*) AS n FROM context_items").get() as { n: number };
     expect(projectCount.n).toBe(seed.projects.length);
     expect(itemCount.n).toBe(seed.items.length);
+    db.close();
+  });
+
+  it("the fixture is at the latest schema and its bindings table is empty (no fake paths in published data)", () => {
+    const paths = copyGoldenVaultTo(tempRoot("bindings"));
+    const db = openVaultDb(paths.db, manifest.keyHex);
+    expect(manifest.schemaVersion).toBe(LATEST_SCHEMA_VERSION);
+    expect(schemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
+    const bindingCount = db.prepare("SELECT count(*) AS n FROM project_bindings").get() as {
+      n: number;
+    };
+    expect(bindingCount.n).toBe(0);
     db.close();
   });
 

@@ -1,5 +1,7 @@
 import type { ContextItem } from "../../domain/entities/context-item.js";
 import type { Project, ProjectSummary } from "../../domain/entities/project.js";
+import type { ProjectBinding } from "../../domain/entities/project-binding.js";
+import type { BoundProject } from "../../domain/services/project-resolution.js";
 import type { StorableItemType } from "../../domain/values/item-type.js";
 import type { ProjectName } from "../../domain/values/project-name.js";
 
@@ -42,4 +44,13 @@ export interface ContextItemRepository {
   findByIdPrefix(prefix: string, limit: number): ItemWithProject[];
   findByProject(projectId: string, filters?: FindByProjectFilters): ContextItem[];
   search(query: string, projectId?: string, limit?: number): SearchResult[];
+}
+
+export interface ProjectBindingRepository {
+  /** Insert-only. `false` when the (kind, target) pair is already taken — the caller turns that into BINDING_CONFLICT. */
+  add(binding: ProjectBinding): boolean;
+  /** `false` when no row had that id. */
+  remove(bindingId: string): boolean;
+  /** Every binding with its project's slug, ordered by project, kind, target. */
+  list(): BoundProject[];
 }

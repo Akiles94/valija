@@ -32,7 +32,7 @@ export interface GoldenVaultManifest {
   keyHex: string;
   saltBase64: string;
   kdf: { algorithm: "argon2id"; memoryKiB: number; iterations: number; parallelism: number };
-  /** The database's schema_version (currently 3) — distinct from the header's schemaVersion. */
+  /** The database's schema_version (currently 4) — distinct from the header's schemaVersion. */
   schemaVersion: number;
   /** The plaintext header's schemaVersion field — always the literal 1. */
   headerSchemaVersion: 1;

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Database } from "better-sqlite3-multiple-ciphers";
 import { afterAll, describe, expect, it } from "vitest";
-import { migrate, schemaVersion } from "../migrations.js";
+import { LATEST_SCHEMA_VERSION, migrate, schemaVersion } from "../migrations.js";
 import { openVaultDb } from "../sqlite.js";
 import { MIGRATION_001 } from "./001-init.js";
 import { MIGRATION_002 } from "./002-imported-type.js";
@@ -40,23 +40,23 @@ const ftsHits = (db: Database, term: string): unknown[] =>
   db.prepare("SELECT rowid FROM context_items_fts WHERE context_items_fts MATCH ?").all(term);
 
 describe("migration 003 — lineage baseline", () => {
-  it("a fresh init reaches schema 3 with lineage_generation seeded to 0", () => {
+  it("a fresh init reaches the latest schema with lineage_generation seeded to 0", () => {
     const path = join(tmp, "fresh.db");
     const db = openVaultDb(path, randomBytes(32).toString("hex"));
     migrate(db, path);
-    expect(schemaVersion(db)).toBe(3);
+    expect(schemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     expect(lineageGeneration(db)).toBe("0");
     db.close();
   });
 
-  it("upgrades a populated v2 vault to v3 without losing rows or search", () => {
+  it("upgrades a populated v2 vault past v3 without losing rows or search", () => {
     const path = join(tmp, "populated.db");
     const db = buildV2(path);
     const before = db.prepare("SELECT id FROM context_items ORDER BY id").all();
 
     migrate(db, path);
 
-    expect(schemaVersion(db)).toBe(3);
+    expect(schemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     expect(db.prepare("SELECT id FROM context_items ORDER BY id").all()).toEqual(before);
     expect(ftsHits(db, "sqlcipher")).toHaveLength(1);
     expect(lineageGeneration(db)).toBe("0");
@@ -71,12 +71,12 @@ describe("migration 003 — lineage baseline", () => {
     db.close();
   });
 
-  it("is a no-op once at v3", () => {
+  it("is a no-op once at the latest schema", () => {
     const path = join(tmp, "idempotent.db");
     const db = buildV2(path);
     migrate(db, path);
     migrate(db, path);
-    expect(schemaVersion(db)).toBe(3);
+    expect(schemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     db.close();
   });
 });

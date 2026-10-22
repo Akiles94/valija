@@ -1,5 +1,9 @@
 import type { DomainError, Result } from "../../../shared/domain/result.js";
-import type { ContextItemRepository, ProjectRepository } from "./repositories.js";
+import type {
+  ContextItemRepository,
+  ProjectBindingRepository,
+  ProjectRepository,
+} from "./repositories.js";
 
 /**
  * An open handle to the unlocked vault, scoped to a single operation.
@@ -9,11 +13,13 @@ import type { ContextItemRepository, ProjectRepository } from "./repositories.js
 export interface VaultSession {
   readonly projects: ProjectRepository;
   readonly items: ContextItemRepository;
+  /** Folder and repository links to projects (detection). User metadata, never content. */
+  readonly bindings: ProjectBindingRepository;
   /**
    * Run a mutation and, only if it succeeds, atomically stamp the vault's
    * lineage (bump the generation, mint a fresh write stamp) as part of the
    * same commit. Read-only use cases never call this — they use `projects`/
-   * `items` directly and never advance the lineage.
+   * `items`/`bindings` directly and never advance the lineage.
    */
   write<T>(mutate: () => Result<T, DomainError>): Result<T, DomainError>;
   close(): void;

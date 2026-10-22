@@ -191,11 +191,11 @@ At rest, the journal mode is always `DELETE`, never `WAL` — see §2. A vault a
 desktop wrote may still be in `WAL` mode with a live `-wal` sidecar; §11 covers the required
 refusal behavior.
 
-## 6. Schema v3
+## 6. Schema v4
 
-Three tables plus an FTS5 index, created by three migrations applied in order (`001-init`,
-`002-imported-type`, `003-lineage`) — a reader only ever needs the **result**, reproduced
-verbatim below, not the migration history.
+Four tables plus an FTS5 index, created by four migrations applied in order (`001-init`,
+`002-imported-type`, `003-lineage`, `004-project-bindings`) — a reader only ever needs the
+**result**, reproduced verbatim below, not the migration history.
 
 ```sql
 CREATE TABLE projects (
@@ -253,6 +253,18 @@ END;
 -- write-round-trip note otherwise tells an implementer to rely on triggers
 -- they cannot verify without the definitions.
 
+CREATE TABLE IF NOT EXISTS project_bindings (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id),
+  kind TEXT NOT NULL CHECK (kind IN ('folder','repository')),
+  target TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE (kind, target)
+);
+-- verbatim from src/shared/infra/migrations/004-project-bindings.ts. A reader
+-- never needs this table and must ignore it (§7): it is user metadata for
+-- project detection, not content.
+
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 -- Created by the migration runner itself (not by a numbered migration's SQL),
 -- before any migration runs — verbatim from src/shared/infra/migrations.ts.
@@ -262,7 +274,7 @@ CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 
 | `key` | `value` |
 |---|---|
-| `schema_version` | `"3"` — the **database's** version (distinct from the header's `schemaVersion`, always `1`) |
+| `schema_version` | `"4"` — the **database's** version (distinct from the header's `schemaVersion`, always `1`) |
 | `lineage_generation` | a non-negative integer, as a string |
 | `lineage_stamp` | an opaque per-write random token |
 | `lineage_writer` | an opaque device id |
@@ -297,6 +309,11 @@ The repository contract the pack algorithm (§8) depends on:
   `src/testing/__fixtures__/golden-vault/seed.json` does.
 - **Projects:** looked up by `name` (unique). A project has no content of its own beyond its
   `id`/`name`/`description`/timestamps — everything a pack shows comes from its items.
+- **`project_bindings`** (schema v4) maps folders and git repositories to projects, so valija
+  can tell which project a tool is working in. It is **user metadata, not content**: never
+  part of a pack, never surfaced by search, and a reader must ignore it entirely. It holds
+  local paths and normalized remote names (`host/owner/repo`), which is why it lives inside
+  the encrypted database and nowhere else.
 
 ## 8. Pack assembly — the algorithm
 
@@ -477,6 +494,9 @@ D-D).
 - **An unknown or newer `schema_version`** than it was built against: refuse to open the
   vault with an actionable message ("update the app"). Never attempt to read a schema newer
   than the one this document describes, and never partially display what it can parse.
+  Note: a reader built against v3 (the MOBILE PoC, `advances/MOBILE/poc.md`) refuses a v4
+  vault by this very rule, although v4 only adds a table it would ignore. That is expected;
+  the PoC is closed, and a reader built against this document accepts v4.
 - **A `-wal`, `-shm`, or `-journal` sidecar next to `vault.db`, or a journal mode that isn't
   `DELETE`:** refuse with a specific message ("open this vault once on your computer with
   valija 0.3+ first"), never attempt to read `vault.db` alone and show possibly-stale data. A
@@ -500,7 +520,7 @@ Everything above is proven, not just asserted, against
 |---|---|
 | `manifest.json` | Published passphrase, derived key, salt, KDF params, probed cipher parameters, fixed ids |
 | `seed.json` | The exact plaintext rows (2 projects, 12 items) as JSON |
-| `vault.json` / `vault.db` | The built fixture — **public test data, never a real secret** |
+| `vault.json` / `vault.db` | The built fixture — **public test data, never a real secret**. Its `project_bindings` table is empty (no fake paths in published test data) |
 | `expected-pack.md` | The rendered pack for project `alpha` at the tight budget (150 tokens) |
 | `expected-export.md` | The same pack, unbudgeted — full section order |
 | `expected-search.json` | Expected results for 8 queries covering every rule in §10 |

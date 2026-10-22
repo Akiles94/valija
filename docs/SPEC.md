@@ -97,7 +97,7 @@ Key property of MCP to keep in mind: **the server never sees the conversation**.
 └── recovery-kit.txt is NOT stored here — generated once at init, user moves it offline
 ```
 
-**Schema v1:** `projects`, `context_items`, `context_items_fts` (FTS5 over `content` + `tags`, kept in sync by triggers), `meta` (schema_version). Migrations = ordered `.sql` files applied inside a transaction.
+**Schema v1:** `projects`, `context_items`, `context_items_fts` (FTS5 over `content` + `tags`, kept in sync by triggers), `meta` (schema_version). Migrations = ordered `.sql` files applied inside a transaction. **Schema v4** (PROJECT-DETECT) adds `project_bindings` — user-made folder/repository → project links for detection; metadata, never content. The current schema is documented in [vault-format.md](vault-format.md) §6.
 
 ---
 

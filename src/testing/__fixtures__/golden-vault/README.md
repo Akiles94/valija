@@ -14,7 +14,9 @@ secret.** The vault contains no real user content.
   so a second implementation can see what it should be reading without decrypting anything.
 - `vault.json` / `vault.db` — the built fixture: the plaintext header and the encrypted
   SQLCipher database, produced from `manifest.json` + `seed.json` through valija's real
-  write path (`src/testing/golden-vault.ts`'s `buildGoldenVault`).
+  write path (`src/testing/golden-vault.ts`'s `buildGoldenVault`). The vault is at schema v4,
+  and its `project_bindings` table is **empty** on purpose: bindings hold local paths and
+  remote names, and published test data carries none.
 - `expected-pack.md` — the rendered context pack for project `alpha` at the tight budget
   recorded in `manifest.json` (`packBudgetTokens`), exercising the "newest pinned item
   included even over budget" rule.
@@ -34,7 +36,13 @@ VALIJA_WRITE_GOLDEN_VAULT=1 npx vitest run src/delivery/vault-format-conformance
 This rebuilds `vault.json`/`vault.db` from `manifest.json` + `seed.json`, re-derives the key,
 re-probes the cipher parameters, re-renders both expected packs and the search results, then
 **fails the run on purpose** — regeneration must never look like a passing test, so a stray
-env var can never silently rewrite the fixture in CI. Review the diff, then commit it.
+env var can never silently rewrite the fixture in CI. The regenerator writes
+`expected-search.json` with `JSON.stringify`, so run
+`npx biome format --write src/testing/__fixtures__/golden-vault/expected-search.json` to put it
+back in the committed layout before diffing. Review the diff, then commit it.
+
+`schemaVersion` in `manifest.json` is carried over, not recomputed: when a migration lands,
+edit it by hand before regenerating.
 
 Note: the ciphertext itself (`vault.db`) is never byte-stable across regenerations — it
 carries random IVs — only the *rendered* expectations are compared byte-for-byte. See
