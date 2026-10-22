@@ -9,6 +9,11 @@ import type { UseCase } from "../../../shared/application/use-case.js";
 import { type DomainError, ok, type Result } from "../../../shared/domain/result.js";
 import type { Conversation } from "../../domain/entities/conversation.js";
 import { importerErr } from "../../domain/errors.js";
+import {
+  type BlockingChunk,
+  type ChunkToScreen,
+  findBlockingChunks,
+} from "../../domain/services/blocking-chunks.js";
 import { renderConversationChunks } from "../../domain/services/chunk-render.js";
 import { selectConversations } from "../../domain/services/selection.js";
 import type { ImportSource } from "../../domain/values/import-source.js";
@@ -30,6 +35,8 @@ export interface ImportConversationsInput {
   since?: string;
   all?: boolean;
   dryRun?: boolean;
+  /** A human's explicit "import it anyway" (CLI --allow-secrets, desktop Import anyway). Never set by an AI tool. */
+  allowSecrets?: boolean;
 }
 
 /**
@@ -67,6 +74,10 @@ export interface ImportConversationsOutput {
   skipped: number;
   failed: number;
   failures: ImportFailure[];
+  /** dry-run: a real run would be refused; import: it was refused and nothing was written (D-E). */
+  refused: boolean;
+  /** Every chunk that blocks the import, in listing order; `[]` when `allowSecrets` or in list mode. */
+  blockingChunks: BlockingChunk[];
 }
 
 /**
@@ -74,6 +85,9 @@ export interface ImportConversationsOutput {
  * normalized IR, select, chunk, and (unless listing or dry-running) hand the
  * chunks to context's ImportItems for the single-session write. It never touches
  * the vault directly — the whole write path lives behind the injected use case.
+ * All-or-nothing (SECRET-WARN D-E): if any selected chunk looks like it contains
+ * a secret, a dry-run reports `refused` and a real run writes nothing, unless
+ * `allowSecrets`. Both modes compute the blocking list with the same call.
  */
 export class ImportConversations
   implements UseCase<ImportConversationsInput, ImportConversationsOutput>
@@ -124,18 +138,36 @@ export class ImportConversations
     });
     if (!selected.ok) return selected;
 
-    const { items, skipped, contributed } = this.buildItems(selected.value, source);
+    const listingIndex = new Map(conversations.map((conversation, i) => [conversation, i + 1]));
+    const { items, chunks, skipped, contributed } = this.buildItems(
+      selected.value,
+      source,
+      listingIndex,
+    );
+    const blockingChunks = input.allowSecrets === true ? [] : findBlockingChunks(chunks);
+    const refused = blockingChunks.length > 0;
     if (mode === "dry-run") {
       return ok(
         this.summary(mode, source, input, parseFailures, {
           imported: items.length,
           conversations: contributed,
           skipped,
+          refused,
+          blockingChunks,
         }),
       );
     }
+    if (refused) {
+      return ok(
+        this.summary(mode, source, input, parseFailures, { skipped, refused, blockingChunks }),
+      );
+    }
 
-    const written = this.importItems.execute({ projectName: input.projectName ?? "", items });
+    const written = this.importItems.execute({
+      projectName: input.projectName ?? "",
+      items,
+      ...(input.allowSecrets === true ? { allowSecrets: true } : {}),
+    });
     if (!written.ok) return written;
     const importFailures: ImportFailure[] = written.value.failures.map((failure) => ({
       conversation: failure.conversationId,
@@ -195,9 +227,11 @@ export class ImportConversations
   private buildItems(
     conversations: readonly Conversation[],
     source: ImportSource,
-  ): { items: ImportedItemInput[]; skipped: number; contributed: number } {
+    listingIndex: ReadonlyMap<Conversation, number>,
+  ): { items: ImportedItemInput[]; chunks: ChunkToScreen[]; skipped: number; contributed: number } {
     const now = this.clock.now();
     const items: ImportedItemInput[] = [];
+    const screened: ChunkToScreen[] = [];
     let skipped = 0;
     let contributed = 0;
     for (const conversation of conversations) {
@@ -218,9 +252,15 @@ export class ImportConversations
           createdAt,
           tags: ["imported", source],
         });
+        screened.push({
+          conversationIndex: listingIndex.get(conversation) ?? 0,
+          title: conversation.title,
+          part: chunkIndex + 1,
+          content,
+        });
       });
     }
-    return { items, skipped, contributed };
+    return { items, chunks: screened, skipped, contributed };
   }
 
   private summary(
@@ -228,7 +268,14 @@ export class ImportConversations
     source: ImportSource,
     input: ImportConversationsInput,
     failures: ImportFailure[],
-    counts: { imported?: number; conversations?: number; skipped?: number; listing?: ListingRow[] },
+    counts: {
+      imported?: number;
+      conversations?: number;
+      skipped?: number;
+      listing?: ListingRow[];
+      refused?: boolean;
+      blockingChunks?: BlockingChunk[];
+    },
   ): ImportConversationsOutput {
     return {
       mode,
@@ -240,6 +287,8 @@ export class ImportConversations
       skipped: counts.skipped ?? 0,
       failed: failures.length,
       failures,
+      refused: counts.refused ?? false,
+      blockingChunks: counts.blockingChunks ?? [],
     };
   }
 }

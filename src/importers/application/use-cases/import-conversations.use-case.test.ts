@@ -5,6 +5,7 @@ import type {
 } from "../../../context/application/use-cases/import-items.use-case.js";
 import type { UseCase } from "../../../shared/application/use-case.js";
 import { ok, type Result } from "../../../shared/domain/result.js";
+import { PLANTED } from "../../../testing/fake-secrets.js";
 import { FixedClock } from "../../../testing/test-vault.js";
 import type { Conversation } from "../../domain/entities/conversation.js";
 import { importerErr } from "../../domain/errors.js";
@@ -177,5 +178,90 @@ describe("ImportConversations", () => {
     const r = uc.execute({ filePath: "x.json", projectName: "p", all: true });
     expect(r.ok && r.value.failed).toBe(1);
     expect(r.ok && r.value.failures[0]?.conversation).toBe("Broken");
+  });
+});
+
+describe("ImportConversations: all-or-nothing secret check (SECRET-WARN D-E)", () => {
+  const withSecret = (id: string, title: string, date: string): Conversation => ({
+    ...conv(id, title, date),
+    messages: [
+      { role: "user", content: "deploy fails" },
+      { role: "user", content: `export AWS_ACCESS_KEY_ID=${PLANTED.awsAccessKey}` },
+    ],
+  });
+  // Listing order is by date: #1 Alpha, #2 Deploy debugging, #3 Gamma.
+  const conversations = () => [
+    conv("g", "Gamma", "2024-03-01"),
+    withSecret("d", "Deploy debugging", "2024-02-01"),
+    conv("a", "Alpha", "2024-01-01"),
+  ];
+  const run = (input: Record<string, unknown>, list = conversations()) => {
+    const writer = new RecordingImportItems();
+    const uc = new ImportConversations(reader, registryOf(list), writer, clock);
+    const r = uc.execute({ filePath: "x.json", projectName: "p", ...input });
+    if (!r.ok) throw new Error(r.error.message);
+    return { value: r.value, writer };
+  };
+  const expectedBlocking = [
+    {
+      conversationIndex: 2,
+      title: "Deploy debugging",
+      part: 1,
+      findings: [{ kind: "aws-access-key", firstLine: 5, lastLine: 5 }],
+    },
+  ];
+
+  it("dry-run reports refused and the blocking list, with the counts unchanged", () => {
+    const { value, writer } = run({ all: true, dryRun: true });
+    expect(value).toMatchObject({ mode: "dry-run", refused: true, imported: 3, conversations: 3 });
+    expect(value.blockingChunks).toEqual(expectedBlocking);
+    expect(writer.calls).toHaveLength(0);
+  });
+
+  it("a real run is refused: nothing imported and ImportItems never called", () => {
+    const { value, writer } = run({ all: true });
+    expect(value).toMatchObject({ mode: "import", refused: true, imported: 0, conversations: 0 });
+    expect(value.blockingChunks).toEqual(expectedBlocking);
+    expect(writer.calls).toHaveLength(0);
+  });
+
+  it("the dry-run list equals the real-run list for the same input and selection", () => {
+    expect(run({ all: true }).value.blockingChunks).toEqual(
+      run({ all: true, dryRun: true }).value.blockingChunks,
+    );
+  });
+
+  it("narrowing the selection past the flagged conversation imports normally", () => {
+    const { value, writer } = run({ pick: "1,3" });
+    expect(value).toMatchObject({ refused: false, blockingChunks: [], imported: 2 });
+    expect(writer.calls).toHaveLength(1);
+    expect(writer.calls[0]?.items).toHaveLength(2);
+    expect(writer.calls[0] && "allowSecrets" in writer.calls[0]).toBe(false);
+  });
+
+  it("allowSecrets imports every selected chunk and passes the override through", () => {
+    const { value, writer } = run({ all: true, allowSecrets: true });
+    expect(value).toMatchObject({ refused: false, blockingChunks: [], imported: 3 });
+    expect(writer.calls[0]?.allowSecrets).toBe(true);
+    expect(writer.calls[0]?.items).toHaveLength(3);
+  });
+
+  it("query and since selections keep the full-listing index (F4)", () => {
+    const list = [
+      conv("a", "Alpha", "2024-01-01"),
+      conv("b", "Beta", "2024-02-01"),
+      withSecret("c", "Deploy debugging", "2024-03-01"),
+    ];
+    expect(run({ since: "2024-02-15", dryRun: true }, list).value.blockingChunks[0]).toMatchObject({
+      conversationIndex: 3,
+    });
+    expect(run({ query: "deploy", dryRun: true }, list).value.blockingChunks[0]).toMatchObject({
+      conversationIndex: 3,
+    });
+  });
+
+  it("list mode is never refused", () => {
+    const { value } = run({});
+    expect(value).toMatchObject({ mode: "list", refused: false, blockingChunks: [] });
   });
 });
