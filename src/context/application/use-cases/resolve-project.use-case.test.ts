@@ -182,6 +182,18 @@ describe("ResolveProject", () => {
     );
   });
 
+  it("VALIJA_PROJECT wins even when a directory cannot be read; readable ones are still reported", () => {
+    probe.failFor("/w/stale");
+    const r = resolve.execute({ directories: ["/w/stale", "/w/valija"], envProject: "valija" });
+    expect(r.ok && r.value).toMatchObject({
+      outcome: "detected",
+      project: "valija",
+      detectedBy: "env",
+      locations: [{ folder: "/w/valija" }],
+    });
+    expect(r.ok && r.value.locations).toHaveLength(1);
+  });
+
   it("a locked vault → VAULT_LOCKED before any probe, with and without VALIJA_PROJECT", () => {
     const asked = probe.asked.length;
     expect(codeOf(locked(() => resolve.execute({ directories: ["/w/valija"] })))).toBe(

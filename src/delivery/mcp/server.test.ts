@@ -238,6 +238,17 @@ describe("valija MCP server (real client over in-memory transport)", () => {
       search_context: ["limit", "project", "query"],
       list_projects: [],
     });
+    const required = Object.fromEntries(
+      tools.tools.map((t) => [t.name, [...(t.inputSchema.required ?? [])].sort()]),
+    );
+    // PROJECT-DETECT: `project` is optional on the save and load tools; nothing else moved.
+    expect(required).toEqual({
+      save_context: ["content"],
+      save_handoff: ["content"],
+      get_context: [],
+      search_context: ["query"],
+      list_projects: [],
+    });
   });
 
   it("search_context lines carry the item id", async () => {

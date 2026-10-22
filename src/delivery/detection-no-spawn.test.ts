@@ -20,6 +20,7 @@ const DETECTION_FILES = [
   "context/infra/file-workspace-probe.ts",
   "context/infra/git/git-config.ts",
   "delivery/project-detection.ts",
+  "delivery/mcp/workspace-directories.ts",
 ] as const;
 
 /**
@@ -30,8 +31,8 @@ const DETECTION_FILES = [
 const FORBIDDEN =
   /child_process|worker_threads|(?<![.\w$])(?:spawn|fork|exec(?:File)?(?:Sync)?)\(|\bfetch\(|node:(?:net|http|https|http2|tls|dgram|dns)\b/;
 
-/** The only Node built-ins detection may import. */
-const ALLOWED_NODE_MODULES = new Set(["node:fs", "node:path", "node:os"]);
+/** The only Node built-ins detection may import (`node:url` for `fileURLToPath` on MCP roots). */
+const ALLOWED_NODE_MODULES = new Set(["node:fs", "node:path", "node:os", "node:url"]);
 const NODE_IMPORT = /from\s+"(node:[^"]+)"/g;
 
 const source = (file: string) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
@@ -41,7 +42,7 @@ describe("detection never spawns a process or touches the network", () => {
     expect(source(file)).not.toMatch(FORBIDDEN);
   });
 
-  it.each(DETECTION_FILES)("%s imports only node:fs, node:path and node:os", (file) => {
+  it.each(DETECTION_FILES)("%s imports only node:fs, node:path, node:os and node:url", (file) => {
     const imported = [...source(file).matchAll(NODE_IMPORT)].map((match) => match[1]);
     for (const module of imported) expect(ALLOWED_NODE_MODULES).toContain(module);
   });

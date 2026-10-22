@@ -16,6 +16,15 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
   `VALIJA_PROJECT` first, then the deepest linked folder, then the linked repository. A given
   project always wins; `search` and `import` are unchanged; detection never creates a project and
   never runs `git`. New env var `VALIJA_PROJECT`.
+- **Project detection over MCP** (`advances/PROJECT-DETECT/`): `project` is now optional on
+  `save_context`, `save_handoff` and `get_context`. When it is omitted, the server resolves the
+  workspace the client reports (MCP roots, else its working directory unless that is `/`, home or an
+  install folder) through `VALIJA_PROJECT` and your links. Save replies add
+  `(detected: linked folder | linked repository | VALIJA_PROJECT)` — never a path or a remote;
+  `list_projects` marks the detected project `(this workspace)`; `/load-context` takes an optional
+  project. Nothing linked → `PROJECT_NOT_DETECTED`, telling the AI to call `list_projects` and ask.
+  A given `project` behaves exactly as before; `search_context` stays vault-wide. Still five tools
+  and two prompts. Per-client behaviour is assumed until observed (`advances/PROJECT-DETECT/spike.md`).
 - **Curation in Valija Desktop**: each project card gets **Pin**/**Unpin**, **Edit** (a dialog for
   content, tags and type — the same `EditItem` as `valija edit`) and **Archive**, with an
   **Undo** notice after archiving and a **Show archived** toggle that lists archived items in their own
@@ -56,6 +65,10 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
 
 ### Changed
 
+- Vault schema v4 (migration 004, `project_bindings`, PROJECT-DETECT): the encrypted vault gains a
+  table of project links. Unlocking an older vault migrates it in one transaction, after taking a
+  ciphertext backup that is removed once the migration commits; Valija Desktop asks before
+  upgrading, as for earlier migrations.
 - Re-importing an export no longer un-archives imported chunks you archived; their content is still
   refreshed.
 

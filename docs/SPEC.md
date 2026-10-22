@@ -111,9 +111,9 @@ Server name: `valija`. Transport: stdio. Started as `valija mcp` (client config:
 
 | Tool | Arguments | Description role |
 |------|-----------|------------------|
-| `save_context` | `project`, `content`, `type?`, `tags?`, `supersedes?` | Save durable, self-contained context. Never secrets. |
-| `save_handoff` | `project`, `content` | Package THIS conversation's state: goal, done, blockers, exact next step, files. |
-| `get_context` | `project`, `budget?` | Load the context pack before starting work. |
+| `save_context` | `project?`, `content`, `type?`, `tags?`, `supersedes?` | Save durable, self-contained context. Never secrets. |
+| `save_handoff` | `project?`, `content` | Package THIS conversation's state: goal, done, blockers, exact next step, files. |
+| `get_context` | `project?`, `budget?` | Load the context pack before starting work. |
 | `search_context` | `query`, `project?`, `limit?` | FTS recall ("what did we decide about auth?"). |
 | `list_projects` | — | Disambiguate which project the user means. |
 
@@ -121,10 +121,12 @@ Full descriptions live in the tool source — they are the product's real prompt
 
 **`supersedes` (CURATION):** the exact id of ONE live item in the same project that this save replaces. The old item is archived (never deleted) in the same write as the new save; the whole call fails, saving nothing, if the id is unknown, in another project, pinned, imported, or already archived. `search_context` lines carry each item's id so a model can find it. No tool can pin, and archived items never reach any tool response.
 
+**Project detection (PROJECT-DETECT).** `project` is optional on `save_context`, `save_handoff` and `get_context`. When it is omitted, the server collects the client's workspace folders — the MCP `roots` the client declares (2 s timeout); if it declares none, or they are empty or fail, the server's own working directory, unless that is clearly not a workspace (the filesystem root, the home folder or an ancestor, node's or the client's install folder, `~/.npm`) — and resolves them: `VALIJA_PROJECT`, then the deepest linked folder, then the linked repository. Nothing matching → `PROJECT_NOT_DETECTED`, whose message tells the model to call `list_projects` and ask the user; folders linked to different projects → `PROJECT_AMBIGUOUS`, naming the slugs. Detection never creates a project, and a given `project` always wins, untouched (the client is not even asked for roots). A detected save's reply appends ` (detected: linked folder | linked repository | VALIJA_PROJECT)`; `get_context` output is byte-identical to the explicit call; `list_projects` marks the detected project `(this workspace)`. No response ever names a path or a remote. `search_context` without `project` stays vault-wide. Still five tools and two prompts. Which clients provide roots or a useful working directory is recorded, as assumptions until observed, in `advances/PROJECT-DETECT/spike.md`.
+
 ### Prompts (2)
 
 - `/save-context [project]` — compose a save following the checklist, confirm project, call the tool.
-- `/load-context <project>` — call `get_context`, summarize state in 3 lines, propose next step.
+- `/load-context [project]` — call `get_context` (without a project: the one linked to this workspace, else `list_projects` and ask), summarize state in 3 lines, propose next step.
 
 ---
 
@@ -164,7 +166,7 @@ never creates a project.
 
 **Does not protect against:** a compromised OS / malware while unlocked; and **any MCP client you connect receives plaintext** of loaded context, processed by that AI provider. Encryption protects data *at rest*; per-tool scoping arrives in M4.
 
-**Rules:** no telemetry, no network calls at runtime, tool descriptions instruct models to refuse secrets. Losing passphrase + recovery kit = unrecoverable data.
+**Rules:** no telemetry, no network calls at runtime, tool descriptions instruct models to refuse secrets. Project links (folder paths, git remotes) live only inside the encrypted vault and never appear in an MCP response; detection reads local `.git` files only — it never spawns a process (no `git`) and never touches the network. Losing passphrase + recovery kit = unrecoverable data.
 
 ---
 

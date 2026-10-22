@@ -241,6 +241,28 @@ that's CLI-only plumbing.
   each item's id so the AI can find it. It can't touch pinned or imported items, and it fails
   without saving anything if the id doesn't fit.
 - Archived items never reach your AI tools: not in packs, not in search.
+- **Project detection.** `save_context`, `save_handoff` and `get_context` no longer need a `project`:
+  in a folder or repository you linked (see *Working inside a project folder*), the AI can just say
+  "load my context" and gets that project. A save then replies e.g.
+  `Saved decision to project "valija" (detected: linked repository).` — the project and the kind of
+  link only, never a path or a remote. `list_projects` marks that project `(this workspace)`. If
+  nothing is linked, the call fails with `PROJECT_NOT_DETECTED` and the AI is told to list your
+  projects and ask you. A project the AI names always wins, and `search_context` without a project
+  still searches everything.
+- **Where the server learns your workspace.** From the folders the client reports (MCP *roots*), or
+  else from the folder the client starts the server in — ignored when that is clearly not a project
+  (`/`, your home folder, an app's install folder). What each client does is **not yet confirmed**;
+  the current assumptions ([spike](advances/PROJECT-DETECT/spike.md)): Claude Code is expected to
+  report the project you started `claude` in; Claude Desktop is expected to report no workspace at
+  all; Cursor is expected to report its open folders in recent versions.
+- **Per-project override.** Where a client reports no workspace, set `VALIJA_PROJECT` in a
+  per-project client config — it wins over any link:
+
+  ```jsonc
+  // .mcp.json (Claude Code) or .cursor/mcp.json (Cursor), in the project folder
+  { "mcpServers": { "valija": { "command": "npx", "args": ["-y", "valija", "mcp"],
+      "env": { "VALIJA_PROJECT": "valija" } } } }
+  ```
 
 ## Configuration reference
 

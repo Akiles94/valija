@@ -42,12 +42,14 @@ export class ResolveProject implements UseCase<ResolveProjectInput, ProjectResol
 
     // The session opens first in every case, so a locked vault is VAULT_LOCKED before any probe (W2).
     return this.sessions.withSession<ProjectResolutionOutput>((session) => {
+      if (env.value !== null) {
+        // D-E: VALIJA_PROJECT outranks every binding, so an unreadable directory cannot block it.
+        const locations = this.locateReadable(input.directories).map(toWorkspaceLocationView);
+        return ok({ outcome: "detected", project: env.value, detectedBy: "env", locations });
+      }
       const located = this.locateAll(input.directories);
       if (!located.ok) return located;
       const locations = located.value.map(toWorkspaceLocationView);
-      if (env.value !== null) {
-        return ok({ outcome: "detected", project: env.value, detectedBy: "env", locations });
-      }
       const resolution = resolveFromBindings(located.value, session.bindings.list());
       return ok(toOutput(session, resolution, located.value, locations));
     });
@@ -61,6 +63,14 @@ export class ResolveProject implements UseCase<ResolveProjectInput, ProjectResol
       locations.push(location.value);
     }
     return ok(locations);
+  }
+
+  /** Every directory the probe can read; the others are skipped (the env case, where none decides). */
+  private locateReadable(directories: string[]): WorkspaceLocation[] {
+    return directories.flatMap((directory) => {
+      const location = this.probe.locate(directory);
+      return location.ok ? [location.value] : [];
+    });
   }
 }
 
