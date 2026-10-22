@@ -131,7 +131,9 @@ Full descriptions live in the tool source — they are the product's real prompt
 ```
 valija init | unlock | lock | status
 valija projects
-valija show <project> [--type]
+valija show <project> [--type] [--archived]
+valija pin | unpin | archive | unarchive <id>
+valija edit <id> [--content-file <file|->] [--tags a,b] [--type <t>]
 valija search <query> [-p proj]
 valija export <project> [--md|--json] [-o file]
 valija install <claude-code|claude-desktop|cursor>

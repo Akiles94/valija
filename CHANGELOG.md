@@ -8,6 +8,10 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
 
 - Context for AI coding agents: an [`AGENTS.md`](AGENTS.md) index plus [`.context/`](.context/) flows and gotchas, maintained with [easy-repo-context](https://github.com/Akiles94/easy-repo-context) and checked in CI by `npm run context:check`. No runtime behavior changed.
 - A generated developer guide ([`docs/guide/`](docs/guide/README.md)) — business flows with sequence diagrams, the code map and reference tables — checked in CI by `npm run docs:check`, which also requires TSDoc on every exported symbol. No runtime behavior changed.
+- **Curation from the CLI**: `valija pin | unpin | archive | unarchive <id>` and
+  `valija edit <id> [--content-file <file|->] [--tags a,b] [--type t]`, addressed by full id or a unique
+  6+-character prefix. `valija show` now prints each item's id, and `--archived` includes archived items.
+  Archive hides an item from packs and search without deleting it.
 - **Curation** (`advances/CURATION/`): `save_context` gains an optional `supersedes` argument — the
   exact id of one outdated item in the same project, archived in the same write as the new save (all
   or nothing; never pinned, imported or already-archived items). `search_context` lines now include

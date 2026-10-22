@@ -62,6 +62,9 @@ valija projects                   # list projects with item counts and last acti
 valija show my-project            # print a project's items (--type to filter)
 valija search "auth"              # full-text search (-p to scope to one project)
 valija export my-project          # print the context pack (paste into any non-MCP tool)
+valija pin <id>                   # keep an item at the top of every pack (unpin to undo)
+valija archive <id>               # hide an outdated item from packs and search (unarchive to undo)
+valija edit <id> --content-file - # rewrite an item in place, reading the new text from stdin
 valija doctor                     # health check: node, keychain, vault, sync, client configs
 ```
 
@@ -72,6 +75,20 @@ Useful flags:
 - `valija show <project> --type <decision|progress|preference|fact|handoff|imported>` — filter items.
 - `valija search <query> -p <project>` — restrict the search to one project.
 - `valija export <project> --json` / `-o <file>` — export as JSON, or write to a file instead of stdout.
+
+### Curating your context
+
+Packs are only as good as what's in them, so keep them current. `valija show <project>` prints every
+item's id; any command below takes that id or a unique prefix of at least 6 characters.
+
+- `valija pin <id>` / `unpin <id>` — pinned items always lead the pack.
+- `valija archive <id>` — the item is **hidden from packs and search, not deleted**. See archived items
+  with `valija show <project> --archived`, and bring one back with `valija unarchive <id>`.
+- `valija edit <id> [--content-file <file|->] [--tags a,b] [--type <type>]` — edit in place. The new
+  text comes from a file or stdin (`-`); valija never opens an editor or writes a temp file, because
+  either would leave your plaintext outside the vault. `--tags ""` clears the tags.
+
+Imported items can only be archived or unarchived — and a re-import keeps them archived.
 
 ## Locking, unlocking, and idle auto-lock
 

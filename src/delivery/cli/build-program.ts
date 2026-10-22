@@ -3,6 +3,14 @@ import type { Container } from "../container.js";
 import { runMcpServer } from "../mcp/server.js";
 import { VERSION } from "../version.js";
 import { exportCommand, projectsCommand, searchCommand, showCommand } from "./content-commands.js";
+import {
+  archiveCommand,
+  type EditOptions,
+  editCommand,
+  pinCommand,
+  unarchiveCommand,
+  unpinCommand,
+} from "./curation-commands.js";
 import { doctorCommand } from "./doctor.js";
 import { importCommand } from "./import-command.js";
 import { CLIENTS, type ClientId, installIntoClient, manualInstructions } from "./installer.js";
@@ -52,9 +60,47 @@ export function buildProgram(container: Container): Command {
     .description("Print the items of a project.")
     .argument("<project>", "project slug")
     .option("--type <type>", "filter by type (decision|progress|preference|fact|handoff|imported)")
-    .action((project: string, options: { type?: string }) =>
+    .option("--archived", "include archived items, marked [archived]")
+    .action((project: string, options: { type?: string; archived?: boolean }) =>
       showCommand(container, project, options),
     );
+
+  const ITEM_ARG = "item id, or a unique prefix of at least 6 characters (see valija show)";
+
+  program
+    .command("pin")
+    .description("Pin an item: it always leads its project's context pack.")
+    .argument("<id>", ITEM_ARG)
+    .action((id: string) => pinCommand(container, id));
+
+  program
+    .command("unpin")
+    .description("Unpin an item.")
+    .argument("<id>", ITEM_ARG)
+    .action((id: string) => unpinCommand(container, id));
+
+  program
+    .command("archive")
+    .description("Archive an item: hidden from packs and search, not deleted. Undo with unarchive.")
+    .argument("<id>", ITEM_ARG)
+    .action((id: string) => archiveCommand(container, id));
+
+  program
+    .command("unarchive")
+    .description(
+      "Bring an archived item back (find its id with: valija show <project> --archived).",
+    )
+    .argument("<id>", ITEM_ARG)
+    .action((id: string) => unarchiveCommand(container, id));
+
+  program
+    .command("edit")
+    .description("Edit an item in place. Content is read from a file or stdin, never an editor.")
+    .argument("<id>", ITEM_ARG)
+    .option("--content-file <path>", "new content from a file, or - for stdin")
+    .option("--tags <tags>", 'comma-separated tags, replacing the current ones ("" clears them)')
+    .option("--type <type>", "new type (decision|progress|preference|fact|handoff)")
+    .action((id: string, options: EditOptions) => editCommand(container, id, options));
 
   program
     .command("search")

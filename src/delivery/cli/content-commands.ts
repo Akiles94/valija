@@ -1,7 +1,7 @@
 import { writeFileSync } from "node:fs";
 import type { Container } from "../container.js";
 import { exportProjectJson, exportProjectMarkdown } from "../context-pack-export.js";
-import { fail, formatDate, truncate } from "./render.js";
+import { fail, formatDate, itemHeaderLine, truncate } from "./render.js";
 
 /** `valija projects`: prints each project with its item count and last activity. */
 export function projectsCommand(c: Container): void {
@@ -21,11 +21,16 @@ export function projectsCommand(c: Container): void {
   }
 }
 
-/** `valija show <project>`: prints a project's items, optionally of one type. */
-export function showCommand(c: Container, project: string, options: { type?: string }): void {
+/** `valija show <project>`: prints a project's items with their ids, optionally of one type; `--archived` includes archived items. */
+export function showCommand(
+  c: Container,
+  project: string,
+  options: { type?: string; archived?: boolean },
+): void {
   const result = c.showProject.execute({
     project,
     ...(options.type === undefined ? {} : { type: options.type }),
+    ...(options.archived ? { includeArchived: true } : {}),
   });
   if (!result.ok) fail(result.error);
   if (result.value.length === 0) {
@@ -33,9 +38,7 @@ export function showCommand(c: Container, project: string, options: { type?: str
     return;
   }
   for (const item of result.value) {
-    const pin = item.pinned ? " 📌" : "";
-    const tags = item.tags.length > 0 ? `  [${item.tags.join(", ")}]` : "";
-    console.log(`\n— ${item.type} · ${formatDate(item.createdAt)}${pin}${tags}`);
+    console.log(`\n${itemHeaderLine(item)}`);
     console.log(item.content);
   }
 }

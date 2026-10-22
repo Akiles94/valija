@@ -1,3 +1,4 @@
+import type { ContextItemView } from "../../context/application/dto/context-item-view.js";
 import type { DomainError } from "../../shared/domain/result.js";
 import type { DeviceId } from "../../vault/domain/values/device-id.js";
 
@@ -30,4 +31,12 @@ export function truncate(text: string, max = 80): string {
 /** Shows an ISO timestamp as its date, or a dash when there is none. */
 export function formatDate(iso: string | null): string {
   return iso === null ? "—" : iso.slice(0, 10);
+}
+
+/** The header `show` prints above each item: the full id is always there, so any verb can target it. */
+export function itemHeaderLine(item: ContextItemView): string {
+  const pin = item.pinned ? "  📌" : "";
+  const tags = item.tags.length > 0 ? `  [${item.tags.join(", ")}]` : "";
+  const archived = item.archived ? "  [archived]" : "";
+  return `— ${item.type} · ${formatDate(item.createdAt)}  id ${item.id}${pin}${tags}${archived}`;
 }
