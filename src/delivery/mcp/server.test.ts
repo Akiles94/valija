@@ -2,11 +2,14 @@ import { rmSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { EditItem } from "../../context/application/use-cases/edit-item.use-case.js";
 import { GetContextPack } from "../../context/application/use-cases/get-context-pack.use-case.js";
 import { ImportItems } from "../../context/application/use-cases/import-items.use-case.js";
 import { ListProjects } from "../../context/application/use-cases/list-projects.use-case.js";
 import { SaveContext } from "../../context/application/use-cases/save-context.use-case.js";
 import { SearchContext } from "../../context/application/use-cases/search-context.use-case.js";
+import { SetItemArchived } from "../../context/application/use-cases/set-item-archived.use-case.js";
+import { SetItemPinned } from "../../context/application/use-cases/set-item-pinned.use-case.js";
 import { ShowProject } from "../../context/application/use-cases/show-project.use-case.js";
 import { ImportConversations } from "../../importers/application/use-cases/import-conversations.use-case.js";
 import { FileExportReader } from "../../importers/infra/file-export-reader.js";
@@ -62,6 +65,9 @@ const container: Container = {
   searchContext: new SearchContext(vault.sessions),
   getContextPack: new GetContextPack(vault.sessions, clock),
   showProject: new ShowProject(vault.sessions),
+  setItemPinned: new SetItemPinned(vault.sessions, clock),
+  setItemArchived: new SetItemArchived(vault.sessions, clock),
+  editItem: new EditItem(vault.sessions, clock),
   importConversations: new ImportConversations(
     new FileExportReader(),
     parserRegistry,

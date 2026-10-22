@@ -29,9 +29,14 @@ Content subdomain. Ubiquitous language: **project, context item, type, tag, pinn
 - `repositories.ts` — `ProjectRepository` (upsert, findByName, list with counts) and `ContextItemRepository` (upsert, findById / findByIdPrefix — vault-wide, archived included, each returning an `ItemWithProject`; findByProject newest-first with filters, FTS search). There is no separate archive write: archiving is an upsert of the archived item, so it goes through the one write path that stamps `updatedAt` and the lineage.
 - `vault-session.ts` — **the bridge**: `VaultSessions.withSession(action)` runs `action` against a `VaultSession` (both repos), or returns `VAULT_LOCKED`. The port owns the open → work → always-close lifecycle, so use cases never touch it. `VaultSession` also carries `write<T>(mutate)` (M3): runs `mutate` and, only on success, atomically stamps the vault's lineage (bump the generation, mint a fresh write stamp) as part of the same commit — the seam that lets the write path advance BYO-cloud sync's fork-detection stamp without `context` importing anything from `vault`'s storage layer. Read-only use cases never call it.
 
+## application/services
+
+- `item-curation-steps.ts` — stateless helpers the curation use cases share, so no use case calls another: `findItemByReference(session, ref)` (exact id first, else a unique prefix; 0 matches → `ITEM_NOT_FOUND`, 2+ → `ITEM_ID_AMBIGUOUS` listing up to 5 ids; archived items are found) and `saveIfChanged(session, item, changed)` (a no-op never opens `session.write`, so it never bumps the lineage — CURATION D-L).
+
 ## application/dto
 
-- `context-item-view.ts` — `ContextItemView`, the one shape every read use case returns: primitives only, no value objects and no `Date`. Carries `source` so an export loses nothing.
+- `context-item-view.ts` — `ContextItemView`, the one shape every read use case returns: primitives only, no value objects and no `Date`. Carries `source` so an export loses nothing. `archived` is present **only when true** (only `ShowProject` with `includeArchived` can return such an item), so every live view and every export stays byte-identical.
+- `item-curation-output.ts` — `ItemCurationOutput { itemId, project, type, changed }` and `EditItemOutput` (+ `changedFields`). `changed: false` means nothing was written.
 
 ## application use cases
 
@@ -43,7 +48,9 @@ Each implements `UseCase<In, Out>` (or `AsyncUseCase`) from `shared/application/
 
 **SearchContext** — unknown project scope → `PROJECT_NOT_FOUND`; limit clamped [1,100] default 20; empty/whitespace query → empty (terms quoted, never an FTS syntax error).
 
-**ListProjects / ShowProject** — list with counts (archived excluded); show newest-first with optional type filter (`ShowProject` accepts `imported` via `parseStorableItemType`, so `show <p> --type imported` works). Both return `ContextItemView[]`.
+**ListProjects / ShowProject** — list with counts (archived excluded); show newest-first with optional type filter (`ShowProject` accepts `imported` via `parseStorableItemType`, so `show <p> --type imported` works). Both return `ContextItemView[]`. `ShowProject` also takes `includeArchived` (CURATION D-D): archived items are then included, each marked `archived: true`.
+
+**SetItemPinned / SetItemArchived / EditItem** (CURATION) — the human curation verbs. Each parses an item reference (a full id or a unique ≥6-char prefix) — and, for `EditItem`, the new content/tags/type, with `NOTHING_TO_EDIT` when none is given — **before** opening a session, finds the item with `findItemByReference`, applies the `item-curation.ts` rule, and persists through `saveIfChanged`. Edit is in place: same id, `createdAt` kept, `updatedAt` stamped, FTS re-indexed by the `items_au` trigger; `tags: []` clears the tags.
 
 **ImportItems** — the batch write path used by the importers module. Parses the project name **before** opening a session, find-or-creates the project, then in **one session, one `session.write(...)` (M3)** re-validates each chunk's tags and content (defense in depth), mints an imported item via `createImportedContextItem`, and upserts it — keeping the chunk archived if the user archived it (CURATION D-H) — so one import bumps the vault's lineage once, not per item. A single bad chunk is collected into `failures` (never aborts the batch). Returns `{ projectCreated, imported, failed, failures }`. This keeps `context` the sole guardian of `ContextItem` and the `imported` type — importers hand it drafts, nothing more.
 
@@ -56,4 +63,4 @@ There is no ExportPack use case: exporting is a rendering choice over these two,
 - `project-repo.ts`, `item-repo.ts` — SQLite implementations; dates as ISO strings, tags as JSON; FTS terms individually double-quoted and ANDed, ranked by `rank`.
 - `vault-sessions.ts` — implements `VaultSessions`; the one place `context` touches `vault` (keychain + header + lineage). No keychain key → `VAULT_LOCKED`; stale key → delete it, then `VAULT_LOCKED`. On open, also consults the injected `SessionGuard` (M3 idle auto-lock — see [vault.md](vault.md)) right after the keychain check. `runWithSession` holds the always-close guarantee. `write()` (M3) runs the mutation inside the db transaction and bumps the lineage only on success (a failed `Result` throws a private sentinel to force a rollback, caught outside and unwrapped back to the original error) — last-seen is recorded only after the transaction actually commits.
 
-Proof: `src/context/domain/values/values.test.ts`, `src/context/domain/entities/context-item.test.ts`, `src/context/domain/services/context-pack.test.ts` (the algorithm, no vault), `src/context/infra/{project-repo,item-repo,vault-sessions}.test.ts`, and one `*.use-case.test.ts` per use case under `src/context/application/use-cases/`.
+Proof: `src/context/domain/values/values.test.ts`, `src/context/domain/entities/context-item.test.ts`, `src/context/domain/services/context-pack.test.ts` (the algorithm, no vault), `src/context/domain/services/item-curation.test.ts` (the curation rules, no vault), `src/context/infra/{project-repo,item-repo,vault-sessions}.test.ts`, and one `*.use-case.test.ts` per use case under `src/context/application/use-cases/`.

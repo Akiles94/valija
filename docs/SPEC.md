@@ -76,7 +76,7 @@ Key property of MCP to keep in mind: **the server never sees the conversation**.
 
 **Ports** (defined in domain, implemented in infrastructure): `ProjectRepository`, `ContextItemRepository`, `VaultCrypto`, `KeychainPort`, `Clock`, `IdGenerator`.
 
-**Use cases:** `CreateVault`, `UnlockVault`, `LockVault`, `VaultStatus`, `SaveContext`, `GetContextPack`, `SearchContext`, `ListProjects`, `ExportPack`.
+**Use cases:** `CreateVault`, `UnlockVault`, `LockVault`, `VaultStatus`, `SaveContext`, `GetContextPack`, `SearchContext`, `ListProjects`, `ExportPack`, and (CURATION) `SetItemPinned`, `SetItemArchived`, `EditItem`.
 
 ### Context pack assembly
 

@@ -2,6 +2,7 @@ import { rmSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { FixedClock, makeUnlockedVault, SeqIds } from "../../../testing/test-vault.js";
 import { SaveContext } from "./save-context.use-case.js";
+import { SetItemArchived } from "./set-item-archived.use-case.js";
 import { ShowProject } from "./show-project.use-case.js";
 
 const vault = makeUnlockedVault();
@@ -36,5 +37,19 @@ describe("ShowProject", () => {
     expect(!missing.ok && missing.error.code).toBe("PROJECT_NOT_FOUND");
     const badType = show.execute({ project: "showcase", type: "nonsense" });
     expect(!badType.ok && badType.error.code).toBe("INVALID_ITEM_TYPE");
+  });
+
+  it("hides archived items unless asked, and marks them when shown", () => {
+    const r = save.execute({ project: "showcase", content: "retired", type: "fact" });
+    if (!r.ok) throw new Error(r.error.message);
+    new SetItemArchived(vault.sessions, clock).execute({ item: r.value.itemId, archived: true });
+
+    const live = show.execute({ project: "showcase" });
+    expect(live.ok && live.value.some((v) => v.content === "retired")).toBe(false);
+    expect(live.ok && live.value.every((v) => !("archived" in v))).toBe(true);
+
+    const all = show.execute({ project: "showcase", includeArchived: true });
+    const retired = all.ok ? all.value.find((v) => v.content === "retired") : undefined;
+    expect(retired?.archived).toBe(true);
   });
 });

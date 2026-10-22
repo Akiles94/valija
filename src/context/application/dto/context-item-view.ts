@@ -15,6 +15,8 @@ export interface ContextItemView {
   tags: string[];
   pinned: boolean;
   source?: string;
+  /** Present only when true, so a live item's view (and every export) is unchanged. */
+  archived?: boolean;
   createdAt: string;
 }
 
@@ -30,5 +32,6 @@ export const toContextItemView = (
   tags: [...item.tags],
   pinned: item.pinned,
   ...(item.source === undefined ? {} : { source: item.source }),
+  ...(item.archived ? { archived: true } : {}),
   createdAt: item.createdAt.toISOString(),
 });

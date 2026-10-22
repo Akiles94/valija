@@ -1,9 +1,12 @@
 import { ulid } from "ulid";
+import { EditItem } from "../context/application/use-cases/edit-item.use-case.js";
 import { GetContextPack } from "../context/application/use-cases/get-context-pack.use-case.js";
 import { ImportItems } from "../context/application/use-cases/import-items.use-case.js";
 import { ListProjects } from "../context/application/use-cases/list-projects.use-case.js";
 import { SaveContext } from "../context/application/use-cases/save-context.use-case.js";
 import { SearchContext } from "../context/application/use-cases/search-context.use-case.js";
+import { SetItemArchived } from "../context/application/use-cases/set-item-archived.use-case.js";
+import { SetItemPinned } from "../context/application/use-cases/set-item-pinned.use-case.js";
 import { ShowProject } from "../context/application/use-cases/show-project.use-case.js";
 import { SqliteVaultSessions } from "../context/infra/vault-sessions.js";
 import { ImportConversations } from "../importers/application/use-cases/import-conversations.use-case.js";
@@ -50,6 +53,9 @@ export interface Container {
   searchContext: SearchContext;
   getContextPack: GetContextPack;
   showProject: ShowProject;
+  setItemPinned: SetItemPinned;
+  setItemArchived: SetItemArchived;
+  editItem: EditItem;
   importConversations: ImportConversations;
 }
 
@@ -91,6 +97,9 @@ export function buildContainer(options?: { vaultRoot?: string }): Container {
     searchContext: new SearchContext(sessions),
     getContextPack: new GetContextPack(sessions, systemClock),
     showProject: new ShowProject(sessions),
+    setItemPinned: new SetItemPinned(sessions, systemClock),
+    setItemArchived: new SetItemArchived(sessions, systemClock),
+    editItem: new EditItem(sessions, systemClock),
     importConversations: new ImportConversations(
       new FileExportReader(),
       parserRegistry,
