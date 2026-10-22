@@ -83,3 +83,34 @@ describe("no channel accepts a free-form, path-shaped field (§8.6)", () => {
     }
   });
 });
+
+describe("curation channel schemas", () => {
+  it.each([
+    ["content:setPinned", "pinned"],
+    ["content:setArchived", "archived"],
+  ] as const)("%s accepts {id, %s} and nothing looser", (channel, flag) => {
+    const schema = SCHEMAS[channel];
+    expect(schema.safeParse({}).success).toBe(false);
+    expect(schema.safeParse({ id: "x", [flag]: "yes" }).success).toBe(false);
+    expect(schema.safeParse({ id: "a".repeat(65), [flag]: true }).success).toBe(false);
+    expect(schema.safeParse({ id: "01SEQ000001", [flag]: true }).success).toBe(true);
+  });
+
+  it("strips an unexpected patch field", () => {
+    const parsed = SCHEMAS["content:setPinned"].safeParse({
+      id: "01SEQ000001",
+      pinned: true,
+      patch: { content: "x" },
+    });
+    expect(parsed.success && parsed.data).toEqual({ id: "01SEQ000001", pinned: true });
+  });
+
+  it("content:show only takes a boolean includeArchived", () => {
+    expect(
+      SCHEMAS["content:show"].safeParse({ project: "p", includeArchived: "true" }).success,
+    ).toBe(false);
+    expect(SCHEMAS["content:show"].safeParse({ project: "p", includeArchived: true }).success).toBe(
+      true,
+    );
+  });
+});

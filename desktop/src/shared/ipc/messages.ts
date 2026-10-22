@@ -90,6 +90,8 @@ export interface ContextItemMessage {
   tags: string[];
   pinned: boolean;
   source?: string;
+  /** Present only when true — only `content:show` with `includeArchived` returns archived items. */
+  archived?: boolean;
   createdAt: string;
 }
 
@@ -105,6 +107,22 @@ export interface ProjectListEntryMessage {
 export interface ContentShowRequest {
   project: string;
   type?: string;
+  includeArchived?: boolean;
+}
+
+export interface ContentSetPinnedRequest {
+  id: string;
+  pinned: boolean;
+}
+
+export interface ContentSetArchivedRequest {
+  id: string;
+  archived: boolean;
+}
+
+/** Deliberately only `changed`: no content and no project cross back — the renderer reloads `content:show`. */
+export interface ContentCurationResponse {
+  changed: boolean;
 }
 
 /** Full-text query, optionally within one project and up to a number of hits. */

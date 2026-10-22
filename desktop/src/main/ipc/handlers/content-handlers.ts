@@ -6,11 +6,14 @@ import {
 } from "../../../../../src/delivery/context-pack-export.js";
 import type {
   ContentCopyRequest,
+  ContentCurationResponse,
   ContentExportRequest,
   ContentExportResponse,
   ContentPackRequest,
   ContentPackResponse,
   ContentSearchRequest,
+  ContentSetArchivedRequest,
+  ContentSetPinnedRequest,
   ContentShowRequest,
   ContextItemMessage,
   ProjectListEntryMessage,
@@ -61,5 +64,17 @@ export function createContentHandlers(
     "content:copy": (req: ContentCopyRequest): void => {
       clipboard.writeText(req.text);
     },
+
+    "content:setPinned": (req: ContentSetPinnedRequest) =>
+      toIpcResult(
+        getContainer().setItemPinned.execute({ item: req.id, pinned: req.pinned }),
+        (v): ContentCurationResponse => ({ changed: v.changed }),
+      ),
+
+    "content:setArchived": (req: ContentSetArchivedRequest) =>
+      toIpcResult(
+        getContainer().setItemArchived.execute({ item: req.id, archived: req.archived }),
+        (v): ContentCurationResponse => ({ changed: v.changed }),
+      ),
   };
 }

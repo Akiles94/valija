@@ -23,7 +23,11 @@ export const SCHEMAS = {
     recoveryKeyHex: z.string().optional(),
   }),
   "content:projects": z.void(),
-  "content:show": z.object({ project: z.string(), type: z.string().optional() }),
+  "content:show": z.object({
+    project: z.string(),
+    type: z.string().optional(),
+    includeArchived: z.boolean().optional(),
+  }),
   "content:search": z.object({
     query: z.string(),
     project: z.string().optional(),
@@ -35,6 +39,8 @@ export const SCHEMAS = {
     format: z.enum(["markdown", "json"]),
   }),
   "content:copy": z.object({ text: z.string() }),
+  "content:setPinned": z.object({ id: z.string().max(64), pinned: z.boolean() }),
+  "content:setArchived": z.object({ id: z.string().max(64), archived: z.boolean() }),
   "sync:status": z.void(),
   "diagnostics:run": z.void(),
   "diagnostics:copyReport": z.object({

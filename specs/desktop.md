@@ -9,7 +9,7 @@ surface below; the renderer never imports `src/` directly (`contextIsolation: tr
 
 ## The IPC surface (`shared/ipc/channels.ts`, `main/ipc/schemas.ts`, `main/ipc/handlers/`)
 
-A **closed, enumerated set** — 29 channels across nine areas, each with a zod schema in the same
+A **closed, enumerated set** — 31 channels across nine areas, each with a zod schema in the same
 idiom `src/delivery/mcp/server.ts` uses. `register-handlers.test.ts` asserts the registered channel
 set **equals** the tuple: no extra channel, no missing one, no generic `invoke("run", …)` escape
 hatch. Every handler is four lines — validate, call the use case, map `Result` to a wire shape,
@@ -20,7 +20,7 @@ outlives an action).
 | Area | Channels | Notes |
 |---|---|---|
 | `vault:*` | `init · readRecoveryKit · unlock · lock · status · upgradeCheck` | `readRecoveryKit` is single-shot — a nonce consumed on first read, `null` on a second call |
-| `content:*` | `projects · show · search · pack · export · copy` | Same use cases the CLI calls; `pack`/`export` are byte-identical to `valija export` |
+| `content:*` | `projects · show · search · pack · export · copy · setPinned · setArchived` | Same use cases the CLI calls; `pack`/`export` are byte-identical to `valija export`. `show` takes `includeArchived`. (CURATION) `setPinned`/`setArchived` write through the same use cases as the CLI — one lineage bump per real change, none on a no-op — and return only `{ changed }` |
 | `sync:*` | `status` | Pure read, never a write — `sync-panel.no-write.test.ts` asserts no keychain/file change |
 | `diagnostics:*` | `run · copyReport` | `run` calls `src/delivery/diagnostics.ts`'s `runDiagnostics`, never re-derives a check; `copyReport` never re-runs the checks, it takes the rows the renderer already has |
 | `relocation:*` | `preflight · move · retryClient · pointAtExisting` | `move` orchestrates `LockVault` → `RelocateVault` → per-client config re-pointing → container rebuild — the "no use case calls another" rule the vault module's `RelocateVault` itself can't hold, so this orchestration lives here |

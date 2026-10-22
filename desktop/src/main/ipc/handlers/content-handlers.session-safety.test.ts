@@ -2,10 +2,13 @@ import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { GetContextPack } from "../../../../../src/context/application/use-cases/get-context-pack.use-case.js";
 import { ListProjects } from "../../../../../src/context/application/use-cases/list-projects.use-case.js";
+import { SaveContext } from "../../../../../src/context/application/use-cases/save-context.use-case.js";
 import { SearchContext } from "../../../../../src/context/application/use-cases/search-context.use-case.js";
+import { SetItemArchived } from "../../../../../src/context/application/use-cases/set-item-archived.use-case.js";
+import { SetItemPinned } from "../../../../../src/context/application/use-cases/set-item-pinned.use-case.js";
 import { ShowProject } from "../../../../../src/context/application/use-cases/show-project.use-case.js";
 import type { Container } from "../../../../../src/delivery/container.js";
-import { makeUnlockedVault } from "../../../../../src/testing/test-vault.js";
+import { makeUnlockedVault, SeqIds } from "../../../../../src/testing/test-vault.js";
 import type { ClipboardPort } from "../../application/ports/clipboard.js";
 import type { FilePicker } from "../../application/ports/file-picker.js";
 import { createContentHandlers } from "./content-handlers.js";
@@ -31,7 +34,9 @@ describe("content handlers never leave a sidecar behind", () => {
       showProject: new ShowProject(vault.sessions),
       searchContext: new SearchContext(vault.sessions),
       getContextPack: new GetContextPack(vault.sessions, vault.clock),
-      // biome-ignore lint/suspicious/noExplicitAny: only the four fields above are exercised by content-handlers.ts
+      setItemPinned: new SetItemPinned(vault.sessions, vault.clock),
+      setItemArchived: new SetItemArchived(vault.sessions, vault.clock),
+      // biome-ignore lint/suspicious/noExplicitAny: only the fields above are exercised by content-handlers.ts
     } as any as Container;
 
     const filePicker: FilePicker = {
@@ -47,6 +52,15 @@ describe("content handlers never leave a sidecar behind", () => {
     handlers["content:show"]({ project: "does-not-exist" });
     handlers["content:search"]({ query: "anything" });
     handlers["content:pack"]({ project: "does-not-exist" });
+
+    // The two curation writes, against a real item — a write must leave no sidecar either.
+    const saved = new SaveContext(vault.sessions, vault.clock, new SeqIds()).execute({
+      project: "at-rest",
+      content: "an item to curate",
+    });
+    if (!saved.ok) throw new Error(saved.error.message);
+    handlers["content:setPinned"]({ id: saved.value.itemId, pinned: true });
+    handlers["content:setArchived"]({ id: saved.value.itemId, archived: true });
 
     for (const suffix of ["-wal", "-shm", "-journal"]) {
       expect(existsSync(`${vault.paths.db}${suffix}`)).toBe(false);

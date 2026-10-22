@@ -1,11 +1,14 @@
 import type {
   AppPreferencesMessage,
   ContentCopyRequest,
+  ContentCurationResponse,
   ContentExportRequest,
   ContentExportResponse,
   ContentPackRequest,
   ContentPackResponse,
   ContentSearchRequest,
+  ContentSetArchivedRequest,
+  ContentSetPinnedRequest,
   ContentShowRequest,
   ContextItemMessage,
   DiagnosticsCopyReportRequest,
@@ -63,6 +66,8 @@ export const CHANNELS = [
   "content:pack",
   "content:export",
   "content:copy",
+  "content:setPinned",
+  "content:setArchived",
   "sync:status",
   "diagnostics:run",
   "diagnostics:copyReport",
@@ -114,6 +119,14 @@ export interface ChannelMap {
   "content:export": { request: ContentExportRequest; response: IpcResult<ContentExportResponse> };
   /** Copies text to the system clipboard. */
   "content:copy": { request: ContentCopyRequest; response: undefined };
+  "content:setPinned": {
+    request: ContentSetPinnedRequest;
+    response: IpcResult<ContentCurationResponse>;
+  };
+  "content:setArchived": {
+    request: ContentSetArchivedRequest;
+    response: IpcResult<ContentCurationResponse>;
+  };
   /**
    * Reads the sync-safety half of the vault folder state (conflicted copies, stale backups, cloud
    * hint).

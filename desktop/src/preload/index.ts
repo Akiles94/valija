@@ -2,11 +2,14 @@ import { contextBridge, ipcRenderer } from "electron";
 import type {
   AppPreferencesMessage,
   ContentCopyRequest,
+  ContentCurationResponse,
   ContentExportRequest,
   ContentExportResponse,
   ContentPackRequest,
   ContentPackResponse,
   ContentSearchRequest,
+  ContentSetArchivedRequest,
+  ContentSetPinnedRequest,
   ContentShowRequest,
   ContextItemMessage,
   DiagnosticsCopyReportRequest,
@@ -79,6 +82,10 @@ contextBridge.exposeInMainWorld("valija", {
     export: (req: ContentExportRequest): Promise<IpcResult<ContentExportResponse>> =>
       ipcRenderer.invoke("content:export", req),
     copy: (req: ContentCopyRequest): Promise<void> => ipcRenderer.invoke("content:copy", req),
+    setPinned: (req: ContentSetPinnedRequest): Promise<IpcResult<ContentCurationResponse>> =>
+      ipcRenderer.invoke("content:setPinned", req),
+    setArchived: (req: ContentSetArchivedRequest): Promise<IpcResult<ContentCurationResponse>> =>
+      ipcRenderer.invoke("content:setArchived", req),
   },
   sync: {
     status: (): Promise<SyncStatusResponse> => ipcRenderer.invoke("sync:status"),
