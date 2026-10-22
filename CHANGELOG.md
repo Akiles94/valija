@@ -105,6 +105,17 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
 
 ### Fixed
 
+- **An older valija no longer opens a vault upgraded by a newer one** (`advances/SDK/`). Every
+  command, MCP tool and unlock now refuses it with `VAULT_SCHEMA_TOO_NEW`, naming the vault's schema
+  and the highest one this version supports and asking you to update valija. The refusal is inert:
+  nothing is written, migrated or recorded, and the session key stays in the keychain. `valija status`
+  adds a `schema:` line, `valija doctor` shows a failing (non-fatal) `vault` row, and `valija lock`
+  still locks. Before, an older valija ran its journal pragmas on such a vault and carried on as if
+  the schema were its own.
+- A write that stays blocked by another valija process for more than 5 s now fails with
+  `STORAGE_ERROR` "The vault is busy … Nothing was saved. Try again." instead of an uncaught SQLite
+  error (`advances/SDK/`).
+
 - `docs/vault-format.md` corrected in five places where a real second implementation (the Kotlin proof of concept in `advances/MOBILE/`) proved the contract wrong or under-specified: the markdown concatenation rule, the three distinct section-label budgeting rules, latest-handoff selection, `estimateTokens`'s UTF-16 code-unit semantics, and the preamble's ISO timestamp format. Documentation only — this describes existing behavior; no code, fixture, or output changed.
 
 ## [0.3.0] — 2026-07-25

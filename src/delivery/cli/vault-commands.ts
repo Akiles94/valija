@@ -101,6 +101,11 @@ export function statusCommand(c: Container): void {
   console.log(`vault:    ${s.dbPath}`);
   console.log(`vault id: ${s.vaultId}`);
   console.log(`state:    ${s.unlocked ? "UNLOCKED" : "LOCKED"}`);
+  if (s.schemaTooNew !== undefined) {
+    console.log(
+      `schema:   v${s.schemaTooNew.vaultVersion} is newer than this valija (supports v${s.schemaTooNew.supportedVersion}) — update valija`,
+    );
+  }
   console.log(
     `journal:  ${s.journalMode}${s.sidecars.length > 0 ? ` (stray: ${s.sidecars.join(", ")})` : " (single file at rest)"}`,
   );

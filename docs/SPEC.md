@@ -169,6 +169,11 @@ project is created. Each blocking chunk is listed as `#n "title" part p — kind
 the number `--list` shows and `--pick` reads, and the title is hidden when it is itself flagged.
 `--dry-run` prints the same list under "A real import would be REFUSED" and still exits 0.
 
+**Newer vaults (SDK).** Every command that reads the vault refuses one upgraded by a newer valija with
+`error [VAULT_SCHEMA_TOO_NEW]` (both schema numbers, "update valija") and exit 1, before anything is
+written; `status` adds a `schema:` line and `doctor` a failing, non-fatal `vault` row, and `lock`
+still drops the session key.
+
 ---
 
 ## 9. Security model (summary)

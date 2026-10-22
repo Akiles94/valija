@@ -64,6 +64,16 @@ function checkVault(status: StatusResult): DiagnosticCheck {
   if (!status.ok) {
     return { name: "vault", ok: false, detail: status.error.message, errorCode: status.error.code };
   }
+  const tooNew = status.value.schemaTooNew;
+  if (tooNew !== undefined) {
+    // Reported, not fatal (D-G): doctor still runs every other check.
+    return {
+      name: "vault",
+      ok: false,
+      detail: `schema v${tooNew.vaultVersion} is newer than this valija (supports v${tooNew.supportedVersion}) — update valija`,
+      errorCode: "VAULT_SCHEMA_TOO_NEW",
+    };
+  }
   return {
     name: "vault",
     ok: status.value.initialized,
@@ -127,6 +137,13 @@ function checkLineage(status: StatusResult): DiagnosticCheck {
     };
   }
   const s = status.value;
+  if (s.schemaTooNew !== undefined) {
+    return {
+      name: "lineage",
+      ok: true,
+      detail: "not read — the vault's schema is newer than this valija",
+    };
+  }
   return {
     name: "lineage",
     ok: true,

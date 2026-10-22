@@ -2,8 +2,10 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { LATEST_SCHEMA_VERSION } from "../shared/infra/migrations.js";
 import { resolveVaultPaths } from "../shared/infra/vault-paths.js";
 import { copyGoldenVaultTo, readGoldenVaultManifest } from "../testing/golden-vault.js";
+import { setStoredSchemaVersion } from "../testing/schema-skew.js";
 import { FakeDeviceIdentity, FakeKeychain, FixedClock, SeqIds } from "../testing/test-vault.js";
 import { VaultStatus } from "../vault/application/use-cases/vault-status.use-case.js";
 import { parseAutoLockTtl } from "../vault/domain/values/auto-lock-ttl.js";
@@ -164,5 +166,39 @@ describe("runDiagnostics", () => {
       expect(clientCheck?.ok).toBe(false);
       expect(clientCheck?.detail).toBe("config not found");
     }
+  });
+
+  it("reports a vault newer than this valija on the vault row — not fatal — and skips the lineage", async () => {
+    root = mkdtempSync(join(tmpdir(), "valija-diagnostics-newer-"));
+    const manifest = readGoldenVaultManifest();
+    copyGoldenVaultTo(root);
+    const paths = resolveVaultPaths(root);
+    setStoredSchemaVersion(paths.db, manifest.keyHex, LATEST_SCHEMA_VERSION + 1);
+    const keychain = new FakeKeychain();
+    keychain.setKey(manifest.vaultId, manifest.keyHex);
+    const folder = new FileVaultFolder(paths);
+    const vaultStatus = new VaultStatus(
+      new FileVaultStore(paths, new SeqIds(), new FixedClock()),
+      keychain,
+      new FakeDeviceIdentity(new SeqIds()),
+      folder,
+      new FixedClock(),
+      parseAutoLockTtl(undefined),
+    );
+    const container = { paths, folder, vaultStatus } as unknown as Container;
+
+    const checks = await runDiagnostics(container);
+
+    expect(checks.map((c) => c.name)).toEqual(EXPECTED_NAMES);
+    const vaultCheck = checks.find((c) => c.name === "vault");
+    expect(vaultCheck).toEqual({
+      name: "vault",
+      ok: false,
+      detail: `schema v${LATEST_SCHEMA_VERSION + 1} is newer than this valija (supports v${LATEST_SCHEMA_VERSION}) — update valija`,
+      errorCode: "VAULT_SCHEMA_TOO_NEW",
+    });
+    expect(vaultCheck?.fatal).toBeUndefined();
+    const lineageCheck = checks.find((c) => c.name === "lineage");
+    expect(lineageCheck?.detail).toBe("not read — the vault's schema is newer than this valija");
   });
 });

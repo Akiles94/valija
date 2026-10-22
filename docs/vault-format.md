@@ -505,6 +505,13 @@ D-D).
 - **A vault whose plaintext header parses but whose key doesn't open the database:** this is
   `WRONG_PASSPHRASE` (§5), not a format problem — prompt again, don't treat it as corruption.
 
+**Writers obey the same rule.** valija itself (CLI, MCP server, desktop app, and the embedded
+SDK) refuses a vault whose `schema_version` is newer than the one it was built for, with
+`VAULT_SCHEMA_TOO_NEW` and both version numbers. The refusal comes right after the key is
+verified and **before** any journal pragma, migration, lineage bump or activity record, so an
+older valija never writes to, settles or downgrades a vault that a newer one upgraded. Its
+schema probe opens the database read-only. The format and the conformance fixture are unchanged.
+
 **Recommended, not required by the format itself, but required by
 `advances/M4/refined.md`'s D-H:** open a snapshotted **copy** of the vault files, never the
 live file inside a synced folder in place. This sidesteps SQLite locking assumptions that
