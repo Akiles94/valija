@@ -48,6 +48,8 @@ export function ProjectScreen({
   const [reloadToken, setReloadToken] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Kept apart from `error`, which every reload clears — a refused action must outlive the reload it triggers.
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: bridge and errorCopy are stable across renders; project/typeFilter/showArchived/reloadToken are the real inputs
   useEffect(() => {
@@ -81,11 +83,15 @@ export function ProjectScreen({
 
   async function runAction(id: string, action: ItemAction) {
     setBusyId(id);
-    const result = await performItemAction(bridge, id, action);
-    if (!result.ok) setError(errorCopy(result.error.code));
-    setNotice(result.ok && action === "archive" ? id : null);
-    setBusyId(null);
-    setReloadToken((n) => n + 1);
+    setActionError(null);
+    try {
+      const result = await performItemAction(bridge, id, action);
+      if (!result.ok) setActionError(errorCopy(result.error.code));
+      setNotice(result.ok && action === "archive" ? id : null);
+    } finally {
+      setBusyId(null);
+      setReloadToken((n) => n + 1);
+    }
   }
 
   function itemList(rows: ItemRow[]) {
@@ -165,6 +171,7 @@ export function ProjectScreen({
         </button>
       </div>
       {error !== null && <p className="error">{error}</p>}
+      {actionError !== null && <p className="error">{actionError}</p>}
       {notice !== null && (
         <p className="notice">
           {t("project.archivedNotice")}{" "}

@@ -351,6 +351,9 @@ describe("ProjectScreen curation (DOM)", () => {
     await screen.findByText("refused");
     fireEvent.click(button("Pin"));
     await screen.findByText("That item is archived — unarchive it first.");
+    await waitFor(() => expect(bridge.content.show).toHaveBeenCalledTimes(2));
+    await screen.findByText("refused");
+    expect(screen.getByText("That item is archived — unarchive it first.")).toBeTruthy();
   });
 
   it("never persists the toggle or an action to preferences", async () => {

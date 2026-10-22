@@ -10,7 +10,7 @@ import { SetItemPinned } from "../../context/application/use-cases/set-item-pinn
 import { ShowProject } from "../../context/application/use-cases/show-project.use-case.js";
 import { FixedClock, makeUnlockedVault, SeqIds } from "../../testing/test-vault.js";
 import type { Container } from "../container.js";
-import { searchCommand } from "./content-commands.js";
+import { searchCommand, showCommand } from "./content-commands.js";
 import {
   archiveCommand,
   editCommand,
@@ -88,6 +88,17 @@ describe("curation commands", () => {
     expect(view(id)?.archived).toBe(true);
     unarchiveCommand(container, id);
     expect(view(id)?.archived).toBeUndefined();
+  });
+
+  it("show prints ids and lists archived items only with --archived", () => {
+    const id = saved("an archived okapi note");
+    archiveCommand(container, id);
+    logs = [];
+    showCommand(container, "cli", {});
+    expect(logs.join("\n")).not.toContain(id);
+    logs = [];
+    showCommand(container, "cli", { archived: true });
+    expect(logs.join("\n")).toContain(`id ${id}  [archived]`);
   });
 
   it("exits 1 on an ambiguous prefix or an unknown id", () => {

@@ -1,5 +1,6 @@
 import { rmSync } from "node:fs";
 import { afterAll, describe, expect, it } from "vitest";
+import { ok } from "../../../shared/domain/result.js";
 import { FixedClock, makeUnlockedVault, SeqIds } from "../../../testing/test-vault.js";
 import { ImportItems } from "./import-items.use-case.js";
 import { SaveContext } from "./save-context.use-case.js";
@@ -39,6 +40,8 @@ describe("SetItemPinned", () => {
     expect(generation()).toBe(before + 1);
     const shown = show.execute({ project: "pins" });
     expect(shown.ok && shown.value.find((v) => v.id === id)?.pinned).toBe(true);
+    const stored = vault.sessions.withSession((session) => ok(session.items.findById(id)?.item));
+    expect(stored.ok && stored.value?.updatedAt).toEqual(clock.now());
   });
 
   it("reports a repeat pin as unchanged, with no lineage bump", () => {
@@ -56,15 +59,30 @@ describe("SetItemPinned", () => {
     expect(r.ok && r.value.itemId).toBe(id);
   });
 
-  it("refuses an ambiguous prefix, naming the candidates, with no bump", () => {
-    const first = saved("one");
-    const second = saved("two");
-    const before = generation();
-    const r = pin.execute({ item: "01SEQ0", pinned: true });
+  it("refuses an ambiguous prefix, naming every candidate, with no bump", () => {
+    const fresh = makeUnlockedVault();
+    const saveFresh = new SaveContext(fresh.sessions, clock, new SeqIds());
+    const pinFresh = new SetItemPinned(fresh.sessions, clock);
+    const ids = ["one", "two"].map((content) => {
+      const r = saveFresh.execute({ project: "ambiguous", content });
+      if (!r.ok) throw new Error(r.error.message);
+      return r.value.itemId;
+    });
+    const before = fresh.deviceIdentity.lastSeen(fresh.vaultId)?.generation;
+    const r = pinFresh.execute({ item: "01SEQ00000", pinned: true });
     expect(codeOf(r)).toBe("ITEM_ID_AMBIGUOUS");
-    expect(!r.ok && r.error.message).toContain(first.slice(0, 6));
-    expect(second).toBeDefined();
-    expect(generation()).toBe(before);
+    expect(!r.ok && r.error.message).toBe(
+      `"01SEQ00000" matches several items: ${ids.join(", ")}. Use more characters.`,
+    );
+    expect(fresh.deviceIdentity.lastSeen(fresh.vaultId)?.generation).toBe(before);
+
+    for (const content of ["3", "4", "5", "6", "7"])
+      saveFresh.execute({ project: "ambiguous", content });
+    const capped = pinFresh.execute({ item: "01SEQ00000", pinned: true });
+    const listed = !capped.ok ? capped.error.message.match(/01SEQ\d{6}/g) : null;
+    expect(listed).toHaveLength(5);
+    expect(!capped.ok && capped.error.message).toContain(", and more. Use more characters.");
+    rmSync(fresh.paths.root, { recursive: true, force: true });
   });
 
   it("reports an unknown reference as ITEM_NOT_FOUND", () => {
