@@ -20,7 +20,7 @@ outlives an action).
 | Area | Channels | Notes |
 |---|---|---|
 | `vault:*` | `init · readRecoveryKit · unlock · lock · status · upgradeCheck` | `readRecoveryKit` is single-shot — a nonce consumed on first read, `null` on a second call |
-| `content:*` | `projects · show · search · pack · export · copy · setPinned · setArchived` | Same use cases the CLI calls; `pack`/`export` are byte-identical to `valija export`. `show` takes `includeArchived`. (CURATION) `setPinned`/`setArchived` write through the same use cases as the CLI — one lineage bump per real change, none on a no-op — and return only `{ changed }` |
+| `content:*` | `projects · show · search · pack · export · copy · setPinned · setArchived · edit` | Same use cases the CLI calls; `pack`/`export` are byte-identical to `valija export`. `show` takes `includeArchived`. (CURATION) `setPinned`/`setArchived` write through the same use cases as the CLI — one lineage bump per real change, none on a no-op — and return only `{ changed }`; (A1) `edit { id, content?, tags?, type? }` goes through `EditItem` and returns only `{ changed, changedFields }` |
 | `sync:*` | `status` | Pure read, never a write — `sync-panel.no-write.test.ts` asserts no keychain/file change |
 | `diagnostics:*` | `run · copyReport` | `run` calls `src/delivery/diagnostics.ts`'s `runDiagnostics`, never re-derives a check; `copyReport` never re-runs the checks, it takes the rows the renderer already has |
 | `relocation:*` | `preflight · move · retryClient · pointAtExisting` | `move` orchestrates `LockVault` → `RelocateVault` → per-client config re-pointing → container rebuild — the "no use case calls another" rule the vault module's `RelocateVault` itself can't hold, so this orchestration lives here |
@@ -118,7 +118,7 @@ both reduce to this one call (D-U(b): a skipped tour never nags again).
   `import-selection.ts`, `focus-refresh.ts`, and (CURATION) `item-actions.ts`) each own one
   screen's pure decision logic — `item-actions.ts`'s `itemActionsFor` mirrors the domain's curation
   rules (archived → unarchive; imported → archive only; else pin/unpin + archive) so the project
-  screen never offers a refused call, and `performItemAction` is the one action → channel map; none of them
+  screen never offers a refused call, and `performItemAction` is the one action → channel map; `item-edit.ts` (A1) builds the edit dialog's draft and the `content:edit` request with only the changed fields (`null` → no call); none of them
   is a `UseCase` or a port — they're view state, tested the way `context/domain/services` are tested
   in `src/`, without a DOM.
 
