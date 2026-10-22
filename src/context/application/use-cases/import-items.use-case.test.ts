@@ -47,6 +47,28 @@ describe("ImportItems", () => {
     expect(shown.ok && shown.value).toHaveLength(2); // still 2, not 4
   });
 
+  it("keeps a chunk the user archived archived across a re-import", () => {
+    importItems.execute({ projectName: "rearchive", items: [draft(0, "noise"), draft(1, "keep")] });
+    const before = show.execute({ project: "rearchive", type: "imported" });
+    const noise = before.ok ? before.value.find((i) => i.content === "noise") : undefined;
+    if (noise === undefined) throw new Error("expected the imported chunk");
+    vault.sessions.withSession((session) =>
+      session.write(() => {
+        const found = session.items.findById(noise.id);
+        if (found) session.items.save({ ...found.item, archived: true });
+        return { ok: true as const, value: undefined };
+      }),
+    );
+
+    importItems.execute({
+      projectName: "rearchive",
+      items: [draft(0, "noise"), draft(1, "keep, refreshed")],
+    });
+
+    const after = show.execute({ project: "rearchive", type: "imported" });
+    expect(after.ok && after.value.map((i) => i.content)).toEqual(["keep, refreshed"]);
+  });
+
   it("excludes imported items from a context pack", () => {
     importItems.execute({
       projectName: "packless",

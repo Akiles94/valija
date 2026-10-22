@@ -26,7 +26,7 @@ Content subdomain. Ubiquitous language: **project, context item, type, tag, pinn
 
 ## application/ports
 
-- `repositories.ts` — `ProjectRepository` (upsert, findByName, list with counts) and `ContextItemRepository` (upsert, findByProject newest-first with filters, FTS search, archive).
+- `repositories.ts` — `ProjectRepository` (upsert, findByName, list with counts) and `ContextItemRepository` (upsert, findById / findByIdPrefix — vault-wide, archived included, each returning an `ItemWithProject`; findByProject newest-first with filters, FTS search). There is no separate archive write: archiving is an upsert of the archived item, so it goes through the one write path that stamps `updatedAt` and the lineage.
 - `vault-session.ts` — **the bridge**: `VaultSessions.withSession(action)` runs `action` against a `VaultSession` (both repos), or returns `VAULT_LOCKED`. The port owns the open → work → always-close lifecycle, so use cases never touch it. `VaultSession` also carries `write<T>(mutate)` (M3): runs `mutate` and, only on success, atomically stamps the vault's lineage (bump the generation, mint a fresh write stamp) as part of the same commit — the seam that lets the write path advance BYO-cloud sync's fork-detection stamp without `context` importing anything from `vault`'s storage layer. Read-only use cases never call it.
 
 ## application/dto
@@ -45,7 +45,7 @@ Each implements `UseCase<In, Out>` (or `AsyncUseCase`) from `shared/application/
 
 **ListProjects / ShowProject** — list with counts (archived excluded); show newest-first with optional type filter (`ShowProject` accepts `imported` via `parseStorableItemType`, so `show <p> --type imported` works). Both return `ContextItemView[]`.
 
-**ImportItems** — the batch write path used by the importers module. Parses the project name **before** opening a session, find-or-creates the project, then in **one session, one `session.write(...)` (M3)** re-validates each chunk's tags and content (defense in depth), mints an imported item via `createImportedContextItem`, and upserts it — so one import bumps the vault's lineage once, not per item. A single bad chunk is collected into `failures` (never aborts the batch). Returns `{ projectCreated, imported, failed, failures }`. This keeps `context` the sole guardian of `ContextItem` and the `imported` type — importers hand it drafts, nothing more.
+**ImportItems** — the batch write path used by the importers module. Parses the project name **before** opening a session, find-or-creates the project, then in **one session, one `session.write(...)` (M3)** re-validates each chunk's tags and content (defense in depth), mints an imported item via `createImportedContextItem`, and upserts it — keeping the chunk archived if the user archived it (CURATION D-H) — so one import bumps the vault's lineage once, not per item. A single bad chunk is collected into `failures` (never aborts the batch). Returns `{ projectCreated, imported, failed, failures }`. This keeps `context` the sole guardian of `ContextItem` and the `imported` type — importers hand it drafts, nothing more.
 
 **Imported items and the pack:** `assembleContextPack` only ever includes pinned items, the latest handoff, and the four section types. Imported items are never pinned and are none of those types, so they are **automatically excluded** from every pack — searchable via FTS, but never auto-loaded through `get_context`.
 

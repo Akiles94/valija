@@ -2,6 +2,7 @@ import type { Database } from "better-sqlite3-multiple-ciphers";
 import type {
   ContextItemRepository,
   FindByProjectFilters,
+  ItemWithProject,
   SearchResult,
 } from "../application/ports/repositories.js";
 import type { ContextItem } from "../domain/entities/context-item.js";
@@ -22,6 +23,13 @@ interface ItemRow {
   created_at: string;
   updated_at: string;
 }
+
+type ItemRowWithProject = ItemRow & { project_name: string };
+
+const toItemWithProject = (row: ItemRowWithProject): ItemWithProject => ({
+  item: toItem(row),
+  projectName: row.project_name as ProjectName,
+});
 
 const toItem = (row: ItemRow): ContextItem => ({
   id: row.id,
@@ -77,6 +85,30 @@ export class SqliteContextItemRepository implements ContextItemRepository {
       });
   }
 
+  findById(itemId: string): ItemWithProject | null {
+    const row = this.db
+      .prepare(
+        `SELECT i.*, p.name AS project_name
+         FROM context_items i JOIN projects p ON p.id = i.project_id
+         WHERE i.id = @itemId`,
+      )
+      .get({ itemId }) as ItemRowWithProject | undefined;
+    return row === undefined ? null : toItemWithProject(row);
+  }
+
+  /** SQLite's LIKE is ASCII case-insensitive. Callers pass a parsed ItemReference, whose charset has no `%`/`_`. */
+  findByIdPrefix(prefix: string, limit: number): ItemWithProject[] {
+    const rows = this.db
+      .prepare(
+        `SELECT i.*, p.name AS project_name
+         FROM context_items i JOIN projects p ON p.id = i.project_id
+         WHERE i.id LIKE @prefix || '%'
+         ORDER BY i.id LIMIT @limit`,
+      )
+      .all({ prefix, limit }) as ItemRowWithProject[];
+    return rows.map(toItemWithProject);
+  }
+
   findByProject(projectId: string, filters: FindByProjectFilters = {}): ContextItem[] {
     const conditions = ["project_id = @projectId"];
     const params: Record<string, unknown> = { projectId };
@@ -112,17 +144,7 @@ export class SqliteContextItemRepository implements ContextItemRepository {
          WHERE context_items_fts MATCH @fts AND i.archived = 0 ${projectFilter}
          ORDER BY rank LIMIT @limit`,
       )
-      .all({ fts, projectId, limit }) as Array<ItemRow & { project_name: string }>;
-    return rows.map((row) => ({
-      item: toItem(row),
-      projectName: row.project_name as ProjectName,
-    }));
-  }
-
-  archive(itemId: string): boolean {
-    const result = this.db
-      .prepare("UPDATE context_items SET archived = 1 WHERE id = ?")
-      .run(itemId);
-    return result.changes > 0;
+      .all({ fts, projectId, limit }) as ItemRowWithProject[];
+    return rows.map(toItemWithProject);
   }
 }

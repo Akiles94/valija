@@ -101,15 +101,52 @@ describe("SqliteContextItemRepository", () => {
     expect(items.search("   ", p.id)).toHaveLength(0);
   });
 
-  it("archive hides items from search and default find", () => {
+  it("an archived re-save hides the item from search and default find", () => {
     const p = project("archiving");
     projects.save(p);
     const it1 = item(p.id, "soon to vanish zanzibar");
     items.save(it1);
     expect(items.search("zanzibar", p.id)).toHaveLength(1);
-    expect(items.archive(it1.id)).toBe(true);
+    items.save({ ...it1, archived: true });
     expect(items.search("zanzibar", p.id)).toHaveLength(0);
     expect(items.findByProject(p.id)).toHaveLength(0);
-    expect(items.archive("missing-id")).toBe(false);
+  });
+
+  it("findById returns the item with its project, archived included", () => {
+    const p = project("lookup");
+    projects.save(p);
+    const live = item(p.id, "live one");
+    const gone = item(p.id, "archived one", { archived: true });
+    items.save(live);
+    items.save(gone);
+    expect(items.findById(live.id)).toEqual({ item: live, projectName: "lookup" });
+    expect(items.findById(gone.id)?.item.archived).toBe(true);
+    expect(items.findById("01NOPE0000")).toBeNull();
+  });
+
+  it("findByIdPrefix matches case-insensitively across projects, sorted and limited", () => {
+    const a = project("prefix-a");
+    const b = project("prefix-b");
+    projects.save(a);
+    projects.save(b);
+    const first = { ...item(a.id, "first"), id: "01PFXQ00AA" };
+    const second = { ...item(b.id, "second"), id: "01PFXQ00BB" };
+    items.save(second);
+    items.save(first);
+    const found = items.findByIdPrefix("01pfxq", 10);
+    expect(found.map((f) => f.item.id)).toEqual(["01PFXQ00AA", "01PFXQ00BB"]);
+    expect(found.map((f) => f.projectName)).toEqual(["prefix-a", "prefix-b"]);
+    expect(items.findByIdPrefix("01PFXQ", 1)).toHaveLength(1);
+    expect(items.findByIdPrefix("01PFXZ", 10)).toEqual([]);
+  });
+
+  it("re-indexes FTS when an item is edited in place", () => {
+    const p = project("reindex");
+    projects.save(p);
+    const original = item(p.id, "kumquat strategy");
+    items.save(original);
+    items.save({ ...original, content: "persimmon strategy" as Content });
+    expect(items.search("kumquat", p.id)).toHaveLength(0);
+    expect(items.search("persimmon", p.id)).toHaveLength(1);
   });
 });

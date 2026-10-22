@@ -27,13 +27,19 @@ export interface SearchResult {
   projectName: ProjectName;
 }
 
-/**
- * Persistence port for context items: save, list by project, full-text search and archive (soft
- * delete).
- */
+/** An item and the slug of the project it lives in — what every by-id lookup returns. */
+export interface ItemWithProject {
+  item: ContextItem;
+  projectName: ProjectName;
+}
+
+/** Persistence port for context items: save, look up by id or id prefix, list by project and full-text search. */
 export interface ContextItemRepository {
   save(item: ContextItem): void;
+  /** Exact, case-sensitive, vault-wide; archived items included. */
+  findById(itemId: string): ItemWithProject | null;
+  /** Case-insensitive prefix match, vault-wide, sorted by id; archived items included. */
+  findByIdPrefix(prefix: string, limit: number): ItemWithProject[];
   findByProject(projectId: string, filters?: FindByProjectFilters): ContextItem[];
   search(query: string, projectId?: string, limit?: number): SearchResult[];
-  archive(itemId: string): boolean;
 }

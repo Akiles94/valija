@@ -3,6 +3,7 @@ import type { UseCase } from "../../../shared/application/use-case.js";
 import { type DomainError, ok, type Result } from "../../../shared/domain/result.js";
 import { createImportedContextItem } from "../../domain/entities/context-item.js";
 import type { Project } from "../../domain/entities/project.js";
+import { setArchived } from "../../domain/services/item-curation.js";
 import { parseContent } from "../../domain/values/content.js";
 import { type ProjectName, parseProjectName } from "../../domain/values/project-name.js";
 import { parseTags } from "../../domain/values/tag.js";
@@ -42,7 +43,8 @@ export interface ImportItemsOutput {
  * Persist a batch of imported items in ONE session, auto-creating the target
  * project. Context stays the sole guardian of ContextItem and the `imported`
  * type; the importer only hands it drafts. Ids are deterministic, so re-running
- * an import upserts instead of duplicating. A single bad chunk is collected as a
+ * an import upserts instead of duplicating — but never un-archives a chunk the
+ * user archived (CURATION D-H). A single bad chunk is collected as a
  * failure, never aborting the batch.
  */
 export class ImportItems implements UseCase<ImportItemsInput, ImportItemsOutput> {
@@ -82,18 +84,19 @@ export class ImportItems implements UseCase<ImportItemsInput, ImportItemsOutput>
     const content = parseContent(draft.content);
     if (!content.ok) return content;
 
-    session.items.save(
-      createImportedContextItem({
-        projectId,
-        source: draft.source,
-        conversationId: draft.conversationId,
-        chunkIndex: draft.chunkIndex,
-        content: content.value,
-        tags: tags.value,
-        createdAt: draft.createdAt,
-        now: this.clock.now(),
-      }),
-    );
+    const now = this.clock.now();
+    const item = createImportedContextItem({
+      projectId,
+      source: draft.source,
+      conversationId: draft.conversationId,
+      chunkIndex: draft.chunkIndex,
+      content: content.value,
+      tags: tags.value,
+      createdAt: draft.createdAt,
+      now,
+    });
+    const keepArchived = session.items.findById(item.id)?.item.archived === true;
+    session.items.save(keepArchived ? setArchived(item, true, now).item : item);
     return ok(undefined);
   }
 
