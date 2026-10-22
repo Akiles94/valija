@@ -10,6 +10,7 @@ import type { Container } from "../../../../../src/delivery/container.js";
 import { makeUnlockedVault, SeqIds } from "../../../../../src/testing/test-vault.js";
 import type { ClipboardPort } from "../../application/ports/clipboard.js";
 import type { FilePicker } from "../../application/ports/file-picker.js";
+import { SCHEMAS } from "../schemas.js";
 import { createContentHandlers } from "./content-handlers.js";
 
 /**
@@ -97,5 +98,16 @@ describe("content:setPinned / content:setArchived", () => {
       ok: false,
       error: { code: "ITEM_ARCHIVED" },
     });
+  });
+
+  it.each([
+    ["TOO_MANY_TAGS", { tags: Array.from({ length: 11 }, (_, i) => `t${i}`) }],
+    ["INVALID_TAG", { tags: ["t".repeat(33)] }],
+    ["CONTENT_TOO_LARGE", { content: "x".repeat(40_000) }],
+  ])("an over-limit edit that passes the real schema comes back as %s", (code, fields) => {
+    const id = saved(`over limit ${code}`);
+    const request = { id, ...fields };
+    expect(SCHEMAS["content:edit"].safeParse(request).success).toBe(true);
+    expect(handlers["content:edit"](request)).toEqual({ ok: false, error: { code } });
   });
 });

@@ -130,6 +130,9 @@ export function ProjectScreen({
       setEditing(null);
       setNotice(null);
       setReloadToken((n) => n + 1);
+    } catch {
+      // A rejected call (a schema throw, a lost main process) — the same generic copy the import screen uses.
+      setEditError(errorCopy("UNEXPECTED"));
     } finally {
       setSaving(false);
     }

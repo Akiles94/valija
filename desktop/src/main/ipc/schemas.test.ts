@@ -128,10 +128,16 @@ describe("content:edit schema", () => {
   it("rejects wrong types and oversized values", () => {
     expect(schema.safeParse({}).success).toBe(false);
     expect(schema.safeParse({ id: "01SEQ000001", tags: "a,b" }).success).toBe(false);
-    expect(schema.safeParse({ id: "01SEQ000001", content: "x".repeat(40_001) }).success).toBe(
+    expect(schema.safeParse({ id: "01SEQ000001", content: "x".repeat(1_000_001) }).success).toBe(
       false,
     );
-    expect(schema.safeParse({ id: "01SEQ000001", tags: Array(11).fill("t") }).success).toBe(false);
+    expect(schema.safeParse({ id: "01SEQ000001", tags: Array(101).fill("t") }).success).toBe(false);
     expect(schema.safeParse({ id: "a".repeat(65) }).success).toBe(false);
+  });
+
+  it("lets over-limit edits through to EditItem, so they come back as their real error code", () => {
+    expect(schema.safeParse({ id: "01SEQ000001", tags: Array(11).fill("t") }).success).toBe(true);
+    expect(schema.safeParse({ id: "01SEQ000001", tags: ["t".repeat(33)] }).success).toBe(true);
+    expect(schema.safeParse({ id: "01SEQ000001", content: "x".repeat(40_000) }).success).toBe(true);
   });
 });

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { copyForErrorCode } from "../../../shared/i18n/error-copy.js";
 import type {
   AppPreferencesMessage,
   ContextItemMessage,
@@ -443,6 +444,40 @@ describe("ProjectScreen edit dialog (DOM)", () => {
     expect((screen.getByLabelText(/^Tags/) as HTMLInputElement).value).toBe(
       "a,b,c,d,e,f,g,h,i,j,k",
     );
+  });
+
+  it("shows the generic copy and stays open when the edit call itself is rejected", async () => {
+    const bridge = fakeBridge([editable()]);
+    vi.mocked(bridge.content.edit).mockRejectedValueOnce(new Error("schema rejected"));
+    await openDialog(bridge);
+    fireEvent.change(screen.getByLabelText("Content"), { target: { value: "new text" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await screen.findByText(copyForErrorCode("UNEXPECTED", "en"));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect((screen.getByLabelText("Content") as HTMLTextAreaElement).value).toBe("new text");
+    expect(screen.getByRole("button", { name: "Save" }).hasAttribute("disabled")).toBe(false);
+  });
+
+  it("keeps Tab inside the dialog", async () => {
+    await openDialog(fakeBridge([editable()]));
+    const save = screen.getByRole("button", { name: "Save" });
+    const content = screen.getByLabelText("Content");
+    save.focus();
+    fireEvent.keyDown(save, { key: "Tab" });
+    expect(document.activeElement).toBe(content);
+    fireEvent.keyDown(content, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(save);
+  });
+
+  it("focuses the content when it opens and returns focus to Edit on Cancel", async () => {
+    renderScreen(fakeBridge([editable()]));
+    await screen.findByText("old text");
+    const edit = screen.getByRole("button", { name: "Edit" });
+    edit.focus();
+    fireEvent.click(edit);
+    expect(document.activeElement).toBe(screen.getByLabelText("Content"));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Edit" }));
   });
 
   it("offers no Edit on archived or imported items", async () => {

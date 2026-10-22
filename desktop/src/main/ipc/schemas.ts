@@ -41,12 +41,14 @@ export const SCHEMAS = {
   "content:copy": z.object({ text: z.string() }),
   "content:setPinned": z.object({ id: z.string().max(64), pinned: z.boolean() }),
   "content:setArchived": z.object({ id: z.string().max(64), archived: z.boolean() }),
-  // Only length caps here; EditItem's parsers own the real grammar (32 KB content, tag syntax, types).
+  // Abuse caps only, set well above the domain limits: EditItem's parsers own the real rules (32 KB,
+  // 10 tags, tag syntax, types), so a too-long edit comes back as its real code (TOO_MANY_TAGS, …) —
+  // never as a schema throw the renderer could only report as UNEXPECTED.
   "content:edit": z.object({
     id: z.string().max(64),
-    content: z.string().max(40_000).optional(),
-    tags: z.array(z.string().max(32)).max(10).optional(),
-    type: z.string().max(32).optional(),
+    content: z.string().max(1_000_000).optional(),
+    tags: z.array(z.string().max(256)).max(100).optional(),
+    type: z.string().max(64).optional(),
   }),
   "sync:status": z.void(),
   "diagnostics:run": z.void(),
