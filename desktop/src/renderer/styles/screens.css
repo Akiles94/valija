@@ -575,6 +575,33 @@
   font-size: 0.78rem;
   cursor: pointer;
 }
+/* Curation actions (CURATION): link-style buttons like .item-toggle, and a muted, dashed archived card. */
+.item-actions {
+  display: flex;
+  gap: 12px;
+}
+.item-action {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--color-accent);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.item-action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.item-row.archived {
+  border-style: dashed;
+  color: var(--color-text-muted);
+}
+.item-archived {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
 .item-tags {
   display: flex;
   flex-wrap: wrap;

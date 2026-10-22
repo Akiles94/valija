@@ -115,7 +115,10 @@ both reduce to this one call (D-U(b): a skipped tour never nags again).
   `ok` and `fatal` (mirroring `doctor.ts`'s own `!check.ok && check.fatal`), so the screen — and its
   stylesheet — can distinguish a warning from a failure without re-deriving either.
 - **`session-state.ts`**'s sibling modules (`unlock-outcome.ts`, `create-vault-validation.ts`,
-  `import-selection.ts`, `focus-refresh.ts`) each own one screen's pure decision logic; none of them
+  `import-selection.ts`, `focus-refresh.ts`, and (CURATION) `item-actions.ts`) each own one
+  screen's pure decision logic — `item-actions.ts`'s `itemActionsFor` mirrors the domain's curation
+  rules (archived → unarchive; imported → archive only; else pin/unpin + archive) so the project
+  screen never offers a refused call, and `performItemAction` is the one action → channel map; none of them
   is a `UseCase` or a port — they're view state, tested the way `context/domain/services` are tested
   in `src/`, without a DOM.
 

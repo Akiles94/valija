@@ -4,6 +4,7 @@ import { ItemCard } from "../components/item-card.js";
 import type { ValijaBridge } from "../state/bridge.js";
 import { wireFocusRefresh } from "../state/focus-refresh.js";
 import { useErrorCopy, useT } from "../state/i18n-context.js";
+import { type ItemAction, itemActionsFor, performItemAction } from "../state/item-actions.js";
 import { partitionPinnedItems } from "../state/pinned-partition.js";
 
 interface ItemRow {
@@ -12,6 +13,7 @@ interface ItemRow {
   content: string;
   tags: string[];
   pinned: boolean;
+  archived?: boolean;
   createdAt: string;
 }
 
@@ -23,6 +25,10 @@ const ALL_TYPES = "";
  * types (`decision`/`progress`/`preference`/.../`handoff`) are domain
  * vocabulary, shown as-is in both languages, exactly like the CLI's own
  * output; only "All types" and "Imported" are catalog copy.
+ *
+ * Curation (CURATION): each card offers pin/unpin and archive/unarchive; the
+ * list reloads after every action. "Show archived" and the Undo notice are
+ * in-memory only — never written to preferences.
  */
 export function ProjectScreen({
   bridge,
@@ -38,15 +44,23 @@ export function ProjectScreen({
   const [typeFilter, setTypeFilter] = useState<string>(ALL_TYPES);
   const [items, setItems] = useState<ItemRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: bridge and errorCopy are stable across renders; project/typeFilter are the real inputs
+  // biome-ignore lint/correctness/useExhaustiveDependencies: bridge and errorCopy are stable across renders; project/typeFilter/showArchived/reloadToken are the real inputs
   useEffect(() => {
     let cancelled = false;
     function load() {
       setItems(null);
       setError(null);
       bridge.content
-        .show(typeFilter === ALL_TYPES ? { project } : { project, type: typeFilter })
+        .show({
+          project,
+          ...(typeFilter === ALL_TYPES ? {} : { type: typeFilter }),
+          ...(showArchived ? { includeArchived: true } : {}),
+        })
         .then((result) => {
           if (cancelled) return;
           if (!result.ok) {
@@ -63,7 +77,16 @@ export function ProjectScreen({
       cancelled = true;
       unwireFocus();
     };
-  }, [project, typeFilter]);
+  }, [project, typeFilter, showArchived, reloadToken]);
+
+  async function runAction(id: string, action: ItemAction) {
+    setBusyId(id);
+    const result = await performItemAction(bridge, id, action);
+    if (!result.ok) setError(errorCopy(result.error.code));
+    setNotice(result.ok && action === "archive" ? id : null);
+    setBusyId(null);
+    setReloadToken((n) => n + 1);
+  }
 
   function itemList(rows: ItemRow[]) {
     return (
@@ -76,13 +99,19 @@ export function ProjectScreen({
             tags={item.tags}
             pinned={item.pinned}
             createdAt={item.createdAt}
+            archived={item.archived === true}
+            actions={itemActionsFor(item)}
+            onAction={(action) => runAction(item.id, action)}
+            busy={busyId === item.id}
           />
         ))}
       </ul>
     );
   }
 
-  const { pinned, rest } = partitionPinnedItems(items ?? []);
+  const live = (items ?? []).filter((item) => !item.archived);
+  const archived = (items ?? []).filter((item) => item.archived);
+  const { pinned, rest } = partitionPinnedItems(live);
 
   return (
     <div className="screen project">
@@ -122,19 +151,38 @@ export function ProjectScreen({
             />
             {t("project.typeFilterImported")}
           </label>
+          <label className="chip">
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={(event) => setShowArchived(event.target.checked)}
+            />
+            {t("project.showArchived")}
+          </label>
         </fieldset>
         <button type="button" onClick={() => onViewPack(project)}>
           {t("pack.title")}
         </button>
       </div>
       {error !== null && <p className="error">{error}</p>}
+      {notice !== null && (
+        <p className="notice">
+          {t("project.archivedNotice")}{" "}
+          <button
+            type="button"
+            className="item-action"
+            onClick={() => runAction(notice, "unarchive")}
+          >
+            {t("project.undo")}
+          </button>
+        </p>
+      )}
       {items !== null && items.length === 0 && (
         <p className="empty-title">{t("project.noItems")}</p>
       )}
-      {items !== null &&
-        items.length > 0 &&
+      {live.length > 0 &&
         (pinned.length === 0 ? (
-          itemList(items)
+          itemList(live)
         ) : (
           <>
             <h2 className="item-section-title">{t("project.pinnedSection")}</h2>
@@ -147,6 +195,12 @@ export function ProjectScreen({
             )}
           </>
         ))}
+      {showArchived && archived.length > 0 && (
+        <>
+          <h2 className="item-section-title">{t("project.archivedSection")}</h2>
+          {itemList(archived)}
+        </>
+      )}
     </div>
   );
 }

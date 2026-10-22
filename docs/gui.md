@@ -177,6 +177,12 @@ group keeping that same newest-first order within itself), because a browsing su
 surfacing what you pinned — the CLI's flat order is unaffected, and the two are expected to look
 different side by side.
 
+**Keeping a project current.** Every card has small **Pin** / **Unpin** and **Archive** actions.
+Pinned items always lead the context pack. **Archive** hides an outdated item from packs and search —
+it is not deleted — and a notice with **Undo** appears right after. Tick **Show archived** to see
+archived items in their own section at the bottom, each with an **Unarchive** action. Imported items
+can only be archived. These are the same operations as `valija pin`/`archive`, through the same code.
+
 ---
 
 ## Connecting your AI tools
@@ -379,9 +385,9 @@ Every one of them only fires when you click its button — nothing is copied aut
 
 ## What this app deliberately does not do
 
-- **Curate your content** — no organize, pin, edit, tag, or delete anything from this window. Saving
-  and shaping context happens from inside the AI tools you connect, through `save_context` and
-  friends; this app is a window onto what's already there.
+- **Edit or delete your content** — you can pin, unpin, archive and unarchive items from a project
+  (see above), but editing text is CLI-only for now (`valija edit`), and nothing in this app
+  deletes anything: archive hides an item from packs and search and can always be undone.
 - **Resolve a sync fork** — if two devices wrote independently, the Sync panel tells you it happened
   and points at the guidance in [the main README](../README.md#use-it-on-several-devices); there is
   no merge or "keep this one" button anywhere.

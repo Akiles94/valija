@@ -124,6 +124,16 @@ export const en = {
     noItems: "No items in this project yet.",
     showMore: "Show more",
     showLess: "Show less",
+    pin: "Pin",
+    unpin: "Unpin",
+    archive: "Archive",
+    unarchive: "Unarchive",
+    archiveHint: "Hide from packs and search. You can undo this.",
+    showArchived: "Show archived",
+    archivedSection: "Archived",
+    archivedBadge: "Archived",
+    archivedNotice: "Archived — hidden from packs and search.",
+    undo: "Undo",
   },
 
   search: {

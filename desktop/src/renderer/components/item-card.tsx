@@ -2,6 +2,7 @@ import { useState } from "react";
 import { formatDate } from "../../shared/i18n/format.js";
 import { isLongContent } from "../content/long-content.js";
 import { useLanguage, useT } from "../state/i18n-context.js";
+import type { ItemAction } from "../state/item-actions.js";
 import { MarkdownContent } from "./markdown-content.js";
 
 /**
@@ -15,6 +16,9 @@ import { MarkdownContent } from "./markdown-content.js";
  * IPC, never a timer — a filter change or window-focus reload remounts the
  * list (`project.tsx`'s `setItems(null)` before every fetch), which is what
  * resets every card to collapsed with no extra code.
+ *
+ * The curation props (CURATION) are all optional: with no `actions`, the
+ * card renders exactly as before.
  */
 export function ItemCard({
   type,
@@ -22,12 +26,20 @@ export function ItemCard({
   tags,
   pinned,
   createdAt,
+  archived = false,
+  actions = [],
+  onAction,
+  busy = false,
 }: {
   type: string;
   content: string;
   tags: string[];
   pinned: boolean;
   createdAt: string;
+  archived?: boolean;
+  actions?: ItemAction[];
+  onAction?: (action: ItemAction) => void;
+  busy?: boolean;
 }) {
   const t = useT();
   const language = useLanguage();
@@ -37,7 +49,7 @@ export function ItemCard({
   const collapsed = collapsible && !expanded;
 
   return (
-    <li className={pinned ? "item-row pinned" : "item-row"}>
+    <li className={`item-row${pinned ? " pinned" : ""}${archived ? " archived" : ""}`}>
       <div className="item-header">
         <span className="item-meta">
           {pinned && (
@@ -48,6 +60,12 @@ export function ItemCard({
             </>
           )}
           <span className="item-type">{type}</span>
+          {archived && (
+            <>
+              <span className="item-sep">·</span>
+              <span className="item-archived">{t("project.archivedBadge")}</span>
+            </>
+          )}
         </span>
         <span className="item-date">{formatDate(new Date(createdAt), language)}</span>
       </div>
@@ -74,6 +92,23 @@ export function ItemCard({
             <span key={tag} className="item-tag">
               {tag}
             </span>
+          ))}
+        </div>
+      )}
+
+      {actions.length > 0 && (
+        <div className="item-actions">
+          {actions.map((action) => (
+            <button
+              key={action}
+              type="button"
+              className="item-action"
+              disabled={busy}
+              title={action === "archive" ? t("project.archiveHint") : undefined}
+              onClick={() => onAction?.(action)}
+            >
+              {t(`project.${action}`)}
+            </button>
           ))}
         </div>
       )}

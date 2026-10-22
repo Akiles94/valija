@@ -125,6 +125,16 @@ export const es: Catalog = {
     noItems: "Todavía no hay elementos en este proyecto.",
     showMore: "Ver más",
     showLess: "Ver menos",
+    pin: "Fijar",
+    unpin: "Quitar de fijados",
+    archive: "Archivar",
+    unarchive: "Desarchivar",
+    archiveHint: "Ocultar de los paquetes y la búsqueda. Puedes deshacerlo.",
+    showArchived: "Mostrar archivados",
+    archivedSection: "Archivados",
+    archivedBadge: "Archivado",
+    archivedNotice: "Archivado: oculto en los paquetes y la búsqueda.",
+    undo: "Deshacer",
   },
 
   search: {

@@ -23,11 +23,17 @@ function item(overrides: Partial<ContextItemMessage>): ContextItemMessage {
   };
 }
 
-/** Only `content.show` is exercised by this screen; every other bridge call is a stub. */
+/** `content.show` (archived rows only on `includeArchived`) plus the two curation calls; every other bridge call is a stub. */
 function fakeBridge(items: ContextItemMessage[]): ValijaBridge {
   const show = vi.fn(
-    (): Promise<IpcResult<ContextItemMessage[]>> => Promise.resolve({ ok: true, value: items }),
+    (req: { includeArchived?: boolean }): Promise<IpcResult<ContextItemMessage[]>> =>
+      Promise.resolve({
+        ok: true,
+        value: req.includeArchived ? items : items.filter((i) => !i.archived),
+      }),
   );
+  const changed = (): Promise<IpcResult<{ changed: boolean }>> =>
+    Promise.resolve({ ok: true, value: { changed: true } });
   return {
     vault: {
       init: vi.fn(),
@@ -44,6 +50,8 @@ function fakeBridge(items: ContextItemMessage[]): ValijaBridge {
       pack: vi.fn(),
       export: vi.fn(),
       copy: vi.fn(),
+      setPinned: vi.fn(changed),
+      setArchived: vi.fn(changed),
     },
     sync: { status: vi.fn() },
     diagnostics: { run: vi.fn(), copyReport: vi.fn() },
@@ -265,5 +273,100 @@ describe("ProjectScreen (DOM)", () => {
     expect(container.querySelector(".item-pinned")?.textContent).toBe("Fijado");
     expect(container.querySelector(".item-type")?.textContent).toBe("decision");
     expect(container.querySelector(".item-content")?.textContent).toBe("a".repeat(500));
+  });
+});
+
+describe("ProjectScreen curation (DOM)", () => {
+  const button = (name: string) => screen.getByRole("button", { name });
+
+  it("offers Pin and Archive on a live card, Unpin on a pinned one, and only Archive on an imported one", async () => {
+    const bridge = fakeBridge([
+      item({ id: "live", content: "live item" }),
+      item({ id: "pinned", content: "pinned item", pinned: true }),
+      item({ id: "imp", content: "imported item", type: "imported" }),
+    ]);
+    const { container } = renderScreen(bridge);
+    await screen.findByText("live item");
+    const actionsOf = (text: string) =>
+      [...(screen.getByText(text).closest("li")?.querySelectorAll(".item-action") ?? [])].map(
+        (b) => b.textContent,
+      );
+    expect(actionsOf("live item")).toEqual(["Pin", "Archive"]);
+    expect(actionsOf("pinned item")).toEqual(["Unpin", "Archive"]);
+    expect(actionsOf("imported item")).toEqual(["Archive"]);
+    expect(container.querySelectorAll(".item-row")).toHaveLength(3);
+  });
+
+  it("Pin calls setPinned and reloads the list", async () => {
+    const bridge = fakeBridge([item({ id: "a1", content: "pin me" })]);
+    renderScreen(bridge);
+    await screen.findByText("pin me");
+    fireEvent.click(button("Pin"));
+    await waitFor(() => expect(bridge.content.show).toHaveBeenCalledTimes(2));
+    expect(bridge.content.setPinned).toHaveBeenCalledWith({ id: "a1", pinned: true });
+  });
+
+  it("Archive shows a notice whose Undo unarchives", async () => {
+    const bridge = fakeBridge([item({ id: "a2", content: "archive me" })]);
+    renderScreen(bridge);
+    await screen.findByText("archive me");
+    fireEvent.click(button("Archive"));
+    await screen.findByText(/Archived — hidden from packs and search\./);
+    expect(bridge.content.setArchived).toHaveBeenCalledWith({ id: "a2", archived: true });
+    fireEvent.click(button("Undo"));
+    await waitFor(() =>
+      expect(bridge.content.setArchived).toHaveBeenLastCalledWith({ id: "a2", archived: false }),
+    );
+  });
+
+  it("Show archived requests archived rows and renders them last, marked, with only Unarchive", async () => {
+    const bridge = fakeBridge([
+      item({ id: "keep", content: "still live" }),
+      item({ id: "gone", content: "retired item", archived: true }),
+    ]);
+    renderScreen(bridge);
+    await screen.findByText("still live");
+    expect(screen.queryByText("retired item")).toBeNull();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Show archived" }));
+    const retired = await screen.findByText("retired item");
+    expect(bridge.content.show).toHaveBeenLastCalledWith({
+      project: "valija",
+      includeArchived: true,
+    });
+    const card = retired.closest("li");
+    expect(card?.className).toContain("archived");
+    expect(screen.getByRole("heading", { name: "Archived" })).toBeTruthy();
+    expect([...(card?.querySelectorAll(".item-action") ?? [])].map((b) => b.textContent)).toEqual([
+      "Unarchive",
+    ]);
+  });
+
+  it("renders the catalog copy for a refused action", async () => {
+    const bridge = fakeBridge([item({ id: "a3", content: "refused" })]);
+    vi.mocked(bridge.content.setPinned).mockResolvedValueOnce({
+      ok: false,
+      error: { code: "ITEM_ARCHIVED" },
+    });
+    renderScreen(bridge);
+    await screen.findByText("refused");
+    fireEvent.click(button("Pin"));
+    await screen.findByText("That item is archived — unarchive it first.");
+  });
+
+  it("never persists the toggle or an action to preferences", async () => {
+    const bridge = fakeBridge([item({ id: "a4", content: "private state" })]);
+    renderScreen(bridge);
+    await screen.findByText("private state");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Show archived" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Archive" }));
+    await waitFor(() => expect(bridge.content.setArchived).toHaveBeenCalled());
+    expect(bridge.preferences.write).not.toHaveBeenCalled();
+  });
+
+  it("speaks Spanish when the app does", async () => {
+    renderScreen(fakeBridge([item({ id: "a5", content: "contenido" })]), { language: "es" });
+    await screen.findByText("contenido");
+    expect(button("Fijar")).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: "Mostrar archivados" })).toBeTruthy();
   });
 });
