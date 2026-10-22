@@ -15,7 +15,7 @@ const files = new TypeScriptExportsExtractor({
 const index = indexCallables(files);
 
 describe("surfaces read from the real code", () => {
-  it("CLI: the 12 commands, each linked to what its action reaches", () => {
+  it("CLI: the 17 commands, each linked to what its action reaches", () => {
     const commands = readCliCommands(files, index);
     expect(commands.map((c) => c.name)).toEqual([
       "init",
@@ -24,6 +24,11 @@ describe("surfaces read from the real code", () => {
       "status",
       "projects",
       "show",
+      "pin",
+      "unpin",
+      "archive",
+      "unarchive",
+      "edit",
       "search",
       "export",
       "import",
@@ -50,9 +55,9 @@ describe("surfaces read from the real code", () => {
     expect(tools.find((t) => t.name === "save_context")?.reaches).toEqual(["saveContext"]);
   });
 
-  it("IPC: all 29 channels, each with exactly one handler", () => {
+  it("IPC: all 32 channels, each with exactly one handler", () => {
     const channels = readIpcChannels(files, index);
-    expect(channels).toHaveLength(29);
+    expect(channels).toHaveLength(32);
     const unlock = channels.find((c) => c.name === "vault:unlock");
     expect(unlock).toMatchObject({
       handlerFile: "desktop/src/main/ipc/handlers/vault-handlers.ts",

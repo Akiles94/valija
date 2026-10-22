@@ -13,7 +13,8 @@ const inertContainer = new Proxy(
 ) as Container;
 
 // Captured from `node dist/program.js <cmd> --help` before buildProgram was extracted, so these
-// are the pre-refactor truth, not whatever the new code prints.
+// are the pre-refactor truth, not whatever the new code prints. Commands and options added by later
+// advances (CURATION: pin, unpin, archive, unarchive, edit, show --archived) are recorded the same way.
 const ROOT_HELP = `Usage: valija [options] [command]
 
 Encrypted context vault for developers who use several AI tools.
@@ -32,6 +33,15 @@ Commands:
   status                      Show vault location and lock state.
   projects                    List projects with item counts and last activity.
   show [options] <project>    Print the items of a project.
+  pin <id>                    Pin an item: it always leads its project's context
+                              pack.
+  unpin <id>                  Unpin an item.
+  archive <id>                Archive an item: hidden from packs and search, not
+                              deleted. Undo with unarchive.
+  unarchive <id>              Bring an archived item back (find its id with:
+                              valija show <project> --archived).
+  edit [options] <id>         Edit an item in place. Content is read from a file
+                              or stdin, never an editor.
   search [options] <query>    Full-text search across saved context.
   export [options] <project>  Export a project's context pack (markdown by
                               default).
@@ -93,7 +103,68 @@ Arguments:
 Options:
   --type <type>  filter by type
                  (decision|progress|preference|fact|handoff|imported)
+  --archived     include archived items, marked [archived]
   -h, --help     display help for command
+`,
+  pin: `Usage: valija pin [options] <id>
+
+Pin an item: it always leads its project's context pack.
+
+Arguments:
+  id          item id, or a unique prefix of at least 6 characters (see valija
+              show)
+
+Options:
+  -h, --help  display help for command
+`,
+  unpin: `Usage: valija unpin [options] <id>
+
+Unpin an item.
+
+Arguments:
+  id          item id, or a unique prefix of at least 6 characters (see valija
+              show)
+
+Options:
+  -h, --help  display help for command
+`,
+  archive: `Usage: valija archive [options] <id>
+
+Archive an item: hidden from packs and search, not deleted. Undo with unarchive.
+
+Arguments:
+  id          item id, or a unique prefix of at least 6 characters (see valija
+              show)
+
+Options:
+  -h, --help  display help for command
+`,
+  unarchive: `Usage: valija unarchive [options] <id>
+
+Bring an archived item back (find its id with: valija show <project>
+--archived).
+
+Arguments:
+  id          item id, or a unique prefix of at least 6 characters (see valija
+              show)
+
+Options:
+  -h, --help  display help for command
+`,
+  edit: `Usage: valija edit [options] <id>
+
+Edit an item in place. Content is read from a file or stdin, never an editor.
+
+Arguments:
+  id                     item id, or a unique prefix of at least 6 characters
+                         (see valija show)
+
+Options:
+  --content-file <path>  new content from a file, or - for stdin
+  --tags <tags>          comma-separated tags, replacing the current ones (""
+                         clears them)
+  --type <type>          new type (decision|progress|preference|fact|handoff)
+  -h, --help             display help for command
 `,
   search: `Usage: valija search [options] <query>
 
