@@ -31,6 +31,7 @@ export const VALIJA_ERROR_CODES = [
   "INVALID_INPUT",
 ] as const;
 
+/** One code from the closed list an SDK call can fail with. */
 export type ValijaErrorCode = (typeof VALIJA_ERROR_CODES)[number];
 
 /**

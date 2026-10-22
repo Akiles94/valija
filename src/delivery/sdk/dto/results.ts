@@ -17,6 +17,7 @@ export interface ForkNotice {
   readonly message: string;
 }
 
+/** What `save` and `saveHandoff` report: the new item's id, project and type, and whether the project was created. */
 export interface SavedItem {
   itemId: string;
   project: string;

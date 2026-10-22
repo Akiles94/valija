@@ -23,6 +23,7 @@ import {
 } from "../validation/sdk-schemas.js";
 import { type IdleLockTimer, startIdleLockTimer } from "./idle-lock-timer.js";
 
+/** What a vault handle is built from: its mode, its container, the client label and, in Mode P, its own key store. */
 export interface HandleWiring {
   mode: VaultMode;
   container: Container;

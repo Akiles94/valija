@@ -11,11 +11,11 @@ One bounded context per `src/` folder, each split into **domain** (pure rules) �
 | Module | domain | application | infra |
 |---|---|---|---|
 | [context](../../specs/context.md) | entities/, services/, values/, 1 file(s) | dto/, ports/, services/, use-cases/ | git/, 5 file(s) |
-| [delivery](../../specs/delivery.md) | entry points: cli/, mcp/, 6 file(s) | — | — |
+| [delivery](../../specs/delivery.md) | entry points: cli/, mcp/, sdk/, 6 file(s) | — | — |
 | [desktop](../../specs/desktop.md) | — (uses the src/ use cases) | policies/, ports/, services/ | main/infra/, main/ipc/, preload/, renderer/, shared/ |
 | [importers](../../specs/importers.md) | entities/, services/, values/, 1 file(s) | ports/, use-cases/ | parsers/, 2 file(s) |
 | [shared](../../specs/shared.md) | services/, 1 file(s) | ports/, 1 file(s) | migrations/, 4 file(s) |
-| [vault](../../specs/vault.md) | services/, values/, 1 file(s) | policies/, ports/, services/, use-cases/ | 9 file(s) |
+| [vault](../../specs/vault.md) | services/, values/, 1 file(s) | policies/, ports/, services/, use-cases/ | 11 file(s) |
 
 ## Module dependencies
 
@@ -55,7 +55,6 @@ flowchart LR
   n_CheckVaultUpgrade["CheckVaultUpgrade"]
   n_CreateVault["CreateVault"]
   n_EditItem["EditItem"]
-  n_FileDeviceIdentity["FileDeviceIdentity"]
   n_FileExportReader["FileExportReader"]
   n_FileVaultFolder["FileVaultFolder"]
   n_FileVaultMover["FileVaultMover"]
@@ -68,7 +67,6 @@ flowchart LR
   n_ListProjectBindings["ListProjectBindings"]
   n_ListProjects["ListProjects"]
   n_LockVault["LockVault"]
-  n_OsKeychain["OsKeychain"]
   n_RelocateVault["RelocateVault"]
   n_ResolveProject["ResolveProject"]
   n_SaveContext["SaveContext"]
@@ -80,6 +78,8 @@ flowchart LR
   n_UnlinkWorkspace["UnlinkWorkspace"]
   n_UnlockVault["UnlockVault"]
   n_VaultStatus["VaultStatus"]
+  n_deviceIdentity["deviceIdentity"]
+  n_keychain["keychain"]
   n_parserRegistry["parserRegistry"]
   n_paths["paths"]
   n_systemClock["systemClock"]
@@ -88,9 +88,9 @@ flowchart LR
   n_CheckVaultUpgrade -->|VaultCrypto| n_Argon2VaultCrypto
   n_CheckVaultUpgrade -->|VaultStore| n_FileVaultStore
   n_CreateVault -->|VaultCrypto| n_Argon2VaultCrypto
-  n_CreateVault -->|DeviceIdentity| n_FileDeviceIdentity
   n_CreateVault -->|VaultStore| n_FileVaultStore
-  n_CreateVault -->|KeychainPort| n_OsKeychain
+  n_CreateVault -->|DeviceIdentity| n_deviceIdentity
+  n_CreateVault -->|KeychainPort| n_keychain
   n_CreateVault -->|Clock| n_systemClock
   n_CreateVault -->|IdGenerator| n_ulidIds
   n_EditItem -->|VaultSessions| n_SqliteVaultSessions
@@ -110,14 +110,14 @@ flowchart LR
   n_LinkWorkspace -->|IdGenerator| n_ulidIds
   n_ListProjectBindings -->|VaultSessions| n_SqliteVaultSessions
   n_ListProjects -->|VaultSessions| n_SqliteVaultSessions
-  n_LockVault -->|DeviceIdentity| n_FileDeviceIdentity
   n_LockVault -->|VaultFolder| n_FileVaultFolder
   n_LockVault -->|VaultStore| n_FileVaultStore
-  n_LockVault -->|KeychainPort| n_OsKeychain
+  n_LockVault -->|DeviceIdentity| n_deviceIdentity
+  n_LockVault -->|KeychainPort| n_keychain
   n_RelocateVault -->|VaultFolder| n_FileVaultFolder
   n_RelocateVault -->|VaultMover| n_FileVaultMover
   n_RelocateVault -->|VaultStore| n_FileVaultStore
-  n_RelocateVault -->|KeychainPort| n_OsKeychain
+  n_RelocateVault -->|KeychainPort| n_keychain
   n_RelocateVault -->|VaultPaths| n_paths
   n_ResolveProject -->|WorkspaceProbe| n_FileWorkspaceProbe
   n_ResolveProject -->|VaultSessions| n_SqliteVaultSessions
@@ -133,14 +133,14 @@ flowchart LR
   n_UnlinkWorkspace -->|WorkspaceProbe| n_FileWorkspaceProbe
   n_UnlinkWorkspace -->|VaultSessions| n_SqliteVaultSessions
   n_UnlockVault -->|VaultCrypto| n_Argon2VaultCrypto
-  n_UnlockVault -->|DeviceIdentity| n_FileDeviceIdentity
   n_UnlockVault -->|VaultStore| n_FileVaultStore
-  n_UnlockVault -->|KeychainPort| n_OsKeychain
+  n_UnlockVault -->|DeviceIdentity| n_deviceIdentity
+  n_UnlockVault -->|KeychainPort| n_keychain
   n_UnlockVault -->|Clock| n_systemClock
-  n_VaultStatus -->|DeviceIdentity| n_FileDeviceIdentity
   n_VaultStatus -->|VaultFolder| n_FileVaultFolder
   n_VaultStatus -->|VaultStore| n_FileVaultStore
-  n_VaultStatus -->|KeychainPort| n_OsKeychain
+  n_VaultStatus -->|DeviceIdentity| n_deviceIdentity
+  n_VaultStatus -->|KeychainPort| n_keychain
   n_VaultStatus -->|Clock| n_systemClock
   n_VaultStatus -->|number| n_ttlMinutes
 ```

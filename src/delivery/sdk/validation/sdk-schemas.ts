@@ -10,6 +10,7 @@ const clientLabel = z
   .regex(/^[a-z0-9][a-z0-9-]{0,63}$/, "client must be a short slug of [a-z0-9-]");
 const vaultRoot = z.string().min(1).optional();
 
+/** Validates `openVault` options: a client slug, an optional vault folder, and a passphrase or a recovery key (not both). */
 export const openVaultSchema = z
   .object({
     client: clientLabel,
@@ -23,6 +24,7 @@ export const openVaultSchema = z
     "pass a passphrase or a recovery key, not both",
   );
 
+/** Validates `createVault` options: a client slug, an optional vault folder and the new passphrase. */
 export const createVaultSchema = z.object({
   client: clientLabel,
   vaultRoot,
@@ -38,8 +40,10 @@ export const saveSchema = z.object({
   supersedes: z.string().max(64).optional(),
 });
 
+/** Validates `saveHandoff` input, mirroring MCP `save_handoff`. */
 export const handoffSchema = z.object({ project: z.string(), content: z.string() });
 
+/** Validates `getContextPack` input, mirroring MCP `get_context`. */
 export const contextPackSchema = z.object({
   project: z.string(),
   budgetTokens: z.number().int().positive().optional(),

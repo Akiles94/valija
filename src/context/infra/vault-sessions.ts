@@ -58,6 +58,7 @@ function storageErr(error: unknown): Result<never, DomainError> {
 export const BUSY_MESSAGE =
   "The vault is busy: another valija process held it for more than 5 s. Nothing was saved. Try again.";
 
+/** How sessions treat a vault whose schema is behind: migrate it (the default) or refuse it. */
 export interface VaultSessionsOptions {
   /** `false` (SDK without allowUpgrade, D-H): a behind vault is refused, never migrated. */
   autoMigrate: boolean;

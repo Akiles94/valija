@@ -4,7 +4,7 @@ Trigger: `src/delivery/cli/build-program.ts:buildProgram()` command `unlock` →
 Path:
 1. `src/vault/application/use-cases/unlock-vault.use-case.ts:UnlockVault.execute()` — reads JSON header (salt, KDF params, vaultId).
 2. `src/vault/application/services/resolve-unlock-key.ts:resolveUnlockKey()` — recovery key used raw (64 hex); passphrase → `src/vault/infra/argon2.ts:Argon2VaultCrypto.deriveKey()`.
-3. `src/vault/infra/file-vault-store.ts:FileVaultStore.readSchemaVersion()` — opens SQLCipher (`src/shared/infra/sqlite.ts:openVaultDb()`) WITHOUT migrating; schema < `LATEST_SCHEMA_VERSION` and no `upgradeConfirmed` → `VAULT_UPGRADE_REQUIRED`.
+3. `src/vault/infra/file-vault-store.ts:FileVaultStore.readSchemaVersion()` — reads the schema read-only (`src/shared/infra/sqlite.ts:probeSchemaVersion()`) WITHOUT migrating; schema > `LATEST_SCHEMA_VERSION` → `VAULT_SCHEMA_TOO_NEW` first (`src/shared/domain/services/schema-compatibility.ts:compareSchema()`, nothing touched; `openVaultDb` also throws `SchemaTooNewError` before any write); schema < `LATEST_SCHEMA_VERSION` and no `upgradeConfirmed` → `VAULT_UPGRADE_REQUIRED`.
 4. `src/vault/infra/file-vault-store.ts:FileVaultStore.readLineage()` — open + `src/shared/infra/migrations.ts:migrate()` + read lineage; this is the key check (`WRONG_PASSPHRASE`).
 5. `UnlockVault.execute()` — `src/vault/infra/keyring.ts:OsKeychain` stores key, `recordActivity`; `src/vault/domain/services/vault-lineage.ts:classifyLineage()` vs last-seen.
 6. Fork → still unlocked, returns `VAULT_FORK_DETECTED` notice, last-seen NOT updated; else `recordSeen`.

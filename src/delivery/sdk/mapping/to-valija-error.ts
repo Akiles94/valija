@@ -21,4 +21,5 @@ export function unexpectedError(thrown: unknown): ValijaError {
   return { code: "STORAGE_ERROR", message: UNEXPECTED_MESSAGE };
 }
 
+/** An `INVALID_INPUT` error for SDK arguments that fail validation. */
 export const invalidInput = (message: string): ValijaError => ({ code: "INVALID_INPUT", message });

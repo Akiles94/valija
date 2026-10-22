@@ -5,7 +5,7 @@ Purpose: Local-first, end-to-end encrypted (SQLCipher + Argon2id) AI-context vau
 - `src/context` — projects and items, save, search (FTS5), context packs; reaches the DB only via `src/context/infra/vault-sessions.ts:SqliteVaultSessions`.
 - `src/importers` — ChatGPT/Claude/generic export parsing and chunking, written via context's `ImportItems`; `src/importers/application/use-cases/import-conversations.use-case.ts`.
 - `src/shared` — `Result`, `UseCase`, SQLite open + migrations, vault/state paths; `src/shared/infra/sqlite.ts:openVaultDb()`.
-- `src/delivery` — composition root `src/delivery/container.ts:buildContainer()`; CLI `src/delivery/cli/build-program.ts:buildProgram()` (bin `src/delivery/cli/program.ts`); MCP `src/delivery/mcp/server.ts:buildMcpServer()`.
+- `src/delivery` — composition root `src/delivery/container.ts:buildContainer()`; CLI `src/delivery/cli/build-program.ts:buildProgram()` (bin `src/delivery/cli/program.ts`); MCP `src/delivery/mcp/server.ts:buildMcpServer()`; embeddable SDK `src/delivery/sdk/index.ts` (`valija/sdk` subpath export: `openVault`, `createVault`).
 - `src/testing` — golden-vault fixture and fakes for the format-conformance test (`src/testing/golden-vault.ts`).
 - `desktop/` — Electron app, own `desktop/package.json`; main `desktop/src/main/index.ts`, IPC `desktop/src/main/ipc/register-handlers.ts:registerHandlers()`, preload `desktop/src/preload/index.ts`, renderer `desktop/src/renderer/app.tsx`.
 - `tools/living-docs` — generator/checker for `docs/guide/` from code + `docs/flows/`; entry `tools/living-docs/valija/composition/main.ts`, config `tools/living-docs/valija/composition/valija-guide.ts`.
@@ -24,5 +24,5 @@ Purpose: Local-first, end-to-end encrypted (SQLCipher + Argon2id) AI-context vau
 - Dependency rule (`CONTRIBUTING.md`): `context → vault` only via `VaultSessions`; `importers → context` only via `ImportItems`; use cases never call each other.
 - CLI, MCP and desktop IPC all call use cases from one `Container`; desktop main imports root `src/` by relative path.
 - Renderer ↔ main: only `window.valija` methods from the preload; errors as `code` only; paths as opaque handles; the passphrase goes in, the recovery kit comes out once.
-- MCP surface is deliberately narrower than CLI/desktop (SPEC §7). Nothing networks: no telemetry, no HTTP transport, no auto-update.
+- MCP surface is deliberately narrower than CLI/desktop (SPEC §7), and so is the SDK (MCP's five operations plus lock/close; no curation, export or status). Nothing networks: no telemetry, no HTTP transport, no auto-update.
 - Traced flows: `flows/unlock-vault.md`, `flows/save-context.md`, `flows/multi-device-sync.md`, `flows/import-chat-history.md`, `flows/context-pack.md`, `flows/desktop-ipc-call.md`.

@@ -33,6 +33,7 @@ export type VaultErrorCode =
    * first.
    */
   | "VAULT_UPGRADE_REQUIRED"
+  /** A newer Valija upgraded the vault past what this version understands, so update Valija (nothing was changed). */
   | "VAULT_SCHEMA_TOO_NEW"
   /** Relocation target already contains a vault. */
   | "RELOCATION_DESTINATION_OCCUPIED"

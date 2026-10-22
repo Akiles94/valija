@@ -16,11 +16,15 @@ so the CLI, the desktop app and every connected AI tool can use it.
 - If another device wrote to the vault in parallel (a **fork**), the vault still unlocks so the
   user can inspect it, and a notice says so. Nothing is ever deleted or merged automatically.
 - An outdated schema is upgraded on unlock; see the upgrade flow.
+- A vault a **newer** Valija already upgraded is never opened, downgraded or changed: the CLI and
+  AI tools are refused with the vault's and this version's schema numbers, and the desktop app
+  stops on an "Update Valija" screen that offers only Lock vault and Quit.
 - Unlocking resets the idle auto-lock clock.
 
 ## What can go wrong
 - Wrong passphrase or malformed recovery key ({{err:WRONG_PASSPHRASE}}).
 - No vault in this folder ({{err:VAULT_NOT_FOUND}}).
+- The vault was upgraded by a newer Valija ({{err:VAULT_SCHEMA_TOO_NEW}}).
 - Another device wrote independently ({{err:VAULT_FORK_DETECTED}} is shown as a notice, not a failure).
 
 ## Entry points
@@ -41,3 +45,4 @@ so the CLI, the desktop app and every connected AI tool can use it.
 - {{err:WRONG_PASSPHRASE}} — the passphrase or recovery key does not open the vault.
 - {{err:VAULT_NOT_FOUND}} — there is no vault to unlock.
 - {{err:VAULT_FORK_DETECTED}} — shown after unlocking; see the multi-device flow.
+- {{err:VAULT_SCHEMA_TOO_NEW}} — update Valija; nothing in the vault was changed.

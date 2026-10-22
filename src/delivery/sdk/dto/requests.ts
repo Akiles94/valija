@@ -32,6 +32,7 @@ export interface RecoveryKeyOptions extends VaultLocation {
   allowUpgrade?: boolean;
 }
 
+/** How `openVault` gets in: the user's unlocked Valija session (Mode K), a passphrase, or a recovery key (Mode P). */
 export type OpenVaultOptions = KeychainSessionOptions | PassphraseOptions | RecoveryKeyOptions;
 
 /** Same passphrase rule as `valija init` (`WEAK_PASSPHRASE`). */

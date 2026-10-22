@@ -1,6 +1,7 @@
 /** setTimeout's ceiling; a longer TTL just re-checks (a larger delay would fire at once, with a warning). */
 const MAX_DELAY_MS = 2_147_483_647;
 
+/** A running auto-lock timer for a Mode P handle; `stop` cancels it when the handle locks or closes. */
 export interface IdleLockTimer {
   stop(): void;
 }
