@@ -367,6 +367,11 @@ in shell history. Leave it out or document the risk; the planner decides.
 - Confirmation: **none for pin/archive (default)**, because both are reversible from the same
   screen. The archive success state shows an Unarchive affordance.
 
+**Amended 2026-10-17 (Oscar): desktop edit is IN scope.** `CLAUDE.md` now requires CLI/desktop
+surface parity in every advance, so the "versus also edit" alternative is adopted: the desktop app
+gets an Edit action (content, tags, type) through a third channel, `content:edit`, over the same
+`EditItem` use case as `valija edit`. See plan.md Slice 9.
+
 ### D-L. No-ops, `updatedAt`, and lineage
 - **A no-op (already pinned, etc.) reports `changed: false` and performs no `session.write`, so no
   lineage bump (default).** Spurious generation bumps make sync history noisier and can turn a

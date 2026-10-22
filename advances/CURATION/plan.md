@@ -1273,3 +1273,51 @@ valija/
 **Net: 15 new files (8 production, 7 test), about 33 changed files (including 8 docs), 1 new
 subfolder (`context/application/services/`), 0 deletions of files, 1 removed port method
 (`archive`), 0 migrations, 0 dependencies.**
+
+
+---
+
+## Amendment A1 — Slice 9: edit from the desktop app (2026-10-17)
+
+**Why.** Oscar asked for CLI/desktop symmetry in every advance (now a `CLAUDE.md` rule). After
+Slices 1–8, `valija edit` had no desktop counterpart. This slice closes that gap. No domain,
+use-case or MCP change: `EditItem` already exists and is the only write path.
+
+**Files**
+
+| File | Nature | Lines |
+|---|---|---|
+| `desktop/src/shared/ipc/messages.ts` | + `ContentEditRequest`, `ContentEditResponse` | +12 |
+| `desktop/src/shared/ipc/channels.ts` | + `content:edit` (31 → 32) | +5 |
+| `desktop/src/main/ipc/schemas.ts` | + `content:edit` schema | +8 |
+| `desktop/src/main/ipc/handlers/content-handlers.ts` | + handler over `EditItem` | +7 |
+| `desktop/src/preload/index.ts`, `renderer/state/bridge.ts` | + `edit` bridge method | +4 |
+| `desktop/src/renderer/state/item-edit.ts` | new: `editableItem`, `parseTagsInput`, `editRequestFor` (pure) | ~35 |
+| `desktop/src/renderer/state/item-actions.ts` | + `"edit"` action (live, non-imported items only) | +4 |
+| `desktop/src/renderer/components/item-edit-form.tsx` | new: inline form — textarea, tags input, type select, Save / Cancel | ~70 |
+| `desktop/src/renderer/components/item-card.tsx` | render the form in place of the content while editing | +12 |
+| `desktop/src/renderer/screens/project.tsx` | `editingId` state; save → `content:edit` → reload | +15 |
+| `desktop/src/shared/i18n/catalogs/en.ts`, `es.ts` | + `project.edit/save/cancel/editContent/editTags/editType/editTagsHint` | +14 |
+| tests: schemas, handlers (real vault), `item-edit.test.ts`, `item-actions.test.ts`, DOM | | ~150 (test) |
+
+**Behaviour**
+
+- `itemActionsFor` adds `"edit"` for live, non-imported items (archived → still only Unarchive;
+  imported → still only Archive), mirroring `applyEdit`'s refusals.
+- Clicking **Edit** swaps the card's content for the form, pre-filled with the current content,
+  tags (comma-separated) and type. One card edits at a time.
+- **Save** sends `content:edit { id, content?, tags?, type? }` with only the fields that differ from
+  the original (`editRequestFor`). Nothing changed → no call, form closes. `--tags ""` parity: an
+  emptied tags field clears the tags.
+- The response carries only `{ changed, changedFields }` — no content crosses back. The list reloads.
+- A refused or invalid edit (`CONTENT_EMPTY`, `CONTENT_TOO_LARGE`, `TOO_MANY_TAGS`, `INVALID_TAG`,
+  `ITEM_ARCHIVED`, …) shows catalog copy and **keeps the form open with the user's text**.
+- Edited text lives only in React state: never in preferences, never a file (D-J parity with the CLI).
+- Schema: `id` ≤ 64; `content` ≤ 32 KB + margin (`z.string().max(40_000)`); `tags` array ≤ 10 of
+  strings ≤ 32; `type` string. The full grammar stays in `EditItem`'s parsers.
+
+**Docs:** `docs/gui.md` (drop "editing text is CLI-only"; describe Edit), `specs/desktop.md`
+(32 channels; `content:edit`; `item-edit.ts`), `CHANGELOG.md`, `advances/CURATION/refined.md`
+D-K amendment.
+
+**Done when:** both loops green, and `change-reviewer` re-runs on the whole branch.
