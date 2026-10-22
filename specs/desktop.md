@@ -119,7 +119,7 @@ both reduce to this one call (D-U(b): a skipped tour never nags again).
   `import-selection.ts`, `focus-refresh.ts`, and (CURATION) `item-actions.ts`) each own one
   screen's pure decision logic — `item-actions.ts`'s `itemActionsFor` mirrors the domain's curation
   rules (archived → unarchive; imported → archive only; else pin/unpin + edit + archive — `edit` opens the edit dialog rather than calling a channel directly) so the project
-  screen never offers a refused call, and `performItemAction` is the one action → channel map; `item-edit.ts` (A1) builds the edit dialog's draft and the `content:edit` request with only the changed fields (`null` → no call); (PROJECT-DETECT) `binding-link.ts`'s `linkChoicesFor` lists the inspect panel's link options, default first (repository when there is a remote, folder unless too broad, none → no Link button), mirroring `chooseLinkTarget`; none of them
+  screen never offers a refused call, and `performItemAction` is the one action → channel map; `item-edit.ts` (A1) builds the edit dialog's draft and the `content:edit` request with only the changed fields (`null` → no call); (PROJECT-DETECT) `binding-link.ts`'s `linkChoicesFor` lists the inspect panel's link options, default first (repository when there is a remote, folder unless too broad, none → no Link button), mirroring `chooseLinkTarget`; (SECRET-WARN) `secret-findings.ts`'s `describeSecretFindings` renders findings (kind + lines only) in the UI language — `secrets.kinds.*` labels, sorted by line then kind precedence, capped at 5 then "and N more", unknown kinds skipped — the localized twin of the domain's `describeFindings`; none of them
   is a `UseCase` or a port — they're view state, tested the way `context/domain/services` are tested
   in `src/`, without a DOM.
 
@@ -141,6 +141,17 @@ the project's links from `bindings:list` (kind, display target, **Unlink**), and
 repository/remote, the `linkChoicesFor` radios) → `bindings:link`. The list reloads after every
 link/unlink; errors render their code's catalog copy and a rejected call renders `UNEXPECTED`. All
 state is in React memory — nothing reaches `preferences:write` (`project-bindings.dom.test.tsx`).
+
+(SECRET-WARN) **Edit dialog.** `project.tsx` calls `content:edit` first (main is the only enforcer,
+P-5). On `POSSIBLE_SECRET` it sets `secretRefused` instead of an error line, and the dialog stays open
+with the draft. `item-edit-dialog.tsx` then runs the shared, Node-free `detectSecrets` (imported from
+`src/context/domain/services/secret-detection/`) on the **current** draft and renders
+`components/secret-warning.tsx` (`role="alert"`: title, the described findings, the best-effort copy,
+**Edit text** → focus the textarea, **Save anyway** → the same edit plus `allowSecrets: true`) above
+`.modal-actions`, so **Save** stays the last focusable control. The findings follow the draft (P-18):
+remove the secret and the warning hides; if main refused but the renderer finds nothing in the
+submitted text, the warning shows `errors.POSSIBLE_SECRET` instead of a list, still with Save anyway.
+The matched text is never rendered.
 
 ## Relocation wizard's refusals
 

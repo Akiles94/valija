@@ -21,6 +21,11 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
   line and tells the AI to use a placeholder such as `<API_KEY>` or describe the value instead.
   Nothing is saved, and there is no override argument. Both save descriptions say so in one
   sentence. Still five tools and two prompts, with unchanged input schemas.
+- **Secret warning in the desktop Edit dialog** (`advances/SECRET-WARN/`): saving text that looks
+  like it contains a secret keeps the dialog open with a warning naming the kind and line (in English
+  or Spanish), never the secret, plus **Edit text** and **Save anyway**. Main refuses on its own; the
+  `content:edit` request gains an optional `allowSecrets` flag that only Save anyway sets. No new IPC
+  channel.
 - **Project detection from the CLI** (`advances/PROJECT-DETECT/`): `valija link <project>` links the
   current folder's git repository (or only the folder, `--by folder`) to an existing project;
   `valija which` shows what a folder resolves to and why; `valija links [project]` lists links with

@@ -416,6 +416,32 @@ export const es: Catalog = {
     replayTour: "Ver de nuevo el recorrido de bienvenida",
   },
 
+  secrets: {
+    kinds: {
+      "private-key": "Clave privada",
+      "aws-access-key": "Clave de acceso de AWS",
+      "github-token": "Token de GitHub",
+      "anthropic-api-key": "Clave de API de Anthropic",
+      "openai-api-key": "Clave de API de OpenAI",
+      "slack-token": "Token de Slack",
+      "stripe-secret-key": "Clave secreta de Stripe",
+      "google-api-key": "Clave de API de Google",
+      jwt: "JSON Web Token (JWT)",
+      "url-credentials": "Credenciales en una URL",
+      "credential-assignment": "Asignación de credencial",
+      "high-entropy-string": "Cadena de alta entropía",
+    },
+    finding: "{kind} ({where})",
+    line: "línea {line}",
+    lines: "líneas {from}–{to}",
+    more: "y {count} más",
+    warningTitle: "Parece que esto contiene un secreto.",
+    warningBody:
+      "Los secretos guardados en Valija pueden llegar a todas las herramientas de IA que conectes. Esta comprobación es orientativa: puede pasar por alto un secreto o marcar algo que no lo es.",
+    editText: "Editar texto",
+    saveAnyway: "Guardar de todos modos",
+  },
+
   errors: {
     VAULT_NOT_FOUND: "No se encontró ninguna bóveda ahí.",
     VAULT_ALREADY_EXISTS: "Ya existe una bóveda ahí.",

@@ -64,6 +64,8 @@ export function ProjectScreen({
   // The item in the edit dialog, plus its save state — in memory only, like everything above.
   const [editing, setEditing] = useState<ItemRow | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
+  // SECRET-WARN: main refused the last save as a possible secret; the dialog describes it and offers Save anyway.
+  const [secretRefused, setSecretRefused] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: bridge and errorCopy are stable across renders; project/typeFilter/showArchived/reloadToken are the real inputs
@@ -112,13 +114,14 @@ export function ProjectScreen({
   function onCardAction(item: ItemRow, action: CardAction) {
     if (action === "edit") {
       setEditError(null);
+      setSecretRefused(false);
       setEditing(item);
       return;
     }
     void runAction(item.id, action);
   }
 
-  async function saveEdit(item: ItemRow, draft: EditDraft) {
+  async function saveEdit(item: ItemRow, draft: EditDraft, allowSecrets = false) {
     const request = editRequestFor(item.id, item, draft);
     if (request === null) {
       setEditing(null);
@@ -126,9 +129,13 @@ export function ProjectScreen({
     }
     setSaving(true);
     try {
-      const result = await bridge.content.edit(request);
+      const result = await bridge.content.edit(
+        allowSecrets ? { ...request, allowSecrets: true } : request,
+      );
+      setSecretRefused(!result.ok && result.error.code === "POSSIBLE_SECRET");
       if (!result.ok) {
-        setEditError(errorCopy(result.error.code));
+        // A possible secret is described by the dialog's warning, not by the error line.
+        setEditError(result.error.code === "POSSIBLE_SECRET" ? null : errorCopy(result.error.code));
         return;
       }
       setEditing(null);
@@ -136,6 +143,7 @@ export function ProjectScreen({
       setReloadToken((n) => n + 1);
     } catch {
       // A rejected call (a schema throw, a lost main process) — the same generic copy the import screen uses.
+      setSecretRefused(false);
       setEditError(errorCopy("UNEXPECTED"));
     } finally {
       setSaving(false);
@@ -261,8 +269,9 @@ export function ProjectScreen({
         <ItemEditDialog
           initial={draftFor(editing)}
           error={editError}
+          secretRefused={secretRefused}
           saving={saving}
-          onSave={(draft) => void saveEdit(editing, draft)}
+          onSave={(draft, allowSecrets) => void saveEdit(editing, draft, allowSecrets)}
           onCancel={() => setEditing(null)}
         />
       )}

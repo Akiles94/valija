@@ -411,6 +411,33 @@ export const en = {
     replayTour: "Show the welcome tour again",
   },
 
+  /** SECRET-WARN: the refusal in words — kind and lines, never the secret (D-H, D-O). */
+  secrets: {
+    kinds: {
+      "private-key": "Private key",
+      "aws-access-key": "AWS access key",
+      "github-token": "GitHub token",
+      "anthropic-api-key": "Anthropic API key",
+      "openai-api-key": "OpenAI API key",
+      "slack-token": "Slack token",
+      "stripe-secret-key": "Stripe secret key",
+      "google-api-key": "Google API key",
+      jwt: "JSON Web Token",
+      "url-credentials": "Credentials in a URL",
+      "credential-assignment": "Credential assignment",
+      "high-entropy-string": "High-entropy string",
+    },
+    finding: "{kind} ({where})",
+    line: "line {line}",
+    lines: "lines {from}–{to}",
+    more: "and {count} more",
+    warningTitle: "This looks like it contains a secret.",
+    warningBody:
+      "Secrets saved in Valija can reach every AI tool you connect. This check is best effort: it can miss a secret or flag something that isn't one.",
+    editText: "Edit text",
+    saveAnyway: "Save anyway",
+  },
+
   errors: {
     VAULT_NOT_FOUND: "No vault was found there.",
     VAULT_ALREADY_EXISTS: "A vault already exists there.",

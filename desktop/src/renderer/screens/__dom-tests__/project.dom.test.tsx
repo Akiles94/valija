@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { PLANTED } from "../../../../../src/testing/fake-secrets.js";
 import { copyForErrorCode } from "../../../shared/i18n/error-copy.js";
 import type {
   AppPreferencesMessage,
@@ -505,5 +506,99 @@ describe("ProjectScreen edit dialog (DOM)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Editar" }));
     expect(screen.getByRole("dialog", { name: "Editar elemento" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Guardar" })).toBeTruthy();
+  });
+});
+
+describe("ProjectScreen edit dialog — possible secrets (DOM, SECRET-WARN)", () => {
+  // No https:// in this file (F9): an AWS key and a credential assignment only.
+  const SECRET_TEXT = `deploy notes\nkey ${PLANTED.awsAccessKey}`;
+  const editable = () => item({ id: "s1", content: "old text", type: "decision" });
+
+  /** Main refuses the first save as a possible secret; any later call succeeds. */
+  async function refusedOnce(bridge: ValijaBridge, text = SECRET_TEXT, language?: "es") {
+    vi.mocked(bridge.content.edit).mockResolvedValueOnce({
+      ok: false,
+      error: { code: "POSSIBLE_SECRET" },
+    });
+    renderScreen(bridge, language === undefined ? {} : { language });
+    await screen.findByText("old text");
+    fireEvent.click(screen.getByRole("button", { name: /^(Edit|Editar)$/ }));
+    fireEvent.change(screen.getByRole("textbox", { name: /^(Content|Contenido)$/ }), {
+      target: { value: text },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^(Save|Guardar)$/ }));
+    return screen.findByRole("alert");
+  }
+
+  it("stays open with the text, names the kind and the line, and never shows the secret", async () => {
+    const bridge = fakeBridge([editable()]);
+    const alert = await refusedOnce(bridge);
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect((screen.getByLabelText("Content") as HTMLTextAreaElement).value).toBe(SECRET_TEXT);
+    expect(alert.textContent).toContain("This looks like it contains a secret.");
+    expect(alert.textContent).toContain("AWS access key (line 2)");
+    expect(alert.textContent).toContain("best effort");
+    expect(alert.textContent).not.toContain(PLANTED.awsAccessKey);
+  });
+
+  it("names a credential assignment the same way", async () => {
+    const bridge = fakeBridge([editable()]);
+    const alert = await refusedOnce(bridge, `db notes\n${PLANTED.credentialAssignment.line}`);
+    expect(alert.textContent).toContain("Credential assignment (line 2)");
+    expect(alert.textContent).not.toContain(PLANTED.credentialAssignment.secret);
+  });
+
+  it("Save anyway re-sends the same edit with allowSecrets, closes and reloads", async () => {
+    const bridge = fakeBridge([editable()]);
+    await refusedOnce(bridge);
+    fireEvent.click(screen.getByRole("button", { name: "Save anyway" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(bridge.content.edit).toHaveBeenCalledTimes(2);
+    expect(bridge.content.edit).toHaveBeenLastCalledWith({
+      id: "s1",
+      content: SECRET_TEXT,
+      allowSecrets: true,
+    });
+    await waitFor(() => expect(bridge.content.show).toHaveBeenCalledTimes(2));
+  });
+
+  it("Edit text focuses the content and calls nothing", async () => {
+    const bridge = fakeBridge([editable()]);
+    await refusedOnce(bridge);
+    fireEvent.click(screen.getByRole("button", { name: "Edit text" }));
+    expect(document.activeElement).toBe(screen.getByLabelText("Content"));
+    expect(bridge.content.edit).toHaveBeenCalledTimes(1);
+  });
+
+  it("follows the draft: remove the secret and the warning goes away (P-18)", async () => {
+    const bridge = fakeBridge([editable()]);
+    await refusedOnce(bridge);
+    fireEvent.change(screen.getByLabelText("Content"), { target: { value: "deploy notes" } });
+    expect(screen.queryByRole("alert")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(bridge.content.edit).toHaveBeenLastCalledWith({ id: "s1", content: "deploy notes" });
+  });
+
+  it("falls back to the generic copy when main refused but the renderer finds nothing", async () => {
+    const bridge = fakeBridge([editable()]);
+    const alert = await refusedOnce(bridge, "nothing the renderer would flag");
+    expect(alert.textContent).toContain(copyForErrorCode("POSSIBLE_SECRET", "en"));
+    expect(screen.getByRole("button", { name: "Save anyway" })).toBeTruthy();
+  });
+
+  it("Save stays the last focusable control, so the Tab trap still holds", async () => {
+    await refusedOnce(fakeBridge([editable()]));
+    const save = screen.getByRole("button", { name: "Save" });
+    save.focus();
+    fireEvent.keyDown(save, { key: "Tab" });
+    expect(document.activeElement).toBe(screen.getByLabelText("Content"));
+  });
+
+  it("speaks Spanish when the app does", async () => {
+    const alert = await refusedOnce(fakeBridge([editable()]), SECRET_TEXT, "es");
+    expect(alert.textContent).toContain("Clave de acceso de AWS (línea 2)");
+    expect(screen.getByRole("button", { name: "Guardar de todos modos" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Editar texto" })).toBeTruthy();
   });
 });

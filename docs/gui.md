@@ -182,6 +182,11 @@ actions. **Edit** opens a dialog with the item's content, tags (comma-separated 
 empty to remove them all) and type; **Save** changes the item in place, and **Cancel** or Escape
 closes it untouched. If a save is refused (empty content, too many tags…), the dialog stays open
 with your text.
+If the new text looks like it contains a secret — a private key, an API key or token, a password in
+a URL or an assignment, a long random-looking string — the save is refused too, and the dialog says
+what kind and on which line, never the secret itself. **Edit text** takes you back to the text (the
+warning disappears once the secret is gone), and **Save anyway** stores it as it is. The check is
+best effort: it can miss a secret or flag something that isn't one.
 Pinned items always lead the context pack. **Archive** hides an outdated item from packs and search —
 it is not deleted — and a notice with **Undo** appears right after. Tick **Show archived** to see
 archived items in their own section at the bottom, each with an **Unarchive** action. Imported items

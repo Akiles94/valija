@@ -1,7 +1,9 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { detectSecrets } from "../../../../src/context/domain/services/secret-detection/detect-secrets.js";
 import { ITEM_TYPES } from "../../../../src/context/domain/values/item-type.js";
 import { useT } from "../state/i18n-context.js";
 import type { EditDraft } from "../state/item-edit.js";
+import { SecretWarning } from "./secret-warning.js";
 
 /**
  * The edit dialog (CURATION A1): content, tags and type of one item, mirroring
@@ -9,22 +11,31 @@ import type { EditDraft } from "../state/item-edit.js";
  * preferences, never a file. Escape or Cancel closes without saving, and focus
  * goes back to whatever opened the dialog. On a refused save the parent passes
  * `error` and the dialog stays open with the user's text intact.
+ *
+ * SECRET-WARN (P-5, P-18): when main refused the save as a possible secret
+ * (`secretRefused`), the dialog describes it from the current draft with the
+ * shared detector, and offers Edit text or Save anyway. Edit the secret out and
+ * the warning disappears; a plain Save then works.
  */
 export function ItemEditDialog({
   initial,
   error,
+  secretRefused = false,
   saving,
   onSave,
   onCancel,
 }: {
   initial: EditDraft;
   error: string | null;
+  secretRefused?: boolean;
   saving: boolean;
-  onSave: (draft: EditDraft) => void;
+  onSave: (draft: EditDraft, allowSecrets: boolean) => void;
   onCancel: () => void;
 }) {
   const t = useT();
   const [draft, setDraft] = useState(initial);
+  // The content main last refused: if the renderer finds nothing in it, show the generic copy instead of hiding.
+  const [submittedContent, setSubmittedContent] = useState(initial.content);
   const contentRef = useRef<HTMLTextAreaElement>(null);
 
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -55,6 +66,10 @@ export function ItemEditDialog({
     }
   }
 
+  const findings = secretRefused ? detectSecrets(draft.content) : [];
+  const showSecretWarning =
+    secretRefused && (findings.length > 0 || draft.content === submittedContent);
+
   const set = (field: keyof EditDraft) => (value: string) =>
     setDraft((current) => ({ ...current, [field]: value }));
 
@@ -77,7 +92,8 @@ export function ItemEditDialog({
           className="item-edit-form"
           onSubmit={(event) => {
             event.preventDefault();
-            onSave(draft);
+            setSubmittedContent(draft.content);
+            onSave(draft, false);
           }}
         >
           <label>
@@ -112,6 +128,14 @@ export function ItemEditDialog({
             </select>
           </label>
           {error !== null && <p className="error">{error}</p>}
+          {showSecretWarning && (
+            <SecretWarning
+              findings={findings}
+              disabled={saving}
+              onEditText={() => contentRef.current?.focus()}
+              onSaveAnyway={() => onSave(draft, true)}
+            />
+          )}
           <div className="modal-actions">
             <button type="button" onClick={onCancel} disabled={saving}>
               {t("project.cancel")}
