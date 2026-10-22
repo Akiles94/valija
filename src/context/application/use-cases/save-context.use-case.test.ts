@@ -1,5 +1,6 @@
 import { rmSync } from "node:fs";
 import { afterAll, describe, expect, it } from "vitest";
+import { fragmentsOf, ONE_PER_TIER, PLANTED } from "../../../testing/fake-secrets.js";
 import { FixedClock, makeUnlockedVault, SeqIds } from "../../../testing/test-vault.js";
 import { GetContextPack } from "./get-context-pack.use-case.js";
 import { ImportItems } from "./import-items.use-case.js";
@@ -153,5 +154,83 @@ describe("SaveContext supersedes", () => {
     expect(codeOf(r)).toBe("ITEM_NOT_FOUND");
     const projects = new ListProjects(vault.sessions).execute();
     expect(projects.ok && projects.value.some((p) => p.name === "never-born")).toBe(false);
+  });
+});
+
+describe("SaveContext refuses possible secrets (SECRET-WARN)", () => {
+  const clock = new FixedClock();
+  const saveAt = new SaveContext(vault.sessions, clock, new SeqIds());
+  const generation = () => vault.deviceIdentity.lastSeen(vault.vaultId)?.generation ?? -1;
+  const projectNames = () => {
+    const r = new ListProjects(vault.sessions).execute();
+    return r.ok ? r.value.map((p) => p.name) : [];
+  };
+  const itemCount = (project: string) => {
+    const r = show.execute({ project, includeArchived: true });
+    return r.ok ? r.value.length : 0;
+  };
+  const withSecret = (secret: string) => `Deploy fails because of the key.\nvalue: ${secret}`;
+
+  it.each([
+    ["AWS access key", PLANTED.awsAccessKey],
+    ["credential assignment", PLANTED.credentialAssignment.line],
+    ["high-entropy string", PLANTED.highEntropy],
+  ])("refuses a %s, naming kind and line, never the value", (label, secret) => {
+    const content = secret.includes("=") ? `Deploy notes.\n${secret}` : withSecret(secret);
+    const r = saveAt.execute({ project: "secret-tests", content });
+    expect(!r.ok && r.error.code).toBe("POSSIBLE_SECRET");
+    if (r.ok) return;
+    expect(r.error.message).toContain(`${label} (line 2)`);
+    for (const planted of ONE_PER_TIER) {
+      for (const fragment of fragmentsOf(planted)) expect(r.error.message).not.toContain(fragment);
+    }
+  });
+
+  it("writes nothing: no project, no item, no lineage bump", () => {
+    const before = { generation: generation(), projects: projectNames() };
+    const r = saveAt.execute({ project: "never-seen", content: withSecret(PLANTED.githubToken) });
+    expect(!r.ok && r.error.code).toBe("POSSIBLE_SECRET");
+    expect(projectNames()).toEqual(before.projects);
+    expect(projectNames()).not.toContain("never-seen");
+    expect(generation()).toBe(before.generation);
+  });
+
+  it("leaves a supersedes target live", () => {
+    const first = saveAt.execute({ project: "secret-tests", content: "we deploy on fridays" });
+    if (!first.ok) throw new Error(first.error.message);
+    const count = itemCount("secret-tests");
+    const r = saveAt.execute({
+      project: "secret-tests",
+      content: withSecret(PLANTED.stripeSecretKey),
+      supersedes: first.value.itemId,
+    });
+    expect(!r.ok && r.error.code).toBe("POSSIBLE_SECRET");
+    const live = show.execute({ project: "secret-tests" });
+    expect(live.ok && live.value.some((v) => v.id === first.value.itemId)).toBe(true);
+    expect(itemCount("secret-tests")).toBe(count);
+  });
+
+  it("refuses before the lock check; clean content on a locked vault is still VAULT_LOCKED (P-3)", () => {
+    vault.keychain.deleteKey(vault.vaultId);
+    const secret = saveAt.execute({ project: "secret-tests", content: withSecret(PLANTED.jwt) });
+    const clean = saveAt.execute({ project: "secret-tests", content: "nothing to hide" });
+    vault.keychain.setKey(vault.vaultId, vault.keyHex);
+    expect(!secret.ok && secret.error.code).toBe("POSSIBLE_SECRET");
+    expect(!clean.ok && clean.error.code).toBe("VAULT_LOCKED");
+  });
+
+  it("has no override input: an AI tool cannot opt out (D-N)", () => {
+    const r = saveAt.execute({
+      project: "secret-tests",
+      content: withSecret(PLANTED.awsAccessKey),
+      // @ts-expect-error SaveContextInput deliberately has no allowSecrets
+      allowSecrets: true,
+    });
+    expect(!r.ok && r.error.code).toBe("POSSIBLE_SECRET");
+  });
+
+  it("numbers lines from the raw input, leading blank lines included (P-4)", () => {
+    const r = saveAt.execute({ project: "secret-tests", content: `\n\n${PLANTED.awsAccessKey}` });
+    expect(!r.ok && r.error.message).toContain("AWS access key (line 3)");
   });
 });

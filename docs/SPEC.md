@@ -168,6 +168,8 @@ never creates a project.
 
 **Rules:** no telemetry, no network calls at runtime, tool descriptions instruct models to refuse secrets. Project links (folder paths, git remotes) live only inside the encrypted vault and never appear in an MCP response; detection reads local `.git` files only — it never spawns a process (no `git`) and never touches the network. Losing passphrase + recovery kit = unrecoverable data.
 
+**Secret check on write (SECRET-WARN):** every content write — MCP `save_context` / `save_handoff`, `valija edit` and the desktop Edit dialog, `valija import` and the desktop Import screen — runs a pure, in-process detector **before anything is stored**. It recognizes three tiers: known formats (private keys, provider API keys and tokens, JWTs, URLs with an embedded password), credential assignments (a key that names a credential set to one real-looking value), and long random-looking strings. Content that looks like it contains a secret is refused with `POSSIBLE_SECRET`, whose message names the kind and line numbers and **never** the matched text. A human can knowingly override from the CLI or the desktop app; an AI tool cannot, because the save path has no override at all. The rules and thresholds are code constants with no setting and no allowlist. Existing content is not scanned and reads are never checked. It is **best effort**: it can miss a secret or flag something that is not one, so the rule stays "do not paste secrets into AI tools".
+
 ---
 
 ## 10. Repository structure — module-first (package by bounded context)
@@ -276,7 +278,9 @@ Originally planned as 15 reviewed advances (A00–A15) at one per day. On 2026-0
 ## 12. Open questions `[TBR]`
 
 1. D5 Argon2id parameters (benchmark on modest hardware)
-2. Secret-pattern warning on save: MVP or M2?
+2. ~~Secret-pattern warning on save: MVP or M2?~~ **Resolved by SECRET-WARN:** a best-effort
+   secret check on every write; a human can override, an AI tool cannot. See §9 and
+   `advances/SECRET-WARN/`.
 3. ~~`valija unlock` TTL / auto-lock: M2+?~~ **Resolved by M3, D-I:** a lazy, no-daemon idle
    auto-lock, default 15 minutes, configurable via `VALIJA_AUTOLOCK_MINUTES` (`0`/`off`
    disables it). See §10b.

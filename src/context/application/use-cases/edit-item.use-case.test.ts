@@ -1,5 +1,6 @@
 import { rmSync } from "node:fs";
 import { afterAll, describe, expect, it } from "vitest";
+import { fragmentsOf, PLANTED } from "../../../testing/fake-secrets.js";
 import { FixedClock, makeUnlockedVault, SeqIds } from "../../../testing/test-vault.js";
 import { EditItem } from "./edit-item.use-case.js";
 import { ImportItems } from "./import-items.use-case.js";
@@ -129,5 +130,48 @@ describe("EditItem", () => {
     expect(codeOf(edit.execute({ item: id, type: "fact" }))).toBe("ITEM_ARCHIVED");
     expect(codeOf(edit.execute({ item: importedId, type: "fact" }))).toBe("ITEM_NOT_CURATABLE");
     expect(generation()).toBe(before);
+  });
+});
+
+describe("EditItem refuses possible secrets unless a human overrides (SECRET-WARN)", () => {
+  const flagged = `Deploy notes\nexport AWS_ACCESS_KEY_ID=${PLANTED.awsAccessKey}`;
+
+  it("refuses new content with a secret, before the session: item and lineage unchanged", () => {
+    const id = saved("clean deploy notes");
+    const before = generation();
+    const r = edit.execute({ item: id, content: flagged });
+    expect(codeOf(r)).toBe("POSSIBLE_SECRET");
+    expect(!r.ok && r.error.message).toContain("AWS access key (line 2)");
+    for (const fragment of fragmentsOf(PLANTED.awsAccessKey)) {
+      expect(!r.ok && r.error.message).not.toContain(fragment);
+    }
+    expect(view(id)?.content).toBe("clean deploy notes");
+    expect(generation()).toBe(before);
+  });
+
+  it("saves the same content with allowSecrets", () => {
+    const id = saved("to be overridden");
+    const r = edit.execute({ item: id, content: flagged, allowSecrets: true });
+    expect(r.ok && r.value.changedFields).toEqual(["content"]);
+    expect(view(id)?.content).toBe(flagged);
+  });
+
+  it("never scans a tags-only or type-only edit, even on an item that holds a secret (D-I)", () => {
+    const id = saved("will hold a secret");
+    expect(edit.execute({ item: id, content: flagged, allowSecrets: true }).ok).toBe(true);
+    expect(codeOf(edit.execute({ item: id, tags: ["deploy"] }))).toBe("ok");
+    expect(codeOf(edit.execute({ item: id, type: "fact" }))).toBe("ok");
+  });
+
+  it("re-checks unchanged content re-submitted without the flag (D-I)", () => {
+    const id = saved("resubmitted");
+    expect(edit.execute({ item: id, content: flagged, allowSecrets: true }).ok).toBe(true);
+    expect(codeOf(edit.execute({ item: id, content: flagged }))).toBe("POSSIBLE_SECRET");
+  });
+
+  it("reports a private-key block as a line range", () => {
+    const id = saved("key notes");
+    const r = edit.execute({ item: id, content: `Key below.\n${PLANTED.privateKey}` });
+    expect(!r.ok && r.error.message).toContain("private key (lines 2–6)");
   });
 });

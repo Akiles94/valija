@@ -4,6 +4,7 @@ import { type DomainError, ok, type Result } from "../../../shared/domain/result
 import { createImportedContextItem } from "../../domain/entities/context-item.js";
 import type { Project } from "../../domain/entities/project.js";
 import { setArchived } from "../../domain/services/item-curation.js";
+import { refuseFlaggedImport } from "../../domain/services/secret-detection/secret-refusal.js";
 import { parseContent } from "../../domain/values/content.js";
 import { type ProjectName, parseProjectName } from "../../domain/values/project-name.js";
 import { parseTags } from "../../domain/values/tag.js";
@@ -23,6 +24,8 @@ export interface ImportedItemInput {
 export interface ImportItemsInput {
   projectName: string;
   items: ImportedItemInput[];
+  /** A human's explicit "import it anyway" (CLI --allow-secrets, desktop Import anyway). Never set by an AI tool. */
+  allowSecrets?: boolean;
 }
 
 /** A chunk that could not be stored, and why. */
@@ -45,7 +48,8 @@ export interface ImportItemsOutput {
  * type; the importer only hands it drafts. Ids are deterministic, so re-running
  * an import upserts instead of duplicating — but never un-archives a chunk the
  * user archived (CURATION D-H). A single bad chunk is collected as a
- * failure, never aborting the batch.
+ * failure, never aborting the batch. A flagged batch is refused whole, before
+ * the session, unless `allowSecrets` (SECRET-WARN D-E, defense in depth).
  */
 export class ImportItems implements UseCase<ImportItemsInput, ImportItemsOutput> {
   constructor(
@@ -57,6 +61,10 @@ export class ImportItems implements UseCase<ImportItemsInput, ImportItemsOutput>
   execute(input: ImportItemsInput): Result<ImportItemsOutput, DomainError> {
     const name = parseProjectName(input.projectName);
     if (!name.ok) return name;
+    if (input.allowSecrets !== true) {
+      const safe = refuseFlaggedImport(input.items.map((item) => item.content));
+      if (!safe.ok) return safe;
+    }
 
     return this.sessions.withSession((session) =>
       session.write(() => {

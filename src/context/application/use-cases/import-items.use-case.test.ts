@@ -1,8 +1,10 @@
 import { rmSync } from "node:fs";
 import { afterAll, describe, expect, it } from "vitest";
+import { PLANTED } from "../../../testing/fake-secrets.js";
 import { FixedClock, makeUnlockedVault, SeqIds } from "../../../testing/test-vault.js";
 import { GetContextPack } from "./get-context-pack.use-case.js";
 import { type ImportedItemInput, ImportItems } from "./import-items.use-case.js";
+import { ListProjects } from "./list-projects.use-case.js";
 import { SearchContext } from "./search-context.use-case.js";
 import { ShowProject } from "./show-project.use-case.js";
 
@@ -111,5 +113,34 @@ describe("ImportItems", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe("VAULT_LOCKED");
     vault.keychain.setKey(vault.vaultId, vault.keyHex);
+  });
+});
+
+describe("ImportItems refuses a flagged batch whole (SECRET-WARN D-E, defense in depth)", () => {
+  const generation = () => vault.deviceIdentity.lastSeen(vault.vaultId)?.generation ?? -1;
+  const batch = () => [
+    draft(0, "**User:** how do I deploy?"),
+    draft(1, `**User:** it fails with ${PLANTED.credentialAssignment.line}`),
+    draft(2, "**Assistant:** rotate it, then redeploy."),
+  ];
+
+  it("writes zero items, creates no project and bumps nothing when one chunk is flagged", () => {
+    const before = generation();
+    const r = importItems.execute({ projectName: "flagged-history", items: batch() });
+    expect(!r.ok && r.error.code).toBe("POSSIBLE_SECRET");
+    expect(!r.ok && r.error.message).toContain("1 chunk(s)");
+    expect(!r.ok && r.error.message).not.toContain(PLANTED.credentialAssignment.secret);
+    const projects = new ListProjects(vault.sessions).execute();
+    expect(projects.ok && projects.value.some((p) => p.name === "flagged-history")).toBe(false);
+    expect(generation()).toBe(before);
+  });
+
+  it("imports every chunk with allowSecrets", () => {
+    const r = importItems.execute({
+      projectName: "flagged-history",
+      items: batch(),
+      allowSecrets: true,
+    });
+    expect(r.ok && r.value).toMatchObject({ projectCreated: true, imported: 3, failed: 0 });
   });
 });

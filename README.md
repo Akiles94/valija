@@ -291,6 +291,12 @@ does.
 - Any MCP client you connect receives plaintext of the context you ask it to load. Encryption
   protects data *at rest*.
 - No telemetry, no network calls at runtime, no daemon.
+- Every write is checked for things that look like secrets — private keys, API keys and tokens,
+  passwords in URLs or assignments, long random-looking strings — and refused before anything is
+  stored. The warning says what kind and on which line, never the secret itself. You can override
+  it (`--allow-secrets`, or **Save anyway** / **Import anyway** in the desktop app); an AI tool
+  cannot. It is a best-effort safety net: it can miss a secret or flag something harmless, and it
+  does not scan what is already in your vault. Don't paste secrets into AI tools.
 - Project detection trusts a folder's own `.git` files. A downloaded archive that ships its own
   `.git/config` can claim a remote you already linked, and an AI tool working there would load that
   project's context. Pass `project` explicitly (or don't connect an AI tool) in folders you didn't

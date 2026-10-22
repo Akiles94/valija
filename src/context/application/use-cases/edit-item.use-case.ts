@@ -3,6 +3,7 @@ import type { UseCase } from "../../../shared/application/use-case.js";
 import { type DomainError, ok, type Result } from "../../../shared/domain/result.js";
 import { contextErr } from "../../domain/errors.js";
 import { applyEdit, type ItemEdit } from "../../domain/services/item-curation.js";
+import { refusePossibleSecrets } from "../../domain/services/secret-detection/secret-refusal.js";
 import { parseContent } from "../../domain/values/content.js";
 import { type ItemReference, parseItemReference } from "../../domain/values/item-id.js";
 import { parseItemType } from "../../domain/values/item-type.js";
@@ -19,6 +20,8 @@ export interface EditItemInput {
   /** Replaces the whole tag list; `[]` clears it. */
   tags?: string[];
   type?: string;
+  /** A human's explicit "save it anyway" (CLI --allow-secrets, desktop Save anyway). Never set by an AI tool. */
+  allowSecrets?: boolean;
 }
 
 interface ValidatedEdit {
@@ -26,7 +29,11 @@ interface ValidatedEdit {
   edit: ItemEdit;
 }
 
-/** Edit in place: same id, createdAt kept, updatedAt stamped, FTS re-indexed by the storage trigger. */
+/**
+ * Edit in place: same id, createdAt kept, updatedAt stamped, FTS re-indexed by the
+ * storage trigger. New content that looks like a secret is refused before the
+ * session unless `allowSecrets`; tags-only and type-only edits are never scanned.
+ */
 export class EditItem implements UseCase<EditItemInput, EditItemOutput> {
   constructor(
     private readonly sessions: VaultSessions,
@@ -63,6 +70,10 @@ export class EditItem implements UseCase<EditItemInput, EditItemOutput> {
     if (input.content !== undefined) {
       const content = parseContent(input.content);
       if (!content.ok) return content;
+      if (input.allowSecrets !== true) {
+        const safe = refusePossibleSecrets(input.content);
+        if (!safe.ok) return safe;
+      }
       edit.content = content.value;
     }
     if (input.tags !== undefined) {

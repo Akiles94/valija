@@ -5,6 +5,7 @@ import { type ContextItem, createContextItem } from "../../domain/entities/conte
 import type { Project } from "../../domain/entities/project.js";
 import { contextErr } from "../../domain/errors.js";
 import { archiveSuperseded } from "../../domain/services/item-curation.js";
+import { refusePossibleSecrets } from "../../domain/services/secret-detection/secret-refusal.js";
 import { type Content, parseContent } from "../../domain/values/content.js";
 import { type ItemId, parseItemId } from "../../domain/values/item-id.js";
 import { type ItemType, parseItemType } from "../../domain/values/item-type.js";
@@ -105,7 +106,11 @@ export class SaveContext implements UseCase<SaveContextInput, SaveContextOutput>
     return archiveSuperseded(found.item, now);
   }
 
-  /** Everything is parsed before a session is opened: bad input never touches the vault. */
+  /**
+   * Everything is parsed before a session is opened: bad input never touches the
+   * vault. Content that looks like a secret is refused here, so a refusal opens no
+   * session, creates no project, archives no `supersedes` target and bumps nothing.
+   */
   private parseInput(input: SaveContextInput): Result<ValidatedSave, DomainError> {
     const name = parseProjectName(input.project);
     if (!name.ok) return name;
@@ -115,6 +120,10 @@ export class SaveContext implements UseCase<SaveContextInput, SaveContextOutput>
     if (!tags.ok) return tags;
     const content = parseContent(input.content);
     if (!content.ok) return content;
+    // No override exists here (SECRET-WARN D-N): an AI tool can never save a possible secret.
+    // The raw input is scanned, so line numbers match what the caller sent (P-4).
+    const safe = refusePossibleSecrets(input.content);
+    if (!safe.ok) return safe;
     const supersedes = input.supersedes === undefined ? undefined : parseItemId(input.supersedes);
     if (supersedes !== undefined && !supersedes.ok) return supersedes;
     return ok({
