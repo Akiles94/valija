@@ -1316,6 +1316,8 @@ use-case or MCP change: `EditItem` already exists and is the only write path.
 - Edited text lives only in React state: never in preferences, never a file (D-J parity with the CLI).
 - Schema: `id` ≤ 64; `content` ≤ 32 KB + margin (`z.string().max(40_000)`); `tags` array ≤ 10 of
   strings ≤ 32; `type` string. The full grammar stays in `EditItem`'s parsers.
+  *(Revised after the third review pass: the caps became abuse limits — content ≤ 1,000,000, tags
+  ≤ 100 × 256, type ≤ 64 — so an over-limit edit reaches `EditItem` and returns its real code.)*
 
 **Docs:** `docs/gui.md` (drop "editing text is CLI-only"; describe Edit), `specs/desktop.md`
 (32 channels; `content:edit`; `item-edit.ts`), `CHANGELOG.md`, `advances/CURATION/refined.md`
