@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { ITEM_TYPES } from "../../context/domain/values/item-type.js";
-import { type DomainError, ok as okResult, type Result } from "../../shared/domain/result.js";
+import { DomainError, ok as okResult, type Result } from "../../shared/domain/result.js";
 import type { Container } from "../container.js";
 import { renderContextPackMarkdown } from "../context-pack-markdown.js";
 import { chooseProject, detectionLabel, type ProjectChoice } from "../project-detection.js";
@@ -19,6 +19,23 @@ const err = (error: DomainError) => ({
   isError: true,
 });
 
+/** D-B: tell the model how to fix the call — never how to override it. */
+const SECRET_REMEDY_FOR_MODELS =
+  "Remove it or replace it with a placeholder such as <API_KEY>, then call the tool again. " +
+  "If it is not a secret, describe it instead of quoting it.";
+
+/** A save tool's error: POSSIBLE_SECRET gains the model-directed remedy; anything else is unchanged. */
+const refusal = (error: DomainError) =>
+  err(
+    error.code === "POSSIBLE_SECRET"
+      ? new DomainError(error.code, `${error.message} ${SECRET_REMEDY_FOR_MODELS}`)
+      : error,
+  );
+
+const SECRET_REFUSAL_NOTE =
+  "Content that looks like a credential (keys, tokens, passwords, long random strings) is " +
+  "refused with POSSIBLE_SECRET and nothing is saved.";
+
 const DESCRIPTIONS = {
   save_context:
     "Save durable context about a project for future sessions in any AI tool. " +
@@ -26,12 +43,13 @@ const DESCRIPTIONS = {
     "Write `content` so it is self-contained and specific for a reader with no other context: " +
     "decisions made and why, current state, conventions and preferences established, next steps, " +
     "unresolved questions. Never include secrets, API keys, or passwords. " +
+    `${SECRET_REFUSAL_NOTE} ` +
     "If this save replaces an outdated item (a reversed decision, stale progress), pass its id as " +
     "`supersedes`.",
   save_handoff:
     "Package the state of THIS conversation so another AI tool or session can continue seamlessly. " +
     "Structure `content` as: goal, what was done, current blockers, exact next step, " +
-    "relevant files or links.",
+    `relevant files or links. ${SECRET_REFUSAL_NOTE}`,
   get_context:
     "Load the saved context pack for a project before starting work on it. Returns pinned and " +
     "recent context (decisions, preferences, progress, latest handoff) as markdown within a " +
@@ -121,7 +139,7 @@ export function buildMcpServer(
         ...(source === undefined ? {} : { source }),
         ...(supersedes === undefined ? {} : { supersedes }),
       });
-      if (!r.ok) return err(r.error);
+      if (!r.ok) return refusal(r.error);
       const superseded = r.value.supersededItemId;
       return ok(
         `Saved ${r.value.type} to project "${r.value.project}"${detectionNote(choice.value)}` +
@@ -156,7 +174,7 @@ export function buildMcpServer(
         type: "handoff",
         ...(source === undefined ? {} : { source }),
       });
-      if (!r.ok) return err(r.error);
+      if (!r.ok) return refusal(r.error);
       return ok(
         `Handoff saved to project "${r.value.project}"${detectionNote(choice.value)}. ` +
           `Item id: ${r.value.itemId}.`,

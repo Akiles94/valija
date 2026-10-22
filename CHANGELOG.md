@@ -16,6 +16,11 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
   listed as `#n "title" part p — kind (line k)` (`#n` works with `--pick`), and `--dry-run` shows the
   same list as "A real import would be REFUSED" while still exiting 0. Best effort: it can miss a
   secret or flag something harmless.
+- **Secret check over MCP** (`advances/SECRET-WARN/`): `save_context` and `save_handoff` refuse
+  content that looks like it contains a secret with `POSSIBLE_SECRET`; the reply names the kind and
+  line and tells the AI to use a placeholder such as `<API_KEY>` or describe the value instead.
+  Nothing is saved, and there is no override argument. Both save descriptions say so in one
+  sentence. Still five tools and two prompts, with unchanged input schemas.
 - **Project detection from the CLI** (`advances/PROJECT-DETECT/`): `valija link <project>` links the
   current folder's git repository (or only the folder, `--by folder`) to an existing project;
   `valija which` shows what a folder resolves to and why; `valija links [project]` lists links with

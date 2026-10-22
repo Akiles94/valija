@@ -249,6 +249,10 @@ that's CLI-only plumbing.
   each item's id so the AI can find it. It can't touch pinned or imported items, and it fails
   without saving anything if the id doesn't fit.
 - Archived items never reach your AI tools: not in packs, not in search.
+- **Possible secrets are refused.** If a save looks like it contains a key, token or password, the
+  AI gets `POSSIBLE_SECRET` with the kind and the line, and is told to use a placeholder such as
+  `<API_KEY>` or describe the value instead. Nothing is saved, and no tool argument can override
+  it — only you can, from the CLI or the desktop app.
 - **Project detection.** `save_context`, `save_handoff` and `get_context` no longer need a `project`:
   in a folder or repository you linked (see *Working inside a project folder*), the AI can just say
   "load my context" and gets that project. A save then replies e.g.
