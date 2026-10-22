@@ -179,11 +179,16 @@ export class SqliteVaultSessions implements VaultSessions {
   ): Result<T, DomainError> {
     let committed: { value: T; stamp: LineageStamp };
     try {
-      committed = db.transaction(() => {
-        const result = mutate();
-        if (!result.ok) throw new WriteFailedSentinel(result.error);
-        return { value: result.value, stamp: lineageStore.bump(writer) };
-      })();
+      // BEGIN IMMEDIATE (§8): take the write lock up front, so a contended write waits out the
+      // busy timeout. A deferred BEGIN that reads first would be refused SQLITE_BUSY at once
+      // when it tries to upgrade its read lock while another connection writes.
+      committed = db
+        .transaction(() => {
+          const result = mutate();
+          if (!result.ok) throw new WriteFailedSentinel(result.error);
+          return { value: result.value, stamp: lineageStore.bump(writer) };
+        })
+        .immediate();
     } catch (error) {
       if (error instanceof WriteFailedSentinel) return err(error.error);
       if (isBusyError(error)) return vaultErr("STORAGE_ERROR", BUSY_MESSAGE);

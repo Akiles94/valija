@@ -147,7 +147,7 @@ describe("getContextPack", () => {
   it("is renderContextPackMarkdown of the same pack, byte for byte", async () => {
     await handle.save({ project: "acme", content: "We ship offline first.", type: "decision" });
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-10-21T12:00:00Z"));
+    vi.setSystemTime(new Date()); // frozen at the real now, so the idle clock stays honest
     const r = await handle.getContextPack({ project: "acme", budgetTokens: 2000 });
     const expected = cli.getContextPack.execute({ project: "acme", budgetTokens: 2000 });
     if (!expected.ok) throw new Error(expected.error.message);
