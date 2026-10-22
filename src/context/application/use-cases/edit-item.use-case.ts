@@ -11,6 +11,7 @@ import { type EditItemOutput, toItemCurationOutput } from "../dto/item-curation-
 import type { VaultSessions } from "../ports/vault-session.js";
 import { findItemByReference, saveIfChanged } from "../services/item-curation-steps.js";
 
+/** Which item to edit and the new content, tags or type; omitted fields stay as they are. */
 export interface EditItemInput {
   /** A full item id or a unique prefix of at least 6 characters. */
   item: string;

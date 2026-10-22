@@ -18,11 +18,17 @@ export type ContextErrorCode =
   | "PROJECT_NOT_FOUND"
   /** No item with that id exists. */
   | "ITEM_NOT_FOUND"
+  /** An item id or id prefix is malformed, or a prefix is shorter than 6 characters. */
   | "INVALID_ITEM_ID"
+  /** An id prefix matches more than one item, so more characters are needed. */
   | "ITEM_ID_AMBIGUOUS"
+  /** The item is archived and must be unarchived before it is pinned, edited or superseded. */
   | "ITEM_ARCHIVED"
+  /** The item is pinned, so a newer save cannot supersede it (only the user unpins). */
   | "ITEM_PINNED"
+  /** The item is imported, so it can only be archived or unarchived. */
   | "ITEM_NOT_CURATABLE"
+  /** An edit named no field to change (content, tags or type). */
   | "NOTHING_TO_EDIT";
 
 /** Fails with a CONTEXT error code, as a `Result`. */

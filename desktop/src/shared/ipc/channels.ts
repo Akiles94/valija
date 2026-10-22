@@ -122,14 +122,17 @@ export interface ChannelMap {
   "content:export": { request: ContentExportRequest; response: IpcResult<ContentExportResponse> };
   /** Copies text to the system clipboard. */
   "content:copy": { request: ContentCopyRequest; response: undefined };
+  /** Pins or unpins an item through the same use case as `valija pin` / `valija unpin`. */
   "content:setPinned": {
     request: ContentSetPinnedRequest;
     response: IpcResult<ContentCurationResponse>;
   };
+  /** Archives or unarchives an item through the same use case as `valija archive` / `valija unarchive`. */
   "content:setArchived": {
     request: ContentSetArchivedRequest;
     response: IpcResult<ContentCurationResponse>;
   };
+  /** Edits an item's content, tags or type in place, through the same use case as `valija edit`. */
   "content:edit": { request: ContentEditRequest; response: IpcResult<ContentEditResponse> };
   /**
    * Reads the sync-safety half of the vault folder state (conflicted copies, stale backups, cloud

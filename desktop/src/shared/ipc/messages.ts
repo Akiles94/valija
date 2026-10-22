@@ -103,18 +103,20 @@ export interface ProjectListEntryMessage {
   lastActivityAt: string | null;
 }
 
-/** Which project to show, optionally filtered by item type. */
+/** Which project to show, optionally filtered by item type; `includeArchived` adds archived items. */
 export interface ContentShowRequest {
   project: string;
   type?: string;
   includeArchived?: boolean;
 }
 
+/** Which item to pin or unpin, by full id. */
 export interface ContentSetPinnedRequest {
   id: string;
   pinned: boolean;
 }
 
+/** Which item to archive or unarchive, by full id. */
 export interface ContentSetArchivedRequest {
   id: string;
   archived: boolean;

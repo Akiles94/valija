@@ -11,7 +11,8 @@ To review the project's memory item by item: what the AI tools saved, and the im
 conversations, newest first.
 
 ## Business rules
-- Items are listed newest first; archived items are not shown.
+- Items are listed newest first, each with its id (used to pin, archive or edit it). Archived items
+  are not shown unless asked for (`--archived` in the CLI, **Show archived** in the desktop app).
 - The list can be filtered by type, including `imported`.
 - The desktop app shows pinned items first, then the rest in their original order, and collapses
   long items behind a "show more" toggle.
@@ -23,7 +24,7 @@ conversations, newest first.
 - The type filter is not a known type ({{err:INVALID_ITEM_TYPE}}).
 
 ## Entry points
-- CLI: {{cli:show}} (`--type`)
+- CLI: {{cli:show}} (`--type`, `--archived`)
 - Desktop: {{ipc:content:show}} (the project screen)
 
 ## Steps

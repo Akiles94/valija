@@ -7,6 +7,7 @@ import { type ItemCurationOutput, toItemCurationOutput } from "../dto/item-curat
 import type { VaultSessions } from "../ports/vault-session.js";
 import { findItemByReference, saveIfChanged } from "../services/item-curation-steps.js";
 
+/** Which item to archive or unarchive, addressed by id or unique prefix. */
 export interface SetItemArchivedInput {
   /** A full item id or a unique prefix of at least 6 characters. */
   item: string;

@@ -7,6 +7,7 @@ export interface EditDraft {
   type: string;
 }
 
+/** The edit dialog's starting draft for an item, with its tags joined into one field. */
 export function draftFor(item: { content: string; tags: string[]; type: string }): EditDraft {
   return { content: item.content, tags: item.tags.join(", "), type: item.type };
 }

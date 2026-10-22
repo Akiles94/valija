@@ -11,19 +11,23 @@ export interface CurationOutcome {
   readonly changed: boolean;
 }
 
+/** The item fields an edit can change; reported back so callers can say what changed. */
 export type EditableField = "content" | "tags" | "type";
 
+/** A validated edit: each field present replaces the item's current value. */
 export interface ItemEdit {
   readonly content?: Content;
   readonly tags?: readonly Tag[];
   readonly type?: ItemType;
 }
 
+/** The edited item and which fields actually differ; an empty list means nothing to persist. */
 export interface EditOutcome {
   readonly item: ContextItem;
   readonly changedFields: EditableField[];
 }
 
+/** Pins or unpins an item; pinning refuses imported and archived items, and a repeat is a no-op. */
 export function setPinned(
   item: ContextItem,
   pinned: boolean,
@@ -43,6 +47,7 @@ export function setArchived(item: ContextItem, archived: boolean, now: Date): Cu
   return { item: { ...item, archived, updatedAt: now }, changed: true };
 }
 
+/** Applies an edit in place (same id, new updatedAt); refuses imported and archived items. */
 export function applyEdit(
   item: ContextItem,
   edit: ItemEdit,

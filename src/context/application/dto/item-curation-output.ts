@@ -11,10 +11,12 @@ export interface ItemCurationOutput {
   changed: boolean;
 }
 
+/** What `EditItem` reports: the curation output plus the fields that changed. */
 export interface EditItemOutput extends ItemCurationOutput {
   changedFields: EditableField[];
 }
 
+/** Maps a looked-up item and its new state to the primitives a curation use case returns. */
 export const toItemCurationOutput = (
   found: ItemWithProject,
   item: ContextItem,

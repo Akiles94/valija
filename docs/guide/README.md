@@ -59,6 +59,8 @@ machine can read the vault until it is unlocked again.
 
 - [Browse a project](flows/browse-project.md) — To review the project's memory item by item: what the AI tools saved, and the imported
 conversations, newest first.
+- [Edit an item](flows/edit-item.md) — To fix an item in place — its wording, tags or type — so the vault keeps one accurate item instead
+of a wrong one and a correction.
 - [Export a project](flows/export-context-pack.md) — Context in Valija is never locked in.
 - [Hand off a conversation to another tool](flows/hand-off-conversation.md) — To package "where we are" (goal, what was done, blockers, the exact next step, relevant files) so
 the next tool can pick up seamlessly instead of starting from zero.
@@ -66,6 +68,8 @@ the next tool can pick up seamlessly instead of starting from zero.
 last active.
 - [Load a project's context pack](flows/load-context-pack.md) — To give the AI the right context at the start of a session (pinned notes, the latest handoff,
 decisions, preferences, progress, facts) without the user pasting anything.
+- [Pin or archive an item](flows/pin-or-archive-item.md) — So the context pack an AI tool loads leads with what the user says matters and leaves out what no
+longer holds, without deleting anything.
 - [Save context from an AI tool](flows/save-context.md) — So that what was learned in one session (a decision and its reason, progress, a preference, a fact)
 is available to any other tool, in any later session, on any of the user's machines.
 - [Search saved context](flows/search-context.md) — To find a piece of context by its words, across every project or within one, including imported

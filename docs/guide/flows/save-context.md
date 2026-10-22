@@ -25,6 +25,9 @@ is available to any other tool, in any later session, on any of the user's machi
 - Content is trimmed, must not be empty and is capped at 32 KB: distilled context, not transcripts.
   Up to 10 lowercase tags. Secrets do not belong in context.
 - The tool's name is recorded as the item's source.
+- A save can name one outdated item in the same project it `supersedes`, by exact id; that item is
+  archived in the same write as the new save — all or nothing. Pinned, imported and already archived
+  items can never be superseded.
 - Everything is validated before the vault is touched; a valid save advances the vault's lineage
   once, as one transaction.
 - The vault must be unlocked; a locked vault refuses with a message telling the user how to unlock.
@@ -35,6 +38,8 @@ is available to any other tool, in any later session, on any of the user's machi
 - The vault is locked ([`VAULT_LOCKED`](../reference/errors.md#err-vault-locked)).
 - Bad project name, type, tags or content ([`INVALID_PROJECT_NAME`](../reference/errors.md#err-invalid-project-name), [`INVALID_ITEM_TYPE`](../reference/errors.md#err-invalid-item-type),
   [`INVALID_TAG`](../reference/errors.md#err-invalid-tag), [`TOO_MANY_TAGS`](../reference/errors.md#err-too-many-tags), [`CONTENT_EMPTY`](../reference/errors.md#err-content-empty), [`CONTENT_TOO_LARGE`](../reference/errors.md#err-content-too-large)).
+- The superseded item cannot be retired ([`INVALID_ITEM_ID`](../reference/errors.md#err-invalid-item-id), [`ITEM_NOT_FOUND`](../reference/errors.md#err-item-not-found),
+  [`ITEM_PINNED`](../reference/errors.md#err-item-pinned), [`ITEM_ARCHIVED`](../reference/errors.md#err-item-archived), [`ITEM_NOT_CURATABLE`](../reference/errors.md#err-item-not-curatable)); nothing is saved then.
 
 ## How it works
 
@@ -79,3 +84,5 @@ sequenceDiagram
 - [`INVALID_ITEM_TYPE`](../reference/errors.md#err-invalid-item-type) — the type is not one an AI may save.
 - [`INVALID_TAG`](../reference/errors.md#err-invalid-tag) / [`TOO_MANY_TAGS`](../reference/errors.md#err-too-many-tags) — a tag is malformed, or there are too many.
 - [`CONTENT_EMPTY`](../reference/errors.md#err-content-empty) / [`CONTENT_TOO_LARGE`](../reference/errors.md#err-content-too-large) — the content is empty or over 32 KB.
+- [`INVALID_ITEM_ID`](../reference/errors.md#err-invalid-item-id) / [`ITEM_NOT_FOUND`](../reference/errors.md#err-item-not-found) — `supersedes` does not name an item in this project.
+- [`ITEM_PINNED`](../reference/errors.md#err-item-pinned) / [`ITEM_ARCHIVED`](../reference/errors.md#err-item-archived) / [`ITEM_NOT_CURATABLE`](../reference/errors.md#err-item-not-curatable) — that item cannot be superseded.

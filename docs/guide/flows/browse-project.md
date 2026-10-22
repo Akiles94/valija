@@ -17,7 +17,8 @@ conversations, newest first.
 
 ## Business rules
 
-- Items are listed newest first; archived items are not shown.
+- Items are listed newest first, each with its id (used to pin, archive or edit it). Archived items
+  are not shown unless asked for (`--archived` in the CLI, **Show archived** in the desktop app).
 - The list can be filtered by type, including `imported`.
 - The desktop app shows pinned items first, then the rest in their original order, and collapses
   long items behind a "show more" toggle.
@@ -33,7 +34,7 @@ conversations, newest first.
 
 ### Entry points
 
-- CLI: [`valija show`](../reference/cli.md#cli-show) (`--type`)
+- CLI: [`valija show`](../reference/cli.md#cli-show) (`--type`, `--archived`)
 - Desktop: [`content:show`](../reference/ipc.md#ipc-content-show) (the project screen)
 
 ### Sequence

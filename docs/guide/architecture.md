@@ -10,7 +10,7 @@ One bounded context per `src/` folder, each split into **domain** (pure rules) �
 
 | Module | domain | application | infra |
 |---|---|---|---|
-| [context](../../specs/context.md) | entities/, services/, values/, 1 file(s) | dto/, ports/, use-cases/ | 3 file(s) |
+| [context](../../specs/context.md) | entities/, services/, values/, 1 file(s) | dto/, ports/, services/, use-cases/ | 3 file(s) |
 | [delivery](../../specs/delivery.md) | entry points: cli/, mcp/, 5 file(s) | — | — |
 | [desktop](../../specs/desktop.md) | — (uses the src/ use cases) | policies/, ports/, services/ | main/infra/, main/ipc/, preload/, renderer/, shared/ |
 | [importers](../../specs/importers.md) | entities/, services/, values/, 1 file(s) | ports/, use-cases/ | parsers/, 2 file(s) |
@@ -54,6 +54,7 @@ flowchart LR
   n_Argon2VaultCrypto["Argon2VaultCrypto"]
   n_CheckVaultUpgrade["CheckVaultUpgrade"]
   n_CreateVault["CreateVault"]
+  n_EditItem["EditItem"]
   n_FileDeviceIdentity["FileDeviceIdentity"]
   n_FileExportReader["FileExportReader"]
   n_FileVaultFolder["FileVaultFolder"]
@@ -68,6 +69,8 @@ flowchart LR
   n_RelocateVault["RelocateVault"]
   n_SaveContext["SaveContext"]
   n_SearchContext["SearchContext"]
+  n_SetItemArchived["SetItemArchived"]
+  n_SetItemPinned["SetItemPinned"]
   n_ShowProject["ShowProject"]
   n_SqliteVaultSessions["SqliteVaultSessions"]
   n_UnlockVault["UnlockVault"]
@@ -85,6 +88,8 @@ flowchart LR
   n_CreateVault -->|KeychainPort| n_OsKeychain
   n_CreateVault -->|Clock| n_systemClock
   n_CreateVault -->|IdGenerator| n_ulidIds
+  n_EditItem -->|VaultSessions| n_SqliteVaultSessions
+  n_EditItem -->|Clock| n_systemClock
   n_GetContextPack -->|VaultSessions| n_SqliteVaultSessions
   n_GetContextPack -->|Clock| n_systemClock
   n_ImportConversations -->|ExportReader| n_FileExportReader
@@ -108,6 +113,10 @@ flowchart LR
   n_SaveContext -->|Clock| n_systemClock
   n_SaveContext -->|IdGenerator| n_ulidIds
   n_SearchContext -->|VaultSessions| n_SqliteVaultSessions
+  n_SetItemArchived -->|VaultSessions| n_SqliteVaultSessions
+  n_SetItemArchived -->|Clock| n_systemClock
+  n_SetItemPinned -->|VaultSessions| n_SqliteVaultSessions
+  n_SetItemPinned -->|Clock| n_systemClock
   n_ShowProject -->|VaultSessions| n_SqliteVaultSessions
   n_UnlockVault -->|VaultCrypto| n_Argon2VaultCrypto
   n_UnlockVault -->|DeviceIdentity| n_FileDeviceIdentity

@@ -15,24 +15,29 @@ const VERBS: Record<Verb, { done: string; already: string }> = {
   unarchive: { done: "Unarchived", already: "Already unarchived" },
 };
 
+/** The `valija edit` flags: content from a file or `-` for stdin, comma-separated tags, a type. */
 export interface EditOptions {
   contentFile?: string;
   tags?: string;
   type?: string;
 }
 
+/** `valija pin <id>`: pins an item so it always leads its project's context pack. */
 export function pinCommand(c: Container, item: string): void {
   report("pin", c.setItemPinned.execute({ item, pinned: true }));
 }
 
+/** `valija unpin <id>`: removes an item's pin. */
 export function unpinCommand(c: Container, item: string): void {
   report("unpin", c.setItemPinned.execute({ item, pinned: false }));
 }
 
+/** `valija archive <id>`: hides an item from packs and search without deleting it. */
 export function archiveCommand(c: Container, item: string): void {
   report("archive", c.setItemArchived.execute({ item, archived: true }));
 }
 
+/** `valija unarchive <id>`: brings an archived item back into packs and search. */
 export function unarchiveCommand(c: Container, item: string): void {
   report("unarchive", c.setItemArchived.execute({ item, archived: false }));
 }

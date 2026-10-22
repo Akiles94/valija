@@ -7,12 +7,14 @@ import { type ItemCurationOutput, toItemCurationOutput } from "../dto/item-curat
 import type { VaultSessions } from "../ports/vault-session.js";
 import { findItemByReference, saveIfChanged } from "../services/item-curation-steps.js";
 
+/** Which item to pin or unpin, addressed by id or unique prefix. */
 export interface SetItemPinnedInput {
   /** A full item id or a unique prefix of at least 6 characters. */
   item: string;
   pinned: boolean;
 }
 
+/** Pins an item so it always leads its project's pack, or unpins it; writes only when the state changes. */
 export class SetItemPinned implements UseCase<SetItemPinnedInput, ItemCurationOutput> {
   constructor(
     private readonly sessions: VaultSessions,

@@ -8,18 +8,23 @@ The CLI and the desktop app are symmetric (CLAUDE.md, Surface parity). Rows pair
 
 | CLI | Desktop channels | Why |
 |---|---|---|
+| [valija archive](cli.md#cli-archive) | [content:setArchived](ipc.md#ipc-content-setarchived) | Same use case: setItemArchived |
 | [valija doctor](cli.md#cli-doctor) | [diagnostics:copyReport](ipc.md#ipc-diagnostics-copyreport), [diagnostics:run](ipc.md#ipc-diagnostics-run) | Declared: both run and report the same diagnostics |
+| [valija edit](cli.md#cli-edit) | [content:edit](ipc.md#ipc-content-edit) | Same use case: editItem |
 | [valija export](cli.md#cli-export) | [content:copy](ipc.md#ipc-content-copy), [content:export](ipc.md#ipc-content-export), [content:pack](ipc.md#ipc-content-pack) | Declared: the CLI prints or writes the pack; the desktop app shows, saves or copies it |
 | [valija import](cli.md#cli-import) | [import:list](ipc.md#ipc-import-list), [import:preview](ipc.md#ipc-import-preview), [import:run](ipc.md#ipc-import-run) | Same use case: importConversations |
 | [valija init](cli.md#cli-init) | [vault:init](ipc.md#ipc-vault-init), [vault:readRecoveryKit](ipc.md#ipc-vault-readrecoverykit) | Declared: the CLI prints the recovery kit; the desktop app reads it once over IPC |
 | [valija install](cli.md#cli-install) | [tools:connect](ipc.md#ipc-tools-connect), [tools:nodeStatus](ipc.md#ipc-tools-nodestatus), [tools:status](ipc.md#ipc-tools-status) | Declared: both wire the MCP server into AI tool configs (no use case: installer adapters) |
 | [valija lock](cli.md#cli-lock) | [vault:lock](ipc.md#ipc-vault-lock) | Same use case: lockVault |
 | [valija mcp](cli.md#cli-mcp) | — | Surface-specific: AI tools spawn it; humans never run it |
+| [valija pin](cli.md#cli-pin) | [content:setPinned](ipc.md#ipc-content-setpinned) | Same use case: setItemPinned |
 | [valija projects](cli.md#cli-projects) | [content:projects](ipc.md#ipc-content-projects) | Same use case: listProjects |
 | [valija search](cli.md#cli-search) | [content:search](ipc.md#ipc-content-search) | Same use case: searchContext |
 | [valija show](cli.md#cli-show) | [content:show](ipc.md#ipc-content-show) | Same use case: showProject |
 | [valija status](cli.md#cli-status) | [sync:status](ipc.md#ipc-sync-status), [vault:status](ipc.md#ipc-vault-status) | Declared: the CLI status also shows the vault folder; the desktop app reads it separately |
+| [valija unarchive](cli.md#cli-unarchive) | [content:setArchived](ipc.md#ipc-content-setarchived) | Same use case: setItemArchived |
 | [valija unlock](cli.md#cli-unlock) | [vault:unlock](ipc.md#ipc-vault-unlock), [vault:upgradeCheck](ipc.md#ipc-vault-upgradecheck) | Declared: the CLI upgrades the schema silently on unlock; the desktop app asks first |
+| [valija unpin](cli.md#cli-unpin) | [content:setPinned](ipc.md#ipc-content-setpinned) | Same use case: setItemPinned |
 | — | [dialog:chooseImportFile](ipc.md#ipc-dialog-chooseimportfile) | Surface-specific: the CLI takes the export file as a path argument |
 | — | [dialog:chooseVaultFolder](ipc.md#ipc-dialog-choosevaultfolder) | Known gap: `valija relocate` is owed to a future advance (CLAUDE.md) |
 | — | [preferences:read](ipc.md#ipc-preferences-read) | Surface-specific: desktop-only UI state |

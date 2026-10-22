@@ -19,6 +19,9 @@ is available to any other tool, in any later session, on any of the user's machi
 - Content is trimmed, must not be empty and is capped at 32 KB: distilled context, not transcripts.
   Up to 10 lowercase tags. Secrets do not belong in context.
 - The tool's name is recorded as the item's source.
+- A save can name one outdated item in the same project it `supersedes`, by exact id; that item is
+  archived in the same write as the new save — all or nothing. Pinned, imported and already archived
+  items can never be superseded.
 - Everything is validated before the vault is touched; a valid save advances the vault's lineage
   once, as one transaction.
 - The vault must be unlocked; a locked vault refuses with a message telling the user how to unlock.
@@ -28,6 +31,8 @@ is available to any other tool, in any later session, on any of the user's machi
 - The vault is locked ({{err:VAULT_LOCKED}}).
 - Bad project name, type, tags or content ({{err:INVALID_PROJECT_NAME}}, {{err:INVALID_ITEM_TYPE}},
   {{err:INVALID_TAG}}, {{err:TOO_MANY_TAGS}}, {{err:CONTENT_EMPTY}}, {{err:CONTENT_TOO_LARGE}}).
+- The superseded item cannot be retired ({{err:INVALID_ITEM_ID}}, {{err:ITEM_NOT_FOUND}},
+  {{err:ITEM_PINNED}}, {{err:ITEM_ARCHIVED}}, {{err:ITEM_NOT_CURATABLE}}); nothing is saved then.
 
 ## Entry points
 - CLI: none — saving is done by AI tools through MCP (see the parity table)
@@ -49,3 +54,5 @@ is available to any other tool, in any later session, on any of the user's machi
 - {{err:INVALID_ITEM_TYPE}} — the type is not one an AI may save.
 - {{err:INVALID_TAG}} / {{err:TOO_MANY_TAGS}} — a tag is malformed, or there are too many.
 - {{err:CONTENT_EMPTY}} / {{err:CONTENT_TOO_LARGE}} — the content is empty or over 32 KB.
+- {{err:INVALID_ITEM_ID}} / {{err:ITEM_NOT_FOUND}} — `supersedes` does not name an item in this project.
+- {{err:ITEM_PINNED}} / {{err:ITEM_ARCHIVED}} / {{err:ITEM_NOT_CURATABLE}} — that item cannot be superseded.
