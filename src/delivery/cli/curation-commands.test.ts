@@ -8,6 +8,7 @@ import { SearchContext } from "../../context/application/use-cases/search-contex
 import { SetItemArchived } from "../../context/application/use-cases/set-item-archived.use-case.js";
 import { SetItemPinned } from "../../context/application/use-cases/set-item-pinned.use-case.js";
 import { ShowProject } from "../../context/application/use-cases/show-project.use-case.js";
+import { ONE_PER_TIER, PLANTED } from "../../testing/fake-secrets.js";
 import { FixedClock, makeUnlockedVault, SeqIds } from "../../testing/test-vault.js";
 import type { Container } from "../container.js";
 import { searchCommand, showCommand } from "./content-commands.js";
@@ -145,5 +146,50 @@ describe("curation commands", () => {
     unarchiveCommand(container, id);
     editCommand(container, id, { type: "fact" });
     expect([...logs, ...errors].join("\n")).not.toContain(SECRET_WORD);
+  });
+});
+
+describe("edit — possible secrets (SECRET-WARN)", () => {
+  const secretFile = (name: string, content: string) => {
+    const file = join(tmp, name);
+    writeFileSync(file, content);
+    return file;
+  };
+  const AWS_FILE = () => secretFile("aws.md", `deploy notes\nkey ${PLANTED.awsAccessKey}\n`);
+
+  it("refuses with the kind, the line and the --allow-secrets remedy; the item is unchanged", () => {
+    const id = saved("an untouched quokka note");
+    const message = exitsWith(() => editCommand(container, id, { contentFile: AWS_FILE() }));
+    expect(message).toBe(
+      "error [POSSIBLE_SECRET]: The content looks like it contains a secret — AWS access key (line 2). Nothing was saved. Remove it, or re-run with --allow-secrets to save it anyway.",
+    );
+    expect(view(id)?.content).toBe("an untouched quokka note");
+  });
+
+  it("--allow-secrets saves it anyway", () => {
+    const id = saved();
+    editCommand(container, id, { contentFile: AWS_FILE(), allowSecrets: true });
+    expect(logs).toEqual([`Updated decision ${id} in project "cli" (content).`]);
+  });
+
+  it("a tags-only edit on an item that already holds a secret succeeds", () => {
+    const id = saved();
+    editCommand(container, id, { contentFile: AWS_FILE(), allowSecrets: true });
+    logs = [];
+    editCommand(container, id, { tags: "ops" });
+    expect(logs).toEqual([`Updated decision ${id} in project "cli" (tags).`]);
+  });
+
+  it("never prints a planted secret, one file per tier", () => {
+    const files = [
+      `key ${PLANTED.awsAccessKey}`,
+      PLANTED.credentialAssignment.line,
+      `value ${PLANTED.highEntropy}`,
+    ].map((content, i) => secretFile(`tier-${i + 1}.md`, content));
+    const id = saved();
+    for (const contentFile of files) exitsWith(() => editCommand(container, id, { contentFile }));
+    const output = [...logs, ...errors].join("\n");
+    expect(errors).toHaveLength(3);
+    for (const secret of ONE_PER_TIER) expect(output).not.toContain(secret);
   });
 });

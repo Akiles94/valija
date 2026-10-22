@@ -8,6 +8,14 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
 
 - Context for AI coding agents: an [`AGENTS.md`](AGENTS.md) index plus [`.context/`](.context/) flows and gotchas, maintained with [easy-repo-context](https://github.com/Akiles94/easy-repo-context) and checked in CI by `npm run context:check`. No runtime behavior changed.
 - A generated developer guide ([`docs/guide/`](docs/guide/README.md)) — business flows with sequence diagrams, the code map and reference tables — checked in CI by `npm run docs:check`, which also requires TSDoc on every exported symbol. No runtime behavior changed.
+- **Secret check on every write (CLI)** (`advances/SECRET-WARN/`): `valija edit --content-file` and
+  `valija import` refuse content that looks like it contains a secret (private keys, provider API
+  keys and tokens, JWTs, passwords in URLs or assignments, long random-looking strings) with
+  `error [POSSIBLE_SECRET]`, naming the kind and line, never the secret, and exit 1. `--allow-secrets`
+  saves or imports it anyway; there is no prompt. Imports are all-or-nothing: each blocking chunk is
+  listed as `#n "title" part p — kind (line k)` (`#n` works with `--pick`), and `--dry-run` shows the
+  same list as "A real import would be REFUSED" while still exiting 0. Best effort: it can miss a
+  secret or flag something harmless.
 - **Project detection from the CLI** (`advances/PROJECT-DETECT/`): `valija link <project>` links the
   current folder's git repository (or only the folder, `--by folder`) to an existing project;
   `valija which` shows what a folder resolves to and why; `valija links [project]` lists links with

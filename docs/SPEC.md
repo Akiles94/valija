@@ -137,7 +137,8 @@ valija init | unlock | lock | status
 valija projects
 valija show [project] [--type] [--archived]
 valija pin | unpin | archive | unarchive <id>
-valija edit <id> [--content-file <file|->] [--tags a,b] [--type <t>]
+valija edit <id> [--content-file <file|->] [--tags a,b] [--type <t>] [--allow-secrets]
+valija import <file> [-p proj] [--from <src>] [--pick|--query|--since|--all] [--dry-run] [--allow-secrets]
 valija search <query> [-p proj]
 valija export [project] [--md|--json] [-o file]
 valija which [--dir <path>]
@@ -157,6 +158,14 @@ detect. `which` shows what a folder resolves to and why; `link` links a folder's
 default when it has a usable remote) or only the folder to an **existing** project; `unlink` removes a
 link by id or by the folder it applies to; `links` lists them (`ID PROJECT KIND TARGET`). Detection
 never creates a project.
+
+**Secret check (SECRET-WARN).** `edit --content-file` and `import` refuse content that looks like it
+contains a secret with `error [POSSIBLE_SECRET]`, naming each kind and line number but never the
+matched text, and exit 1; `--allow-secrets` is a human's explicit "save it anyway". There is no
+prompt. An import is **all-or-nothing**: if any selected chunk is flagged, nothing is written and no
+project is created. Each blocking chunk is listed as `#n "title" part p — kind (line k)`, where `#n` is
+the number `--list` shows and `--pick` reads, and the title is hidden when it is itself flagged.
+`--dry-run` prints the same list under "A real import would be REFUSED" and still exits 0.
 
 ---
 

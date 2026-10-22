@@ -20,7 +20,11 @@ export interface EditOptions {
   contentFile?: string;
   tags?: string;
   type?: string;
+  /** `--allow-secrets`: a human's explicit "save it anyway" (SECRET-WARN D-C). */
+  allowSecrets?: boolean;
 }
+
+const EDIT_SECRET_REMEDY = "Remove it, or re-run with --allow-secrets to save it anyway.";
 
 /** `valija pin <id>`: pins an item so it always leads its project's context pack. */
 export function pinCommand(c: Container, item: string): void {
@@ -49,8 +53,11 @@ export function editCommand(c: Container, item: string, options: EditOptions): v
     ...(options.contentFile === undefined ? {} : { content: readContent(options.contentFile) }),
     ...(options.tags === undefined ? {} : { tags: splitTags(options.tags) }),
     ...(options.type === undefined ? {} : { type: options.type }),
+    ...(options.allowSecrets === true ? { allowSecrets: true } : {}),
   });
-  if (!result.ok) fail(result.error);
+  if (!result.ok) {
+    fail(result.error, result.error.code === "POSSIBLE_SECRET" ? EDIT_SECRET_REMEDY : undefined);
+  }
   const v = result.value;
   if (!v.changed) {
     console.log("Nothing changed — the item already has those values.");

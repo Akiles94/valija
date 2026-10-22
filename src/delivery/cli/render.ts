@@ -2,9 +2,11 @@ import type { ContextItemView } from "../../context/application/dto/context-item
 import type { DomainError } from "../../shared/domain/result.js";
 import type { DeviceId } from "../../vault/domain/values/device-id.js";
 
-/** Prints a domain error as `error [CODE]: message` and exits with status 1. */
-export function fail(error: DomainError): never {
-  console.error(`error [${error.code}]: ${error.message}`);
+/** Print `error [CODE]: message`, plus a surface-specific remedy when one applies, and exit 1. */
+export function fail(error: DomainError, remedy?: string): never {
+  console.error(
+    `error [${error.code}]: ${error.message}${remedy === undefined ? "" : ` ${remedy}`}`,
+  );
   process.exit(1);
 }
 

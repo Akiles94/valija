@@ -108,6 +108,7 @@ export function buildProgram(container: Container): Command {
     .option("--content-file <path>", "new content from a file, or - for stdin")
     .option("--tags <tags>", 'comma-separated tags, replacing the current ones ("" clears them)')
     .option("--type <type>", "new type (decision|progress|preference|fact|handoff)")
+    .option("--allow-secrets", "save even if the content looks like it contains a secret")
     .action((id: string, options: EditOptions) => editCommand(container, id, options));
 
   program
@@ -180,6 +181,7 @@ export function buildProgram(container: Container): Command {
     .option("--since <date>", "select conversations on or after YYYY-MM-DD")
     .option("--all", "import every conversation")
     .option("--dry-run", "report what would be imported; write nothing")
+    .option("--allow-secrets", "import even if some chunks look like they contain secrets")
     .action((file: string, options: Parameters<typeof importCommand>[2]) =>
       importCommand(container, file, options),
     );

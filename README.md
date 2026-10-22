@@ -125,7 +125,9 @@ item's id; any command below takes that id or a unique prefix of at least 6 char
   with `valija show <project> --archived`, and bring one back with `valija unarchive <id>`.
 - `valija edit <id> [--content-file <file|->] [--tags a,b] [--type <type>]` — edit in place. The new
   text comes from a file or stdin (`-`); valija never opens an editor or writes a temp file, because
-  either would leave your plaintext outside the vault. `--tags ""` clears the tags.
+  either would leave your plaintext outside the vault. `--tags ""` clears the tags. New text that
+  looks like it contains a secret is refused — the error names the kind and the line, never the
+  secret; add `--allow-secrets` if you know it isn't one, or want it stored anyway.
 
 Imported items can only be archived or unarchived — and a re-import keeps them archived.
 
@@ -210,6 +212,12 @@ Claude → a `.zip`/JSON). valija auto-detects the source, or pass `--from chatg
 no selection flag it **lists** conversations so you can look before importing; select with
 `--pick 1,3-5`, `--query`, `--since <YYYY-MM-DD>`, or `--all`, and add `--dry-run` to preview. `.zip`
 files are read entirely in memory — nothing is extracted to disk.
+
+An import is **all-or-nothing about secrets**: if any selected chunk looks like it contains one, nothing
+is imported and the command lists each blocking chunk — `#2 "Deploy debugging" part 1 — AWS access
+key (line 5)` — and exits 1. `--dry-run` shows the same list without failing. The `#n` is the number
+`--list` prints, so leave those conversations out with `--pick`, `--query` or `--since`, or re-run
+with `--allow-secrets` to import everything anyway.
 
 Imported conversations are **searchable** (`valija search`, `valija show <project> --type imported`)
 but stay **out of context packs** — they're a searchable archive, not context that auto-loads into
