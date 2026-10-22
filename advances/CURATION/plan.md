@@ -1,3 +1,5 @@
+Approved: Oscar 2026-10-17 — all Decisions to confirm (P-1 … P-10) at their recommended defaults; class names stay suffix-free (`SetItemPinned`), matching the repo.
+
 # CURATION — Pin, archive, edit and supersede saved context · Implementation Plan
 
 **Spec:** `advances/CURATION/refined.md`. Gate R was **approved** by Oscar on 2026-10-17, and all 16
