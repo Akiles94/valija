@@ -9,7 +9,7 @@ surface below; the renderer never imports `src/` directly (`contextIsolation: tr
 
 ## The IPC surface (`shared/ipc/channels.ts`, `main/ipc/schemas.ts`, `main/ipc/handlers/`)
 
-A **closed, enumerated set** — 32 channels across nine areas, each with a zod schema in the same
+A **closed, enumerated set** — 37 channels across ten areas, each with a zod schema in the same
 idiom `src/delivery/mcp/server.ts` uses. `register-handlers.test.ts` asserts the registered channel
 set **equals** the tuple: no extra channel, no missing one, no generic `invoke("run", …)` escape
 hatch. Every handler is four lines — validate, call the use case, map `Result` to a wire shape,
@@ -27,7 +27,8 @@ outlives an action).
 | `import:*` | `list · preview · run` | One vault write, one lineage bump, however many conversations selected |
 | `tools:*` | `status · connect · nodeStatus` | `connect` calls `installIntoClient` unchanged (backup, then merge); `nodeStatus` spawns `node --version`/`npm --version` on PATH (D-W), only from an explicit Connect-screen action |
 | `preferences:*` | `read · write` | See **Preferences** below — `write`'s request type has no `vaultPath` field (§8.6): a filesystem path never originates in the renderer |
-| `dialog:*` | `chooseImportFile · chooseVaultFolder` | The **only** origin of an absolute filesystem path anywhere in `desktop/` — the main process opens the native dialog and keeps the path; the renderer receives a display name and an opaque handle |
+| `dialog:*` | `chooseImportFile · chooseVaultFolder · chooseProjectFolder` | The **only** origin of an absolute filesystem path anywhere in `desktop/` — the main process opens the native dialog and keeps the path; the renderer receives a display name and an opaque handle. (PROJECT-DETECT) `chooseProjectFolder` mints `pf-` handles into **its own** map (P-10): only `bindings:*` can redeem one, and `relocation:*`/`import:*` never can |
+| `bindings:*` | `inspect · link · unlink · list` | (PROJECT-DETECT) Same use cases as the CLI's `which · link · unlink · links` (`ResolveProject`, `LinkWorkspace`, `UnlinkWorkspace`, `ListProjectBindings`); one lineage bump per real link/unlink, none on a no-op or rejection. No request carries a path — a folder arrives only as a `pf-` handle, and `by` is a closed `folder \| repository` enum (P-13). `inspect` never reads `VALIJA_PROJECT` (D-D). `list`/`unlink` return a display target (home as `~`, remotes normalized with credentials already stripped). The handlers take no preferences store, so nothing binding-related reaches the preferences file |
 
 **No polling, anywhere.** State refreshes on user action and the window's `focus` event only
 (`renderer/state/focus-refresh.ts`) — a scripted polling refresh would silently reset the idle
@@ -157,6 +158,6 @@ Windows (`export` is bash/zsh syntax and PowerShell doesn't understand it), chos
   (Slice 13).
 - **The session key never crosses main → renderer.** The only secret that ever reaches the renderer
   is the recovery kit, once, behind a consumed nonce.
-- **Filesystem paths never originate in the renderer** — the two `dialog:*` channels are the only
+- **Filesystem paths never originate in the renderer** — the three `dialog:*` channels are the only
   source of one, and a test asserts no zod schema in `schemas.ts` contains a free-form path-shaped
   string field.

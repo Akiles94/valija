@@ -24,6 +24,8 @@ function fakeFilePicker(handleToPath: Record<string, string>): FilePicker {
     chooseImportFile: () => null,
     chooseExportTarget: () => null,
     chooseVaultFolder: () => null,
+    chooseProjectFolder: () => null,
+    resolveProjectFolder: () => undefined,
     resolveHandle: (handle) => handleToPath[handle],
   };
 }

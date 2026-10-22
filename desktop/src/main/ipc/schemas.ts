@@ -101,4 +101,14 @@ export const SCHEMAS = {
   }),
   "dialog:chooseImportFile": z.void(),
   "dialog:chooseVaultFolder": z.void(),
+  "dialog:chooseProjectFolder": z.void(),
+  // Folders arrive only as `pf-` handles; no bindings schema carries a path.
+  "bindings:inspect": z.object({ handle: z.string().max(64) }),
+  "bindings:link": z.object({
+    handle: z.string().max(64),
+    projectName: z.string().max(64),
+    by: z.enum(["folder", "repository"]),
+  }),
+  "bindings:unlink": z.object({ bindingId: z.string().max(64) }),
+  "bindings:list": z.object({ projectName: z.string().max(64).optional() }),
 } as const satisfies Record<Channel, z.ZodType>;

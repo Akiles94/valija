@@ -1,6 +1,13 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type {
   AppPreferencesMessage,
+  BindingMessage,
+  BindingsInspectRequest,
+  BindingsInspectResponse,
+  BindingsLinkRequest,
+  BindingsLinkResponse,
+  BindingsListRequest,
+  BindingsUnlinkRequest,
   ContentCopyRequest,
   ContentCurationResponse,
   ContentEditRequest,
@@ -135,5 +142,17 @@ contextBridge.exposeInMainWorld("valija", {
       ipcRenderer.invoke("dialog:chooseImportFile"),
     chooseVaultFolder: (): Promise<DialogFileChoiceResponse | null> =>
       ipcRenderer.invoke("dialog:chooseVaultFolder"),
+    chooseProjectFolder: (): Promise<DialogFileChoiceResponse | null> =>
+      ipcRenderer.invoke("dialog:chooseProjectFolder"),
+  },
+  bindings: {
+    inspect: (req: BindingsInspectRequest): Promise<IpcResult<BindingsInspectResponse>> =>
+      ipcRenderer.invoke("bindings:inspect", req),
+    link: (req: BindingsLinkRequest): Promise<IpcResult<BindingsLinkResponse>> =>
+      ipcRenderer.invoke("bindings:link", req),
+    unlink: (req: BindingsUnlinkRequest): Promise<IpcResult<BindingMessage>> =>
+      ipcRenderer.invoke("bindings:unlink", req),
+    list: (req: BindingsListRequest): Promise<IpcResult<BindingMessage[]>> =>
+      ipcRenderer.invoke("bindings:list", req),
   },
 });

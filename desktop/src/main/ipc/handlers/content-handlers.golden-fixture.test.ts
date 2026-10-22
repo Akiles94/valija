@@ -45,6 +45,8 @@ const filePicker: FilePicker = {
   chooseImportFile: () => null,
   chooseExportTarget: () => null,
   chooseVaultFolder: () => null,
+  chooseProjectFolder: () => null,
+  resolveProjectFolder: () => undefined,
   resolveHandle: () => undefined,
 };
 const clipboard: ClipboardPort = { writeText: () => {} };

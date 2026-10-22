@@ -14,5 +14,9 @@ export function createDialogHandlers(filePicker: FilePicker) {
       const chosen = filePicker.chooseVaultFolder();
       return chosen === null ? null : { handle: chosen.handle, displayName: chosen.displayName };
     },
+    "dialog:chooseProjectFolder": (): DialogFileChoiceResponse | null => {
+      const chosen = filePicker.chooseProjectFolder();
+      return chosen === null ? null : { handle: chosen.handle, displayName: chosen.displayName };
+    },
   };
 }

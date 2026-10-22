@@ -1,5 +1,12 @@
 import type {
   AppPreferencesMessage,
+  BindingMessage,
+  BindingsInspectRequest,
+  BindingsInspectResponse,
+  BindingsLinkRequest,
+  BindingsLinkResponse,
+  BindingsListRequest,
+  BindingsUnlinkRequest,
   ContentCopyRequest,
   ContentCurationResponse,
   ContentEditRequest,
@@ -88,6 +95,11 @@ export const CHANNELS = [
   "preferences:write",
   "dialog:chooseImportFile",
   "dialog:chooseVaultFolder",
+  "dialog:chooseProjectFolder",
+  "bindings:inspect",
+  "bindings:link",
+  "bindings:unlink",
+  "bindings:list",
 ] as const;
 
 /** Name of one IPC channel; the renderer can invoke nothing else. */
@@ -187,4 +199,13 @@ export interface ChannelMap {
   "dialog:chooseImportFile": { request: undefined; response: DialogFileChoiceResponse | null };
   /** Opens a native dialog to choose a vault folder and returns an opaque handle, never a path. */
   "dialog:chooseVaultFolder": { request: undefined; response: DialogFileChoiceResponse | null };
+  /** Mints a `pf-` handle into its own map (P-10): relocation and import can never redeem it. */
+  "dialog:chooseProjectFolder": { request: undefined; response: DialogFileChoiceResponse | null };
+  "bindings:inspect": {
+    request: BindingsInspectRequest;
+    response: IpcResult<BindingsInspectResponse>;
+  };
+  "bindings:link": { request: BindingsLinkRequest; response: IpcResult<BindingsLinkResponse> };
+  "bindings:unlink": { request: BindingsUnlinkRequest; response: IpcResult<BindingMessage> };
+  "bindings:list": { request: BindingsListRequest; response: IpcResult<BindingMessage[]> };
 }

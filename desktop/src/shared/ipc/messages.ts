@@ -408,3 +408,45 @@ export interface DiagnosticsRunResponse {
 export interface DiagnosticsCopyReportRequest {
   checks: DiagnosticCheckMessage[];
 }
+
+export type BindingKindMessage = "folder" | "repository";
+
+/** A project-folder handle (`pf-…`) minted by `dialog:chooseProjectFolder` — never a path. */
+export interface BindingsInspectRequest {
+  handle: string;
+}
+export interface BindingsInspectResponse {
+  displayName: string;
+  /** What this folder resolves to now — parity with `valija which` (no VALIJA_PROJECT on desktop, W4). */
+  resolvesTo: { project: string; kind: BindingKindMessage } | null;
+  isRepository: boolean;
+  /** Normalized `host/owner/repo`, credentials already stripped; null when there is none. */
+  remote: string | null;
+  /** False for the home folder or a disk root (P-4). */
+  canLinkFolder: boolean;
+  /** An existing project whose name matches this repository's — a hint, never a link. */
+  hint?: string;
+}
+export interface BindingsLinkRequest {
+  handle: string;
+  projectName: string;
+  by: BindingKindMessage;
+}
+/** Only `changed`: the renderer reloads `bindings:list`. */
+export interface BindingsLinkResponse {
+  changed: boolean;
+}
+export interface BindingsUnlinkRequest {
+  bindingId: string;
+}
+export interface BindingsListRequest {
+  projectName?: string;
+}
+/** `target` is a display string (home as `~`) sent main → renderer; no request ever carries one back. */
+export interface BindingMessage {
+  id: string;
+  project: string;
+  kind: BindingKindMessage;
+  target: string;
+  createdAt: string;
+}

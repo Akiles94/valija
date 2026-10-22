@@ -141,3 +141,48 @@ describe("content:edit schema", () => {
     expect(schema.safeParse({ id: "01SEQ000001", content: "x".repeat(40_000) }).success).toBe(true);
   });
 });
+
+describe("bindings channel schemas", () => {
+  it("bindings:link takes a handle, a project name and a closed `by`", () => {
+    const schema = SCHEMAS["bindings:link"];
+    expect(schema.safeParse({ handle: "pf-1", projectName: "valija" }).success).toBe(false);
+    expect(schema.safeParse({ handle: "pf-1", projectName: "valija", by: "marker" }).success).toBe(
+      false,
+    );
+    expect(
+      schema.safeParse({ handle: "p".repeat(65), projectName: "valija", by: "folder" }).success,
+    ).toBe(false);
+    expect(schema.safeParse({ handle: "pf-1", projectName: "valija", by: "folder" }).success).toBe(
+      true,
+    );
+  });
+
+  it("strips a path a caller slips into bindings:link or bindings:inspect", () => {
+    const link = SCHEMAS["bindings:link"].safeParse({
+      handle: "pf-1",
+      projectName: "valija",
+      by: "repository",
+      path: "/anything/an/attacker/wants",
+    });
+    expect(link.success && link.data).toEqual({
+      handle: "pf-1",
+      projectName: "valija",
+      by: "repository",
+    });
+    const inspect = SCHEMAS["bindings:inspect"].safeParse({ handle: "pf-1", directory: "/etc" });
+    expect(inspect.success && inspect.data).toEqual({ handle: "pf-1" });
+  });
+
+  it("bindings:unlink needs an id; bindings:list takes an optional project", () => {
+    expect(SCHEMAS["bindings:unlink"].safeParse({}).success).toBe(false);
+    expect(SCHEMAS["bindings:unlink"].safeParse({ bindingId: "01SEQ000001" }).success).toBe(true);
+    expect(SCHEMAS["bindings:list"].safeParse({}).success).toBe(true);
+    expect(SCHEMAS["bindings:list"].safeParse({ projectName: "valija" }).success).toBe(true);
+    expect(SCHEMAS["bindings:list"].safeParse({ projectName: 7 }).success).toBe(false);
+  });
+
+  it("dialog:chooseProjectFolder takes no payload", () => {
+    expect(SCHEMAS["dialog:chooseProjectFolder"].safeParse(undefined).success).toBe(true);
+    expect(SCHEMAS["dialog:chooseProjectFolder"].safeParse({ path: "/" }).success).toBe(false);
+  });
+});

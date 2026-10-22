@@ -1,5 +1,12 @@
 import type {
   AppPreferencesMessage,
+  BindingMessage,
+  BindingsInspectRequest,
+  BindingsInspectResponse,
+  BindingsLinkRequest,
+  BindingsLinkResponse,
+  BindingsListRequest,
+  BindingsUnlinkRequest,
   ContentCopyRequest,
   ContentCurationResponse,
   ContentEditRequest,
@@ -106,6 +113,13 @@ export interface ValijaBridge {
   dialog: {
     chooseImportFile(): Promise<DialogFileChoiceResponse | null>;
     chooseVaultFolder(): Promise<DialogFileChoiceResponse | null>;
+    chooseProjectFolder(): Promise<DialogFileChoiceResponse | null>;
+  };
+  bindings: {
+    inspect(req: BindingsInspectRequest): Promise<IpcResult<BindingsInspectResponse>>;
+    link(req: BindingsLinkRequest): Promise<IpcResult<BindingsLinkResponse>>;
+    unlink(req: BindingsUnlinkRequest): Promise<IpcResult<BindingMessage>>;
+    list(req: BindingsListRequest): Promise<IpcResult<BindingMessage[]>>;
   };
 }
 

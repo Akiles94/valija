@@ -5,6 +5,7 @@ import type { AppPreferencesStore } from "../application/ports/app-preferences.j
 import type { ClipboardPort } from "../application/ports/clipboard.js";
 import type { FilePicker } from "../application/ports/file-picker.js";
 import type { NodeProbe } from "../application/ports/node-probe.js";
+import { createBindingsHandlers } from "./handlers/bindings-handlers.js";
 import { createContentHandlers } from "./handlers/content-handlers.js";
 import { createDiagnosticsHandlers } from "./handlers/diagnostics-handlers.js";
 import { createDialogHandlers } from "./handlers/dialog-handlers.js";
@@ -48,6 +49,7 @@ function buildHandlerMap(deps: RegisterHandlersDeps): Record<string, AnyHandler>
     ...createToolsHandlers(deps.getContainer, deps.nodeProbe),
     ...createPreferencesHandlers(deps.preferencesStore),
     ...createDialogHandlers(deps.filePicker),
+    ...createBindingsHandlers(deps.getContainer, deps.filePicker),
   } as unknown as Record<string, AnyHandler>;
 }
 

@@ -9,4 +9,8 @@ export interface FilePicker {
   chooseVaultFolder(): { handle: string; displayName: string; path: string } | null;
   /** Resolves a handle minted by chooseImportFile/chooseVaultFolder back to its real path. */
   resolveHandle(handle: string): string | undefined;
+  /** A folder to link to a project; its `pf-` handle lives in a separate map from every other handle (P-10). */
+  chooseProjectFolder(): { handle: string; displayName: string; path: string } | null;
+  /** Resolves only a handle minted by chooseProjectFolder — never an import or vault-folder handle. */
+  resolveProjectFolder(handle: string): string | undefined;
 }
