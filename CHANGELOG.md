@@ -8,6 +8,11 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
 
 - Context for AI coding agents: an [`AGENTS.md`](AGENTS.md) index plus [`.context/`](.context/) flows and gotchas, maintained with [easy-repo-context](https://github.com/Akiles94/easy-repo-context) and checked in CI by `npm run context:check`. No runtime behavior changed.
 - A generated developer guide ([`docs/guide/`](docs/guide/README.md)) — business flows with sequence diagrams, the code map and reference tables — checked in CI by `npm run docs:check`, which also requires TSDoc on every exported symbol. No runtime behavior changed.
+- **Curation** (`advances/CURATION/`): `save_context` gains an optional `supersedes` argument — the
+  exact id of one outdated item in the same project, archived in the same write as the new save (all
+  or nothing; never pinned, imported or already-archived items). `search_context` lines now include
+  each item's id. Still five MCP tools.
+
 - **Valija Desktop** — an Electron companion app (`desktop/`, distributed as its own unsigned
   [GitHub release](https://github.com/Akiles94/valija/releases/tag/desktop-v0.1.0), not part of the
   npm package) giving the vault a window: browse, search and export context packs; connect Claude

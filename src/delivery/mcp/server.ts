@@ -19,7 +19,9 @@ const DESCRIPTIONS = {
     "Use when the user asks to save or remember something, or at the end of a working session. " +
     "Write `content` so it is self-contained and specific for a reader with no other context: " +
     "decisions made and why, current state, conventions and preferences established, next steps, " +
-    "unresolved questions. Never include secrets, API keys, or passwords.",
+    "unresolved questions. Never include secrets, API keys, or passwords. " +
+    "If this save replaces an outdated item (a reversed decision, stale progress), pass its id as " +
+    "`supersedes`.",
   save_handoff:
     "Package the state of THIS conversation so another AI tool or session can continue seamlessly. " +
     "Structure `content` as: goal, what was done, current blockers, exact next step, " +
@@ -30,7 +32,7 @@ const DESCRIPTIONS = {
     "token budget. Call this when the user asks to load, resume, or continue a project.",
   search_context:
     "Full-text search across saved context. Use for specific recall questions such as " +
-    "'what did we decide about auth?'. Returns matching items with project, type, and date.",
+    "'what did we decide about auth?'. Returns matching items with project, type, date, and id.",
   list_projects:
     "List existing projects with item counts and last activity. Use to disambiguate which " +
     "project the user means before saving or loading.",
@@ -56,9 +58,19 @@ export function buildMcpServer(c: Container): McpServer {
         content: z.string().describe("Self-contained markdown. Max 32 KB."),
         type: z.enum(ITEM_TYPES).optional().describe("Kind of context. Defaults to 'fact'."),
         tags: z.array(z.string()).max(10).optional().describe("Lowercase tags for recall."),
+        supersedes: z
+          .string()
+          .max(64)
+          .optional()
+          .describe(
+            "Optional. The full id of ONE item in this same project that this save replaces — " +
+              "find it with search_context first. That item is archived (hidden from packs and " +
+              "search, not deleted). The whole call fails, and nothing is saved, if the id is " +
+              "unknown, in another project, pinned, imported, or already archived.",
+          ),
       },
     },
-    async ({ project, content, type, tags }) => {
+    async ({ project, content, type, tags, supersedes }) => {
       const source = clientName();
       const r = c.saveContext.execute({
         project,
@@ -66,11 +78,14 @@ export function buildMcpServer(c: Container): McpServer {
         ...(type === undefined ? {} : { type }),
         ...(tags === undefined ? {} : { tags }),
         ...(source === undefined ? {} : { source }),
+        ...(supersedes === undefined ? {} : { supersedes }),
       });
       if (!r.ok) return err(r.error);
+      const superseded = r.value.supersededItemId;
       return ok(
         `Saved ${r.value.type} to project "${r.value.project}"` +
-          `${r.value.projectCreated ? " (project created)" : ""}. Item id: ${r.value.itemId}.`,
+          `${r.value.projectCreated ? " (project created)" : ""}. Item id: ${r.value.itemId}.` +
+          `${superseded === undefined ? "" : ` Archived superseded item ${superseded}.`}`,
       );
     },
   );
@@ -140,7 +155,8 @@ export function buildMcpServer(c: Container): McpServer {
       if (!r.ok) return err(r.error);
       if (r.value.length === 0) return ok("No matches.");
       const lines = r.value.map(
-        (hit) => `- [${hit.project}] (${hit.type}, ${hit.createdAt.slice(0, 10)}) ${hit.content}`,
+        (hit) =>
+          `- [${hit.project}] (${hit.type}, ${hit.createdAt.slice(0, 10)}, id ${hit.id}) ${hit.content}`,
       );
       return ok(`${r.value.length} match(es):\n\n${lines.join("\n")}`);
     },

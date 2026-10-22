@@ -42,7 +42,7 @@ Content subdomain. Ubiquitous language: **project, context item, type, tag, pinn
 
 Each implements `UseCase<In, Out>` (or `AsyncUseCase`) from `shared/application/use-case.ts` — a contract, never a base class.
 
-**SaveContext** — parses project/type(default `fact`)/tags/content **before opening a session**, so bad input never touches the vault; **auto-creates the project** (D9), reports `projectCreated`; captures optional `source` (MCP client name). The project find-or-create and the item save run inside `session.write(...)` (M3), so one save bumps the vault's lineage once.
+**SaveContext** — parses project/type(default `fact`)/tags/content **before opening a session**, so bad input never touches the vault; **auto-creates the project** (D9), reports `projectCreated`; captures optional `source` (MCP client name). The project find-or-create and the item save run inside `session.write(...)` (M3), so one save bumps the vault's lineage once. **`supersedes`** (CURATION, exact id only): inside that same write it checks the target first — missing or in another project → `ITEM_NOT_FOUND` with one message for both, so nothing leaks about other projects; then `archiveSuperseded` — then saves the new item and the archived old one. Any refusal rolls the whole write back, project auto-creation included; `supersededItemId` is reported only when used.
 
 **GetContextPack({ project, budgetTokens = 4000 })** — unknown project → `PROJECT_NOT_FOUND`. Loads the project's items and delegates to `assembleContextPack`; returns the pack **structure**. Pass `Infinity` for the whole project — that is how `export` gets an unbudgeted pack.
 

@@ -109,13 +109,15 @@ Server name: `valija`. Transport: stdio. Started as `valija mcp` (client config:
 
 | Tool | Arguments | Description role |
 |------|-----------|------------------|
-| `save_context` | `project`, `content`, `type?`, `tags?` | Save durable, self-contained context. Never secrets. |
+| `save_context` | `project`, `content`, `type?`, `tags?`, `supersedes?` | Save durable, self-contained context. Never secrets. |
 | `save_handoff` | `project`, `content` | Package THIS conversation's state: goal, done, blockers, exact next step, files. |
 | `get_context` | `project`, `budget?` | Load the context pack before starting work. |
 | `search_context` | `query`, `project?`, `limit?` | FTS recall ("what did we decide about auth?"). |
 | `list_projects` | — | Disambiguate which project the user means. |
 
 Full descriptions live in the tool source — they are the product's real prompt engineering.
+
+**`supersedes` (CURATION):** the exact id of ONE live item in the same project that this save replaces. The old item is archived (never deleted) in the same write as the new save; the whole call fails, saving nothing, if the id is unknown, in another project, pinned, imported, or already archived. `search_context` lines carry each item's id so a model can find it. No tool can pin, and archived items never reach any tool response.
 
 ### Prompts (2)
 

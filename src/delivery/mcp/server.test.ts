@@ -216,6 +216,78 @@ describe("valija MCP server (real client over in-memory transport)", () => {
     }
   });
 
+  it("keeps every tool's input schema exactly as declared", async () => {
+    const tools = await client.listTools();
+    const keys = Object.fromEntries(
+      tools.tools.map((t) => [t.name, Object.keys(t.inputSchema.properties ?? {}).sort()]),
+    );
+    expect(keys).toEqual({
+      save_context: ["content", "project", "supersedes", "tags", "type"],
+      save_handoff: ["content", "project"],
+      get_context: ["budget", "project"],
+      search_context: ["limit", "project", "query"],
+      list_projects: [],
+    });
+  });
+
+  it("search_context lines carry the item id", async () => {
+    const saved = container.saveContext.execute({ project: "mcp-ids", content: "okapi decision" });
+    if (!saved.ok) throw new Error(saved.error.message);
+    const search = await client.callTool({ name: "search_context", arguments: { query: "okapi" } });
+    expect(textOf(search)).toContain(`id ${saved.value.itemId})`);
+  });
+
+  it("supersedes archives the old item, and it never surfaces again", async () => {
+    const old = container.saveContext.execute({
+      project: "mcp-supersede",
+      content: "we use capybara-db",
+      type: "decision",
+    });
+    if (!old.ok) throw new Error(old.error.message);
+    const oldId = old.value.itemId;
+
+    const result = await client.callTool({
+      name: "save_context",
+      arguments: {
+        project: "mcp-supersede",
+        content: "we switched to postgres",
+        type: "decision",
+        supersedes: oldId,
+      },
+    });
+    expect(result.isError).toBeFalsy();
+    expect(textOf(result)).toMatch(/Item id: \S+\. Archived superseded item /);
+    expect(textOf(result)).toContain(`Archived superseded item ${oldId}.`);
+
+    const pack = await client.callTool({
+      name: "get_context",
+      arguments: { project: "mcp-supersede" },
+    });
+    const search = await client.callTool({
+      name: "search_context",
+      arguments: { query: "capybara" },
+    });
+    for (const text of [textOf(pack), textOf(search)]) {
+      expect(text).not.toContain("capybara");
+      expect(text).not.toContain(oldId);
+    }
+  });
+
+  it("supersedes refuses a pinned target", async () => {
+    const pinned = container.saveContext.execute({
+      project: "mcp-supersede",
+      content: "pinned rule",
+      pinned: true,
+    });
+    if (!pinned.ok) throw new Error(pinned.error.message);
+    const result = await client.callTool({
+      name: "save_context",
+      arguments: { project: "mcp-supersede", content: "override", supersedes: pinned.value.itemId },
+    });
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain("[ITEM_PINNED]");
+  });
+
   it("prompts render with the project argument", async () => {
     const prompt = await client.getPrompt({
       name: "load-context",

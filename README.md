@@ -180,6 +180,12 @@ Five tools — `save_context`, `save_handoff`, `get_context`, `search_context`, 
 a manual fallback if it can't). No sync, lineage, or device data is ever exposed through an MCP tool —
 that's CLI-only plumbing.
 
+- `save_context` takes an optional `supersedes`: the id of one outdated item in the same project
+  (a reversed decision, stale progress), which is archived in the same step. `search_context` shows
+  each item's id so the AI can find it. It can't touch pinned or imported items, and it fails
+  without saving anything if the id doesn't fit.
+- Archived items never reach your AI tools: not in packs, not in search.
+
 ## Configuration reference
 
 | Variable | Default | What it does |
