@@ -33,6 +33,7 @@ export type VaultErrorCode =
    * first.
    */
   | "VAULT_UPGRADE_REQUIRED"
+  | "VAULT_SCHEMA_TOO_NEW"
   /** Relocation target already contains a vault. */
   | "RELOCATION_DESTINATION_OCCUPIED"
   /** Relocation target does not exist or is not writable. */
@@ -66,3 +67,24 @@ export const vaultErr = (code: VaultErrorCode, message: string): Result<never, D
 
 /** Shared wording for VAULT_LOCKED, so every caller (session open, auto-lock) says the same thing. */
 export const LOCKED_MESSAGE = 'Vault is locked. Ask the user to run "valija unlock" in a terminal.';
+
+/** One wording for CLI, MCP, desktop logs and the SDK (§6): both numbers, and what to do. */
+export const schemaTooNewMessage = (vaultVersion: number, supportedVersion: number): string =>
+  `This vault was upgraded by a newer version of valija (schema ${vaultVersion}); this version ` +
+  `supports up to schema ${supportedVersion}. Update valija to open it — if you are an AI tool, ask the user to update valija.`;
+
+/** VAULT_SCHEMA_TOO_NEW that also carries both numbers, so a surface can show them without parsing the message (P-21). */
+export class VaultSchemaTooNewError extends DomainError {
+  constructor(
+    readonly vaultVersion: number,
+    readonly supportedVersion: number,
+  ) {
+    super("VAULT_SCHEMA_TOO_NEW", schemaTooNewMessage(vaultVersion, supportedVersion));
+  }
+}
+
+/** The only way any layer builds this refusal. */
+export const schemaTooNewErr = (
+  vaultVersion: number,
+  supportedVersion: number,
+): Result<never, DomainError> => err(new VaultSchemaTooNewError(vaultVersion, supportedVersion));

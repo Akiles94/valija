@@ -504,6 +504,8 @@ export const es: Catalog = {
     NO_CONVERSATIONS_SELECTED: "Selecciona al menos una conversación para importar.",
     UNSUPPORTED_GENERIC_VERSION: "Esa versión de exportación no es compatible.",
     VAULT_UPGRADE_REQUIRED: "Esta bóveda necesita una actualización antes de poder abrirse.",
+    VAULT_SCHEMA_TOO_NEW:
+      "Esta bóveda fue actualizada con una versión más reciente de Valija. Actualiza esta aplicación para abrirla.",
     RELOCATION_DESTINATION_OCCUPIED:
       "Ya existe una bóveda en esa ubicación. Elige una carpeta vacía.",
     RELOCATION_DESTINATION_UNUSABLE: "Esa carpeta no existe o no se puede escribir en ella.",

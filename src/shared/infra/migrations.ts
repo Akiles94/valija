@@ -1,5 +1,6 @@
 import { copyFileSync, rmSync } from "node:fs";
 import type { Database } from "better-sqlite3-multiple-ciphers";
+import { compareSchema } from "../domain/services/schema-compatibility.js";
 import { MIGRATION_001 } from "./migrations/001-init.js";
 import { MIGRATION_002 } from "./migrations/002-imported-type.js";
 import { MIGRATION_003 } from "./migrations/003-lineage.js";
@@ -22,6 +23,25 @@ const MIGRATIONS: readonly Migration[] = [
 /** Schema version a freshly migrated vault database reaches; vaults behind it need an upgrade. */
 export const LATEST_SCHEMA_VERSION = Math.max(...MIGRATIONS.map((m) => m.version));
 
+/** A vault written by a newer valija. Thrown before any write, pragma or migration (D-E, D-F). */
+export class SchemaTooNewError extends Error {
+  constructor(
+    readonly vaultVersion: number,
+    readonly supportedVersion: number,
+  ) {
+    super(`Vault schema ${vaultVersion} is newer than the supported ${supportedVersion}.`);
+    this.name = "SchemaTooNewError";
+  }
+}
+
+/** Fail closed: refuse a schema this build does not know. Reads only. */
+export function refuseNewerSchema(db: Database): void {
+  const current = schemaVersion(db);
+  if (compareSchema(current, LATEST_SCHEMA_VERSION) === "newer") {
+    throw new SchemaTooNewError(current, LATEST_SCHEMA_VERSION);
+  }
+}
+
 /** Which migrations a vault at `current` still needs, and whether any of them backs up the ciphertext first — for a GUI confirmation screen to name before running `migrate`. */
 export function pendingMigrations(
   current: number,
@@ -37,8 +57,12 @@ export function pendingMigrations(
  * that only need the schema (a fresh init) can omit it; when a backup-flagged
  * migration upgrades a populated vault, the path lets the runner snapshot the
  * ciphertext file first.
+ *
+ * The backstop runs first (D-E, F5): a newer schema is refused before the
+ * `meta` table is even created, so a refused vault sees no write at all.
  */
 export function migrate(db: Database, dbPath?: string): void {
+  refuseNewerSchema(db);
   db.exec("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
   const current = schemaVersion(db);
   for (const migration of MIGRATIONS) {
@@ -87,10 +111,18 @@ function setSchemaVersion(db: Database, version: number): void {
   ).run(String(version));
 }
 
-/** Reads the schema version recorded in the database's `meta` table (0 when none was recorded). */
+/** The stored schema marker; `0` for a database never migrated (no `meta` table yet, F6). */
 export function schemaVersion(db: Database): number {
+  if (!hasMetaTable(db)) return 0;
   const row = db.prepare("SELECT value FROM meta WHERE key = 'schema_version'").get() as
     | { value: string }
     | undefined;
   return row ? Number(row.value) : 0;
+}
+
+function hasMetaTable(db: Database): boolean {
+  return (
+    db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'meta'").get() !==
+    undefined
+  );
 }

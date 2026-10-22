@@ -501,6 +501,8 @@ export const en = {
     UNSUPPORTED_GENERIC_VERSION: "That export version isn't supported.",
     // Pre-provisioned for Slice 4 (D-J(b)'s schema-upgrade gate):
     VAULT_UPGRADE_REQUIRED: "This vault needs an upgrade before it can be opened.",
+    VAULT_SCHEMA_TOO_NEW:
+      "This vault was upgraded by a newer version of Valija. Update this app to open it.",
     // Pre-provisioned for Slice 8 (D-R(a)/D-R(b) relocation):
     RELOCATION_DESTINATION_OCCUPIED:
       "There's already a vault at that location. Choose an empty folder.",

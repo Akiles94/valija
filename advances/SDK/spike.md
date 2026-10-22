@@ -97,3 +97,18 @@ error.
 | Step 1 unexpectedly succeeds → report before Slice 10 | Did not succeed. P-5 (a) unchanged. |
 | Step 4 gives a different code → Slice 1 uses it | Same code, `SQLITE_READONLY_ROLLBACK`. |
 | No hot journal can be produced → inject the error (A9) | Produced. Slice 1 uses the real recipe. |
+
+## Addendum (found while writing Slice 1) — read-only open of a legacy WAL-mode vault
+
+A pre-0.3.0 vault still has `journal_mode = WAL` persisted in its header. Opening it
+`{ readonly: true }` succeeds and reads the marker, but SQLite **creates `-wal` and `-shm` sidecars**
+next to `vault.db` (the database file itself is untouched). The bytes of `vault.db` do not change, and
+on the unlock path the read-write open that follows (`readLineage` → `openVaultDb`) folds and removes
+them exactly as before (`upgrade-wal.test.ts` stays green). A current (`DELETE`-mode) vault — which
+is what every newer valija writes — gets no sidecar. No design change; noted for the SDK's "the
+probe writes nothing" wording, which is exact for any vault this or a newer build produced.
+
+One visible consequence: on the desktop, a legacy WAL vault refused with `VAULT_UPGRADE_REQUIRED`
+(user declines the upgrade) now keeps an empty `-wal`/`-shm` pair until the next accepted open;
+before this advance the same probe ran `openVaultDb` and switched the file to `DELETE` instead.
+Both are confined to pre-0.3.0 vaults.

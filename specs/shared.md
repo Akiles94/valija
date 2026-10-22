@@ -11,6 +11,10 @@
 
 One path rule for the whole repo, lifted unchanged from `vault-relocation.ts` so relocation and project detection can never disagree: `isCaseInsensitivePlatform(platform)` (`win32 | darwin`), `pathModuleFor(platform)` (`win32` or `posix` — the `platform` argument, never the host, decides path semantics), and `isSameOrInside(root, candidate, platform)` (true for the folder itself or anything nested in it, after `resolve()`, case-folded on win32/darwin; `/a/bc` is not inside `/a/b`). Pure, no I/O.
 
+## domain/services/schema-compatibility.ts (SDK, D-E)
+
+`compareSchema(vaultVersion, supportedVersion)` → `"behind" | "current" | "newer"` (`SchemaCompatibility`). The one comparison every newer-schema guard reads (open, migrate backstop, unlock, upgrade check, sessions). Pure, no I/O.
+
 ## application/ports/clock.ts
 
 - `Clock.now()` and `IdGenerator.next()` — the two ambient dependencies both contexts inject, so time and ids are deterministic in tests.
@@ -20,10 +24,15 @@ One path rule for the whole repo, lifted unchanged from `vault-relocation.ts` so
 - `openVaultDb(path, keyHex)` opens the SQLCipher database with a raw 32-byte hex key (`PRAGMA key = "x'…'"`), never a passphrase. Malformed key hex is rejected before touching disk.
 - Key is verified on open by touching `sqlite_master`; a wrong key throws `SQLITE_NOTADB`, and the file handle is **closed before rethrowing** (avoids a Windows file lock).
 - **Rollback journal (`DELETE`), not WAL** (M3, D-A): on every open, `wal_checkpoint(TRUNCATE)` folds any pre-existing WAL (from a pre-0.3.0 vault) and then `journal_mode = DELETE` switches modes. This runs *after* the key is verified, so a wrong key never mutates the file. The point: at rest, between commands, `vault.db` is always the single, complete, self-consistent database — no `-wal`/`-shm` sidecar a BYO-cloud sync client could upload out of step with it. `PRAGMA synchronous` stays at its safe default (never `OFF`); a rollback journal exists to survive a crash mid-write, so at-rest integrity is kept, not weakened. Foreign keys ON. `isWrongKeyError(e)` classifies the wrong-key failure.
+- **Newer-schema refusal** (SDK, D-F): `openVaultDb` runs `applyKey` (cipher, key, verifying read) → `refuseNewerSchema` → `settleJournal` (the checkpoint/journal/foreign-key pragmas). A vault whose `meta.schema_version` is above `LATEST_SCHEMA_VERSION` throws `SchemaTooNewError` **before** any journal pragma, so a vault written by a newer valija is never settled, migrated or otherwise modified. Current and behind vaults open exactly as before.
+- `probeSchemaVersion(path, keyHex)` (SDK, D-F) — the read-only schema probe behind `VaultStore.readSchemaVersion`: no mkdir, no pragma beyond the key, no write; `{ readonly: true, fileMustExist: true }`. It reports the number and never refuses. When the read-only connection meets a hot journal (`SQLITE_READONLY_ROLLBACK`, measured in `advances/SDK/spike.md`), it falls back to `openVaultDb`: SQLite rolls the journal back, and the refusal above still guards a newer schema (its `SchemaTooNewError.vaultVersion` is the reported number). A wrong key still throws `SQLITE_NOTADB`.
+- `isBusyError(e)` (SDK, P-8) classifies `SQLITE_BUSY` (a write lock held past the busy timeout). `isWrongKeyError` and `isBusyError` share one `sqliteCode` reader.
 - `SQLITE_BUSY_TIMEOUT_MS = 5000` (GUI advance, D-J(a)) — the library's own default when `timeout` is omitted, made explicit in code rather than left as an inherited library default, so a contended write's actual wait is answerable from the source. Behaviour for the CLI and MCP server is unchanged.
 
 ## infra/migrations.ts + migrations/001-init.ts, 002-imported-type.ts, 003-lineage.ts, 004-project-bindings.ts
 
+- **Backstop first** (SDK, D-E, F5): `migrate` calls `refuseNewerSchema(db)` before it creates `meta` or applies anything, so a newer vault reaching the runner by any path throws `SchemaTooNewError(vaultVersion, supportedVersion)` with nothing written and no `.pre-*.bak`. `SchemaTooNewError` is a plain thrown `Error` (shared infra may not import the vault domain); the vault and context adapters translate it into `VAULT_SCHEMA_TOO_NEW`.
+- `schemaVersion(db)` is table-aware: `0` when the database has no `meta` table yet (a brand-new file, F6), so the pre-pragma refusal can run before any migration.
 - Ordered migrations applied in a transaction, gated by `meta.schema_version`. Idempotent. Backup-flagged migrations take a ciphertext backup of a populated vault first (checkpoint, then copy), removed only after the transaction commits.
 - **Schema v1**: `projects`, `context_items` (type CHECK constraint), `context_items_fts` (FTS5 external-content) kept in sync by insert/update/delete triggers, `meta`.
 - **Schema v2** (M2): widens the `context_items.type` CHECK to accept `imported` (table rebuild + FTS reindex).
@@ -40,4 +49,4 @@ One path rule for the whole repo, lifted unchanged from `vault-relocation.ts` so
 
 - `resolveStatePaths(override?)` → `{ root, state }`. Root precedence: explicit override → `VALIJA_STATE_HOME` env → `~/.valija-state`. Deliberately **independent** of `vault-paths.ts` / `VALIJA_HOME`, so device-local state (device id, per-vault last-seen lineage, last-activity timestamp — see [vault.md](vault.md)) never lands inside a folder a sync client watches.
 
-Proof: `src/shared/domain/services/path-containment.test.ts`, `src/shared/infra/sqlite.test.ts`, `src/shared/infra/migrations.test.ts`, `src/shared/infra/migrations/003-lineage.test.ts`, `src/shared/infra/migrations/004-project-bindings.test.ts`, `src/shared/infra/upgrade-wal.test.ts` (a populated pre-M3 WAL vault upgrades without data/search loss).
+Proof: `src/shared/domain/services/path-containment.test.ts`, `src/shared/domain/services/schema-compatibility.test.ts`, `src/shared/infra/sqlite.test.ts`, `src/shared/infra/migrations.test.ts`, `src/shared/infra/migrations/003-lineage.test.ts`, `src/shared/infra/migrations/004-project-bindings.test.ts`, `src/shared/infra/upgrade-wal.test.ts` (a populated pre-M3 WAL vault upgrades without data/search loss).
