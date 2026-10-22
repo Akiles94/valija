@@ -273,6 +273,22 @@ export const en = {
     perConversationFailure: "{title}: {reason}",
     excludedFromPacksNotice:
       "Imported items are searchable and visible in the project, but they don't appear in context packs.",
+    // SECRET-WARN: all-or-nothing — the blocking chunks, in words (kind and lines, never the secret).
+    wouldBeRefused: {
+      one: "A real import would be refused: {count} chunk looks like it contains a secret.",
+      other: "A real import would be refused: {count} chunks look like they contain secrets.",
+    } satisfies PluralForm,
+    refused: {
+      one: "Import refused — nothing was imported. {count} chunk looks like it contains a secret.",
+      other:
+        "Import refused — nothing was imported. {count} chunks look like they contain secrets.",
+    } satisfies PluralForm,
+    blockingChunk: "#{index} “{title}”, part {part}: {findings}",
+    titleHidden: "(title hidden — it may contain a secret)",
+    blockingRemedy:
+      "Uncheck those conversations, or import anyway if you know they aren't secrets.",
+    uncheckBlocking: "Uncheck these conversations",
+    importAnyway: "Import anyway",
   },
 
   diagnostics: {

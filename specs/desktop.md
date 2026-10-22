@@ -153,6 +153,19 @@ remove the secret and the warning hides; if main refused but the renderer finds 
 submitted text, the warning shows `errors.POSSIBLE_SECRET` instead of a list, still with Save anyway.
 The matched text is never rendered.
 
+(SECRET-WARN) **Import screen.** `screens/import/import-status.tsx` reads `refused` and
+`blockingChunks` from the outcome. A refused **Preview** shows `previewSummary` (unchanged), then
+`import.wouldBeRefused` and `blocking-chunk-list.tsx` — no buttons, Preview never writes. A refused
+**Import** shows `import.refused` in place of `importSummary`, the list, `import.blockingRemedy`, and
+two buttons; `excludedFromPacksNotice` is hidden. Each line is `import.blockingChunk` (`#n`, title
+or `import.titleHidden`, part, `describeSecretFindings`). `import-screen.tsx` keeps the refused
+request (`refusedRequest`, P-11): **Import anyway** re-sends exactly that request plus
+`allowSecrets: true`, never a selection edited since; **Uncheck these conversations** applies
+`state/import-selection.ts`'s `uncheckConversations` to the blocking indexes and clears the outcome.
+`beginWork` clears `refusedRequest`, so a stale Import anyway never survives a new run. The region
+stays the single `aria-live` status, so the refusal is announced. The renderer never computes the
+blocking list itself (F10): it comes from main, through `ImportConversations`.
+
 ## Relocation wizard's refusals
 
 The refusal vocabulary and safety ordering live in `src/vault` — see [`specs/vault.md`](vault.md)'s

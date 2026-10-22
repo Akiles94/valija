@@ -6,6 +6,7 @@ import {
   countSelection,
   sortListingByDate,
   toggleVisibleSelection,
+  uncheckConversations,
   visibleSelectionState,
 } from "./import-selection.js";
 
@@ -157,5 +158,21 @@ describe("toggleVisibleSelection (D-12 Option 2: union/difference over visible r
     const visible = [listing[2] as ImportListingRow, listing[0] as ImportListingRow];
     const next = toggleVisibleSelection(new Set(), visible);
     expect(buildPickSpec(next)).toBe("1,3");
+  });
+});
+
+describe("uncheckConversations (SECRET-WARN Uncheck these)", () => {
+  it("removes only the given indexes", () => {
+    expect([...uncheckConversations(new Set([1, 2, 3, 4]), [2, 4])]).toEqual([1, 3]);
+  });
+
+  it("ignores indexes that are not checked", () => {
+    expect([...uncheckConversations(new Set([1, 3]), [2, 9])]).toEqual([1, 3]);
+  });
+
+  it("never mutates its input", () => {
+    const checked = new Set([1, 2]);
+    uncheckConversations(checked, [1]);
+    expect([...checked]).toEqual([1, 2]);
   });
 });

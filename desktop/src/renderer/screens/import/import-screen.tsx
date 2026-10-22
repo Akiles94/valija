@@ -3,6 +3,7 @@ import type {
   ImportFormatOverride,
   ImportListingRow,
   ImportOutcomeResponse,
+  ImportRunRequest,
 } from "../../../shared/ipc/messages.js";
 import type { ValijaBridge } from "../../state/bridge.js";
 import { useErrorCopy, useLanguage, useT } from "../../state/i18n-context.js";
@@ -13,6 +14,7 @@ import {
   type SortDirection,
   sortListingByDate,
   toggleVisibleSelection,
+  uncheckConversations,
   visibleSelectionState,
 } from "../../state/import-selection.js";
 import { waitForNextPaint } from "../../state/next-paint.js";
@@ -70,6 +72,8 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
   const statusRef = useRef<HTMLDivElement>(null);
   const [resultOutcome, setResultOutcome] = useState<ImportOutcomeResponse | null>(null);
   const [resultMode, setResultMode] = useState<"preview" | "import" | null>(null);
+  // SECRET-WARN P-11: the exact request a refused import sent — Import anyway re-sends it, never a later selection.
+  const [refusedRequest, setRefusedRequest] = useState<ImportRunRequest | null>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: bridge is a stable module-scoped singleton, not reactive state
   useEffect(() => {
@@ -91,6 +95,7 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
     setError(null);
     setResultOutcome(null);
     setResultMode(null);
+    setRefusedRequest(null);
   }
 
   /** Always reached — from success, from a failed `Result`, and from a rejection (D-9). */
@@ -181,13 +186,18 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
     const pick = buildPickSpec(checked);
     if (handle === null || projectName === null || pick === undefined) return;
 
-    const request = {
+    const request: ImportRunRequest = {
       handle,
       projectName,
       pick,
       ...(filterText.trim().length === 0 ? {} : { query: filterText.trim() }),
       ...(from === undefined ? {} : { from }),
     };
+    await submitImport(mode, request);
+  }
+
+  /** One Preview or Import round trip. A refused import keeps its request for Import anyway. */
+  async function submitImport(mode: "preview" | "import", request: ImportRunRequest) {
     beginWork(mode);
     await waitForNextPaint(); // D-2 = O1: present the busy frame before main blocks
     try {
@@ -201,11 +211,32 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
       }
       setResultOutcome(result.value);
       setResultMode(mode);
+      if (mode === "import" && result.value.refused) setRefusedRequest(request);
     } catch {
       setError(errorCopy(REJECTED_CALL_CODE));
     } finally {
       endWork();
     }
+  }
+
+  /** Import anyway: exactly the refused selection, plus a human's override (P-11). */
+  function importAnyway() {
+    if (workingRef.current !== null || refusedRequest === null) return;
+    void submitImport("import", { ...refusedRequest, allowSecrets: true });
+  }
+
+  /** Uncheck these conversations: drop the blocking rows and clear the refusal. */
+  function uncheckBlocking() {
+    const blocking = resultOutcome?.blockingChunks ?? [];
+    setChecked((prev) =>
+      uncheckConversations(
+        prev,
+        blocking.map((chunk) => chunk.conversationIndex),
+      ),
+    );
+    setResultOutcome(null);
+    setResultMode(null);
+    setRefusedRequest(null);
   }
 
   function busyMessage(): string | null {
@@ -336,6 +367,8 @@ export function ImportScreen({ bridge }: { bridge: ValijaBridge }) {
             resultMode={resultMode}
             resolvedProjectName={resolvedProjectName()}
             statusRef={statusRef}
+            onUncheckBlocking={uncheckBlocking}
+            onImportAnyway={importAnyway}
           />
 
           {stage === "listed" && listing !== null && (

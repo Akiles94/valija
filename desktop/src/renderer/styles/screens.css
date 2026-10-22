@@ -998,3 +998,11 @@
   display: flex;
   gap: 8px;
 }
+
+/* screens/import/blocking-chunk-list.tsx (SECRET-WARN) — the chunks that block an import. Existing tokens only. */
+.blocking-chunks {
+  margin: 8px 0;
+  padding: 8px 12px 8px 28px;
+  border-left: 3px solid var(--color-warning);
+  word-break: break-word;
+}

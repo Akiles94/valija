@@ -1,6 +1,7 @@
 import type { RefObject } from "react";
 import type { ImportOutcomeResponse } from "../../../shared/ipc/messages.js";
 import { useT } from "../../state/i18n-context.js";
+import { BlockingChunkList } from "./blocking-chunk-list.js";
 
 /**
  * The single busy/error/result region (D-4), moved verbatim from import.tsx
@@ -9,6 +10,10 @@ import { useT } from "../../state/i18n-context.js";
  * error can land here even while `stage` is still "choose". `statusRef` is a
  * plain prop, not `forwardRef` — React 19 needs no wrapper for a ref this
  * component owns and never re-exposes.
+ *
+ * SECRET-WARN: a refused Preview adds the would-be-refused line and the
+ * blocking list (no buttons — Preview never writes). A refused Import shows
+ * the refusal in place of the summary, the list, and the two ways forward.
  */
 export function ImportStatus({
   ariaBusy,
@@ -18,6 +23,8 @@ export function ImportStatus({
   resultMode,
   resolvedProjectName,
   statusRef,
+  onUncheckBlocking,
+  onImportAnyway,
 }: {
   ariaBusy: boolean;
   busyMessage: string | null;
@@ -26,8 +33,11 @@ export function ImportStatus({
   resultMode: "preview" | "import" | null;
   resolvedProjectName: string | null;
   statusRef: RefObject<HTMLDivElement | null>;
+  onUncheckBlocking: () => void;
+  onImportAnyway: () => void;
 }) {
   const t = useT();
+  const refusedImport = resultMode === "import" && resultOutcome?.refused === true;
   return (
     <div className="import-status" aria-live="polite" aria-busy={ariaBusy} ref={statusRef}>
       {busyMessage !== null && (
@@ -40,14 +50,33 @@ export function ImportStatus({
       {resultOutcome !== null && resultMode !== null && (
         <div className="import-result">
           <p>
-            {t(resultMode === "preview" ? "import.previewSummary" : "import.importSummary", {
-              itemCount: resultOutcome.imported,
-              conversationCount: resultOutcome.conversations,
-              project: resolvedProjectName ?? "",
-              skipped: resultOutcome.skipped,
-              failed: resultOutcome.failed,
-            })}
+            {refusedImport
+              ? t("import.refused", { count: resultOutcome.blockingChunks.length })
+              : t(resultMode === "preview" ? "import.previewSummary" : "import.importSummary", {
+                  itemCount: resultOutcome.imported,
+                  conversationCount: resultOutcome.conversations,
+                  project: resolvedProjectName ?? "",
+                  skipped: resultOutcome.skipped,
+                  failed: resultOutcome.failed,
+                })}
           </p>
+          {resultMode === "preview" && resultOutcome.refused && (
+            <p>{t("import.wouldBeRefused", { count: resultOutcome.blockingChunks.length })}</p>
+          )}
+          {resultOutcome.refused && <BlockingChunkList chunks={resultOutcome.blockingChunks} />}
+          {refusedImport && (
+            <>
+              <p>{t("import.blockingRemedy")}</p>
+              <div className="actions">
+                <button type="button" onClick={onUncheckBlocking}>
+                  {t("import.uncheckBlocking")}
+                </button>
+                <button type="button" onClick={onImportAnyway}>
+                  {t("import.importAnyway")}
+                </button>
+              </div>
+            </>
+          )}
           {resultOutcome.failures.length > 0 && (
             <ul className="import-failures">
               {resultOutcome.failures.map((failure) => (
@@ -60,7 +89,9 @@ export function ImportStatus({
               ))}
             </ul>
           )}
-          {resultMode === "import" && <p>{t("import.excludedFromPacksNotice")}</p>}
+          {resultMode === "import" && !refusedImport && (
+            <p>{t("import.excludedFromPacksNotice")}</p>
+          )}
         </div>
       )}
     </div>

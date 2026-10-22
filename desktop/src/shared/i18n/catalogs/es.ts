@@ -273,6 +273,21 @@ export const es: Catalog = {
     perConversationFailure: "{title}: {reason}",
     excludedFromPacksNotice:
       "Los elementos importados se pueden buscar y aparecen en el proyecto, pero no forman parte de los paquetes de contexto.",
+    wouldBeRefused: {
+      one: "Una importación real se rechazaría: {count} fragmento parece contener un secreto.",
+      other: "Una importación real se rechazaría: {count} fragmentos parecen contener secretos.",
+    },
+    refused: {
+      one: "Importación rechazada: no se importó nada. {count} fragmento parece contener un secreto.",
+      other:
+        "Importación rechazada: no se importó nada. {count} fragmentos parecen contener secretos.",
+    },
+    blockingChunk: "#{index} «{title}», parte {part}: {findings}",
+    titleHidden: "(título oculto: puede contener un secreto)",
+    blockingRemedy:
+      "Desmarca esas conversaciones o importa de todos modos si sabes que no son secretos.",
+    uncheckBlocking: "Desmarcar estas conversaciones",
+    importAnyway: "Importar de todos modos",
   },
 
   diagnostics: {

@@ -26,6 +26,12 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
   or Spanish), never the secret, plus **Edit text** and **Save anyway**. Main refuses on its own; the
   `content:edit` request gains an optional `allowSecrets` flag that only Save anyway sets. No new IPC
   channel.
+- **Secret check on the desktop Import screen** (`advances/SECRET-WARN/`): imports are
+  all-or-nothing. **Preview** says a real import would be refused and lists each blocking chunk
+  (conversation number, title — hidden when it is itself flagged — part, kind and line); a refused
+  **Import** writes nothing and offers **Uncheck these conversations** or **Import anyway**, which
+  re-sends exactly the refused selection. `import:run` gains an optional `allowSecrets` flag and the
+  import outcome gains `refused` and `blockingChunks`. Same 37 IPC channels.
 - **Project detection from the CLI** (`advances/PROJECT-DETECT/`): `valija link <project>` links the
   current folder's git repository (or only the folder, `--by folder`) to an existing project;
   `valija which` shows what a folder resolves to and why; `valija links [project]` lists links with

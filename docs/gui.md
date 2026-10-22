@@ -273,6 +273,16 @@ conversations that failed, or the reason it couldn't — in that same spot, next
 picker. One honest warning: a large export is read, parsed and written in one go, so while an import
 runs the window may stop responding and can't be moved. It hasn't crashed; let it finish.
 
+An import is **all-or-nothing about secrets**. If any selected conversation contains something that
+looks like a secret — a private key, an API key or token, a password in a URL or an assignment, a
+long random-looking string — **Preview** says a real import would be refused and lists each
+blocking piece: the conversation's number in the list, its title (hidden when the title itself looks
+like a secret), the part, and what kind of secret on which line, never the secret itself. Press
+**Import** anyway and nothing is imported: the same list appears with two ways forward. **Uncheck
+these conversations** leaves every other choice alone and clears the refusal, so you can import the
+rest; **Import anyway** imports exactly the selection you were shown, secrets included. The check is
+best effort: it can miss a secret or flag something that isn't one.
+
 Project names are stored as slugs — lowercase letters, digits and hyphens, nothing else. Typing a
 new project's name however you'd naturally write it (spaces, capitals, accents) is fine: the field
 shows, before you commit to anything, exactly what it will be saved as (e.g. "Openai 1" →
@@ -442,6 +452,8 @@ Every one of them only fires when you click its button — nothing is copied aut
   own; it manages the links (see *Linking folders and repositories*) that your terminal and AI tools
   use.
 - **Support a third language** — English and Spanish only, for now.
+- **Scan what is already in your vault for secrets** — only new edits and imports are checked
+  (coming later).
 
 **One environment consequence worth stating plainly:** an app launched by double-clicking its icon
 inherits none of your shell's environment variables. If you've set `VALIJA_HOME` in a shell profile,

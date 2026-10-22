@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { ONE_PER_TIER } from "../../../../../src/testing/fake-secrets.js";
 import { en } from "../../../shared/i18n/catalogs/en.js";
 import { es } from "../../../shared/i18n/catalogs/es.js";
 import type {
@@ -109,11 +110,9 @@ function fakeBridge(overrides: {
   } as any as ValijaBridge;
 }
 
-function renderScreen(bridge: ValijaBridge) {
+function renderScreen(bridge: ValijaBridge, language: "en" | "es" = "en") {
   return render(
-    <I18nProvider
-      preferences={{ vaultPath: null, theme: "system", language: "en", tourSeen: false }}
-    >
+    <I18nProvider preferences={{ vaultPath: null, theme: "system", language, tourSeen: false }}>
       <ImportScreen bridge={bridge} />
     </I18nProvider>,
   );
@@ -512,5 +511,146 @@ describe("ImportScreen (DOM)", () => {
         expect(text).not.toMatch(/retry|reintent/i);
       }
     }
+  });
+});
+
+describe("ImportScreen — possible secrets (DOM, SECRET-WARN)", () => {
+  // Built from findings only, never from text (§10.1), and no https:// anywhere in this file (F9).
+  const FOUR_ROWS = [
+    { index: 1, title: "Kickoff notes", date: "2024-05-01", messageCount: 2, estimatedChunks: 1 },
+    {
+      index: 2,
+      title: "Deploy debugging",
+      date: "2024-05-02",
+      messageCount: 2,
+      estimatedChunks: 1,
+    },
+    { index: 3, title: "Naming ideas", date: "2024-05-03", messageCount: 2, estimatedChunks: 1 },
+    { index: 4, title: "Database setup", date: "2024-05-04", messageCount: 2, estimatedChunks: 1 },
+  ];
+  const REFUSED: ImportOutcomeResponse = {
+    imported: 0,
+    conversations: 0,
+    skipped: 0,
+    failed: 0,
+    failures: [],
+    refused: true,
+    blockingChunks: [
+      {
+        conversationIndex: 2,
+        title: "Deploy debugging",
+        part: 1,
+        findings: [{ kind: "aws-access-key", firstLine: 3, lastLine: 3 }],
+      },
+      {
+        conversationIndex: 4,
+        title: null,
+        part: 1,
+        findings: [{ kind: "credential-assignment", firstLine: 5, lastLine: 5 }],
+      },
+    ],
+  };
+  const PREVIEWED: ImportOutcomeResponse = { ...REFUSED, imported: 4, conversations: 4 };
+  const DEPLOY_LINE = "#2 “Deploy debugging”, part 1: AWS access key (line 3)";
+  const HIDDEN_LINE =
+    "#4 “(title hidden — it may contain a secret)”, part 1: Credential assignment (line 5)";
+
+  function secretBridge(run?: ValijaBridge["import"]["run"]) {
+    return fakeBridge({
+      list: vi.fn(
+        (): Promise<IpcResult<ImportListResponse>> =>
+          Promise.resolve({ ok: true, value: { source: "generic", listing: FOUR_ROWS } }),
+      ),
+      preview: vi.fn(() => Promise.resolve({ ok: true as const, value: PREVIEWED })),
+      run: run ?? vi.fn(() => Promise.resolve({ ok: true as const, value: REFUSED })),
+    });
+  }
+  async function listed(bridge: ValijaBridge, language: "en" | "es" = "en") {
+    const { container } = renderScreen(bridge, language);
+    fireEvent.click(screen.getByRole("button", { name: /^(Choose a file…|Elegir un archivo…)$/ }));
+    await screen.findByText("Kickoff notes");
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "myproj" } });
+    return container.querySelector(".import-status") as HTMLElement;
+  }
+  const lines = (status: HTMLElement) =>
+    [...status.querySelectorAll(".blocking-chunks li")].map((li) => li.textContent);
+
+  it("Preview shows the would-be-refused copy and every blocking chunk, with no buttons", async () => {
+    const status = await listed(secretBridge());
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    await within(status).findByText(
+      "A real import would be refused: 2 chunks look like they contain secrets.",
+    );
+    expect(status.textContent).toContain("Would import 4 items from 4 conversations");
+    expect(lines(status)).toEqual([DEPLOY_LINE, HIDDEN_LINE]);
+    expect(within(status).queryByRole("button")).toBeNull();
+  });
+
+  it("a refused Import replaces the summary with the refusal, the list and both buttons", async () => {
+    const status = await listed(secretBridge());
+    fireEvent.click(screen.getByRole("button", { name: "Import" }));
+    await within(status).findByText(
+      "Import refused — nothing was imported. 2 chunks look like they contain secrets.",
+    );
+    expect(status.textContent).not.toContain("Imported ");
+    expect(status.textContent).not.toContain(en.import.excludedFromPacksNotice);
+    expect(lines(status)).toEqual([DEPLOY_LINE, HIDDEN_LINE]);
+    expect(status.textContent).toContain(en.import.blockingRemedy);
+    expect(
+      within(status).getByRole("button", { name: "Uncheck these conversations" }),
+    ).toBeTruthy();
+    expect(within(status).getByRole("button", { name: "Import anyway" })).toBeTruthy();
+  });
+
+  it("Import anyway re-sends exactly the refused request plus allowSecrets", async () => {
+    const run = vi
+      .fn<ValijaBridge["import"]["run"]>()
+      .mockResolvedValueOnce({ ok: true, value: REFUSED })
+      .mockResolvedValueOnce({ ok: true, value: { ...OUTCOME, imported: 4, conversations: 4 } });
+    const status = await listed(secretBridge(run));
+    fireEvent.click(screen.getByRole("button", { name: "Import" }));
+    await within(status).findByRole("button", { name: "Import anyway" });
+    // A later change to the selection must not leak into the override (P-11).
+    fireEvent.click(screen.getByRole("checkbox", { name: "Kickoff notes" }));
+    fireEvent.click(within(status).getByRole("button", { name: "Import anyway" }));
+    await within(status).findByText(/Imported 4 items from 4 conversations/);
+    const first = run.mock.calls[0]?.[0];
+    expect(first).toEqual({ handle: "h1", projectName: "myproj", pick: "1,2,3,4" });
+    expect(run).toHaveBeenLastCalledWith({ ...first, allowSecrets: true });
+  });
+
+  it("Uncheck these conversations unchecks only the blocking rows and clears the refusal", async () => {
+    const status = await listed(secretBridge());
+    fireEvent.click(screen.getByRole("button", { name: "Import" }));
+    fireEvent.click(
+      await within(status).findByRole("button", { name: "Uncheck these conversations" }),
+    );
+    expect(screen.getByRole("checkbox", { name: "Deploy debugging" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Database setup" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Kickoff notes" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Naming ideas" })).toBeChecked();
+    expect(status.textContent).toBe("");
+  });
+
+  it("speaks Spanish when the app does", async () => {
+    const status = await listed(secretBridge(), "es");
+    fireEvent.click(screen.getByRole("button", { name: es.import.importButton }));
+    await within(status).findByRole("button", { name: "Importar de todos modos" });
+    expect(lines(status)[0]).toBe(
+      "#2 «Deploy debugging», parte 1: Clave de acceso de AWS (línea 3)",
+    );
+    expect(lines(status)[1]).toContain("(título oculto: puede contener un secreto)");
+    expect(
+      within(status).getByRole("button", { name: "Desmarcar estas conversaciones" }),
+    ).toBeTruthy();
+  });
+
+  it("the status never carries a planted secret", async () => {
+    const status = await listed(secretBridge());
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    await within(status).findByText(/A real import would be refused/);
+    fireEvent.click(screen.getByRole("button", { name: "Import" }));
+    await within(status).findByText(/Import refused/);
+    for (const secret of ONE_PER_TIER) expect(status.textContent).not.toContain(secret);
   });
 });

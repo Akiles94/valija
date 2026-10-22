@@ -94,3 +94,13 @@ export function sortListingByDate(
   const sorted = [...listing].sort((a, b) => a.date.localeCompare(b.date));
   return direction === "asc" ? sorted : sorted.reverse();
 }
+
+/** "Uncheck these" (SECRET-WARN): drop the blocking conversations from the selection, leaving every other choice alone. */
+export function uncheckConversations(
+  checked: ReadonlySet<number>,
+  indexes: readonly number[],
+): Set<number> {
+  const next = new Set(checked);
+  for (const index of indexes) next.delete(index);
+  return next;
+}
