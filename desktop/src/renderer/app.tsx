@@ -17,6 +17,7 @@ import { PackPreviewScreen } from "./screens/pack-preview.js";
 import { ProjectScreen } from "./screens/project.js";
 import { RecoveryKitScreen } from "./screens/recovery-kit.js";
 import { RelocateVaultScreen } from "./screens/relocate-vault.js";
+import { SchemaTooNewScreen } from "./screens/schema-too-new.js";
 import { SearchScreen } from "./screens/search.js";
 import { SettingsScreen } from "./screens/settings.js";
 import { SyncScreen } from "./screens/sync.js";
@@ -38,6 +39,7 @@ import {
   afterKitAcknowledged,
   afterLock,
   afterMigrationCancelled,
+  afterSchemaTooNew,
   afterStatusCheck,
   afterUnlockFailure,
   afterUnlockSuccess,
@@ -101,7 +103,20 @@ export function App() {
   // Stable for the component's lifetime (setState is stable across renders)
   // — so wrapped screens' own `useEffect(() => {...}, [])` mount-once calls
   // still see one consistent bridge, the same as the raw module singleton.
-  const lockAwareBridge = useMemo(() => withLockDetection(bridge, () => setState(afterLock())), []);
+  // (SDK, P-18 (b)) A newer-schema refusal from any call routes to the terminal
+  // "Update Valija" screen, resetting the workspace view like any session exit.
+  const lockAwareBridge = useMemo(
+    () =>
+      withLockDetection(
+        bridge,
+        () => setState(afterLock()),
+        (versions) => {
+          setWorkspaceView(resetWorkspaceView());
+          setState(afterSchemaTooNew(versions));
+        },
+      ),
+    [],
+  );
 
   if (preferences === null) return null; // "checking" — nothing renders yet, no flash of the wrong language
   const prefs = preferences; // narrowed once here, so the closures below never see the null branch
@@ -288,6 +303,19 @@ function Router({
               setPendingCredential(null);
               setState(afterUnlockSuccess(result.fork));
             }}
+          />
+        </EntryShell>
+      );
+
+    case "schema-too-new":
+      return (
+        <EntryShell>
+          <SchemaTooNewScreen
+            bridge={bridge}
+            versions={state.versions}
+            onOpenSettings={onOpenSettings}
+            // F20: the last window closing quits the app — no new IPC channel (P-22).
+            onQuit={() => window.close()}
           />
         </EntryShell>
       );

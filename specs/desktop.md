@@ -46,6 +46,32 @@ screen — any `VAULT_LOCKED` result from any call routes the app back to `Locke
 unlock. This is why `Router`/`Workspace` take `bridge` as an explicit prop instead of closing over
 the module-level bridge singleton every screen used to reach directly.
 
+**A vault upgraded by a newer Valija routes to a terminal screen (SDK, P-18 (b)) — same 37 channels.**
+- `IpcResult`'s failure gains an optional, numbers-only `schema?: SchemaVersionsMessage`
+  (`{ vaultVersion, supportedVersion }`). `toIpcResult` fills it **only** for a
+  `VaultSchemaTooNewError` (the typed `VAULT_SCHEMA_TOO_NEW` every producer builds through
+  `schemaTooNewErr`); every other error still crosses as exactly `{ code }`, and no message ever
+  crosses (P-21).
+- `VaultStatusResponse.schemaTooNew?` carries the same two numbers when status finds a newer vault
+  behind a valid key.
+- `withLockDetection(bridge, onLocked, onSchemaTooNew = () => {})` also routes any
+  `{ code: "VAULT_SCHEMA_TOO_NEW", schema }` result, from any call, to `onSchemaTooNew(schema)`; a bare
+  code without `schema` is not routed and the calling screen shows `errors.VAULT_SCHEMA_TOO_NEW`
+  inline. `app.tsx` resets the workspace view and sets `afterSchemaTooNew(versions)`. That covers the
+  locked screen's unlock, the upgrade-confirm screen's `upgradeCheck` and every content/import call
+  with no screen change; `classifyUnlockResult` keeps the code a plain `error`, so the confirm screen
+  never appears for it.
+- `afterStatusCheck` checks `schemaTooNew` **before** `unlocked`, so the dashboard never renders for
+  such a vault.
+- `screens/schema-too-new.tsx` (`SchemaTooNewScreen`, inside `EntryShell`): both numbers, "nothing
+  in your vault was changed", and exactly three buttons — the settings gear, **Lock vault**
+  (`vault.lock`, its only bridge call; `LockVault` never migrates) and **Quit Valija**
+  (`window.close()`: main registers no `window-all-closed` listener, so closing the last window quits
+  by Electron's default — **re-check this if a macOS stay-in-dock handler is ever added**, A15/R10).
+  After Lock the screen stays (terminal). Settings opens with `unlocked={false}`, hiding Diagnostics
+  and Move vault (P-23). Styles are token-only (`.screen.schema-too-new`, `.schema-versions`), so
+  both themes apply; copy is `schemaTooNew.*` in `en`/`es`.
+
 **The nav bar's "Lock now"** (`NavBar`'s red `lock-button`, styled with `--color-danger`) is the
 first UI path to `vault:lock` — until it shipped, the only ways a vault ever locked were the idle
 auto-lock TTL and relocation's own lock-first-then-move step. `App.lockNow()` calls it through the
@@ -87,7 +113,8 @@ both reduce to this one call (D-U(b): a skipped tour never nags again).
 ## Renderer view state (`renderer/state/`, all plain TypeScript, unit-tested headlessly)
 
 - **`session-state.ts`** — the phase machine (`checking · no-vault · creating · kit-pending · locked
-  · unlocking · upgrade-required · unlocked`) and its transitions (`afterStatusCheck`,
+  · unlocking · upgrade-required · unlocked · schema-too-new`) and its transitions (`afterStatusCheck`,
+  `afterSchemaTooNew` — terminal, carries the two schema numbers,
   `afterCreateSuccess`, `afterUnlockSuccess`, …). `canNavigateAwayFrom(state) = phase !==
   "kit-pending"` — the one hard invariant: nothing, including the tour, may render between the
   recovery kit and its acknowledgement.

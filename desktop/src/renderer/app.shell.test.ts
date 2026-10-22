@@ -32,3 +32,19 @@ describe("the sidebar/breadcrumb shell replaced the top nav bar", () => {
     expect(BASE_CSS).not.toContain(".nav-bar");
   });
 });
+
+describe("the newer-schema terminal screen is routed like the other entry screens (P-18 (b))", () => {
+  it('app.tsx renders SchemaTooNewScreen inside EntryShell for case "schema-too-new"', () => {
+    expect(APP).toMatch(
+      /case "schema-too-new":\s*return \(\s*<EntryShell>\s*<SchemaTooNewScreen[\s\S]*?<\/EntryShell>/,
+    );
+  });
+
+  it("Quit closes the window — no new IPC channel (P-22)", () => {
+    expect(APP).toContain("onQuit={() => window.close()}");
+  });
+
+  it("the bridge wrapper routes newer-schema refusals to the terminal phase", () => {
+    expect(APP).toMatch(/withLockDetection\([\s\S]*?afterSchemaTooNew\(versions\)/);
+  });
+});

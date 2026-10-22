@@ -134,6 +134,25 @@ If the app detects your vault's schema is behind the version it expects, it stop
 it's about to do — including that a populated vault gets a ciphertext backup before anything
 changes — before you confirm. Nothing is migrated silently; a fresh vault never sees this screen.
 
+### When this app is older than your vault
+
+If a newer version of Valija (the app, the CLI, or a product that embeds it) has upgraded your vault,
+this app stops on a screen titled **This vault needs a newer Valija** instead of opening it. You get
+there whether the vault was already unlocked when the app started or you just tried to unlock it,
+and from any screen if the upgrade happened while the app was open.
+
+The screen shows two numbers: the vault's format (**schema**) and the highest one this app supports.
+It says plainly that nothing in your vault was changed: this app will neither read nor change a
+vault it does not understand. It offers only two actions:
+
+- **Lock vault** drops this device's session key, exactly like `valija lock`. It never upgrades or
+  rewrites anything. The screen stays, because only an updated app can open this vault.
+- **Quit Valija** closes the app.
+
+The settings gear still opens Settings for language and theme; vault actions (Diagnostics, Move
+vault) stay hidden. To get back in, **update Valija Desktop** and open it again. Your up-to-date
+Valija tools can keep using the vault in the meantime.
+
 ---
 
 ## Getting around
@@ -451,6 +470,8 @@ Every one of them only fires when you click its button — nothing is copied aut
 - **Detect a project** — the app has no working directory, so it never works out a project on its
   own; it manages the links (see *Linking folders and repositories*) that your terminal and AI tools
   use.
+- **Open, downgrade or change a vault made by a newer Valija** — it stops on the "This vault needs a
+  newer Valija" screen instead (see *Unlocking, and vault upgrades*).
 - **Support a third language** — English and Spanish only, for now.
 - **Scan what is already in your vault for secrets** — only new edits and imports are checked
   (coming later).

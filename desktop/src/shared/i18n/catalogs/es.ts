@@ -411,6 +411,20 @@ export const es: Catalog = {
     confirm: "Actualizar y continuar",
   },
 
+  schemaTooNew: {
+    title: "Esta bóveda necesita una versión más reciente de Valija",
+    body: "Esta bóveda fue actualizada con una versión más reciente de Valija. Esta aplicación es más antigua, así que no leerá ni modificará la bóveda.",
+    vaultVersion: "Formato de la bóveda (esquema)",
+    supportedVersion: "Esta aplicación admite hasta",
+    nothingChanged: "No se modificó nada en tu bóveda.",
+    howToFix:
+      "Actualiza Valija Desktop y vuelve a abrirla. Tus herramientas de Valija actualizadas pueden seguir usando la bóveda.",
+    lock: "Bloquear bóveda",
+    locked: "Bóveda bloqueada en este dispositivo.",
+    alreadyLocked: "La bóveda ya estaba bloqueada.",
+    quit: "Salir de Valija",
+  },
+
   settings: {
     title: "Configuración",
     appearance: "Apariencia",

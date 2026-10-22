@@ -4,6 +4,7 @@ import {
   afterKitAcknowledged,
   afterLock,
   afterMigrationCancelled,
+  afterSchemaTooNew,
   afterStatusCheck,
   afterUnlockFailure,
   afterUnlockSuccess,
@@ -73,5 +74,24 @@ describe("session-state", () => {
     expect(canNavigateAwayFrom({ phase: "unlocking" })).toBe(true);
     expect(canNavigateAwayFrom({ phase: "upgrade-required" })).toBe(true);
     expect(canNavigateAwayFrom({ phase: "unlocked" })).toBe(true);
+  });
+
+  it("a newer vault with a valid key goes straight to schema-too-new, never to unlocked (P-18 (b))", () => {
+    const versions = { vaultVersion: 5, supportedVersion: 4 };
+    expect(afterStatusCheck({ initialized: true, unlocked: true, schemaTooNew: versions })).toEqual(
+      {
+        phase: "schema-too-new",
+        versions,
+      },
+    );
+  });
+
+  it("afterSchemaTooNew carries the versions, and Settings may still open from it", () => {
+    const state = afterSchemaTooNew({ vaultVersion: 7, supportedVersion: 4 });
+    expect(state).toEqual({
+      phase: "schema-too-new",
+      versions: { vaultVersion: 7, supportedVersion: 4 },
+    });
+    expect(canNavigateAwayFrom(state)).toBe(true);
   });
 });

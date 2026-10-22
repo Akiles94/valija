@@ -1,3 +1,5 @@
+import type { SchemaVersionsMessage } from "../../shared/ipc/messages.js";
+
 /** A multi-device fork found on unlock, shown until the user deals with it. */
 export interface ForkNotice {
   generation: number;
@@ -17,7 +19,8 @@ export type SessionState =
   | { phase: "locked" }
   | { phase: "unlocking" }
   | { phase: "upgrade-required" }
-  | { phase: "unlocked"; forkNotice?: ForkNotice };
+  | { phase: "unlocked"; forkNotice?: ForkNotice }
+  | { phase: "schema-too-new"; versions: SchemaVersionsMessage };
 
 /** Phase at launch, before the vault status is known. */
 export const INITIAL_STATE: SessionState = { phase: "checking" };
@@ -26,8 +29,11 @@ export const INITIAL_STATE: SessionState = { phase: "checking" };
 export function afterStatusCheck(status: {
   initialized: boolean;
   unlocked: boolean;
+  schemaTooNew?: SchemaVersionsMessage;
 }): SessionState {
   if (!status.initialized) return { phase: "no-vault" };
+  // Checked before `unlocked`: a newer vault with a valid key never reaches the dashboard.
+  if (status.schemaTooNew !== undefined) return afterSchemaTooNew(status.schemaTooNew);
   return status.unlocked ? { phase: "unlocked" } : { phase: "locked" };
 }
 
@@ -74,6 +80,11 @@ export function afterMigrationCancelled(): SessionState {
 /** Phase after locking: back to the unlock screen. */
 export function afterLock(): SessionState {
   return { phase: "locked" };
+}
+
+/** Terminal (P-18 (b)): the vault was upgraded by a newer Valija. Only quitting leaves this phase. */
+export function afterSchemaTooNew(versions: SchemaVersionsMessage): SessionState {
+  return { phase: "schema-too-new", versions };
 }
 
 /**

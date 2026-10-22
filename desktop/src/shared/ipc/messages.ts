@@ -7,7 +7,22 @@ import type { Language } from "../i18n/languages.js";
  * `DomainError.message` (D-V(d), §5.1). The renderer maps `code` to catalog
  * copy; it never renders a raw message.
  */
-export type IpcResult<T> = { ok: true; value: T } | { ok: false; error: { code: string } };
+/** A vault's schema and the highest one this app supports — numbers only, never a message (P-21). */
+export interface SchemaVersionsMessage {
+  vaultVersion: number;
+  supportedVersion: number;
+}
+
+export type IpcResult<T> =
+  | { ok: true; value: T }
+  | {
+      ok: false;
+      error: {
+        code: string;
+        /** `VAULT_SCHEMA_TOO_NEW` only (P-21): the two numbers the "Update Valija" screen shows. */
+        schema?: SchemaVersionsMessage;
+      };
+    };
 
 /** Passphrase for the new vault. */
 export interface VaultInitRequest {
@@ -66,6 +81,8 @@ export interface VaultStatusResponse {
   generation?: number;
   lastWriter?: string;
   lastWriterIsThisDevice?: boolean;
+  /** Present only when the vault was upgraded by a newer Valija (D-G) — the app routes to "Update Valija". */
+  schemaTooNew?: SchemaVersionsMessage;
 }
 
 /** Passphrase or recovery key, used only to read the schema version. */

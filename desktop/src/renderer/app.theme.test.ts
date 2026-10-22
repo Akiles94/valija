@@ -5,6 +5,10 @@ import { describe, expect, it } from "vitest";
 const APP = readFileSync(join(import.meta.dirname, "app.tsx"), "utf8");
 const RECOVERY_KIT = readFileSync(join(import.meta.dirname, "screens/recovery-kit.tsx"), "utf8");
 const ENTRY_SHELL = readFileSync(join(import.meta.dirname, "components/entry-shell.tsx"), "utf8");
+const SCHEMA_TOO_NEW = readFileSync(
+  join(import.meta.dirname, "screens/schema-too-new.tsx"),
+  "utf8",
+);
 
 /**
  * Item 89b (D-Q): the resolved theme is applied as `data-theme` on the shell
@@ -31,5 +35,12 @@ describe("the resolved theme reaches the DOM in exactly one place", () => {
   it("entry-shell.tsx hardcodes dark and never imports theme-context", () => {
     expect(ENTRY_SHELL).toContain('data-theme="dark"');
     expect(ENTRY_SHELL).not.toMatch(/from ["'].*theme-context\.js["']/);
+  });
+});
+
+describe("the Update Valija screen inherits the shell's theme (A16)", () => {
+  it("schema-too-new.tsx sets no data-theme and never imports theme-context", () => {
+    expect(SCHEMA_TOO_NEW).not.toContain("data-theme");
+    expect(SCHEMA_TOO_NEW).not.toMatch(/from ["'].*theme-context\.js["']/);
   });
 });

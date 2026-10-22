@@ -407,6 +407,20 @@ export const en = {
     confirm: "Upgrade and continue",
   },
 
+  schemaTooNew: {
+    title: "This vault needs a newer Valija",
+    body: "This vault was upgraded by a newer version of Valija. This app is older, so it will not read or change the vault.",
+    vaultVersion: "Vault format (schema)",
+    supportedVersion: "This app supports up to",
+    nothingChanged: "Nothing in your vault was changed.",
+    howToFix:
+      "Update Valija Desktop, then open it again. Your up-to-date Valija tools can keep using the vault.",
+    lock: "Lock vault",
+    locked: "Vault locked on this device.",
+    alreadyLocked: "The vault was already locked.",
+    quit: "Quit Valija",
+  },
+
   settings: {
     title: "Settings",
     appearance: "Appearance",

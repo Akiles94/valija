@@ -13,6 +13,11 @@ import { SetItemPinned } from "../../../../../src/context/application/use-cases/
 import { ShowProject } from "../../../../../src/context/application/use-cases/show-project.use-case.js";
 import { FileWorkspaceProbe } from "../../../../../src/context/infra/file-workspace-probe.js";
 import type { Container } from "../../../../../src/delivery/container.js";
+import { LATEST_SCHEMA_VERSION } from "../../../../../src/shared/infra/migrations.js";
+import {
+  setStoredSchemaVersion,
+  snapshotVaultFiles,
+} from "../../../../../src/testing/schema-skew.js";
 import { makeUnlockedVault, SeqIds } from "../../../../../src/testing/test-vault.js";
 import type { ClipboardPort } from "../../application/ports/clipboard.js";
 import type { FilePicker } from "../../application/ports/file-picker.js";
@@ -88,5 +93,50 @@ describe("content handlers never leave a sidecar behind", () => {
     for (const suffix of ["-wal", "-shm", "-journal"]) {
       expect(existsSync(`${vault.paths.db}${suffix}`)).toBe(false);
     }
+  });
+});
+
+describe("content handlers on a vault upgraded by a newer Valija (P-21)", () => {
+  it("every content handler answers exactly { code, schema } — no message — and leaves the vault untouched", () => {
+    const vault = makeUnlockedVault();
+    setStoredSchemaVersion(vault.paths.db, vault.keyHex, LATEST_SCHEMA_VERSION + 1);
+    const before = snapshotVaultFiles(vault.paths);
+    const container = {
+      paths: vault.paths,
+      listProjects: new ListProjects(vault.sessions),
+      showProject: new ShowProject(vault.sessions),
+      searchContext: new SearchContext(vault.sessions),
+      getContextPack: new GetContextPack(vault.sessions, vault.clock),
+      setItemPinned: new SetItemPinned(vault.sessions, vault.clock),
+      setItemArchived: new SetItemArchived(vault.sessions, vault.clock),
+      // biome-ignore lint/suspicious/noExplicitAny: only the fields above are exercised by content-handlers.ts
+    } as any as Container;
+    const noFiles: FilePicker = {
+      chooseImportFile: () => null,
+      chooseExportTarget: () => null,
+      chooseVaultFolder: () => null,
+      chooseProjectFolder: () => null,
+      resolveProjectFolder: () => undefined,
+      resolveHandle: () => undefined,
+    };
+    const handlers = createContentHandlers(() => container, noFiles, { writeText: () => {} });
+    const refused = {
+      ok: false,
+      error: {
+        code: "VAULT_SCHEMA_TOO_NEW",
+        schema: {
+          vaultVersion: LATEST_SCHEMA_VERSION + 1,
+          supportedVersion: LATEST_SCHEMA_VERSION,
+        },
+      },
+    };
+
+    expect(handlers["content:projects"]()).toEqual(refused);
+    expect(handlers["content:show"]({ project: "p" })).toEqual(refused);
+    expect(handlers["content:search"]({ query: "anything" })).toEqual(refused);
+    expect(handlers["content:pack"]({ project: "p" })).toEqual(refused);
+    expect(handlers["content:setPinned"]({ id: "01ITEM", pinned: true })).toEqual(refused);
+    expect(handlers["content:setArchived"]({ id: "01ITEM", archived: true })).toEqual(refused);
+    expect(snapshotVaultFiles(vault.paths)).toEqual(before);
   });
 });

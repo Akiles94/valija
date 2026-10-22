@@ -5,10 +5,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Container } from "../../../../../src/delivery/container.js";
 import { LATEST_SCHEMA_VERSION } from "../../../../../src/shared/infra/migrations.js";
 import { resolveVaultPaths } from "../../../../../src/shared/infra/vault-paths.js";
+import { setStoredSchemaVersion } from "../../../../../src/testing/schema-skew.js";
 import {
   FakeDeviceIdentity,
   FakeKeychain,
   FixedClock,
+  makeUnlockedVault,
   SeqIds,
 } from "../../../../../src/testing/test-vault.js";
 import { VaultStatus } from "../../../../../src/vault/application/use-cases/vault-status.use-case.js";
@@ -132,5 +134,32 @@ describe("diagnostics-handlers", () => {
 
     expect(clipboard.text).toContain("Checks:");
     expect(clipboard.text?.trim().endsWith("Checks:")).toBe(true);
+  });
+
+  it("diagnostics:run reports a vault newer than this app on the vault row, with its errorCode, not fatal", async () => {
+    const vault = makeUnlockedVault();
+    root = vault.paths.root;
+    setStoredSchemaVersion(vault.paths.db, vault.keyHex, LATEST_SCHEMA_VERSION + 1);
+    const folder = new FileVaultFolder(vault.paths);
+    const container = {
+      paths: vault.paths,
+      folder,
+      vaultStatus: new VaultStatus(
+        vault.store,
+        vault.keychain,
+        vault.deviceIdentity,
+        folder,
+        vault.clock,
+        parseAutoLockTtl(undefined),
+      ),
+    } as unknown as Container;
+    const handlers = createDiagnosticsHandlers(() => container, fakeClipboard());
+
+    const response = await handlers["diagnostics:run"]();
+
+    const vaultRow = response.checks.find((c) => c.name === "vault");
+    expect(vaultRow?.ok).toBe(false);
+    expect(vaultRow?.errorCode).toBe("VAULT_SCHEMA_TOO_NEW");
+    expect(vaultRow?.fatal).toBeUndefined();
   });
 });

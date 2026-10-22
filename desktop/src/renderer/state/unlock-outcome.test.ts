@@ -31,4 +31,12 @@ describe("classifyUnlockResult", () => {
     const result: IpcResult<VaultUnlockResponse> = { ok: true, value: { vaultId: "01V", fork } };
     expect(classifyUnlockResult(result)).toEqual({ kind: "unlocked", fork });
   });
+
+  it("VAULT_SCHEMA_TOO_NEW classifies as a plain error, never upgrade-required — no confirm screen", () => {
+    const result: IpcResult<VaultUnlockResponse> = {
+      ok: false,
+      error: { code: "VAULT_SCHEMA_TOO_NEW", schema: { vaultVersion: 5, supportedVersion: 4 } },
+    };
+    expect(classifyUnlockResult(result)).toEqual({ kind: "error", code: "VAULT_SCHEMA_TOO_NEW" });
+  });
 });
