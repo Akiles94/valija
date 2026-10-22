@@ -26,7 +26,7 @@ export function createBindingsHandlers(getContainer: () => Container, filePicker
     "bindings:inspect": ({ handle }: BindingsInspectRequest) => {
       const directory = filePicker.resolveProjectFolder(handle);
       if (directory === undefined) return unknownFolder();
-      // No envProject: the desktop never reads VALIJA_PROJECT (D-D).
+      // No envProject: the desktop never reads the project environment variable (D-D).
       const resolved = getContainer().resolveProject.execute({ directories: [directory] });
       return toIpcResult(resolved, (r) => toInspectResponse(r, basename(directory)));
     },

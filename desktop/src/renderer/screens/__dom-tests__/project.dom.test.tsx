@@ -74,7 +74,14 @@ function fakeBridge(items: ContextItemMessage[]): ValijaBridge {
         .mockResolvedValue({ vaultPath: null, theme: "system", language: "en", tourSeen: false }),
       write: vi.fn(),
     },
-    dialog: { chooseImportFile: vi.fn(), chooseVaultFolder: vi.fn() },
+    dialog: { chooseImportFile: vi.fn(), chooseVaultFolder: vi.fn(), chooseProjectFolder: vi.fn() },
+    // The bindings section mounts with the screen (F13); nothing is linked in this suite.
+    bindings: {
+      inspect: vi.fn(),
+      link: vi.fn(),
+      unlink: vi.fn(),
+      list: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    },
     // biome-ignore lint/suspicious/noExplicitAny: only content.show is exercised by this suite
   } as any as ValijaBridge;
 }

@@ -901,3 +901,79 @@
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* components/bindings-section.tsx (PROJECT-DETECT) — the project's linked folders and repositories. Existing tokens only. */
+.bindings-section {
+  margin: 16px 0 24px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+.bindings-hint {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+.bindings-empty {
+  margin: 0 0 12px;
+  color: var(--color-text-muted);
+}
+.bindings-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+.bindings-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+}
+.bindings-kind {
+  flex: none;
+  min-width: 6rem;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+.bindings-target {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+.bindings-inspect {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.bindings-inspect p,
+.bindings-folder {
+  margin: 0;
+}
+.bindings-folder {
+  font-size: 0.95rem;
+}
+.bindings-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+.bindings-choices legend {
+  margin-bottom: 4px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+.bindings-choices label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

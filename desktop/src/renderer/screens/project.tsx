@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ITEM_TYPES } from "../../../../src/context/domain/values/item-type.js";
+import { BindingsSection } from "../components/bindings-section.js";
 import { ItemCard } from "../components/item-card.js";
 import { ItemEditDialog } from "../components/item-edit-dialog.js";
 import type { ValijaBridge } from "../state/bridge.js";
@@ -36,6 +37,9 @@ const ALL_TYPES = "";
  * Curation (CURATION): each card offers pin/unpin and archive/unarchive; the
  * list reloads after every action. "Show archived" and the Undo notice are
  * in-memory only — never written to preferences.
+ *
+ * Links (PROJECT-DETECT): the folders and repositories linked to this
+ * project, managed by `BindingsSection` right under the toolbar.
  */
 export function ProjectScreen({
   bridge,
@@ -214,6 +218,7 @@ export function ProjectScreen({
           {t("pack.title")}
         </button>
       </div>
+      <BindingsSection bridge={bridge} project={project} />
       {error !== null && <p className="error">{error}</p>}
       {actionError !== null && <p className="error">{actionError}</p>}
       {notice !== null && (

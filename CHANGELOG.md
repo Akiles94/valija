@@ -25,6 +25,12 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
   project. Nothing linked → `PROJECT_NOT_DETECTED`, telling the AI to call `list_projects` and ask.
   A given `project` behaves exactly as before; `search_context` stays vault-wide. Still five tools
   and two prompts. Per-client behaviour is assumed until observed (`advances/PROJECT-DETECT/spike.md`).
+- **Project links in Valija Desktop** (`advances/PROJECT-DETECT/`): each project screen gets a
+  **Linked folders & repositories** section — the project's links with **Unlink**, and **Link a
+  folder…**, which opens the folder picker and shows what the folder resolves to now before linking
+  it by repository (any clone) or by folder. Same use cases as `valija which`/`link`/`unlink`/`links`;
+  five new IPC channels (`dialog:chooseProjectFolder`, `bindings:inspect|link|unlink|list`), none of
+  which takes a path. The app itself never detects a project.
 - **Curation in Valija Desktop**: each project card gets **Pin**/**Unpin**, **Edit** (a dialog for
   content, tags and type — the same `EditItem` as `valija edit`) and **Archive**, with an
   **Undo** notice after archiving and a **Show archived** toggle that lists archived items in their own

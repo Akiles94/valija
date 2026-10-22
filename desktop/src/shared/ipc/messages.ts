@@ -417,7 +417,7 @@ export interface BindingsInspectRequest {
 }
 export interface BindingsInspectResponse {
   displayName: string;
-  /** What this folder resolves to now — parity with `valija which` (no VALIJA_PROJECT on desktop, W4). */
+  /** What this folder resolves to now — parity with `valija which` (the desktop reads no project env var, W4). */
   resolvesTo: { project: string; kind: BindingKindMessage } | null;
   isRepository: boolean;
   /** Normalized `host/owner/repo`, credentials already stripped; null when there is none. */

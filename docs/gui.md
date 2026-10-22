@@ -190,6 +190,34 @@ same code.
 
 ---
 
+## Linking folders and repositories
+
+A **link** tells Valija which project a folder belongs to. When you work inside a linked folder, the
+CLI (`valija show`, `valija export`) and your AI tools (`save_context`, `get_context`) use that
+project without being told. Each project's screen has a **Linked folders & repositories** section
+listing its links — **Repository** or **Folder**, and the target — each with an **Unlink** button.
+These are the same links as `valija link`, `valija links` and `valija unlink`, through the same code.
+
+**Link a folder…** opens your system's folder picker. After you choose a folder, a panel shows what
+that folder resolves to **right now** (the same answer as `valija which` there, except that the app
+never reads `VALIJA_PROJECT`), whether it is a git repository and its remote, and how you can link it:
+
+- **Link this repository (any clone, on any device)** — offered when the folder is in a git
+  repository with a remote, and chosen by default. Any clone of that repository resolves to this
+  project, on every device that syncs this vault. Only the normalized remote (`github.com/owner/repo`)
+  is stored. Credentials in the remote URL are never stored or shown.
+- **Link only this folder** — this folder and everything inside it. Your home folder and a disk
+  root are too broad to link this way.
+
+**Link** creates the link. Linking the same thing again changes nothing and says so. A folder or
+repository that is already linked to another project is refused; unlink it from that project first.
+**Unlink** removes a link immediately, with no confirmation, because linking it again is one click.
+
+**The desktop app never detects a project itself.** It has no working directory, so it never guesses
+which project you mean. It only manages the links your terminal and AI tools use.
+
+---
+
 ## Connecting your AI tools
 
 > How it works: [Connect an AI tool](guide/flows/connect-ai-tool.md)
@@ -404,6 +432,10 @@ Every one of them only fires when you click its button — nothing is copied aut
   network endpoint at all. Import reads a file you already downloaded; nothing is fetched.
 - **Configure anything environment-resolved** — `VALIJA_HOME`, `VALIJA_STATE_HOME`, and
   `VALIJA_AUTOLOCK_MINUTES` stay shell environment variables, shown read-only in the Sync panel.
+  `VALIJA_PROJECT` is never read here at all: it only steers detection in your terminal and AI tools.
+- **Detect a project** — the app has no working directory, so it never works out a project on its
+  own; it manages the links (see *Linking folders and repositories*) that your terminal and AI tools
+  use.
 - **Support a third language** — English and Spanish only, for now.
 
 **One environment consequence worth stating plainly:** an app launched by double-clicking its icon

@@ -144,6 +144,30 @@ export const en = {
     cancel: "Cancel",
   },
 
+  bindings: {
+    sectionTitle: "Linked folders & repositories",
+    sectionHint:
+      "When you work in a linked folder, the CLI and your AI tools use this project without being told.",
+    empty: "Nothing is linked to this project yet.",
+    linkFolder: "Link a folder…",
+    unlink: "Unlink",
+    kindFolder: "Folder",
+    kindRepository: "Repository",
+    resolvesNowFolder: "Right now this folder belongs to {project} (linked folder).",
+    resolvesNowRepository: "Right now this folder belongs to {project} (linked repository).",
+    resolvesNothing: "Right now this folder isn't linked to any project.",
+    isRepository: "Git repository: {remote}",
+    repositoryNoRemote: "Git repository without a remote — only the folder can be linked.",
+    notRepository: "Not a git repository.",
+    linkAs: "How to link it",
+    linkRepository: "Link this repository (any clone, on any device)",
+    linkFolderOnly: "Link only this folder",
+    link: "Link",
+    cancel: "Cancel",
+    alreadyLinked: "Already linked to this project. Nothing changed.",
+    hint: "A project named {project} matches this repository's name.",
+  },
+
   search: {
     title: "Search",
     placeholder: "Search your vault",

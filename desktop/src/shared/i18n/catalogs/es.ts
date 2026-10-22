@@ -145,6 +145,31 @@ export const es: Catalog = {
     cancel: "Cancelar",
   },
 
+  bindings: {
+    sectionTitle: "Carpetas y repositorios vinculados",
+    sectionHint:
+      "Cuando trabajas en una carpeta vinculada, la CLI y tus herramientas de IA usan este proyecto sin que se lo indiques.",
+    empty: "Todavía no hay nada vinculado a este proyecto.",
+    linkFolder: "Vincular una carpeta…",
+    unlink: "Desvincular",
+    kindFolder: "Carpeta",
+    kindRepository: "Repositorio",
+    resolvesNowFolder: "Ahora mismo esta carpeta pertenece a {project} (carpeta vinculada).",
+    resolvesNowRepository:
+      "Ahora mismo esta carpeta pertenece a {project} (repositorio vinculado).",
+    resolvesNothing: "Ahora mismo esta carpeta no está vinculada a ningún proyecto.",
+    isRepository: "Repositorio git: {remote}",
+    repositoryNoRemote: "Repositorio git sin remoto: solo se puede vincular la carpeta.",
+    notRepository: "No es un repositorio git.",
+    linkAs: "Cómo vincularla",
+    linkRepository: "Vincular este repositorio (cualquier clon, en cualquier dispositivo)",
+    linkFolderOnly: "Vincular solo esta carpeta",
+    link: "Vincular",
+    cancel: "Cancelar",
+    alreadyLinked: "Ya está vinculado a este proyecto. No se cambió nada.",
+    hint: "Un proyecto llamado {project} coincide con el nombre de este repositorio.",
+  },
+
   search: {
     title: "Buscar",
     placeholder: "Busca en tu bóveda",

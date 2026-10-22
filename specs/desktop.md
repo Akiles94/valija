@@ -119,7 +119,7 @@ both reduce to this one call (D-U(b): a skipped tour never nags again).
   `import-selection.ts`, `focus-refresh.ts`, and (CURATION) `item-actions.ts`) each own one
   screen's pure decision logic — `item-actions.ts`'s `itemActionsFor` mirrors the domain's curation
   rules (archived → unarchive; imported → archive only; else pin/unpin + edit + archive — `edit` opens the edit dialog rather than calling a channel directly) so the project
-  screen never offers a refused call, and `performItemAction` is the one action → channel map; `item-edit.ts` (A1) builds the edit dialog's draft and the `content:edit` request with only the changed fields (`null` → no call); none of them
+  screen never offers a refused call, and `performItemAction` is the one action → channel map; `item-edit.ts` (A1) builds the edit dialog's draft and the `content:edit` request with only the changed fields (`null` → no call); (PROJECT-DETECT) `binding-link.ts`'s `linkChoicesFor` lists the inspect panel's link options, default first (repository when there is a remote, folder unless too broad, none → no Link button), mirroring `chooseLinkTarget`; none of them
   is a `UseCase` or a port — they're view state, tested the way `context/domain/services` are tested
   in `src/`, without a DOM.
 
@@ -134,6 +134,13 @@ source-scan can't prove (a click actually navigating); every other screen's stru
 proven by source-scanning tests in that same idiom instead (`diagnostics.no-auto-run.test.ts`,
 `onboarding-settings.no-session.test.ts`, `diagnostics-entry-points.test.ts`, `app.theme.test.ts`),
 since P-D5 confines DOM-level rendering to exactly those two files.
+
+(PROJECT-DETECT) The project screen renders `components/bindings-section.tsx` under its toolbar:
+the project's links from `bindings:list` (kind, display target, **Unlink**), and **Link a folder…**
+→ `dialog:chooseProjectFolder` → `bindings:inspect` → an inspect panel (current resolution,
+repository/remote, the `linkChoicesFor` radios) → `bindings:link`. The list reloads after every
+link/unlink; errors render their code's catalog copy and a rejected call renders `UNEXPECTED`. All
+state is in React memory — nothing reaches `preferences:write` (`project-bindings.dom.test.tsx`).
 
 ## Relocation wizard's refusals
 
