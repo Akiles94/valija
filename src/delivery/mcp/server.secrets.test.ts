@@ -130,10 +130,14 @@ describe("MCP save tools refuse possible secrets (SECRET-WARN)", () => {
     expect(tools).toHaveLength(5);
     const { prompts } = await client.listPrompts();
     expect(prompts).toHaveLength(2);
+    // No override argument (D-N): the save tools' input keys are exactly what they were.
+    const keysOf = (name: string) =>
+      Object.keys(tools.find((t) => t.name === name)?.inputSchema.properties ?? {}).sort();
+    expect(keysOf("save_context")).toEqual(["content", "project", "supersedes", "tags", "type"]);
+    expect(keysOf("save_handoff")).toEqual(["content", "project"]);
     for (const name of ["save_context", "save_handoff"]) {
       const tool = tools.find((t) => t.name === name);
       expect(tool?.description).toContain("refused with POSSIBLE_SECRET and nothing is saved.");
-      expect(Object.keys(tool?.inputSchema.properties ?? {})).not.toContain("allowSecrets");
     }
   });
 });
