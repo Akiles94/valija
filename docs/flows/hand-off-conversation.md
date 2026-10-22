@@ -13,11 +13,13 @@ the next tool can pick up seamlessly instead of starting from zero.
 ## Business rules
 - A handoff is a context item of type `handoff` in the project.
 - Only the **latest** handoff is included in a project's context pack, right after pinned items.
-- It follows every rule of a normal save: unlocked vault, project created on the fly, 32 KB cap.
+- It follows every rule of a normal save: unlocked vault, project created on the fly, 32 KB cap,
+  and no content that looks like it contains a secret.
 
 ## What can go wrong
 - The vault is locked ({{err:VAULT_LOCKED}}).
 - Bad project name or content ({{err:INVALID_PROJECT_NAME}}, {{err:CONTENT_EMPTY}}, {{err:CONTENT_TOO_LARGE}}).
+- The summary looks like it contains a secret ({{err:POSSIBLE_SECRET}}).
 
 ## Entry points
 - CLI: none — handoffs are written by AI tools through MCP
@@ -35,3 +37,4 @@ the next tool can pick up seamlessly instead of starting from zero.
 - {{err:VAULT_LOCKED}} — unlock the vault first.
 - {{err:INVALID_PROJECT_NAME}} — the project slug is not valid.
 - {{err:CONTENT_EMPTY}} / {{err:CONTENT_TOO_LARGE}} — the summary is empty or over 32 KB.
+- {{err:POSSIBLE_SECRET}} — remove the secret from the summary; nothing was saved.

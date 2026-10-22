@@ -25,5 +25,6 @@ export function refuseFlaggedImport(contents: readonly string[]): Result<void, D
   return contextErr("POSSIBLE_SECRET", importRefusedMessage(flagged));
 }
 
+/** The surface-neutral message for an import refused because some chunks look like secrets. */
 export const importRefusedMessage = (flaggedChunks: number): string =>
   `Import refused: ${flaggedChunks} chunk(s) look like they contain secrets. Nothing was imported.`;

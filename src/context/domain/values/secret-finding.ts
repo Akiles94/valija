@@ -18,6 +18,7 @@ export const SECRET_KINDS = [
   "high-entropy-string",
 ] as const;
 
+/** One kind of possible secret the detector can name (never the secret itself). */
 export type SecretKind = (typeof SECRET_KINDS)[number];
 
 /**
@@ -48,6 +49,7 @@ export const SECRET_KIND_LABELS: Record<SecretKind, string> = {
   "high-entropy-string": "high-entropy string",
 };
 
+/** Narrows a string (e.g. from IPC) to a known `SecretKind`. */
 export const isSecretKind = (value: string): value is SecretKind =>
   (SECRET_KINDS as readonly string[]).includes(value);
 

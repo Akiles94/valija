@@ -26,11 +26,15 @@ of a wrong one and a correction.
 - The CLI reads new content from a file or standard input, never an editor; the desktop app edits
   in a dialog and sends only the fields that changed.
 - An edit that changes nothing writes nothing.
+- New content that looks like it contains a secret is refused, naming the kind and line, never the
+  secret. The user can save it anyway: `--allow-secrets` in the CLI, **Save anyway** in the
+  desktop dialog.
 
 ## What can go wrong
 
 - The vault is locked ([`VAULT_LOCKED`](../reference/errors.md#err-vault-locked)).
 - No field to change was given ([`NOTHING_TO_EDIT`](../reference/errors.md#err-nothing-to-edit)).
+- The new content looks like it contains a secret ([`POSSIBLE_SECRET`](../reference/errors.md#err-possible-secret)).
 - The id is malformed, matches nothing or matches several items ([`INVALID_ITEM_ID`](../reference/errors.md#err-invalid-item-id),
   [`ITEM_NOT_FOUND`](../reference/errors.md#err-item-not-found), [`ITEM_ID_AMBIGUOUS`](../reference/errors.md#err-item-id-ambiguous)).
 - The item is imported or archived ([`ITEM_NOT_CURATABLE`](../reference/errors.md#err-item-not-curatable), [`ITEM_ARCHIVED`](../reference/errors.md#err-item-archived)).
@@ -81,3 +85,4 @@ sequenceDiagram
 - [`CONTENT_EMPTY`](../reference/errors.md#err-content-empty) / [`CONTENT_TOO_LARGE`](../reference/errors.md#err-content-too-large) — the new content is empty or over 32 KB.
 - [`INVALID_TAG`](../reference/errors.md#err-invalid-tag) / [`TOO_MANY_TAGS`](../reference/errors.md#err-too-many-tags) — a tag is malformed, or there are too many.
 - [`INVALID_ITEM_TYPE`](../reference/errors.md#err-invalid-item-type) — the type is not one that can be saved.
+- [`POSSIBLE_SECRET`](../reference/errors.md#err-possible-secret) — remove the secret, or save anyway with `--allow-secrets`.

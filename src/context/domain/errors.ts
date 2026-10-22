@@ -42,6 +42,7 @@ export type ContextErrorCode =
   | "NO_GIT_REMOTE"
   /** A folder is not an absolute, readable directory, or is too broad (home or disk root) to link. */
   | "INVALID_WORKSPACE_PATH"
+  /** The content looks like it contains a secret (a key, token or password), so nothing was saved. */
   | "POSSIBLE_SECRET";
 
 /** Fails with a CONTEXT error code, as a `Result`. */

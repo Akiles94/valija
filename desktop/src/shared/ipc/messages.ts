@@ -243,7 +243,7 @@ export interface BlockingChunkMessage {
   part: number;
   findings: SecretFindingMessage[];
 }
-/** Counts of imported, skipped and failed conversations, with the failures. */
+/** Counts of imported, skipped and failed conversations, with the failures and any secret-blocked chunks. */
 export interface ImportOutcomeResponse {
   imported: number;
   conversations: number;

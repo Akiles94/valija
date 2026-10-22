@@ -23,7 +23,10 @@ is available to any other tool, in any later session, on any of the user's machi
 - An item has a type: `decision`, `progress`, `preference`, `fact` (the default) or `handoff`.
   An AI can never save an `imported` item.
 - Content is trimmed, must not be empty and is capped at 32 KB: distilled context, not transcripts.
-  Up to 10 lowercase tags. Secrets do not belong in context.
+  Up to 10 lowercase tags. Secrets do not belong in context: content that looks like it contains
+  one (a private key, a provider API key or token, a password in a URL or an assignment, a long
+  random-looking string) is refused, naming the kind and line, never the secret. An AI tool cannot
+  override this; it is told to remove the secret or ask the user to save it themselves.
 - The tool's name is recorded as the item's source.
 - A save can name one outdated item in the same project it `supersedes`, by exact id; that item is
   archived in the same write as the new save — all or nothing. Pinned, imported and already archived
@@ -36,6 +39,7 @@ is available to any other tool, in any later session, on any of the user's machi
 ## What can go wrong
 
 - The vault is locked ([`VAULT_LOCKED`](../reference/errors.md#err-vault-locked)).
+- The content looks like it contains a secret ([`POSSIBLE_SECRET`](../reference/errors.md#err-possible-secret)).
 - Bad project name, type, tags or content ([`INVALID_PROJECT_NAME`](../reference/errors.md#err-invalid-project-name), [`INVALID_ITEM_TYPE`](../reference/errors.md#err-invalid-item-type),
   [`INVALID_TAG`](../reference/errors.md#err-invalid-tag), [`TOO_MANY_TAGS`](../reference/errors.md#err-too-many-tags), [`CONTENT_EMPTY`](../reference/errors.md#err-content-empty), [`CONTENT_TOO_LARGE`](../reference/errors.md#err-content-too-large)).
 - The superseded item cannot be retired ([`INVALID_ITEM_ID`](../reference/errors.md#err-invalid-item-id), [`ITEM_NOT_FOUND`](../reference/errors.md#err-item-not-found),
@@ -86,3 +90,4 @@ sequenceDiagram
 - [`CONTENT_EMPTY`](../reference/errors.md#err-content-empty) / [`CONTENT_TOO_LARGE`](../reference/errors.md#err-content-too-large) — the content is empty or over 32 KB.
 - [`INVALID_ITEM_ID`](../reference/errors.md#err-invalid-item-id) / [`ITEM_NOT_FOUND`](../reference/errors.md#err-item-not-found) — `supersedes` does not name an item in this project.
 - [`ITEM_PINNED`](../reference/errors.md#err-item-pinned) / [`ITEM_ARCHIVED`](../reference/errors.md#err-item-archived) / [`ITEM_NOT_CURATABLE`](../reference/errors.md#err-item-not-curatable) — that item cannot be superseded.
+- [`POSSIBLE_SECRET`](../reference/errors.md#err-possible-secret) — remove the secret; nothing was saved.

@@ -31,6 +31,10 @@ searchable archive inside the encrypted vault.
   pulled on demand, not context pushed into every session.
 - One bad conversation is reported and skipped; it never aborts the import. The whole import is one
   write to the vault.
+- **Secrets block the import, all or nothing:** if any selected chunk looks like it contains a
+  secret, nothing is imported and each blocking chunk is listed (conversation number, title, part,
+  kind and line, never the secret). A dry run shows the same list. The user can leave those
+  conversations out, or import anyway (`--allow-secrets`, **Import anyway** in the desktop app).
 - Zip files are read in memory with caps that stop decompression bombs; nothing is extracted to disk.
 - In the desktop app the file is chosen in a native dialog and passed as an opaque handle.
 
@@ -42,6 +46,7 @@ searchable archive inside the encrypted vault.
   unknown version ([`UNSUPPORTED_GENERIC_VERSION`](../reference/errors.md#err-unsupported-generic-version)).
 - The selection is invalid ([`INVALID_SELECTION`](../reference/errors.md#err-invalid-selection)) or matches nothing ([`NO_CONVERSATIONS_SELECTED`](../reference/errors.md#err-no-conversations-selected)).
 - The vault is locked ([`VAULT_LOCKED`](../reference/errors.md#err-vault-locked)).
+- Some selected chunks look like they contain secrets ([`POSSIBLE_SECRET`](../reference/errors.md#err-possible-secret)).
 
 ## How it works
 
@@ -93,3 +98,4 @@ sequenceDiagram
 - [`INVALID_SELECTION`](../reference/errors.md#err-invalid-selection) — the pick, query or date is malformed.
 - [`NO_CONVERSATIONS_SELECTED`](../reference/errors.md#err-no-conversations-selected) — nothing matches the selection.
 - [`VAULT_LOCKED`](../reference/errors.md#err-vault-locked) — unlock the vault first.
+- [`POSSIBLE_SECRET`](../reference/errors.md#err-possible-secret) — leave the listed conversations out, or import anyway with `--allow-secrets`.

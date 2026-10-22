@@ -20,10 +20,14 @@ of a wrong one and a correction.
 - The CLI reads new content from a file or standard input, never an editor; the desktop app edits
   in a dialog and sends only the fields that changed.
 - An edit that changes nothing writes nothing.
+- New content that looks like it contains a secret is refused, naming the kind and line, never the
+  secret. The user can save it anyway: `--allow-secrets` in the CLI, **Save anyway** in the
+  desktop dialog.
 
 ## What can go wrong
 - The vault is locked ({{err:VAULT_LOCKED}}).
 - No field to change was given ({{err:NOTHING_TO_EDIT}}).
+- The new content looks like it contains a secret ({{err:POSSIBLE_SECRET}}).
 - The id is malformed, matches nothing or matches several items ({{err:INVALID_ITEM_ID}},
   {{err:ITEM_NOT_FOUND}}, {{err:ITEM_ID_AMBIGUOUS}}).
 - The item is imported or archived ({{err:ITEM_NOT_CURATABLE}}, {{err:ITEM_ARCHIVED}}).
@@ -52,3 +56,4 @@ of a wrong one and a correction.
 - {{err:CONTENT_EMPTY}} / {{err:CONTENT_TOO_LARGE}} — the new content is empty or over 32 KB.
 - {{err:INVALID_TAG}} / {{err:TOO_MANY_TAGS}} — a tag is malformed, or there are too many.
 - {{err:INVALID_ITEM_TYPE}} — the type is not one that can be saved.
+- {{err:POSSIBLE_SECRET}} — remove the secret, or save anyway with `--allow-secrets`.

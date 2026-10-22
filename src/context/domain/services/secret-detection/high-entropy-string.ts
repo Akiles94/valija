@@ -7,7 +7,9 @@ import type { SecretMatch } from "./secret-match.js";
  * whole-document negatives stay green.
  */
 export const MIN_TOKEN_LENGTH = 32;
+/** Longest token the tier-3 check considers (longer runs are never flagged as random-looking). */
 export const MAX_TOKEN_LENGTH = 200;
+/** Minimum Shannon entropy, in bits per character, for a token to look random enough to flag. */
 export const MIN_ENTROPY_BITS = 4.3;
 
 /** Maximal runs of base64 / base64url characters: one linear, non-backtracking scan. */

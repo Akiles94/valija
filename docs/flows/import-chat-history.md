@@ -25,6 +25,10 @@ searchable archive inside the encrypted vault.
   pulled on demand, not context pushed into every session.
 - One bad conversation is reported and skipped; it never aborts the import. The whole import is one
   write to the vault.
+- **Secrets block the import, all or nothing:** if any selected chunk looks like it contains a
+  secret, nothing is imported and each blocking chunk is listed (conversation number, title, part,
+  kind and line, never the secret). A dry run shows the same list. The user can leave those
+  conversations out, or import anyway (`--allow-secrets`, **Import anyway** in the desktop app).
 - Zip files are read in memory with caps that stop decompression bombs; nothing is extracted to disk.
 - In the desktop app the file is chosen in a native dialog and passed as an opaque handle.
 
@@ -35,6 +39,7 @@ searchable archive inside the encrypted vault.
   unknown version ({{err:UNSUPPORTED_GENERIC_VERSION}}).
 - The selection is invalid ({{err:INVALID_SELECTION}}) or matches nothing ({{err:NO_CONVERSATIONS_SELECTED}}).
 - The vault is locked ({{err:VAULT_LOCKED}}).
+- Some selected chunks look like they contain secrets ({{err:POSSIBLE_SECRET}}).
 
 ## Entry points
 - CLI: {{cli:import}} (`--list`, `--pick`, `--query`, `--since`, `--all`, `--dry-run`, `--from`)
@@ -60,3 +65,4 @@ searchable archive inside the encrypted vault.
 - {{err:INVALID_SELECTION}} — the pick, query or date is malformed.
 - {{err:NO_CONVERSATIONS_SELECTED}} — nothing matches the selection.
 - {{err:VAULT_LOCKED}} — unlock the vault first.
+- {{err:POSSIBLE_SECRET}} — leave the listed conversations out, or import anyway with `--allow-secrets`.

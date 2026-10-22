@@ -19,12 +19,14 @@ the next tool can pick up seamlessly instead of starting from zero.
 
 - A handoff is a context item of type `handoff` in the project.
 - Only the **latest** handoff is included in a project's context pack, right after pinned items.
-- It follows every rule of a normal save: unlocked vault, project created on the fly, 32 KB cap.
+- It follows every rule of a normal save: unlocked vault, project created on the fly, 32 KB cap,
+  and no content that looks like it contains a secret.
 
 ## What can go wrong
 
 - The vault is locked ([`VAULT_LOCKED`](../reference/errors.md#err-vault-locked)).
 - Bad project name or content ([`INVALID_PROJECT_NAME`](../reference/errors.md#err-invalid-project-name), [`CONTENT_EMPTY`](../reference/errors.md#err-content-empty), [`CONTENT_TOO_LARGE`](../reference/errors.md#err-content-too-large)).
+- The summary looks like it contains a secret ([`POSSIBLE_SECRET`](../reference/errors.md#err-possible-secret)).
 
 ## How it works
 
@@ -63,3 +65,4 @@ sequenceDiagram
 - [`VAULT_LOCKED`](../reference/errors.md#err-vault-locked) — unlock the vault first.
 - [`INVALID_PROJECT_NAME`](../reference/errors.md#err-invalid-project-name) — the project slug is not valid.
 - [`CONTENT_EMPTY`](../reference/errors.md#err-content-empty) / [`CONTENT_TOO_LARGE`](../reference/errors.md#err-content-too-large) — the summary is empty or over 32 KB.
+- [`POSSIBLE_SECRET`](../reference/errors.md#err-possible-secret) — remove the secret from the summary; nothing was saved.
