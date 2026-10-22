@@ -51,6 +51,22 @@ describe("detectSecrets: precedence within tier 1", () => {
   });
 });
 
+describe("detectSecrets: precedence across tiers", () => {
+  it("a tier-1 token used as an assignment's value is reported as tier 1 only", () => {
+    expect(detectSecrets(`OPENAI_API_KEY=${PLANTED.openaiApiKey}`)).toEqual([
+      { kind: "openai-api-key", firstLine: 1, lastLine: 1 },
+    ]);
+  });
+
+  it("a tier-1 token and a separate assignment on one line are both reported", () => {
+    const line = `${PLANTED.awsAccessKey} ; ${PLANTED.credentialAssignment.line}`;
+    expect(detectSecrets(line).map((finding) => finding.kind)).toEqual([
+      "aws-access-key",
+      "credential-assignment",
+    ]);
+  });
+});
+
 describe("detectSecrets: Node-free (the desktop renderer bundles it)", () => {
   it("no detection source imports node:, or uses Buffer or process", () => {
     const folder = import.meta.dirname;
