@@ -394,6 +394,12 @@ export const es: Catalog = {
     TOO_MANY_TAGS: "Ese elemento tiene demasiadas etiquetas.",
     PROJECT_NOT_FOUND: "Ese proyecto no existe.",
     ITEM_NOT_FOUND: "Ese elemento no existe.",
+    INVALID_ITEM_ID: "Ese id de elemento no es válido.",
+    ITEM_ID_AMBIGUOUS: "Ese prefijo coincide con más de un elemento; escribe más caracteres.",
+    ITEM_ARCHIVED: "Ese elemento está archivado; desarchívalo primero.",
+    ITEM_PINNED: "Ese elemento está fijado; desfíjalo primero.",
+    ITEM_NOT_CURATABLE: "Los elementos importados solo se pueden archivar o desarchivar.",
+    NOTHING_TO_EDIT: "No hay nada que cambiar en ese elemento.",
     UNSUPPORTED_SOURCE:
       "Valija no reconoce ese formato de exportación. Elige el formato manualmente.",
     MALFORMED_EXPORT: "Ese archivo de exportación parece dañado.",

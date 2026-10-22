@@ -17,7 +17,13 @@ export type ContextErrorCode =
   /** No project with that name exists. */
   | "PROJECT_NOT_FOUND"
   /** No item with that id exists. */
-  | "ITEM_NOT_FOUND";
+  | "ITEM_NOT_FOUND"
+  | "INVALID_ITEM_ID"
+  | "ITEM_ID_AMBIGUOUS"
+  | "ITEM_ARCHIVED"
+  | "ITEM_PINNED"
+  | "ITEM_NOT_CURATABLE"
+  | "NOTHING_TO_EDIT";
 
 /** Fails with a CONTEXT error code, as a `Result`. */
 export const contextErr = (code: ContextErrorCode, message: string): Result<never, DomainError> =>

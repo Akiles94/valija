@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MAX_CONTENT_BYTES, parseContent } from "./content.js";
+import { parseItemId, parseItemReference } from "./item-id.js";
 import { ITEM_TYPES, parseItemType } from "./item-type.js";
 import { parseProjectName } from "./project-name.js";
 import { MAX_TAGS, parseTag, parseTags } from "./tag.js";
@@ -82,5 +83,38 @@ describe("Tag", () => {
     const over = parseTags(Array.from({ length: MAX_TAGS + 1 }, (_, i) => `t${i}`));
     expect(over.ok).toBe(false);
     if (!over.ok) expect(over.error.code).toBe("TOO_MANY_TAGS");
+  });
+});
+
+describe("ItemId", () => {
+  it("accepts the three id shapes the vault holds", () => {
+    for (const id of ["01J3Q8Z6M2XK4V9T7B5N1R0WCA", `imp-${"a".repeat(32)}`, "item-a01"]) {
+      expect(parseItemId(id).ok, id).toBe(true);
+    }
+  });
+
+  it("rejects malformed ids, wildcards included", () => {
+    for (const id of ["", "a".repeat(65), "01J%", "01J_", "a b", "ab;--"]) {
+      const r = parseItemId(id);
+      expect(r.ok, id).toBe(false);
+      if (!r.ok) expect(r.error.code).toBe("INVALID_ITEM_ID");
+    }
+  });
+
+  it("trims whitespace and keeps case", () => {
+    const r = parseItemId("  01J3Q8z6  ");
+    expect(r.ok && r.value).toBe("01J3Q8z6");
+  });
+
+  it("truncates a huge input in the error message", () => {
+    const r = parseItemId("%".repeat(10_000));
+    expect(!r.ok && r.error.message.length).toBeLessThan(200);
+  });
+});
+
+describe("ItemReference", () => {
+  it("needs at least 6 characters", () => {
+    expect(parseItemReference("01J3Q").ok).toBe(false);
+    expect(parseItemReference("01J3Q8").ok).toBe(true);
   });
 });

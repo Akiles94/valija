@@ -4,7 +4,7 @@ Content subdomain. Ubiquitous language: **project, context item, type, tag, pinn
 
 ## domain/errors.ts
 
-`INVALID_PROJECT_NAME · INVALID_ITEM_TYPE · INVALID_TAG · CONTENT_TOO_LARGE · CONTENT_EMPTY · TOO_MANY_TAGS · PROJECT_NOT_FOUND · ITEM_NOT_FOUND`
+`INVALID_PROJECT_NAME · INVALID_ITEM_TYPE · INVALID_TAG · CONTENT_TOO_LARGE · CONTENT_EMPTY · TOO_MANY_TAGS · PROJECT_NOT_FOUND · ITEM_NOT_FOUND · INVALID_ITEM_ID · ITEM_ID_AMBIGUOUS · ITEM_ARCHIVED · ITEM_PINNED · ITEM_NOT_CURATABLE · NOTHING_TO_EDIT`
 
 ## domain/values (parse-don't-validate; branded types)
 
@@ -12,6 +12,7 @@ Content subdomain. Ubiquitous language: **project, context item, type, tag, pinn
 - **ItemType** — one of `decision | progress | preference | fact | handoff`. Else → `INVALID_ITEM_TYPE`. **StorableItemType** adds `imported` (the six types that may be *stored*); `parseStorableItemType` accepts it, `parseItemType` does not. The split keeps `imported` off the save/MCP surface (`ITEM_TYPES` is the MCP enum) while letting storage and reads carry it.
 - **Tag** — 1–32 chars of `[a-z0-9-]`, trimmed + lowercased. Max 10 (`TOO_MANY_TAGS`), duplicates dropped.
 - **Content** — trimmed; empty → `CONTENT_EMPTY`; over **32 KB in UTF-8 bytes** → `CONTENT_TOO_LARGE`; exactly 32 KB accepted.
+- **ItemId** — 1–64 chars of `[A-Za-z0-9-]`, trimmed, case kept (ULIDs, `imp-<hex>` and fixture ids all fit; never assumed to be a ULID). Else → `INVALID_ITEM_ID`. The charset excludes `%`/`_`, so a parsed id can never be a `LIKE` wildcard. **ItemReference** — an `ItemId` of at least 6 chars: a full id or a unique prefix (CURATION D-I).
 
 ## domain/entities
 
@@ -21,6 +22,7 @@ Content subdomain. Ubiquitous language: **project, context item, type, tag, pinn
 ## domain/services
 
 - `context-pack.ts` — **the assembly algorithm**, pure and vault-free. `assembleContextPack({ projectName, items, generatedAt, budgetTokens? })`; tokens ≈ `ceil(chars/4)`. Order: (1) **pinned** newest-first — the newest pinned is kept even if it alone exceeds budget, oldest pinned cut first; (2) **latest handoff** if it fits; (3) a section per type, **decision → preference → progress → fact**, newest-first, until one doesn't fit. No item repeats. Omitting `budgetTokens` (or passing `Infinity`) means unbudgeted. Returns sections carrying **entities, not text** — `estimatedTokens` is the sum of the domain's estimates, so it is an approximation of the rendered result, never a promise about it.
+- `item-curation.ts` — **the curation rules** (CURATION), pure functions taking `now`: `setPinned`, `setArchived` (total), `applyEdit`, `archiveSuperseded`. Each reports whether anything changed, so a no-op is never persisted. Pin, edit and supersede refuse imported items (`ITEM_NOT_CURATABLE`) and archived ones (`ITEM_ARCHIVED`) — rejections are checked before no-ops; unpin and archive/unarchive work on anything. Archive never touches `pinned`. `archiveSuperseded` also refuses a pinned item (`ITEM_PINNED` — a pin is the user's call).
 
 ## application/ports
 
