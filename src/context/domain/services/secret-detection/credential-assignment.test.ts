@@ -69,6 +69,12 @@ describe("tier 2: key boundary and placement", () => {
     expect(findingsIn('{ "token": "q9WvT3kZ8LmN" }')).toHaveLength(1);
   });
 
+  it("reads an assignment quoted inside a code string literal", () => {
+    expect(findingsIn('  "password: required",')).toEqual([]);
+    expect(findingsIn('  "secret = config.secret",')).toEqual([]);
+    expect(findingsIn('  const note = "password: Hunter2Hunter2";')).toHaveLength(1);
+  });
+
   it("spans the value's columns", () => {
     const [match] = findCredentialAssignments(["password: Hunter2Hunter2"]);
     expect(match).toMatchObject({ start: 10, end: 24 });

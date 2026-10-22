@@ -3,7 +3,7 @@ import type { SecretMatch } from "./secret-match.js";
 
 /** `key <op> ` after a line start or a separator, optionally quoted, optionally after `export`. */
 const KEY_AND_OPERATOR =
-  /(?:^|[\s{,(;])(?:export\s{1,8})?["'`]?([A-Za-z0-9_.-]{1,64})["'`]?\s{0,8}(?::=|=>|=|:)\s{0,8}/g;
+  /(?<=^|[\s{,(;])(?:export\s{1,8})?["'`]?([A-Za-z0-9_.-]{1,64})["'`]?\s{0,8}(?::=|=>|=|:)\s{0,8}/g;
 
 /** Normalized key endings that name a credential. `pwd` and `pass` are deliberately absent. */
 const CREDENTIAL_KEY_ENDINGS = [
@@ -23,7 +23,8 @@ const CREDENTIAL_KEY_ENDINGS = [
 
 const QUOTES = new Set(['"', "'", "`"]);
 const MAX_VALUE_LENGTH = 512;
-const UNQUOTED_VALUE = /^[^\s,;}#]{1,512}/;
+/** An unquoted value also stops at a quote: `"password: x",` is a string literal in code. */
+const UNQUOTED_VALUE = /^[^\s,;}#"'`]{1,512}/;
 const VALUE_TERMINATORS = new Set([",", ";", "}", "#"]);
 const NON_VALUES = new Set([
   "null",
@@ -78,7 +79,8 @@ function readValue(line: string, from: number): AssignedValue | null {
   const quote = line[from] ?? "";
   const assigned = QUOTES.has(quote) ? readQuoted(line, from, quote) : readUnquoted(line, from);
   if (assigned === null) return null;
-  return endsTheStatement(line.slice(assigned.end + (assigned.quoted ? 1 : 0))) ? assigned : null;
+  const rest = line.slice(assigned.end + (assigned.quoted ? 1 : 0));
+  return endsTheStatement(assigned.quoted ? rest : withoutClosingQuote(rest)) ? assigned : null;
 }
 
 function readQuoted(line: string, from: number, quote: string): AssignedValue | null {
@@ -94,6 +96,12 @@ function readUnquoted(line: string, from: number): AssignedValue | null {
   const value = UNQUOTED_VALUE.exec(line.slice(from))?.[0];
   if (value === undefined) return null;
   return { value, quoted: false, start: from, end: from + value.length };
+}
+
+/** After an unquoted value, a quote closing the surrounding string literal is skipped. */
+function withoutClosingQuote(rest: string): string {
+  const tail = rest.trimStart();
+  return QUOTES.has(tail[0] ?? "") ? tail.slice(1) : rest;
 }
 
 /** The tail rule: after the value, the line ends or continues with `,` `;` `}` `#`. */

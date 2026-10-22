@@ -4,6 +4,7 @@ import {
   secretKindRank,
 } from "../../values/secret-finding.js";
 import { findCredentialAssignments } from "./credential-assignment.js";
+import { findHighEntropyStrings } from "./high-entropy-string.js";
 import { findKnownFormats } from "./known-formats.js";
 import { type SecretMatch, tierOf, WHOLE_LINE } from "./secret-match.js";
 
@@ -14,7 +15,11 @@ import { type SecretMatch, tierOf, WHOLE_LINE } from "./secret-match.js";
  */
 export function detectSecrets(text: string): SecretFinding[] {
   const lines = text.split(/\r?\n/);
-  const matches = [...findKnownFormats(lines), ...findCredentialAssignments(lines)];
+  const matches = [
+    ...findKnownFormats(lines),
+    ...findCredentialAssignments(lines),
+    ...findHighEntropyStrings(lines),
+  ];
   const byLine = indexByLine(matches);
   const kept = matches.filter((match) => !isOutranked(match, byLine));
   return uniqueFindings(kept.map(toFinding));

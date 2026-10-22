@@ -1,8 +1,15 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { fragmentsOf, PLANTED, PLANTED_TIER_ONE } from "../../../../testing/fake-secrets.js";
+import {
+  fragmentsOf,
+  PLANTED,
+  PLANTED_TIER_ONE,
+  pseudoRandom,
+} from "../../../../testing/fake-secrets.js";
 import { detectSecrets } from "./detect-secrets.js";
+
+const REPO_ROOT = join(import.meta.dirname, "../../../../..");
 
 const planted = [PLANTED.privateKey, ...Object.values(PLANTED_TIER_ONE)];
 
@@ -64,6 +71,79 @@ describe("detectSecrets: precedence across tiers", () => {
       "aws-access-key",
       "credential-assignment",
     ]);
+  });
+});
+
+describe("detectSecrets: precedence across all three tiers", () => {
+  it("a JWT is reported only as a JWT", () => {
+    expect(detectSecrets(`token ${PLANTED.jwt}`)).toEqual([
+      { kind: "jwt", firstLine: 1, lastLine: 1 },
+    ]);
+  });
+
+  it("a random-looking assignment value is reported only as a credential assignment", () => {
+    expect(detectSecrets(`API_KEY=${PLANTED.highEntropy}`)).toEqual([
+      { kind: "credential-assignment", firstLine: 1, lastLine: 1 },
+    ]);
+  });
+
+  it("a private-key block is one finding, with no high-entropy finding on its body lines", () => {
+    expect(detectSecrets(`intro\n${PLANTED.privateKey}`)).toEqual([
+      { kind: "private-key", firstLine: 2, lastLine: 6 },
+    ]);
+  });
+
+  it("one planted value per tier in one document yields exactly three findings", () => {
+    const text = [
+      "# Deploy notes",
+      `export AWS_ACCESS_KEY_ID=${PLANTED.awsAccessKey}`,
+      "",
+      PLANTED.credentialAssignment.line,
+      `The session cookie was ${PLANTED.highEntropy} yesterday.`,
+    ].join("\n");
+    expect(detectSecrets(text)).toEqual([
+      { kind: "aws-access-key", firstLine: 2, lastLine: 2 },
+      { kind: "credential-assignment", firstLine: 4, lastLine: 4 },
+      { kind: "high-entropy-string", firstLine: 5, lastLine: 5 },
+    ]);
+  });
+});
+
+describe("detectSecrets: whole-document negatives (§8.4)", () => {
+  it.each([
+    "docs/SPEC.md",
+    "src/testing/__fixtures__/golden-vault/expected-pack.md",
+    "src/context/domain/services/secret-detection/__fixtures__/package-lock-excerpt.json",
+  ])("%s yields zero findings", (relativePath) => {
+    expect(detectSecrets(readFileSync(join(REPO_ROOT, relativePath), "utf8"))).toEqual([]);
+  });
+});
+
+describe("detectSecrets: adversarial input completes within a time bound (§10.9)", () => {
+  const SIZE = 32 * 1024;
+  const BOUND_MS = 250;
+  const fill = (unit: string) => unit.repeat(Math.ceil(SIZE / unit.length)).slice(0, SIZE);
+  const randomLines = () => {
+    const lines: string[] = [];
+    for (let seed = 0; lines.length * 41 < SIZE; seed++) lines.push(pseudoRandom(40, seed));
+    return lines.join("\n");
+  };
+
+  it.each([
+    ["repeated `a=`", fill("a=")],
+    ["one 32 KB line of A", "A".repeat(SIZE)],
+    ["repeated private-key headers", fill(`${PLANTED.privateKey.split("\n")[0]}\n`)],
+    ["repeated `x://a:`", fill("x://a:")],
+    ['repeated `password: "`', fill('password: "')],
+    ["32 KB of random base64 lines", randomLines()],
+  ])("%s", (_label, text) => {
+    let best = Number.POSITIVE_INFINITY;
+    for (let run = 0; run < 3; run++) {
+      const started = performance.now();
+      detectSecrets(text);
+      best = Math.min(best, performance.now() - started);
+    }
+    expect(best).toBeLessThan(BOUND_MS);
   });
 });
 
