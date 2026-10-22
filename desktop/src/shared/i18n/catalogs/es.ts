@@ -452,6 +452,7 @@ export const es: Catalog = {
       "Esa carpeta no está en un repositorio git con un remoto. Vincula solo la carpeta.",
     INVALID_WORKSPACE_PATH:
       "No se puede vincular esa carpeta: no existe, no se puede leer o es demasiado amplia (tu carpeta personal o la raíz del disco).",
+    POSSIBLE_SECRET: "Parece que contiene un secreto, así que no se guardó nada.",
     UNSUPPORTED_SOURCE:
       "Valija no reconoce ese formato de exportación. Elige el formato manualmente.",
     MALFORMED_EXPORT: "Ese archivo de exportación parece dañado.",

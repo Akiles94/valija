@@ -447,6 +447,7 @@ export const en = {
       "That folder isn't in a git repository with a remote. Link only the folder instead.",
     INVALID_WORKSPACE_PATH:
       "That folder can't be linked — it's missing, unreadable, or too broad (your home folder or the disk root).",
+    POSSIBLE_SECRET: "This looks like it contains a secret, so nothing was saved.",
     UNSUPPORTED_SOURCE: "Valija doesn't recognize that export format. Pick the format manually.",
     MALFORMED_EXPORT: "That export file looks corrupted.",
     EMPTY_EXPORT: "That export file has nothing to import.",

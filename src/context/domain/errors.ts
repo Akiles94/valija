@@ -41,7 +41,8 @@ export type ContextErrorCode =
   /** The folder has no git remote valija can use for a repository link. */
   | "NO_GIT_REMOTE"
   /** A folder is not an absolute, readable directory, or is too broad (home or disk root) to link. */
-  | "INVALID_WORKSPACE_PATH";
+  | "INVALID_WORKSPACE_PATH"
+  | "POSSIBLE_SECRET";
 
 /** Fails with a CONTEXT error code, as a `Result`. */
 export const contextErr = (code: ContextErrorCode, message: string): Result<never, DomainError> =>
