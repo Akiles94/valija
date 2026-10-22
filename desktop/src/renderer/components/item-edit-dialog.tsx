@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { detectSecrets } from "../../../../src/context/domain/services/secret-detection/detect-secrets.js";
 import { ITEM_TYPES } from "../../../../src/context/domain/values/item-type.js";
 import { useT } from "../state/i18n-context.js";
@@ -66,7 +66,10 @@ export function ItemEditDialog({
     }
   }
 
-  const findings = secretRefused ? detectSecrets(draft.content) : [];
+  const findings = useMemo(
+    () => (secretRefused ? detectSecrets(draft.content) : []),
+    [secretRefused, draft.content],
+  );
   const showSecretWarning =
     secretRefused && (findings.length > 0 || draft.content === submittedContent);
 

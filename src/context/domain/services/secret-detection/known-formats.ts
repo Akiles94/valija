@@ -41,7 +41,9 @@ const PRIVATE_KEY_FOOTER = /-----END [A-Z ]{1,64}-----/;
 /** A base64 body line of a PEM/OpenSSH/PGP block. */
 const KEY_BODY_LINE = /^[A-Za-z0-9+/=]{32,4096}$/;
 /** Same-line body after the header (a key pasted with escaped `\n`). */
-const INLINE_KEY_BODY = /[A-Za-z0-9+/=]{32}/;
+const INLINE_KEY_BODY = /[A-Za-z0-9+/=]{32,4096}/g;
+/** Pure hex is a SHA or a digest, never base64 key material. */
+const PURE_HEX = /^[0-9a-fA-F]+$/;
 /** How far below a header the first body line may start (legacy PEM puts two headers and a blank line first). */
 const BODY_SEARCH_LINES = 4;
 
@@ -99,7 +101,7 @@ function findPrivateKeys(lines: readonly string[]): SecretMatch[] {
 
 /** Index of the block's last line, or null when no key material follows the header. */
 function blockEnd(lines: readonly string[], header: number, headerText: string): number | null {
-  if (INLINE_KEY_BODY.test(headerText.replace(PRIVATE_KEY_HEADER, ""))) return header;
+  if (hasInlineKeyBody(headerText.replace(PRIVATE_KEY_HEADER, ""))) return header;
   const body = firstBodyLine(lines, header);
   if (body === null) return null;
   let last = body;
@@ -112,13 +114,19 @@ function blockEnd(lines: readonly string[], header: number, headerText: string):
   return last;
 }
 
+function hasInlineKeyBody(text: string): boolean {
+  return [...text.matchAll(INLINE_KEY_BODY)].some((match) => !PURE_HEX.test(match[0]));
+}
+
 function firstBodyLine(lines: readonly string[], header: number): number | null {
   const limit = Math.min(lines.length - 1, header + BODY_SEARCH_LINES);
   for (let index = header + 1; index <= limit; index++) {
-    if (KEY_BODY_LINE.test((lines[index] ?? "").trim())) return index;
+    if (isKeyBodyLine((lines[index] ?? "").trim())) return index;
   }
   return null;
 }
+
+const isKeyBodyLine = (line: string): boolean => KEY_BODY_LINE.test(line) && !PURE_HEX.test(line);
 
 function singleLine(kind: SecretKind, index: number, start: number, length: number): SecretMatch {
   return { kind, firstLine: index + 1, lastLine: index + 1, start, end: start + length };

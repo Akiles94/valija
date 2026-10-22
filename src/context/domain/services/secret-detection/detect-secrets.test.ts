@@ -117,6 +117,21 @@ describe("detectSecrets: whole-document negatives (§8.4)", () => {
   ])("%s yields zero findings", (relativePath) => {
     expect(detectSecrets(readFileSync(join(REPO_ROOT, relativePath), "utf8"))).toEqual([]);
   });
+
+  it("a note with a certificate, an SSH public key and a SHA after a key header yields zero findings", () => {
+    const keyHeader = PLANTED.privateKey.split("\n")[0] ?? "";
+    const note = [
+      "Server setup:",
+      "-----BEGIN CERTIFICATE-----",
+      pseudoRandom(64, 41),
+      pseudoRandom(64, 42),
+      "-----END CERTIFICATE-----",
+      `Deploy key: ssh-ed25519 ${pseudoRandom(68, 43)} deploy@ci`,
+      `The ${keyHeader} lint rule landed in`,
+      pseudoRandom(40, 44, "0123456789abcdef"),
+    ].join("\n");
+    expect(detectSecrets(note)).toEqual([]);
+  });
 });
 
 describe("detectSecrets: adversarial input completes within a time bound (§10.9)", () => {

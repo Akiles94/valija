@@ -75,6 +75,41 @@ describe("tier 3: high-entropy-string must not fire (§8.4)", () => {
   });
 });
 
+describe("tier 3: public key material is not a secret", () => {
+  const block = (label: string, body: string[]) =>
+    [`-----BEGIN ${label}-----`, ...body, `-----END ${label}-----`].join("\n");
+
+  it.each([
+    "CERTIFICATE",
+    "PUBLIC KEY",
+    "PGP PUBLIC KEY BLOCK",
+    "CERTIFICATE REQUEST",
+  ])("the body of a %s block", (label) => {
+    const body = ["Version: GnuPG v2", "", pseudoRandom(64, 31), pseudoRandom(64, 32)];
+    expect(kindsIn(block(label, body))).toEqual([]);
+  });
+
+  it.each([
+    ["ssh-ed25519", pseudoRandom(68, 33)],
+    ["ecdsa-sha2-nistp256", pseudoRandom(140, 34)],
+    ["sk-ssh-ed25519@openssh.com", pseudoRandom(100, 35)],
+  ])("an OpenSSH %s public key", (algorithm, blob) => {
+    expect(kindsIn(`${algorithm} ${blob} oscar@laptop`)).toEqual([]);
+  });
+
+  it("a token after a certificate's END line still fires", () => {
+    const text = `${block("CERTIFICATE", [pseudoRandom(64, 36)])}\ntoken ${PLANTED.highEntropy}`;
+    expect(findHighEntropyStrings(text.split("\n"))).toMatchObject([
+      { kind: "high-entropy-string", firstLine: 4 },
+    ]);
+  });
+
+  it("a certificate header does not hide a private key pasted right after it", () => {
+    const text = `${block("CERTIFICATE", [pseudoRandom(64, 37)])}\n${PLANTED.privateKey}`;
+    expect(kindsIn(text)).toContain("high-entropy-string");
+  });
+});
+
 describe("shannonEntropy", () => {
   it("is 0 for one repeated character", () => {
     expect(shannonEntropy("aaaa")).toBe(0);

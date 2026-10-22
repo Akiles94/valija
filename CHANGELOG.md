@@ -14,8 +14,9 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
   `error [POSSIBLE_SECRET]`, naming the kind and line, never the secret, and exit 1. `--allow-secrets`
   saves or imports it anyway; there is no prompt. Imports are all-or-nothing: each blocking chunk is
   listed as `#n "title" part p — kind (line k)` (`#n` works with `--pick`), and `--dry-run` shows the
-  same list as "A real import would be REFUSED" while still exiting 0. Best effort: it can miss a
-  secret or flag something harmless.
+  same list as "A real import would be REFUSED" while still exiting 0. Public key material
+  (certificates, PEM public keys, `ssh-ed25519 …` public keys) is never flagged. Best effort: it can
+  miss a secret or flag something harmless.
 - **Secret check over MCP** (`advances/SECRET-WARN/`): `save_context` and `save_handoff` refuse
   content that looks like it contains a secret with `POSSIBLE_SECRET`; the reply names the kind and
   line and tells the AI to use a placeholder such as `<API_KEY>` or describe the value instead.

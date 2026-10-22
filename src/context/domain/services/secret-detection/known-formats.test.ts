@@ -73,6 +73,13 @@ describe("tier 1: negatives stay silent", () => {
     expect(kindsIn(`Look for the ${header} line in the file.\nIt starts the block.`)).toEqual([]);
   });
 
+  it("a private-key header followed by a git SHA, not key material, does not fire", () => {
+    const header = PLANTED.privateKey.split("\n")[0] ?? "";
+    const sha = pseudoRandom(40, 21, "0123456789abcdef");
+    expect(kindsIn(`The ${header} check moved.\n\nSee commit\n${sha}`)).toEqual([]);
+    expect(kindsIn(`${header} ${sha}`)).toEqual([]);
+  });
+
   it("credentials in a URL fire only for a real-looking password", () => {
     expect(kindsIn(PLANTED.urlCredentials)).toEqual(["url-credentials"]);
     expect(kindsIn("postgres://admin:changeme@db")).toEqual([]);

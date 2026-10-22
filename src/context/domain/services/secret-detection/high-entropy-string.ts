@@ -23,6 +23,15 @@ const DATA_URI_BEFORE = /data:[^\s,]{1,200};base64,$/;
 const HASH_CONTEXT =
   /\b(?:sha1?|sha256|sha512|md5|hash|digest|checksum|integrity|etag|commit|fingerprint)\b/i;
 const URL_SPAN = /\b[a-z][a-z0-9+.-]{0,30}:\/\/\S{0,4096}/gi;
+/** The algorithm name that opens an OpenSSH public key (`ssh-ed25519 AAAA…`). */
+const SSH_PUBLIC_KEY_BEFORE =
+  /(?:^|\s)(?:ssh-(?:ed25519|rsa|dss)|ecdsa-sha2-nistp(?:256|384|521)|sk-(?:ssh-ed25519|ecdsa-sha2-nistp256)@openssh\.com)\s+$/;
+/** Armored blocks that hold public material only: certificates, public keys, signatures. */
+const PUBLIC_BLOCK_HEADER =
+  /-----BEGIN (?:CERTIFICATE|TRUSTED CERTIFICATE|CERTIFICATE REQUEST|NEW CERTIFICATE REQUEST|X509 CRL|PUBLIC KEY|RSA PUBLIC KEY|PGP PUBLIC KEY BLOCK|PGP SIGNATURE|SSH2 PUBLIC KEY)-----/;
+const BLOCK_FOOTER = /-----END [A-Z0-9 ]{1,64}-----/;
+/** A line that can sit inside an armored block: base64, blank, or a `Key: value` armor header. */
+const BLOCK_BODY_LINE = /^(?:[A-Za-z0-9+/=]{0,4096}|[A-Za-z-]{1,64}: .{0,4096})$/;
 
 /** Facts about a line that several exclusions share, computed at most once. */
 class LineContext {
@@ -50,7 +59,9 @@ class LineContext {
 
 /** Tier 3 (§8.3): a long, mixed, random-looking token that no exclusion explains. */
 export function findHighEntropyStrings(lines: readonly string[]): SecretMatch[] {
+  const publicLines = publicBlockLines(lines);
   return lines.flatMap((text, index) => {
+    if (publicLines.has(index)) return [];
     const line = new LineContext(text);
     return [...text.matchAll(TOKEN)]
       .filter((match) => looksRandom(match[0]) && !isExplained(match[0], line, match.index))
@@ -62,6 +73,22 @@ export function findHighEntropyStrings(lines: readonly string[]): SecretMatch[] 
         end: match.index + match[0].length,
       }));
   });
+}
+
+/** Indexes of the lines inside certificate / public-key blocks, header through END. */
+function publicBlockLines(lines: readonly string[]): Set<number> {
+  const inside = new Set<number>();
+  for (let index = 0; index < lines.length; index++) {
+    if (!PUBLIC_BLOCK_HEADER.test(lines[index] ?? "")) continue;
+    inside.add(index);
+    while (index + 1 < lines.length) {
+      const next = (lines[index + 1] ?? "").trim();
+      if (!BLOCK_FOOTER.test(next) && !BLOCK_BODY_LINE.test(next)) break;
+      inside.add(++index);
+      if (BLOCK_FOOTER.test(next)) break;
+    }
+  }
+  return inside;
 }
 
 /** Shannon entropy over the token's own character frequencies, in bits per character. */
@@ -99,7 +126,9 @@ function isExplained(token: string, line: LineContext, start: number): boolean {
   if (HEX_LIKE.test(token)) return true;
   if (isIdentifier(token)) return true;
   if (SRI_PREFIXES.some((prefix) => token.startsWith(prefix))) return true;
-  if (DATA_URI_BEFORE.test(line.text.slice(Math.max(0, start - 256), start))) return true;
+  const before = line.text.slice(Math.max(0, start - 256), start);
+  if (DATA_URI_BEFORE.test(before)) return true;
+  if (SSH_PUBLIC_KEY_BEFORE.test(before)) return true;
   if (line.hashWordEnd !== null && line.hashWordEnd <= start) return true;
   if (line.urlSpans.some(([from, to]) => start >= from && start < to)) return true;
   if (token.startsWith("/")) return true;
