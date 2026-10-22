@@ -409,12 +409,14 @@ export interface DiagnosticsCopyReportRequest {
   checks: DiagnosticCheckMessage[];
 }
 
+/** What a link points at, as it crosses IPC: a folder or a repository. */
 export type BindingKindMessage = "folder" | "repository";
 
 /** A project-folder handle (`pf-…`) minted by `dialog:chooseProjectFolder` — never a path. */
 export interface BindingsInspectRequest {
   handle: string;
 }
+/** What a chosen folder resolves to now and how it could be linked; paths are never sent. */
 export interface BindingsInspectResponse {
   displayName: string;
   /** What this folder resolves to now — parity with `valija which` (the desktop reads no project env var, W4). */
@@ -427,6 +429,7 @@ export interface BindingsInspectResponse {
   /** An existing project whose name matches this repository's — a hint, never a link. */
   hint?: string;
 }
+/** Link the folder behind a handle to an existing project, by repository or folder. */
 export interface BindingsLinkRequest {
   handle: string;
   projectName: string;
@@ -436,9 +439,11 @@ export interface BindingsLinkRequest {
 export interface BindingsLinkResponse {
   changed: boolean;
 }
+/** Which link to remove, by id. */
 export interface BindingsUnlinkRequest {
   bindingId: string;
 }
+/** Optionally, the one project whose links to list. */
 export interface BindingsListRequest {
   projectName?: string;
 }

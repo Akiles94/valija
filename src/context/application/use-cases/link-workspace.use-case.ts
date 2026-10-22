@@ -16,6 +16,7 @@ import { type ProjectBindingView, toProjectBindingView } from "../dto/project-bi
 import type { VaultSession, VaultSessions } from "../ports/vault-session.js";
 import type { WorkspaceProbe } from "../ports/workspace-probe.js";
 
+/** Which existing project to link, from which directory, and whether by repository or folder. */
 export interface LinkWorkspaceInput {
   /** An existing project's slug: linking never creates a project (D-H). */
   project: string;
@@ -24,6 +25,7 @@ export interface LinkWorkspaceInput {
   by?: BindingKind;
 }
 
+/** The link as stored, and whether this call actually created it. */
 export interface LinkWorkspaceOutput {
   binding: ProjectBindingView;
   /** `false`: that target was already linked to that project, and nothing was written. */

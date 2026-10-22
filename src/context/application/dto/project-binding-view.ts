@@ -14,6 +14,7 @@ export interface ProjectBindingView {
   createdAt: string;
 }
 
+/** Maps a binding and its project's slug to the primitives the CLI and desktop show. */
 export const toProjectBindingView = ({
   binding,
   projectName,

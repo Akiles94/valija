@@ -8,11 +8,13 @@ import { fail } from "./render.js";
 
 // Nothing in this file prints item content: only project slugs, binding ids, kinds and targets.
 
+/** The `--dir` and `--by` flags shared by `valija link` and `valija unlink`. */
 export interface BindingOptions {
   dir?: string;
   by?: BindingKind;
 }
 
+/** `valija which`: prints which project this folder resolves to, and why. */
 export function whichCommand(c: Container, options: { dir?: string }): void {
   const result = c.resolveProject.execute({
     directories: [workingDirectory(options.dir)],
@@ -22,6 +24,7 @@ export function whichCommand(c: Container, options: { dir?: string }): void {
   for (const line of whichLines(result.value)) console.log(line);
 }
 
+/** `valija link <project>`: links this folder's repository, or only the folder, to an existing project. */
 export function linkCommand(c: Container, project: string, options: BindingOptions): void {
   const result = c.linkWorkspace.execute({
     project,
@@ -43,6 +46,7 @@ export function linkCommand(c: Container, project: string, options: BindingOptio
   }
 }
 
+/** `valija unlink [id]`: removes a link by id, or the one this folder resolves through. */
 export function unlinkCommand(
   c: Container,
   bindingId: string | undefined,
@@ -64,6 +68,7 @@ export function unlinkCommand(
   console.log(`Unlinked ${describe(result.value)} from project "${result.value.project}".`);
 }
 
+/** `valija links [project]`: lists folder and repository links with their ids. */
 export function linksCommand(c: Container, project: string | undefined): void {
   const result = c.listProjectBindings.execute(project === undefined ? {} : { project });
   if (!result.ok) fail(result.error);

@@ -5,6 +5,7 @@ import { type ProjectName, parseProjectName } from "../../domain/values/project-
 import { type ProjectBindingView, toProjectBindingView } from "../dto/project-binding-view.js";
 import type { VaultSessions } from "../ports/vault-session.js";
 
+/** Optionally, the one project whose links to list. */
 export interface ListProjectBindingsInput {
   /** Omitted → every binding in the vault. */
   project?: string;

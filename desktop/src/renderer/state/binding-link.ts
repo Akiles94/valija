@@ -1,5 +1,6 @@
 import type { BindingsInspectResponse } from "../../shared/ipc/messages.js";
 
+/** What the inspect panel can link a chosen folder by: its repository or the folder itself. */
 export type LinkChoice = "repository" | "folder";
 
 /**

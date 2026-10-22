@@ -10,11 +10,11 @@ One bounded context per `src/` folder, each split into **domain** (pure rules) �
 
 | Module | domain | application | infra |
 |---|---|---|---|
-| [context](../../specs/context.md) | entities/, services/, values/, 1 file(s) | dto/, ports/, services/, use-cases/ | 3 file(s) |
-| [delivery](../../specs/delivery.md) | entry points: cli/, mcp/, 5 file(s) | — | — |
+| [context](../../specs/context.md) | entities/, services/, values/, 1 file(s) | dto/, ports/, services/, use-cases/ | git/, 5 file(s) |
+| [delivery](../../specs/delivery.md) | entry points: cli/, mcp/, 6 file(s) | — | — |
 | [desktop](../../specs/desktop.md) | — (uses the src/ use cases) | policies/, ports/, services/ | main/infra/, main/ipc/, preload/, renderer/, shared/ |
 | [importers](../../specs/importers.md) | entities/, services/, values/, 1 file(s) | ports/, use-cases/ | parsers/, 2 file(s) |
-| [shared](../../specs/shared.md) | 1 file(s) | ports/, 1 file(s) | migrations/, 4 file(s) |
+| [shared](../../specs/shared.md) | services/, 1 file(s) | ports/, 1 file(s) | migrations/, 4 file(s) |
 | [vault](../../specs/vault.md) | services/, values/, 1 file(s) | policies/, ports/, services/, use-cases/ | 9 file(s) |
 
 ## Module dependencies
@@ -60,19 +60,24 @@ flowchart LR
   n_FileVaultFolder["FileVaultFolder"]
   n_FileVaultMover["FileVaultMover"]
   n_FileVaultStore["FileVaultStore"]
+  n_FileWorkspaceProbe["FileWorkspaceProbe"]
   n_GetContextPack["GetContextPack"]
   n_ImportConversations["ImportConversations"]
   n_ImportItems["ImportItems"]
+  n_LinkWorkspace["LinkWorkspace"]
+  n_ListProjectBindings["ListProjectBindings"]
   n_ListProjects["ListProjects"]
   n_LockVault["LockVault"]
   n_OsKeychain["OsKeychain"]
   n_RelocateVault["RelocateVault"]
+  n_ResolveProject["ResolveProject"]
   n_SaveContext["SaveContext"]
   n_SearchContext["SearchContext"]
   n_SetItemArchived["SetItemArchived"]
   n_SetItemPinned["SetItemPinned"]
   n_ShowProject["ShowProject"]
   n_SqliteVaultSessions["SqliteVaultSessions"]
+  n_UnlinkWorkspace["UnlinkWorkspace"]
   n_UnlockVault["UnlockVault"]
   n_VaultStatus["VaultStatus"]
   n_parserRegistry["parserRegistry"]
@@ -99,6 +104,11 @@ flowchart LR
   n_ImportItems -->|VaultSessions| n_SqliteVaultSessions
   n_ImportItems -->|Clock| n_systemClock
   n_ImportItems -->|IdGenerator| n_ulidIds
+  n_LinkWorkspace -->|WorkspaceProbe| n_FileWorkspaceProbe
+  n_LinkWorkspace -->|VaultSessions| n_SqliteVaultSessions
+  n_LinkWorkspace -->|Clock| n_systemClock
+  n_LinkWorkspace -->|IdGenerator| n_ulidIds
+  n_ListProjectBindings -->|VaultSessions| n_SqliteVaultSessions
   n_ListProjects -->|VaultSessions| n_SqliteVaultSessions
   n_LockVault -->|DeviceIdentity| n_FileDeviceIdentity
   n_LockVault -->|VaultFolder| n_FileVaultFolder
@@ -109,6 +119,8 @@ flowchart LR
   n_RelocateVault -->|VaultStore| n_FileVaultStore
   n_RelocateVault -->|KeychainPort| n_OsKeychain
   n_RelocateVault -->|VaultPaths| n_paths
+  n_ResolveProject -->|WorkspaceProbe| n_FileWorkspaceProbe
+  n_ResolveProject -->|VaultSessions| n_SqliteVaultSessions
   n_SaveContext -->|VaultSessions| n_SqliteVaultSessions
   n_SaveContext -->|Clock| n_systemClock
   n_SaveContext -->|IdGenerator| n_ulidIds
@@ -118,6 +130,8 @@ flowchart LR
   n_SetItemPinned -->|VaultSessions| n_SqliteVaultSessions
   n_SetItemPinned -->|Clock| n_systemClock
   n_ShowProject -->|VaultSessions| n_SqliteVaultSessions
+  n_UnlinkWorkspace -->|WorkspaceProbe| n_FileWorkspaceProbe
+  n_UnlinkWorkspace -->|VaultSessions| n_SqliteVaultSessions
   n_UnlockVault -->|VaultCrypto| n_Argon2VaultCrypto
   n_UnlockVault -->|DeviceIdentity| n_FileDeviceIdentity
   n_UnlockVault -->|VaultStore| n_FileVaultStore

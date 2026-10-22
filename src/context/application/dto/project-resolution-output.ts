@@ -29,6 +29,7 @@ export type ProjectResolutionOutput =
   | { outcome: "none"; hint?: string; locations: WorkspaceLocationView[] }
   | { outcome: "ambiguous"; projects: string[]; locations: WorkspaceLocationView[] };
 
+/** Maps what the probe saw for one directory to primitives, for `which` and the inspect panel. */
 export const toWorkspaceLocationView = (location: WorkspaceLocation): WorkspaceLocationView => ({
   folder: location.folder as string,
   repositoryRoot: location.repositoryRoot as string | null,

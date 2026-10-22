@@ -201,11 +201,15 @@ export interface ChannelMap {
   "dialog:chooseVaultFolder": { request: undefined; response: DialogFileChoiceResponse | null };
   /** Mints a `pf-` handle into its own map (P-10): relocation and import can never redeem it. */
   "dialog:chooseProjectFolder": { request: undefined; response: DialogFileChoiceResponse | null };
+  /** Shows what a chosen project folder resolves to and how it can be linked, like `valija which`. */
   "bindings:inspect": {
     request: BindingsInspectRequest;
     response: IpcResult<BindingsInspectResponse>;
   };
+  /** Links a chosen folder or its repository to an existing project, like `valija link`. */
   "bindings:link": { request: BindingsLinkRequest; response: IpcResult<BindingsLinkResponse> };
+  /** Removes one link by id, like `valija unlink`. */
   "bindings:unlink": { request: BindingsUnlinkRequest; response: IpcResult<BindingMessage> };
+  /** Lists folder and repository links, optionally for one project, like `valija links`. */
   "bindings:list": { request: BindingsListRequest; response: IpcResult<BindingMessage[]> };
 }

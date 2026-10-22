@@ -22,6 +22,7 @@ export interface WorkspaceEnvironment {
   variables: Readonly<Record<string, string | undefined>>;
 }
 
+/** The real process environment (cwd, home, platform, install folder) the MCP server detects from. */
 export const processWorkspaceEnvironment = (): WorkspaceEnvironment => ({
   cwd: () => process.cwd(),
   home: homedir(),

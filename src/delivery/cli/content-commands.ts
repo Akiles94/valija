@@ -32,7 +32,10 @@ export function projectsCommand(c: Container): void {
   }
 }
 
-/** `valija show <project>`: prints a project's items with their ids, optionally of one type; `--archived` includes archived items. */
+/**
+ * `valija show [project]`: prints a project's items with their ids, optionally of one type;
+ * `--archived` includes archived items. An omitted project is detected from the current folder.
+ */
 export function showCommand(
   c: Container,
   project: string | undefined,
@@ -73,8 +76,8 @@ export function searchCommand(c: Container, query: string, options: { project?: 
 }
 
 /**
- * `valija export <project>`: prints or writes the whole project as Markdown (or JSON with
- * `--json`).
+ * `valija export [project]`: prints or writes the whole project as Markdown (or JSON with
+ * `--json`). An omitted project is detected from the current folder.
  */
 export function exportCommand(
   c: Container,

@@ -10,6 +10,7 @@ export interface ProjectBinding {
   readonly createdAt: Date;
 }
 
+/** The already-parsed fields a new binding is created from. */
 export interface NewProjectBinding {
   readonly id: string;
   readonly projectId: string;

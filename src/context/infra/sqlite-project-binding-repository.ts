@@ -27,6 +27,7 @@ const toBoundProject = (row: BindingRow): BoundProject => ({
   projectName: row.project_name as ProjectName,
 });
 
+/** SQLCipher-backed store of folder and repository links (`project_bindings`, migration 004). */
 export class SqliteProjectBindingRepository implements ProjectBindingRepository {
   constructor(private readonly db: Database) {}
 

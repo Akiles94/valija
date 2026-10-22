@@ -17,11 +17,13 @@ export interface BoundProject {
   readonly projectName: ProjectName;
 }
 
+/** What the links say about a workspace: one bound project, none, or several (ambiguous). */
 export type BindingResolution =
   | { readonly outcome: "bound"; readonly match: BoundProject }
   | { readonly outcome: "none" }
   | { readonly outcome: "ambiguous"; readonly projectNames: ProjectName[] };
 
+/** What a new link points at: a folder, or a normalized repository remote. */
 export interface LinkTarget {
   readonly kind: BindingKind;
   readonly target: FolderTarget | RepositoryTarget;

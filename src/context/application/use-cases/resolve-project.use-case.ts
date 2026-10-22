@@ -17,6 +17,7 @@ import {
 import type { VaultSession, VaultSessions } from "../ports/vault-session.js";
 import type { WorkspaceProbe } from "../ports/workspace-probe.js";
 
+/** The directories to resolve a project for, and the `VALIJA_PROJECT` override if set. */
 export interface ResolveProjectInput {
   /** Where work is happening: the CLI's cwd or `--dir`, the MCP client's roots. May be empty. */
   directories: string[];

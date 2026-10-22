@@ -59,11 +59,15 @@ machine can read the vault until it is unlocked again.
 
 - [Browse a project](flows/browse-project.md) — To review the project's memory item by item: what the AI tools saved, and the imported
 conversations, newest first.
+- [Detect the project from the working folder](flows/detect-project.md) — So that the project a folder is linked to is used automatically, while a project named
+explicitly always wins.
 - [Edit an item](flows/edit-item.md) — To fix an item in place — its wording, tags or type — so the vault keeps one accurate item instead
 of a wrong one and a correction.
 - [Export a project](flows/export-context-pack.md) — Context in Valija is never locked in.
 - [Hand off a conversation to another tool](flows/hand-off-conversation.md) — To package "where we are" (goal, what was done, blockers, the exact next step, relevant files) so
 the next tool can pick up seamlessly instead of starting from zero.
+- [Link a folder or repository to a project](flows/link-project-folder.md) — So that commands run in that folder, and AI tools working in it, find the right project without
+the user naming it every time.
 - [List projects](flows/list-projects.md) — To see what the vault holds at a glance: every project, how many items it has, and when it was
 last active.
 - [Load a project's context pack](flows/load-context-pack.md) — To give the AI the right context at the start of a session (pinned notes, the latest handoff,

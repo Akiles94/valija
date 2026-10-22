@@ -13,7 +13,7 @@ Purpose: Local-first, end-to-end encrypted (SQLCipher + Argon2id) AI-context vau
 ## Data stores
 | Store | Where | Holds |
 |---|---|---|
-| `vault.db` | `$VALIJA_HOME` or `~/.valija` (`src/shared/infra/vault-paths.ts:resolveVaultPaths()`) | SQLCipher DB: projects, items + FTS5, meta (schema version), lineage |
+| `vault.db` | `$VALIJA_HOME` or `~/.valija` (`src/shared/infra/vault-paths.ts:resolveVaultPaths()`) | SQLCipher DB: projects, items + FTS5, project bindings (folder/repository links), meta (schema version), lineage |
 | `vault.json` | same folder, plaintext | vault id, salt, Argon2id params (`src/vault/infra/vault-header.ts`) |
 | OS keychain | service `valija`, one entry per vault id (`src/vault/infra/keyring.ts:OsKeychain`) | derived key; present = unlocked |
 | `state.json` | `$VALIJA_STATE_HOME` or `~/.valija-state` (`src/shared/infra/state-paths.ts`) | device id, last-seen lineage, last activity (`src/vault/infra/file-device-identity.ts`) |

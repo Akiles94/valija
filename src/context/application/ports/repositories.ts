@@ -46,6 +46,7 @@ export interface ContextItemRepository {
   search(query: string, projectId?: string, limit?: number): SearchResult[];
 }
 
+/** Persistence port for folder and repository links: add, remove and list them with their project. */
 export interface ProjectBindingRepository {
   /** Insert-only. `false` when the (kind, target) pair is already taken — the caller turns that into BINDING_CONFLICT. */
   add(binding: ProjectBinding): boolean;

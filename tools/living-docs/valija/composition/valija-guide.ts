@@ -45,6 +45,10 @@ export const VALIJA_PARITY: readonly ParityDeclaration[] = [
     reason: "the CLI takes the export file as a path argument",
   },
   {
+    surfaceSpecific: ["dialog:chooseProjectFolder"],
+    reason: "the CLI links and inspects the current folder, or the one passed with --dir",
+  },
+  {
     pair: { cli: "install", ipc: ["tools:status", "tools:connect", "tools:nodeStatus"] },
     reason: "both wire the MCP server into AI tool configs (no use case: installer adapters)",
   },

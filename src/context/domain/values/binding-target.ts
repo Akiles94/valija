@@ -3,6 +3,7 @@ import { pathModuleFor } from "../../../shared/domain/services/path-containment.
 import { contextErr } from "../errors.js";
 import type { RepositoryTarget } from "./repository-target.js";
 
+/** The two things a project can be linked by: a folder or a git repository. */
 export const BINDING_KINDS = ["folder", "repository"] as const;
 
 /** What a binding points at: one folder (and everything under it), or one git repository. */

@@ -30,11 +30,17 @@ export type ContextErrorCode =
   | "ITEM_NOT_CURATABLE"
   /** An edit named no field to change (content, tags or type). */
   | "NOTHING_TO_EDIT"
+  /** No project was given and none is linked to the current folder or repository. */
   | "PROJECT_NOT_DETECTED"
+  /** The workspace folders resolve to more than one project, so the project must be named. */
   | "PROJECT_AMBIGUOUS"
+  /** That folder or repository is already linked to another project. */
   | "BINDING_CONFLICT"
+  /** No link has that id, or none applies to the given folder. */
   | "BINDING_NOT_FOUND"
+  /** The folder has no git remote valija can use for a repository link. */
   | "NO_GIT_REMOTE"
+  /** A folder is not an absolute, readable directory, or is too broad (home or disk root) to link. */
   | "INVALID_WORKSPACE_PATH";
 
 /** Fails with a CONTEXT error code, as a `Result`. */
