@@ -117,7 +117,10 @@ both reduce to this one call (D-U(b): a skipped tour never nags again).
   `afterSchemaTooNew` — terminal, carries the two schema numbers,
   `afterCreateSuccess`, `afterUnlockSuccess`, …). `canNavigateAwayFrom(state) = phase !==
   "kit-pending"` — the one hard invariant: nothing, including the tour, may render between the
-  recovery kit and its acknowledgement.
+  recovery kit and its acknowledgement. (REKEY) `kit-pending` carries an optional
+  `lockedAfterKit: true`; `afterPassphraseChanged(unlockedOnThisDevice)` enters kit-pending with it
+  set when the OS keychain refused the new key (D-H), and `afterKitAcknowledged(lockedAfterKit =
+  false)` lands on `locked` instead of `unlocked` in that case — the init flow is unchanged.
 - **`overlay-nav.ts`** (Slice 11) — the tour and Settings, held above the phase switch (P-D15,
   neither is a `WorkspaceView` screen, since Settings must open while locked). `OverlayState =
   { overlay: "tour"|"settings"|null; returnTo: "tour"|"settings"|null }`. `autoTourOverlay(current,
@@ -126,6 +129,18 @@ both reduce to this one call (D-U(b): a skipped tour never nags again).
   open. `replayTourFromSettings()` sets `returnTo: "settings"`, so `finishTourOverlay` — called by
   both Skip and "Get started" — returns the user to Settings after a replay and to the workspace
   after an auto-played tour (D-U(b): "returns the user to where the tour interrupted them").
+  (REKEY, P-13) A third overlay, `"change-passphrase"` (`openChangePassphrase()`), holds
+  `screens/change-passphrase.tsx:ChangePassphraseScreen`: it must work locked and unlocked (D-F),
+  and Settings must stay bridge-free, so it lives neither in Settings nor in `Workspace`. Settings'
+  Vault & sync panel shows **Change passphrase…** in both lock states; Cancel returns to Settings.
+  The dialog reads `sync.status().looksLikeCloud` once (read-only) to show the confirmation
+  checkbox, gates Submit on a non-empty credential, `validateNewPassphrase(...) === null` and the
+  checkbox when cloud, calls only `vault.changePassphrase`, shows errors as `errorCopy(code)` inline,
+  and clears its secret fields after every submit and on cancel. On success `app.tsx`'s
+  `passphraseChanged` closes the overlay, calls `resetWorkspaceView()` (the C2 rule), then sets
+  `afterPassphraseChanged(...)`, so the Router shows the existing `RecoveryKitScreen`, which reads the
+  new kit from the one-shot slot. `errors.WRONG_PASSPHRASE` now ends with the D-O hint ("If you
+  changed it on another device, use the new one.").
 - **`preferences-write.ts`** (Slice 11) — `mergePreferencesWrite(current, patch)` is the one place a
   `PreferencesWriteRequest` is assembled from a partial UI patch, so a write can never carry a
   key the renderer didn't explicitly set. `tourSeenWrite(preferences)` narrows

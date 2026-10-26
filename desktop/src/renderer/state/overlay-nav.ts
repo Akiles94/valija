@@ -2,8 +2,12 @@ import { shouldPlayTour } from "../../main/application/policies/onboarding-tour.
 import type { AppPreferencesMessage } from "../../shared/ipc/messages.js";
 import type { SessionState } from "./session-state.js";
 
-/** The two screens with no CLI counterpart, held above the phase switch (P-D15) — neither is a `WorkspaceView` screen, because Settings must open while the vault is locked. */
-export type Overlay = "tour" | "settings" | null;
+/**
+ * Screens held above the phase switch (P-D15) — none is a `WorkspaceView` screen, because each must
+ * open while the vault is locked. REKEY's change-passphrase dialog joins them: it works locked and
+ * unlocked, and Settings itself must stay bridge-free (P-13).
+ */
+export type Overlay = "tour" | "settings" | "change-passphrase" | null;
 
 /** Which overlay is open, and where it returns when closed. */
 export interface OverlayState {
@@ -35,6 +39,11 @@ export function autoTourOverlay(
 /** Opens the Settings overlay (it also works while the vault is locked). */
 export function openSettings(): OverlayState {
   return { overlay: "settings", returnTo: null };
+}
+
+/** Opens the change-passphrase dialog from Settings (it works locked and unlocked; it always asks for the current credential). */
+export function openChangePassphrase(): OverlayState {
+  return { overlay: "change-passphrase", returnTo: null };
 }
 
 /** Replaying from Settings (item 90's "replay") lands the user back there when the tour finishes — unlike the auto-played tour, which returns to the workspace. */

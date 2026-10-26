@@ -27,7 +27,8 @@ const SECTION_IDS = SECTIONS.map((section) => section.id);
  * data (P-D12) — the environment-resolved values stay the Sync panel's one
  * display. Not a config editor: no field here can set `VALIJA_HOME`,
  * `VALIJA_STATE_HOME` or `VALIJA_AUTOLOCK_MINUTES`, and nothing here can
- * destroy, re-key or re-initialize a vault. GUI-LAYOUT §5.10, D-16: still a
+ * destroy or re-initialize a vault. Change passphrase only opens its own
+ * overlay (REKEY) — Settings itself still calls no IPC. GUI-LAYOUT §5.10, D-16: still a
  * full-screen replacement, restyled as mini-tabs — not a layered modal.
  */
 export function SettingsScreen({
@@ -38,6 +39,7 @@ export function SettingsScreen({
   onReplayTour,
   onOpenDiagnostics,
   onOpenRelocate,
+  onOpenChangePassphrase,
 }: {
   preferences: AppPreferencesMessage;
   unlocked: boolean;
@@ -46,6 +48,8 @@ export function SettingsScreen({
   onReplayTour: () => void;
   onOpenDiagnostics: () => void;
   onOpenRelocate: () => void;
+  /** REKEY: opens the change-passphrase overlay — offered locked and unlocked, since it always asks for the current credential (D-F). */
+  onOpenChangePassphrase: () => void;
 }) {
   const t = useT();
   const [active, setActive] = useState<SectionId>("appearance");
@@ -170,6 +174,9 @@ export function SettingsScreen({
           ) : (
             <p className="explainer">{t("settings.vaultAndSyncLocked")}</p>
           )}
+          <button type="button" onClick={onOpenChangePassphrase}>
+            {t("settings.changePassphrase")}
+          </button>
         </div>
       )}
 

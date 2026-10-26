@@ -6,6 +6,7 @@ import {
   closeOverlay,
   finishTourOverlay,
   type OverlayState,
+  openChangePassphrase,
   openSettings,
   replayTourFromSettings,
 } from "./overlay-nav.js";
@@ -62,5 +63,16 @@ describe("openSettings / closeOverlay", () => {
   it("closeOverlay always returns to the closed state, regardless of how it was reached", () => {
     expect(closeOverlay()).toEqual(CLOSED_OVERLAY);
     expect(closeOverlay()).toEqual(closeOverlay());
+  });
+});
+
+describe("openChangePassphrase — REKEY's overlay", () => {
+  it("opens the dialog with nothing to return to", () => {
+    expect(openChangePassphrase()).toEqual({ overlay: "change-passphrase", returnTo: null });
+  });
+
+  it("the auto-tour never interrupts it", () => {
+    const open = openChangePassphrase();
+    expect(autoTourOverlay(open, UNLOCKED, PREFS(false))).toBe(open);
   });
 });

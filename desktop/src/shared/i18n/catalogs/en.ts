@@ -444,6 +444,30 @@ export const en = {
     vaultAndSyncLocked: "Unlock your vault to check diagnostics or move it.",
     help: "Help",
     replayTour: "Show the welcome tour again",
+    changePassphrase: "Change passphrase…",
+  },
+
+  /** REKEY: the change-passphrase overlay — security copy (it re-encrypts the vault). */
+  changePassphrase: {
+    title: "Change your passphrase",
+    explainer:
+      "This re-encrypts your whole vault with a new key. Your current passphrase and your current recovery kit will stop opening this vault.",
+    oldCopies:
+      "Copies made before now (sync history, backups, conflicted copies) stay readable with the old passphrase and kit.",
+    currentLabel: "Current passphrase",
+    useRecoveryKey: "I only have my recovery key",
+    recoveryKeyLabel: "Recovery key",
+    newLabel: "New passphrase",
+    confirmLabel: "Repeat new passphrase",
+    cloudWarning:
+      "This vault is in a synced folder. Lock Valija on every other device and let sync finish first.",
+    confirmOtherDevices: "My other devices are locked and synced",
+    submit: "Change passphrase",
+    working: "Re-encrypting…",
+    otherDevicesAfter:
+      "Afterwards, unlock your other devices with the NEW passphrase and destroy your old recovery kit.",
+    tooShort: "Passphrases must be at least 8 characters.",
+    mismatch: "Those passphrases don't match.",
   },
 
   /** SECRET-WARN: the refusal in words — kind and lines, never the secret (D-H, D-O). */
@@ -477,7 +501,8 @@ export const en = {
     VAULT_NOT_FOUND: "No vault was found there.",
     VAULT_ALREADY_EXISTS: "A vault already exists there.",
     VAULT_LOCKED: "Your vault is locked. Unlock it and try again.",
-    WRONG_PASSPHRASE: "That passphrase doesn't match this vault.",
+    WRONG_PASSPHRASE:
+      "That passphrase doesn't match this vault. If you changed it on another device, use the new one.",
     WEAK_PASSPHRASE: "Passphrases must be at least 8 characters.",
     KEYCHAIN_ERROR: "Valija couldn't reach your OS keychain.",
     STORAGE_ERROR: "Something went wrong reading or writing the vault files.",

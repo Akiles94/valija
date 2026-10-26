@@ -15,7 +15,7 @@ export type SessionState =
   | { phase: "checking" }
   | { phase: "no-vault" }
   | { phase: "creating" }
-  | { phase: "kit-pending" }
+  | { phase: "kit-pending"; lockedAfterKit?: true }
   | { phase: "locked" }
   | { phase: "unlocking" }
   | { phase: "upgrade-required" }
@@ -47,9 +47,16 @@ export function afterCreateSuccess(): SessionState {
   return { phase: "kit-pending" };
 }
 
-/** Phase once the user confirmed they saved the recovery kit. */
-export function afterKitAcknowledged(): SessionState {
-  return { phase: "unlocked" };
+/** The passphrase changed: show the new kit first; afterwards unlocked, or locked if the keychain refused the new key (D-H). */
+export function afterPassphraseChanged(unlockedOnThisDevice: boolean): SessionState {
+  return unlockedOnThisDevice
+    ? { phase: "kit-pending" }
+    : { phase: "kit-pending", lockedAfterKit: true };
+}
+
+/** Phase once the user confirmed they saved the recovery kit: unlocked, or locked when the keychain refused a changed passphrase's key. */
+export function afterKitAcknowledged(lockedAfterKit = false): SessionState {
+  return lockedAfterKit ? { phase: "locked" } : { phase: "unlocked" };
 }
 
 /** Phase while an unlock is in flight. */

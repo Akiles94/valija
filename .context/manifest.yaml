@@ -2,7 +2,7 @@
 version: 1
 docs:
   .context/flows/context-pack.md:
-    commit: 257bfbfdde3a
+    commit: 62e2e0fe3038
     stamped: 2026-10-26
     sources:
       desktop/src/main/ipc/handlers/content-handlers.ts: f2b1051c42e851b4
@@ -16,7 +16,7 @@ docs:
       src/delivery/context-pack-markdown.ts: 111aebd49c06b1a9
       src/delivery/mcp/server.ts: 5ec5ee56a450be1d
   .context/flows/desktop-ipc-call.md:
-    commit: 257bfbfdde3a
+    commit: 62e2e0fe3038
     stamped: 2026-10-26
     sources:
       desktop/src/main/index.ts: 65bf9dfa97254290
@@ -25,20 +25,20 @@ docs:
       desktop/src/main/ipc/schemas.ts: e1246d09b7365756
       desktop/src/main/ipc/to-ipc-result.ts: 5549ef327fd849ca
       desktop/src/preload/index.ts: 55da17f305123425
-      desktop/src/renderer/app.tsx: 94c39f217f02c8a9
+      desktop/src/renderer/app.tsx: 3e26246e3db304ba
       desktop/src/renderer/screens/pack-preview.tsx: 8f35bd8e5e2c667c
       desktop/src/renderer/state/bridge.ts: d16aedab038159fd
       desktop/src/renderer/state/lock-aware-bridge.ts: 6559552d8451dc83
       desktop/src/renderer/state/workspace-nav.ts: 8a2f447b5ae1234e
-      desktop/src/shared/i18n/catalogs/en.ts: f0a557872670fabd
-      desktop/src/shared/i18n/catalogs/es.ts: 56be799feffd9bd2
+      desktop/src/shared/i18n/catalogs/en.ts: 40c5e550a108ae2d
+      desktop/src/shared/i18n/catalogs/es.ts: 5805a9f1805a872f
       desktop/src/shared/i18n/error-copy.ts: 660ee9ec510806b0
       desktop/src/shared/ipc/channels.ts: fd877a86b9618c13
       desktop/src/shared/ipc/messages.ts: 0c995503971cb245
       tools/living-docs/valija/composition/valija-guide.ts: 745ab2c43fe05d11
       tools/living-docs/valija/surfaces/ipc-surface.ts: a26b2d3bbe1e5bdd
   .context/flows/import-chat-history.md:
-    commit: 257bfbfdde3a
+    commit: 62e2e0fe3038
     stamped: 2026-10-26
     sources:
       desktop/src/main/infra/electron-file-picker.ts: 164992f7fdc0742e
@@ -55,7 +55,7 @@ docs:
       src/importers/infra/file-export-reader.ts: 536b8859f2b139a3
       src/importers/infra/parser-registry.ts: 4a0c8bcb2798d600
   .context/flows/multi-device-sync.md:
-    commit: 257bfbfdde3a
+    commit: 62e2e0fe3038
     stamped: 2026-10-26
     sources:
       desktop/src/main/ipc/handlers/sync-handlers.ts: 0f9b165ac622a263
@@ -75,7 +75,7 @@ docs:
       src/vault/infra/file-vault-store.ts: 1cf62929741603f0
       src/vault/infra/sqlite-lineage-store.ts: 55c3b97c8283f00e
   .context/flows/save-context.md:
-    commit: 257bfbfdde3a
+    commit: 62e2e0fe3038
     stamped: 2026-10-26
     sources:
       src/context/application/use-cases/save-context.use-case.ts: 3b34df073657b668
@@ -87,7 +87,7 @@ docs:
       src/vault/application/policies/session-guard.ts: b99568ee81764405
       src/vault/infra/sqlite-lineage-store.ts: 55c3b97c8283f00e
   .context/flows/unlock-vault.md:
-    commit: 257bfbfdde3a
+    commit: 62e2e0fe3038
     stamped: 2026-10-26
     sources:
       desktop/src/main/ipc/handlers/vault-handlers.ts: 997a9e3336c60cce
@@ -109,7 +109,7 @@ docs:
       src/vault/infra/file-vault-store.ts: 1cf62929741603f0
       src/vault/infra/keyring.ts: c5659f598b6bdfcb
   .context/gotchas.md:
-    commit: 257bfbfdde3a
+    commit: 62e2e0fe3038
     stamped: 2026-10-26
     sources:
       .claude/hooks/guard-git-ops.sh: 59294a42c694999c
@@ -124,7 +124,7 @@ docs:
       desktop/src/main/ipc/schemas.ts: e1246d09b7365756
       desktop/src/main/ipc/to-ipc-result.ts: 5549ef327fd849ca
       desktop/src/preload/index.ts: 55da17f305123425
-      desktop/src/renderer/app.tsx: 94c39f217f02c8a9
+      desktop/src/renderer/app.tsx: 3e26246e3db304ba
       desktop/src/renderer/state/bridge.ts: d16aedab038159fd
       desktop/src/renderer/state/workspace-nav.ts: 8a2f447b5ae1234e
       desktop/src/shared/i18n/error-copy.test.ts: a0e5f96e9af2ac42
@@ -153,7 +153,7 @@ docs:
       tsup.config.ts: 235c103285a7bb07
       vitest.config.ts: 0c9f375fdc8c77a5
   .context/overview.md:
-    commit: 257bfbfdde3a
+    commit: 62e2e0fe3038
     stamped: 2026-10-26
     sources:
       desktop/package.json: 8efa41413b32f579
@@ -161,7 +161,7 @@ docs:
       desktop/src/main/infra/file-app-preferences-store.ts: 68724bc49a7f4356
       desktop/src/main/ipc/register-handlers.ts: 7068da57b0dec1c9
       desktop/src/preload/index.ts: 55da17f305123425
-      desktop/src/renderer/app.tsx: 94c39f217f02c8a9
+      desktop/src/renderer/app.tsx: 3e26246e3db304ba
       src/context/infra/vault-sessions.ts: 639f76651323c449
       src/delivery/cli/build-program.ts: d184a89bd2e27fb7
       src/delivery/cli/installer.ts: 02eb131eb59a5cce
@@ -182,10 +182,10 @@ docs:
       tools/living-docs/valija/composition/main.ts: f9fd0742c72441d4
       tools/living-docs/valija/composition/valija-guide.ts: 745ab2c43fe05d11
   .context/presentation.md:
-    commit: 257bfbfdde3a
+    commit: 62e2e0fe3038
     stamped: 2026-10-26
     sources: {}
   AGENTS.md:
-    commit: 257bfbfdde3a
+    commit: 62e2e0fe3038
     stamped: 2026-10-26
     sources: {}

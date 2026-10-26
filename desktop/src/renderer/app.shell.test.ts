@@ -48,3 +48,24 @@ describe("the newer-schema terminal screen is routed like the other entry screen
     expect(APP).toMatch(/withLockDetection\([\s\S]*?afterSchemaTooNew\(versions\)/);
   });
 });
+
+describe("the change-passphrase overlay (REKEY)", () => {
+  it('app.tsx renders ChangePassphraseScreen for the "change-passphrase" overlay, gated by canNavigateAwayFrom', () => {
+    expect(APP).toMatch(
+      /overlayState\.overlay === "change-passphrase" && canNavigateAwayFrom\(state\) \? \(\s*<ChangePassphraseScreen/,
+    );
+  });
+
+  it("passphraseChanged resets the workspace view before entering kit-pending (C2 gotcha)", () => {
+    const body = APP.match(/function passphraseChanged\([\s\S]*?\n {2}\}/)?.[0] ?? "";
+    expect(body).toContain("setOverlayState(closeOverlay())");
+    const reset = body.indexOf("resetWorkspaceView()");
+    const next = body.indexOf("setState(afterPassphraseChanged(");
+    expect(reset).toBeGreaterThan(-1);
+    expect(next).toBeGreaterThan(reset);
+  });
+
+  it("acknowledging the kit honours lockedAfterKit (D-H)", () => {
+    expect(APP).toContain("afterKitAcknowledged(state.lockedAfterKit === true)");
+  });
+});

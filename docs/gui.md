@@ -389,6 +389,7 @@ since Settings needs no unlocked vault at all. Four sections, and no fifth:
   details. **These two shortcuts only work while your vault is unlocked** — if you're locked out and
   need to check what's wrong, unlock first, or use `valija doctor` in a terminal in the meantime.
   This is a known limitation, not an oversight, and it's one this app should close in a later pass.
+  **Change passphrase…** is there whether the vault is locked or unlocked — see below.
 - **Help** — replay the welcome tour, any time, as many times as you like.
 
 **What Settings deliberately is not:** it has no CLI counterpart, and none is planned — everything
@@ -396,7 +397,35 @@ here is either a UI preference (appearance, language) or a shortcut to a screen 
 elsewhere. It cannot set `VALIJA_HOME`, `VALIJA_STATE_HOME` or `VALIJA_AUTOLOCK_MINUTES` — those stay
 environment variables, shown read-only in the Sync panel, because they're configuration a terminal
 session controls, and this app is explicit about not quietly overriding that. It offers no way to
-destroy, re-key, or re-initialize a vault — this app creates and moves vaults, it never deletes one.
+destroy or re-initialize a vault — this app creates and moves vaults, it never deletes one. The one
+vault-changing action it reaches is **Change passphrase…**, which opens its own dialog.
+
+### Changing your passphrase
+
+> How it works: [Change the passphrase](guide/flows/change-passphrase.md)
+
+**Settings → Vault & sync → Change passphrase…** opens a dialog that works the same whether your
+vault is locked or unlocked, because it always asks you to prove it is you first:
+
+- **Current passphrase** — or tick **I only have my recovery key** and paste the key from your
+  recovery kit instead. That is how you set a new passphrase after forgetting the old one.
+- **New passphrase**, twice (at least 8 characters; the dialog tells you if they are too short or
+  don't match before anything is sent).
+- **If your vault is in a synced folder** (Dropbox, iCloud Drive, OneDrive, Google Drive, Syncthing),
+  a warning and the checkbox **My other devices are locked and synced**. The button stays disabled
+  until you tick it: lock Valija on every other device and let sync finish first.
+
+While it works the dialog says **Re-encrypting…** and every field is disabled — the whole vault file is
+rewritten under the new key. Then the **recovery-kit screen** shows your **new** kit, once, exactly as
+when you created the vault: copy it somewhere safe and tick the acknowledgement. Your previous kit no
+longer opens this vault, and neither does your previous passphrase. Afterwards you land back in your
+vault, unlocked with the new passphrase — or, in the rare case your OS keychain refused to store the new
+key, on the unlock screen: the change still happened, and your **new** passphrase opens it.
+
+On your other devices, unlock with the **new** passphrase; the old one now gives "That passphrase
+doesn't match this vault. If you changed it on another device, use the new one." Copies made before
+the change (sync history, backups, conflicted copies) still open with the old passphrase and kit —
+see [docs/sync.md](sync.md). The same capability in a terminal is `valija change-passphrase`.
 
 ---
 
@@ -458,7 +487,8 @@ Every one of them only fires when you click its button — nothing is copied aut
 - **Resolve a sync fork** — if two devices wrote independently, the Sync panel tells you it happened
   and points at the guidance in [the main README](../README.md#use-it-on-several-devices); there is
   no merge or "keep this one" button anywhere.
-- **Destroy or re-initialize a vault** — covered above, under Settings.
+- **Destroy or re-initialize a vault** — covered above, under Settings. (Changing the passphrase
+  re-encrypts the vault; it never destroys or resets it.)
 - **Run an MCP server** — the server your AI tools talk to is the same separate process
   `npx -y valija mcp` always was; this app never embeds one, and moving your vault re-points every
   already-connected client's config so that process keeps finding it.

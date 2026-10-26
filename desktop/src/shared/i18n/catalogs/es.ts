@@ -448,6 +448,29 @@ export const es: Catalog = {
     vaultAndSyncLocked: "Desbloquea tu bóveda para revisar el diagnóstico o moverla.",
     help: "Ayuda",
     replayTour: "Ver de nuevo el recorrido de bienvenida",
+    changePassphrase: "Cambiar frase de contraseña…",
+  },
+
+  changePassphrase: {
+    title: "Cambia tu frase de contraseña",
+    explainer:
+      "Esto vuelve a cifrar toda tu bóveda con una clave nueva. Tu frase de contraseña actual y tu kit de recuperación actual dejarán de abrir esta bóveda.",
+    oldCopies:
+      "Las copias hechas antes de ahora (historial de sincronización, copias de seguridad, copias en conflicto) se pueden seguir leyendo con la frase de contraseña y el kit anteriores.",
+    currentLabel: "Frase de contraseña actual",
+    useRecoveryKey: "Solo tengo mi clave de recuperación",
+    recoveryKeyLabel: "Clave de recuperación",
+    newLabel: "Nueva frase de contraseña",
+    confirmLabel: "Repite la nueva frase de contraseña",
+    cloudWarning:
+      "Esta bóveda está en una carpeta sincronizada. Primero bloquea Valija en todos tus otros dispositivos y espera a que termine la sincronización.",
+    confirmOtherDevices: "Mis otros dispositivos están bloqueados y sincronizados",
+    submit: "Cambiar frase de contraseña",
+    working: "Volviendo a cifrar…",
+    otherDevicesAfter:
+      "Después, desbloquea tus otros dispositivos con la NUEVA frase de contraseña y destruye tu kit de recuperación anterior.",
+    tooShort: "Las frases de contraseña deben tener al menos 8 caracteres.",
+    mismatch: "Esas frases de contraseña no coinciden.",
   },
 
   secrets: {
@@ -480,7 +503,8 @@ export const es: Catalog = {
     VAULT_NOT_FOUND: "No se encontró ninguna bóveda ahí.",
     VAULT_ALREADY_EXISTS: "Ya existe una bóveda ahí.",
     VAULT_LOCKED: "Tu bóveda está bloqueada. Desbloquéala e inténtalo de nuevo.",
-    WRONG_PASSPHRASE: "Esa frase de contraseña no coincide con esta bóveda.",
+    WRONG_PASSPHRASE:
+      "Esa frase de contraseña no coincide con esta bóveda. Si la cambiaste en otro dispositivo, usa la nueva.",
     WEAK_PASSPHRASE: "Las frases de contraseña deben tener al menos 8 caracteres.",
     KEYCHAIN_ERROR: "Valija no pudo acceder al llavero de tu sistema operativo.",
     STORAGE_ERROR: "Algo salió mal al leer o escribir los archivos de la bóveda.",

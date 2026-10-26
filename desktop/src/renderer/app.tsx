@@ -4,6 +4,7 @@ import type { AppPreferencesMessage, PreferencesWriteRequest } from "../shared/i
 import { Breadcrumb } from "./components/breadcrumb.js";
 import { EntryShell } from "./components/entry-shell.js";
 import { WorkspaceSidebar } from "./components/workspace-sidebar.js";
+import { ChangePassphraseScreen } from "./screens/change-passphrase.js";
 import { ConnectToolsScreen } from "./screens/connect-tools.js";
 import { CreateVaultScreen } from "./screens/create-vault.js";
 import { DashboardScreen } from "./screens/dashboard.js";
@@ -30,6 +31,7 @@ import {
   closeOverlay,
   finishTourOverlay,
   type OverlayState,
+  openChangePassphrase,
   openSettings,
   replayTourFromSettings,
 } from "./state/overlay-nav.js";
@@ -39,6 +41,7 @@ import {
   afterKitAcknowledged,
   afterLock,
   afterMigrationCancelled,
+  afterPassphraseChanged,
   afterSchemaTooNew,
   afterStatusCheck,
   afterUnlockFailure,
@@ -161,6 +164,15 @@ export function App() {
     setState(afterLock());
   }
 
+  // Leaving "unlocked" (or "locked") for the new kit: same C2 reset as every
+  // other session exit, then kit-pending — which blocks every route until the
+  // kit is acknowledged, and lands on locked when the keychain refused the key.
+  function passphraseChanged(unlockedOnThisDevice: boolean) {
+    setOverlayState(closeOverlay());
+    setWorkspaceView(resetWorkspaceView());
+    setState(afterPassphraseChanged(unlockedOnThisDevice));
+  }
+
   return (
     <I18nProvider preferences={preferences}>
       <ThemeProvider preferences={preferences}>
@@ -182,6 +194,13 @@ export function App() {
                 setOverlayState(closeOverlay());
                 setWorkspaceView({ screen: "relocate-vault" });
               }}
+              onOpenChangePassphrase={() => setOverlayState(openChangePassphrase())}
+            />
+          ) : overlayState.overlay === "change-passphrase" && canNavigateAwayFrom(state) ? (
+            <ChangePassphraseScreen
+              bridge={lockAwareBridge}
+              onCancel={() => setOverlayState(openSettings())}
+              onChanged={passphraseChanged}
             />
           ) : (
             <Router
@@ -237,7 +256,7 @@ function Router({
         bridge={bridge}
         onAcknowledged={() => {
           if (!canNavigateAwayFrom({ phase: "kit-pending" })) return;
-          setState(afterKitAcknowledged());
+          setState(afterKitAcknowledged(state.lockedAfterKit === true));
         }}
       />
     );

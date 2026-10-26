@@ -4,6 +4,7 @@ import {
   afterKitAcknowledged,
   afterLock,
   afterMigrationCancelled,
+  afterPassphraseChanged,
   afterSchemaTooNew,
   afterStatusCheck,
   afterUnlockFailure,
@@ -32,6 +33,14 @@ describe("session-state", () => {
     expect(creating()).toEqual({ phase: "creating" });
     expect(afterCreateSuccess()).toEqual({ phase: "kit-pending" });
     expect(afterKitAcknowledged()).toEqual({ phase: "unlocked" });
+  });
+
+  it("a passphrase change passes through kit-pending, then unlocked — or locked when the keychain refused the new key (REKEY, D-H)", () => {
+    expect(afterPassphraseChanged(true)).toEqual({ phase: "kit-pending" });
+    expect(afterPassphraseChanged(false)).toEqual({ phase: "kit-pending", lockedAfterKit: true });
+    expect(canNavigateAwayFrom(afterPassphraseChanged(false))).toBe(false);
+    expect(afterKitAcknowledged(true)).toEqual({ phase: "locked" });
+    expect(afterKitAcknowledged(false)).toEqual({ phase: "unlocked" });
   });
 
   it("the unlock flow reaches unlocked, carrying a fork notice only when one is present", () => {
