@@ -1,4 +1,4 @@
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import SqliteDatabase, { type Database } from "better-sqlite3-multiple-ciphers";
 import { refuseNewerSchema, SchemaTooNewError, schemaVersion } from "./migrations.js";
@@ -113,7 +113,21 @@ function applyKey(db: Database, keyHex: string): void {
 function settleJournal(db: Database): void {
   db.pragma("wal_checkpoint(TRUNCATE)");
   db.pragma("journal_mode = DELETE");
+  dropColdJournal(db);
   db.pragma("foreign_keys = ON");
+}
+
+/**
+ * REKEY spike S5: a process killed while holding `locking_mode = EXCLUSIVE` leaves a cold
+ * (zero-header) `-journal` that nothing deletes until the next write, so the folder looks
+ * unsettled. `applyKey`'s read has already rolled back a hot one, so any journal left is cold;
+ * switching PERSIST → DELETE deletes it, and only under a RESERVED lock (never while another
+ * connection is writing).
+ */
+function dropColdJournal(db: Database): void {
+  if (!existsSync(`${db.name}-journal`)) return;
+  db.pragma("journal_mode = PERSIST");
+  db.pragma("journal_mode = DELETE");
 }
 
 function sqliteCode(error: unknown): string | undefined {

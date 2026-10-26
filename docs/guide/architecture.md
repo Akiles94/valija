@@ -15,7 +15,7 @@ One bounded context per `src/` folder, each split into **domain** (pure rules) â
 | [desktop](../../specs/desktop.md) | â€” (uses the src/ use cases) | policies/, ports/, services/ | main/infra/, main/ipc/, preload/, renderer/, shared/ |
 | [importers](../../specs/importers.md) | entities/, services/, values/, 1 file(s) | ports/, use-cases/ | parsers/, 2 file(s) |
 | [shared](../../specs/shared.md) | services/, 1 file(s) | ports/, 1 file(s) | migrations/, 4 file(s) |
-| [vault](../../specs/vault.md) | services/, values/, 1 file(s) | policies/, ports/, services/, use-cases/ | 11 file(s) |
+| [vault](../../specs/vault.md) | services/, values/, 1 file(s) | policies/, ports/, services/, use-cases/ | 12 file(s) |
 
 ## Module dependencies
 

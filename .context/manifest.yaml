@@ -55,7 +55,7 @@ docs:
       src/importers/infra/file-export-reader.ts: 536b8859f2b139a3
       src/importers/infra/parser-registry.ts: 4a0c8bcb2798d600
   .context/flows/multi-device-sync.md:
-    commit: 2649da335e4c
+    commit: 7dc30d267121
     stamped: 2026-10-26
     sources:
       desktop/src/main/ipc/handlers/sync-handlers.ts: 0f9b165ac622a263
@@ -65,7 +65,7 @@ docs:
       src/context/infra/vault-sessions.ts: 639f76651323c449
       src/delivery/cli/vault-commands.ts: 2acd728551be1f4b
       src/delivery/diagnostics.ts: f45f7a5e6fd24bb7
-      src/shared/infra/sqlite.ts: 7d8466b48e9374f2
+      src/shared/infra/sqlite.ts: e5bb1ca475af66db
       src/shared/infra/state-paths.ts: 455da3732559d1f8
       src/vault/application/use-cases/unlock-vault.use-case.ts: 0d4600bbad50ec81
       src/vault/domain/services/vault-lineage.ts: 1c78db599fd33bd3
@@ -87,7 +87,7 @@ docs:
       src/vault/application/policies/session-guard.ts: b99568ee81764405
       src/vault/infra/sqlite-lineage-store.ts: 55c3b97c8283f00e
   .context/flows/unlock-vault.md:
-    commit: 2649da335e4c
+    commit: 7dc30d267121
     stamped: 2026-10-26
     sources:
       desktop/src/main/ipc/handlers/vault-handlers.ts: 84a5b193cb77bab6
@@ -100,7 +100,7 @@ docs:
       src/delivery/cli/vault-commands.ts: 2acd728551be1f4b
       src/shared/domain/services/schema-compatibility.ts: d8c023954feabacb
       src/shared/infra/migrations.ts: 048e15a640e5a00c
-      src/shared/infra/sqlite.ts: 7d8466b48e9374f2
+      src/shared/infra/sqlite.ts: e5bb1ca475af66db
       src/vault/application/services/resolve-unlock-key.ts: 5e89f9d0ecd818a0
       src/vault/application/use-cases/check-vault-upgrade.use-case.ts: 561f1690169bdd45
       src/vault/application/use-cases/unlock-vault.use-case.ts: 0d4600bbad50ec81
@@ -109,7 +109,7 @@ docs:
       src/vault/infra/file-vault-store.ts: 1cf62929741603f0
       src/vault/infra/keyring.ts: c5659f598b6bdfcb
   .context/gotchas.md:
-    commit: 2649da335e4c
+    commit: 7dc30d267121
     stamped: 2026-10-26
     sources:
       .claude/hooks/guard-git-ops.sh: 59294a42c694999c
@@ -140,7 +140,7 @@ docs:
       src/delivery/vault-format-conformance.test.ts: 6e3abba9cbc6e3ed
       src/importers/infra/parser-registry.ts: 4a0c8bcb2798d600
       src/shared/infra/migrations.ts: 048e15a640e5a00c
-      src/shared/infra/sqlite.ts: 7d8466b48e9374f2
+      src/shared/infra/sqlite.ts: e5bb1ca475af66db
       src/shared/infra/state-paths.ts: 455da3732559d1f8
       src/vault/application/policies/session-guard.ts: b99568ee81764405
       src/vault/application/use-cases/relocate-vault.use-case.ts: 2216bebb4fea8e64
@@ -153,8 +153,8 @@ docs:
       tsup.config.ts: 235c103285a7bb07
       vitest.config.ts: 0c9f375fdc8c77a5
   .context/overview.md:
-    commit: a093863bc9cf
-    stamped: 2026-10-22
+    commit: 7dc30d267121
+    stamped: 2026-10-26
     sources:
       desktop/package.json: 8efa41413b32f579
       desktop/src/main/index.ts: 65bf9dfa97254290
@@ -170,7 +170,7 @@ docs:
       src/delivery/mcp/server.ts: 5ec5ee56a450be1d
       src/delivery/sdk/index.ts: 8334bcfdef32cbe0
       src/importers/application/use-cases/import-conversations.use-case.ts: 4b99672771b22a49
-      src/shared/infra/sqlite.ts: 7d8466b48e9374f2
+      src/shared/infra/sqlite.ts: e5bb1ca475af66db
       src/shared/infra/state-paths.ts: 455da3732559d1f8
       src/shared/infra/vault-paths.ts: a187b655a07a6191
       src/testing/golden-vault.ts: 79f0d7e29c756aba

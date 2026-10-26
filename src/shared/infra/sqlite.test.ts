@@ -93,6 +93,31 @@ describe("SQLCipher engine", () => {
     reopened.close();
   });
 
+  it("deletes a cold journal a killed exclusive-mode rekey left behind, keeping the content (REKEY S5)", () => {
+    const path = join(tmp, "cold-journal.db");
+    const key = newKey();
+    const db = openVaultDb(path, key);
+    migrate(db, path);
+    db.prepare("INSERT INTO projects (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)").run(
+      "01P",
+      "cold",
+      "2026-10-26",
+      "2026-10-26",
+    );
+    db.close();
+    // A zero header is what SQLite leaves in exclusive mode after a commit: cold, never rolled back.
+    writeFileSync(`${path}-journal`, Buffer.alloc(8720));
+
+    const reopened = openVaultDb(path, key);
+    expect(existsSync(`${path}-journal`)).toBe(false);
+    expect(reopened.pragma("journal_mode", { simple: true })).toBe("delete");
+    expect(reopened.prepare("SELECT name FROM projects WHERE id = '01P'").get()).toEqual({
+      name: "cold",
+    });
+    expect(reopened.pragma("integrity_check", { simple: true })).toBe("ok");
+    reopened.close();
+  });
+
   it("folds an existing WAL from a pre-upgrade vault into vault.db on open", () => {
     const path = join(tmp, "pre-upgrade.db");
     const key = newKey();

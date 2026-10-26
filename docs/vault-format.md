@@ -185,6 +185,30 @@ not something this table can currently confirm either way.
 (`advances/M4/spike.md`) as provenance, not asserted here — they change on every dependency
 bump and carry no compatibility guarantee of their own; the pragmas above are what must hold.
 
+### Changing the key (passphrase change)
+
+A passphrase change (`valija change-passphrase`, REKEY) re-encrypts `vault.db` **in place** under
+the new raw key. What a second implementation can rely on afterwards:
+
+- **The cipher salt is preserved.** Valija re-keys with the salt-preserving raw form
+  `PRAGMA rekey = "x'<64 hex new key><32 hex current cipher_salt>'"`, so the file's first 16
+  bytes and `PRAGMA cipher_salt` are byte-for-byte the same before and after. (The plain
+  `rekey="x'<64 hex>'"` form would draw a new random salt; valija does not use it, because a
+  crash in its commit window can leave a file neither key opens — `advances/REKEY/spike.md`.)
+- **The §5 pragma table is unchanged.** Every fixed row above reads the same after a change
+  (measured in the REKEY spike, S2), and the vault still opens with the two pragmas at the top
+  of this section, now with the new key.
+- **The raw-key form only.** The re-key is always `rekey="x'…'"`. The binary or hex forms
+  (`db.rekey(Buffer)`, the `hex…` pragmas) treat the 32 bytes as a *passphrase* and produce a
+  file this recipe cannot open.
+- `vault.json` is not touched: same vault id, salt and KDF parameters; the new raw key is
+  `Argon2id(new passphrase, same salt, same parameters)`.
+
+While the change runs, a `vault.db.pre-rekey.bak` ciphertext copy (still under the **previous**
+key) sits next to `vault.db` and is deleted once the re-keyed file verifies. A leftover one
+means a change was interrupted; valija reports it, and a reader should treat it as a backup,
+never as the vault.
+
 ### Journaling
 
 At rest, the journal mode is always `DELETE`, never `WAL` — see §2. A vault a *pre-0.3.0*
