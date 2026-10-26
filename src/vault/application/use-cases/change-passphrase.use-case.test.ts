@@ -57,6 +57,24 @@ class RecordingKeychain extends FakeKeychain {
   }
 }
 
+/** A device whose `state.json` write fails (ENOSPC, EACCES) for the step it is told to fail. */
+class FailingDeviceIdentity extends FakeDeviceIdentity {
+  constructor(
+    ids: SeqIds,
+    private readonly failing: "recordSeen" | "recordActivity",
+  ) {
+    super(ids);
+  }
+  override recordSeen(...args: Parameters<FakeDeviceIdentity["recordSeen"]>): void {
+    if (this.failing === "recordSeen") throw new Error("ENOSPC: no space left on device");
+    super.recordSeen(...args);
+  }
+  override recordActivity(...args: Parameters<FakeDeviceIdentity["recordActivity"]>): void {
+    if (this.failing === "recordActivity") throw new Error("EACCES: permission denied");
+    super.recordActivity(...args);
+  }
+}
+
 interface Fixture {
   vault: PassphraseVault;
   store: FileVaultStore;
@@ -70,7 +88,12 @@ interface Fixture {
 
 /** A passphrase vault written once (generation 0), locked unless `unlocked`, real rekeyer unless faked. */
 async function fixture(
-  options: { unlocked?: boolean; rekeyer?: VaultRekeyer; folderName?: string } = {},
+  options: {
+    unlocked?: boolean;
+    rekeyer?: VaultRekeyer;
+    folderName?: string;
+    failing?: "recordSeen" | "recordActivity";
+  } = {},
 ): Promise<Fixture> {
   const parent = join(tmp, `case-${++n}`);
   mkdirSync(parent, { recursive: true });
@@ -82,7 +105,10 @@ async function fixture(
   const keychain = new RecordingKeychain();
   if (options.unlocked) keychain.setKey(vault.vaultId, vault.keyHex);
   keychain.sets.length = 0;
-  const deviceIdentity = new FakeDeviceIdentity(ids);
+  const deviceIdentity =
+    options.failing === undefined
+      ? new FakeDeviceIdentity(ids)
+      : new FailingDeviceIdentity(ids, options.failing);
   const rekeyer = options.rekeyer ?? new SqliteVaultRekeyer(vault.paths, ids, clock);
   const changePassphrase = new ChangePassphrase(
     store,
@@ -330,6 +356,33 @@ describe("ChangePassphrase — this device afterwards (§5.3)", () => {
     expect(f.keychain.getKey(f.vault.vaultId)).toBeNull();
     expect(f.keychain.sets).toEqual([]);
     expect(await unlocksWith(f, { passphrase: NEW_PASSPHRASE })).toBe("ok");
+  });
+
+  it("when recording last-seen fails after the commit: still ok, the keychain holds the NEW key, the kit is returned (C1)", async () => {
+    const f = await fixture({ unlocked: true, failing: "recordSeen" });
+
+    const result = await f.changePassphrase.execute(input(f));
+
+    expect(result.ok).toBe(true);
+    const keyHex = result.ok ? result.value.keyHex : "?";
+    expect(keyHex).toMatch(HEX_RUN);
+    expect(keyHex).not.toBe(f.vault.keyHex);
+    expect(result.ok && result.value.unlockedOnThisDevice).toBe(true);
+    expect(f.keychain.getKey(f.vault.vaultId)).toBe(keyHex);
+    expect(f.deviceIdentity.lastSeen(f.vault.vaultId)).toBeNull();
+    expect(await unlocksWith(f, { passphrase: NEW_PASSPHRASE })).toBe("ok");
+  });
+
+  it("when recording activity fails after setKey: the good new key stays, no keychain refusal is reported (W1)", async () => {
+    const f = await fixture({ unlocked: true, failing: "recordActivity" });
+
+    const result = await f.changePassphrase.execute(input(f));
+
+    expect(result.ok && result.value.unlockedOnThisDevice).toBe(true);
+    const keyHex = result.ok ? result.value.keyHex : "?";
+    expect(f.keychain.sets).toEqual([keyHex]);
+    expect(f.keychain.getKey(f.vault.vaultId)).toBe(keyHex);
+    expect(f.deviceIdentity.lastSeen(f.vault.vaultId)).not.toBeNull();
   });
 
   it("a session that read the old key just before the change fails closed afterwards, never re-storing it", async () => {

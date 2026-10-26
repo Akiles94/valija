@@ -208,6 +208,72 @@ describe("ChangePassphraseScreen (REKEY)", () => {
     expect(onChanged).not.toHaveBeenCalled();
   });
 
+  it("a rejected changePassphrase call: unexpected copy, fields cleared, not stuck, Cancel still works (W2)", async () => {
+    const bridge = fakeBridge();
+    bridge.vault?.changePassphrase?.mockRejectedValue(new Error("main process threw"));
+    const { onCancel, onChanged } = await renderScreen(bridge);
+    fillValid();
+    await act(async () => fireEvent.click(submitButton()));
+    expect(screen.getByText(en.changePassphrase.unexpected)).toBeInTheDocument();
+    expect(screen.queryByText(en.changePassphrase.working)).toBeNull();
+    for (const label of [
+      en.changePassphrase.currentLabel,
+      en.changePassphrase.newLabel,
+      en.changePassphrase.confirmLabel,
+    ]) {
+      expect(screen.getByLabelText(label)).toHaveValue("");
+      expect(screen.getByLabelText(label)).toBeEnabled();
+    }
+    expect(onChanged).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: en.common.cancel }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("a rejected sync.status: cloud unknown, so the confirmation is required, never a dead Submit (W2)", async () => {
+    const bridge = fakeBridge();
+    bridge.sync?.status?.mockRejectedValue(new Error("status failed"));
+    await renderScreen(bridge);
+    expect(screen.getByText(en.changePassphrase.cloudUnknown)).toBeInTheDocument();
+    expect(screen.queryByText(en.changePassphrase.cloudWarning)).toBeNull();
+    fillValid();
+    expect(submitButton()).toBeDisabled();
+    fireEvent.click(screen.getByLabelText(en.changePassphrase.confirmOtherDevices));
+    expect(submitButton()).toBeEnabled();
+    await act(async () => fireEvent.click(submitButton()));
+    expect(bridge.vault?.changePassphrase).toHaveBeenCalledWith({
+      current: { passphrase: CURRENT },
+      newPassphrase: NEW,
+      otherDevicesConfirmed: true,
+    });
+  });
+
+  it.each([
+    ["en", en],
+    ["es", es],
+  ] as const)("%s: an unresolved REKEY_FAILED never says nothing changed (W4)", async (language, catalog) => {
+    const bridge = fakeBridge({
+      result: { ok: false, error: { code: "REKEY_FAILED", unresolved: true } },
+    });
+    await renderScreen(bridge, language);
+    type(catalog.changePassphrase.currentLabel, CURRENT);
+    type(catalog.changePassphrase.newLabel, NEW);
+    type(catalog.changePassphrase.confirmLabel, NEW);
+    await act(async () =>
+      fireEvent.click(screen.getByRole("button", { name: catalog.changePassphrase.submit })),
+    );
+    expect(screen.getByText(catalog.changePassphrase.failedUnresolved)).toBeInTheDocument();
+    expect(screen.queryByText(catalog.errors.REKEY_FAILED)).toBeNull();
+    expect(catalog.changePassphrase.failedUnresolved).toContain("valija doctor");
+  });
+
+  it("a plain REKEY_FAILED shows its catalog copy (the current passphrase still works)", async () => {
+    const bridge = fakeBridge({ result: { ok: false, error: { code: "REKEY_FAILED" } } });
+    await renderScreen(bridge);
+    fillValid();
+    await act(async () => fireEvent.click(submitButton()));
+    expect(screen.getByText(en.errors.REKEY_FAILED)).toBeInTheDocument();
+  });
+
   it("Cancel calls onCancel and clears the fields", async () => {
     const { onCancel } = await renderScreen(fakeBridge());
     fillValid();

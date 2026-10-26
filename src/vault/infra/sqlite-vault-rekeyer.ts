@@ -16,7 +16,7 @@ import { SchemaTooNewError } from "../../shared/infra/migrations.js";
 import { isBusyError, isWrongKeyError, openVaultDb } from "../../shared/infra/sqlite.js";
 import type { VaultPaths } from "../../shared/infra/vault-paths.js";
 import type { RekeyRequest, VaultRekeyer } from "../application/ports/vault-rekeyer.js";
-import { schemaTooNewErr, vaultErr } from "../domain/errors.js";
+import { rekeyUnresolvedErr, schemaTooNewErr, vaultErr } from "../domain/errors.js";
 import type { LineageStamp } from "../domain/services/vault-lineage.js";
 import type { DeviceId } from "../domain/values/device-id.js";
 import { isKeyHex } from "../domain/values/key-hex.js";
@@ -49,7 +49,8 @@ const CIPHER_SALT = /^[0-9a-f]{32}$/i;
  * Re-encrypts vault.db in place under SQLCipher (D-E 1′): exclusive lock, lineage bump, a fsynced
  * ciphertext backup, then `PRAGMA rekey` with the raw new key plus the CURRENT cipher salt and
  * `cache_spill = OFF`, so a crash or a write error always rolls back under the old key. A fresh
- * connection verifies the result before the backup is deleted; a failure restores the backup.
+ * connection verifies the result before the backup is deleted; a failure restores the backup. Once
+ * verified the result is `ok` even if the backup cannot be deleted (it is then left and flagged).
  * Error messages carry SQLite codes only — never `error.message`, so never a key-bearing pragma.
  */
 export class SqliteVaultRekeyer implements VaultRekeyer {
@@ -79,7 +80,7 @@ export class SqliteVaultRekeyer implements VaultRekeyer {
     }
     this.release(db.value);
     if (!this.verify(request.newKeyHex, stamp)) return this.restoreBackup("did not verify");
-    rmSync(this.backupPath(), { force: true });
+    this.dropBackup(); // committed and verified: nothing after this point may fail the rekey (C1)
     return ok(stamp);
   }
 
@@ -175,16 +176,27 @@ export class SqliteVaultRekeyer implements VaultRekeyer {
   /** The engine rolled back (F2): when the old key verifiably opens, nothing changed (P-7 (a)). */
   private recoverFrom(code: string, currentKeyHex: string): Result<never, DomainError> {
     if (!this.opensIntact(currentKeyHex)) return this.restoreBackup(code);
-    rmSync(this.backupPath(), { force: true });
+    this.dropBackup();
     return vaultErr("REKEY_FAILED", `Re-encrypting the vault failed (${code}). ${NOTHING_CHANGED}`);
+  }
+
+  /**
+   * Deletes the backup, but never throws: a scanner or sync client holding it open (Windows
+   * `EPERM`/`EBUSY`) leaves it in place, where `status`, `doctor`, Diagnostics and Sync flag it.
+   */
+  private dropBackup(): void {
+    try {
+      rmSync(this.backupPath(), { force: true });
+    } catch {
+      // Kept on purpose: an old-key copy the folder inspection already reports (§5.4).
+    }
   }
 
   /** Spike S8: delete any journal first, so no stale rollback lands on the restored backup. */
   private restoreBackup(cause: string): Result<never, DomainError> {
     const backup = this.backupPath();
     if (!existsSync(backup)) {
-      return vaultErr(
-        "REKEY_FAILED",
+      return rekeyUnresolvedErr(
         `Re-encrypting the vault failed (${cause}) and it could not be confirmed intact. Run "valija doctor".`,
       );
     }
@@ -192,8 +204,7 @@ export class SqliteVaultRekeyer implements VaultRekeyer {
       rmSync(`${this.paths.db}-journal`, { force: true });
       renameSync(backup, this.paths.db);
     } catch {
-      return vaultErr(
-        "REKEY_FAILED",
+      return rekeyUnresolvedErr(
         `Re-encrypting the vault failed (${cause}) and restoring its backup failed too. Your previous vault is intact in ${backup}: close valija everywhere, then rename it to ${this.paths.db}. Your current passphrase opens it.`,
       );
     }

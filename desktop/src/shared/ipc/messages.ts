@@ -21,6 +21,11 @@ export type IpcResult<T> =
         code: string;
         /** `VAULT_SCHEMA_TOO_NEW` only (P-21): the two numbers the "Update Valija" screen shows. */
         schema?: SchemaVersionsMessage;
+        /**
+         * `REKEY_FAILED` only (W4): the re-encryption failed AND the vault could not be confirmed to
+         * open with the current passphrase (the restore failed; a pre-rekey backup may be kept).
+         */
+        unresolved?: true;
       };
     };
 

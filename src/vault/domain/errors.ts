@@ -98,3 +98,19 @@ export const schemaTooNewErr = (
   vaultVersion: number,
   supportedVersion: number,
 ): Result<never, DomainError> => err(new VaultSchemaTooNewError(vaultVersion, supportedVersion));
+
+/**
+ * REKEY_FAILED where the rekeyer could NOT confirm that `vault.db` still opens with the current
+ * passphrase: the restore failed (the backup is kept) or nothing verified at all. Same code, so every
+ * existing caller still sees `REKEY_FAILED`; the type lets a code-only surface (the desktop) say
+ * "act now" instead of "nothing changed" without carrying the message (W4).
+ */
+export class RekeyUnresolvedError extends DomainError {
+  constructor(message: string) {
+    super("REKEY_FAILED", message);
+  }
+}
+
+/** The only way the rekeyer reports a failure it could not undo or confirm undone. */
+export const rekeyUnresolvedErr = (message: string): Result<never, DomainError> =>
+  err(new RekeyUnresolvedError(message));

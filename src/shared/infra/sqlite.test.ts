@@ -118,6 +118,33 @@ describe("SQLCipher engine", () => {
     reopened.close();
   });
 
+  it("leaves a live writer's journal alone: another connection mid-transaction keeps it and commits (REKEY W3)", () => {
+    const path = join(tmp, "live-journal.db");
+    const key = newKey();
+    const setup = openVaultDb(path, key);
+    migrate(setup, path);
+    setup.close();
+    const writer = openVaultDb(path, key);
+    writer.exec("BEGIN IMMEDIATE");
+    writer
+      .prepare("INSERT INTO projects (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)")
+      .run("01P", "live", "2026-10-26", "2026-10-26");
+    expect(existsSync(`${path}-journal`)).toBe(true);
+
+    const second = openVaultDb(path, key); // runs settleJournal → dropColdJournal on a live journal
+    expect(existsSync(`${path}-journal`)).toBe(true);
+    expect(second.prepare("SELECT count(*) AS n FROM projects").get()).toEqual({ n: 0 });
+
+    writer.exec("COMMIT");
+    writer.close();
+    expect(second.prepare("SELECT name FROM projects WHERE id = '01P'").get()).toEqual({
+      name: "live",
+    });
+    expect(second.pragma("integrity_check", { simple: true })).toBe("ok");
+    second.close();
+    expect(existsSync(`${path}-journal`)).toBe(false);
+  });
+
   it("folds an existing WAL from a pre-upgrade vault into vault.db on open", () => {
     const path = join(tmp, "pre-upgrade.db");
     const key = newKey();

@@ -47,7 +47,12 @@ re-encrypting the whole vault under a new key, without exporting or losing anyth
 - Not enough free disk space, or another Valija process held the vault for more than 5 s
   ({{err:STORAGE_ERROR}}); nothing changed.
 - Re-encrypting fails or does not verify ({{err:REKEY_FAILED}}); the vault still opens with the
-  current passphrase, restored from its backup if needed.
+  current passphrase, restored from its backup if needed. In the rare case the restore itself fails,
+  the CLI names the kept backup and the manual step, and the desktop says to check Sync & safety or
+  run `valija doctor` instead of saying nothing changed.
+- Once re-encrypting has verified, the change always completes: if the backup cannot be deleted it
+  is kept and flagged by `status`, `doctor` and Sync, and a failed device-state write never keeps
+  the new key out of the keychain or the new kit from being shown.
 
 ## Entry points
 - CLI: {{cli:change-passphrase}} (current passphrase prompt, or `--recovery-key`; `--yes` answers the cloud-folder question)
@@ -71,4 +76,4 @@ re-encrypting the whole vault under a new key, without exporting or losing anyth
 - {{err:VAULT_SCHEMA_TOO_NEW}} — a newer Valija upgraded the vault.
 - {{err:PASSPHRASE_UNCHANGED}} — the new passphrase derives the current key.
 - {{err:STORAGE_ERROR}} — not enough disk space, or the vault was busy.
-- {{err:REKEY_FAILED}} — re-encrypting failed or did not verify; the current passphrase still works.
+- {{err:REKEY_FAILED}} — re-encrypting failed or did not verify; the current passphrase still works, unless the restore failed too (then the kept backup is named, and `valija doctor` explains it).

@@ -3,13 +3,18 @@ import type { ValijaBridge } from "../state/bridge.js";
 import { validateNewPassphrase } from "../state/create-vault-validation.js";
 import { useErrorCopy, useT } from "../state/i18n-context.js";
 
+/** `looksLikeCloud` from `sync.status`; "unknown" when that call failed — then the confirmation is required (fail safe). */
+type CloudState = boolean | "unknown" | null;
+
 /**
  * REKEY's dialog, an overlay above the phase switch so it works locked and unlocked (D-F): it always
  * asks for the current credential — the passphrase, or the recovery key behind the toggle (D-G) —
  * then the new passphrase twice and, in a synced folder, the other-devices confirmation (D-M). It
  * calls `sync.status` once (read-only, for `looksLikeCloud`) and `vault.changePassphrase`, nothing
  * else. On success the Router shows the new kit through the existing recovery-kit screen. Every
- * secret field is cleared after each submit and on cancel.
+ * secret field is cleared after each submit — also when the bridge call rejects — and on cancel. A
+ * failed `sync.status` asks for the confirmation anyway; an unresolved `REKEY_FAILED` (W4) never
+ * says "nothing changed".
  */
 export function ChangePassphraseScreen({
   bridge,
@@ -22,7 +27,7 @@ export function ChangePassphraseScreen({
 }) {
   const t = useT();
   const errorCopy = useErrorCopy();
-  const [cloud, setCloud] = useState<boolean | null>(null);
+  const [cloud, setCloud] = useState<CloudState>(null);
   const [useRecoveryKey, setUseRecoveryKey] = useState(false);
   const [current, setCurrent] = useState("");
   const [newPassphrase, setNewPassphrase] = useState("");
@@ -34,9 +39,14 @@ export function ChangePassphraseScreen({
   // biome-ignore lint/correctness/useExhaustiveDependencies: bridge is stable for the app's lifetime
   useEffect(() => {
     let cancelled = false;
-    bridge.sync.status().then((status) => {
-      if (!cancelled) setCloud(status.looksLikeCloud);
-    });
+    bridge.sync.status().then(
+      (status) => {
+        if (!cancelled) setCloud(status.looksLikeCloud);
+      },
+      () => {
+        if (!cancelled) setCloud("unknown");
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -54,7 +64,7 @@ export function ChangePassphraseScreen({
     cloud !== null &&
     current.length > 0 &&
     validation === null &&
-    (!cloud || devicesConfirmed);
+    (cloud === false || devicesConfirmed);
 
   function clearSecrets() {
     setCurrent("");
@@ -80,15 +90,25 @@ export function ChangePassphraseScreen({
       : { passphrase: current };
     setError(null);
     setWorking(true);
-    const result = await bridge.vault.changePassphrase({
-      current: credential,
-      newPassphrase,
-      otherDevicesConfirmed: devicesConfirmed,
-    });
+    const result = await bridge.vault
+      .changePassphrase({
+        current: credential,
+        newPassphrase,
+        otherDevicesConfirmed: devicesConfirmed,
+      })
+      .catch(() => null); // an unexpected main-process throw: never leave the dialog stuck (W2)
     clearSecrets();
     setWorking(false);
+    if (result === null) {
+      setError(t("changePassphrase.unexpected"));
+      return;
+    }
     if (!result.ok) {
-      setError(errorCopy(result.error.code));
+      setError(
+        result.error.unresolved === true
+          ? t("changePassphrase.failedUnresolved")
+          : errorCopy(result.error.code),
+      );
       return;
     }
     onChanged(result.value.unlockedOnThisDevice);
@@ -142,9 +162,13 @@ export function ChangePassphraseScreen({
           />
         </label>
         {hint !== null && <p className="error">{hint}</p>}
-        {cloud === true && (
+        {(cloud === true || cloud === "unknown") && (
           <>
-            <p className="warning">{t("changePassphrase.cloudWarning")}</p>
+            <p className="warning">
+              {cloud === true
+                ? t("changePassphrase.cloudWarning")
+                : t("changePassphrase.cloudUnknown")}
+            </p>
             <label className="inline">
               <input
                 type="checkbox"

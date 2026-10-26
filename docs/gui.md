@@ -413,7 +413,8 @@ vault is locked or unlocked, because it always asks you to prove it is you first
   don't match before anything is sent).
 - **If your vault is in a synced folder** (Dropbox, iCloud Drive, OneDrive, Google Drive, Syncthing),
   a warning and the checkbox **My other devices are locked and synced**. The button stays disabled
-  until you tick it: lock Valija on every other device and let sync finish first.
+  until you tick it: lock Valija on every other device and let sync finish first. If Valija cannot
+  check the folder, it asks for the same confirmation, to be safe.
 
 While it works the dialog says **Re-encrypting…** and every field is disabled — the whole vault file is
 rewritten under the new key. Then the **recovery-kit screen** shows your **new** kit, once, exactly as
@@ -421,6 +422,12 @@ when you created the vault: copy it somewhere safe and tick the acknowledgement.
 longer opens this vault, and neither does your previous passphrase. Afterwards you land back in your
 vault, unlocked with the new passphrase — or, in the rare case your OS keychain refused to store the new
 key, on the unlock screen: the change still happened, and your **new** passphrase opens it.
+
+If re-encrypting fails, the dialog usually says nothing changed and your current passphrase still
+works. In the rare case Valija cannot confirm that, it says so instead: don't delete any file in the
+vault folder, open **Sync & safety** or **Check my setup**, or run `valija doctor` — a pre-rekey
+backup your current passphrase opens may be kept there, and [docs/sync.md](sync.md) explains how to
+restore it.
 
 On your other devices, unlock with the **new** passphrase; the old one now gives "That passphrase
 doesn't match this vault. If you changed it on another device, use the new one." Copies made before

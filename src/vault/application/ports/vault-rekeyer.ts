@@ -16,7 +16,8 @@ export interface RekeyRequest {
  * Re-encrypts the whole vault database from one key to another, crash-safe (D-E): afterwards it
  * opens with exactly one of the two keys, or a pre-rekey backup that the current key opens remains.
  * Counts as a write, so it bumps the lineage and returns the new stamp (D-K). Never touches
- * `vault.json` or any keychain.
+ * `vault.json` or any keychain. Failures come back as a `Result`; once the new key has verified it
+ * is `ok`, so the caller can always swap the keychain key and hand out the new kit.
  */
 export interface VaultRekeyer {
   rekey(request: RekeyRequest): Result<LineageStamp, DomainError>;

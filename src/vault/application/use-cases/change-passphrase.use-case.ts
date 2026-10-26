@@ -5,6 +5,7 @@ import { compareSchema } from "../../../shared/domain/services/schema-compatibil
 import { LATEST_SCHEMA_VERSION } from "../../../shared/infra/migrations.js";
 import { schemaTooNewErr, vaultErr } from "../../domain/errors.js";
 import { refuseUnsettledFolder } from "../../domain/services/folder-settlement.js";
+import type { LineageStamp } from "../../domain/services/vault-lineage.js";
 import type { Generation } from "../../domain/values/generation.js";
 import { parsePassphrase } from "../../domain/values/passphrase.js";
 import type { VaultCrypto } from "../ports/crypto.js";
@@ -45,7 +46,8 @@ const CONFIRM_SYNC_MESSAGE =
 /**
  * Changes the passphrase by re-encrypting the whole vault under the key the new passphrase derives
  * (same salt and KDF, so `vault.json` never changes). Every refusal comes before any write; the new
- * key reaches the keychain, the result and the recovery kit only after the re-encryption verified.
+ * key reaches the keychain, the result and the recovery kit only after the re-encryption verified,
+ * and once it has, nothing (not even a failed `state.json` write) can keep them from doing so.
  * Goes around the session layer on purpose: no idle guard, no migration (spec §10).
  */
 export class ChangePassphrase
@@ -100,15 +102,16 @@ export class ChangePassphrase
     });
     if (!stamp.ok) return stamp;
 
-    const { generation, writeStamp } = stamp.value;
-    this.deviceIdentity.recordSeen(vaultId, { generation, writeStamp });
+    // Committed and verified: from here on nothing may stop the keychain swap or the kit (C1).
+    const unlockedOnThisDevice = this.storeNewKey(vaultId, newKey.value);
+    this.recordBookkeeping(vaultId, stamp.value, unlockedOnThisDevice);
     return ok({
       vaultId,
       keyHex: newKey.value,
       createdAt: header.value.createdAt,
       issuedAt: this.clock.now().toISOString(),
-      generation,
-      unlockedOnThisDevice: this.storeNewKey(vaultId, newKey.value),
+      generation: stamp.value.generation,
+      unlockedOnThisDevice,
     });
   }
 
@@ -116,11 +119,29 @@ export class ChangePassphrase
   private storeNewKey(vaultId: string, keyHex: string): boolean {
     try {
       this.keychain.setKey(vaultId, keyHex);
-      this.deviceIdentity.recordActivity(vaultId, this.clock.now());
       return true;
     } catch {
       this.keychain.deleteKey(vaultId); // OsKeychain.deleteKey never throws (F7)
       return false;
     }
+  }
+
+  /**
+   * Last-seen and activity in `state.json`, best effort: a failed write only costs a fast-forward
+   * notice or an earlier idle lock on the next unlock, never the new key or the kit (C1, W1).
+   */
+  private recordBookkeeping(vaultId: string, stamp: LineageStamp, unlocked: boolean): void {
+    const { generation, writeStamp } = stamp;
+    ignoreFailure(() => this.deviceIdentity.recordSeen(vaultId, { generation, writeStamp }));
+    if (unlocked)
+      ignoreFailure(() => this.deviceIdentity.recordActivity(vaultId, this.clock.now()));
+  }
+}
+
+function ignoreFailure(step: () => void): void {
+  try {
+    step();
+  } catch {
+    // Device-local bookkeeping only; see recordBookkeeping.
   }
 }

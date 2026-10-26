@@ -471,6 +471,12 @@ export const es: Catalog = {
       "Después, desbloquea tus otros dispositivos con la NUEVA frase de contraseña y destruye tu kit de recuperación anterior.",
     tooShort: "Las frases de contraseña deben tener al menos 8 caracteres.",
     mismatch: "Esas frases de contraseña no coinciden.",
+    cloudUnknown:
+      "Valija no pudo comprobar si esta bóveda está en una carpeta sincronizada. Si lo está, primero bloquea Valija en todos tus otros dispositivos y espera a que termine la sincronización.",
+    failedUnresolved:
+      'No se pudo volver a cifrar la bóveda y Valija no pudo confirmar que tu bóveda siga abriéndose. No borres ningún archivo de la carpeta de la bóveda. Abre Sincronización y seguridad o Revisar mi configuración, o ejecuta "valija doctor": puede quedar allí una copia de seguridad previa al recifrado que tu frase de contraseña actual abre, y docs/sync.md explica cómo restaurarla.',
+    unexpected:
+      'Ocurrió un error inesperado y Valija no puede saber si tu frase de contraseña cambió. Intenta desbloquear con tu frase de contraseña actual y después con la nueva. Si ninguna abre la bóveda, abre Sincronización y seguridad o Revisar mi configuración, o ejecuta "valija doctor".',
   },
 
   secrets: {

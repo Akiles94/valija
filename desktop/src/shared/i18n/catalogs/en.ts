@@ -468,6 +468,12 @@ export const en = {
       "Afterwards, unlock your other devices with the NEW passphrase and destroy your old recovery kit.",
     tooShort: "Passphrases must be at least 8 characters.",
     mismatch: "Those passphrases don't match.",
+    cloudUnknown:
+      "Valija couldn't check whether this vault is in a synced folder. If it is, lock Valija on every other device and let sync finish first.",
+    failedUnresolved:
+      "Re-encrypting the vault failed, and Valija couldn't confirm that your vault still opens. Don't delete any file in the vault folder. Open Sync & safety or Check my setup, or run \"valija doctor\": a pre-rekey backup that your current passphrase opens may be kept there, and docs/sync.md explains how to restore it.",
+    unexpected:
+      'Something unexpected went wrong, and Valija can\'t tell whether your passphrase changed. Try to unlock with your current passphrase, then with the new one. If neither opens the vault, open Sync & safety or Check my setup, or run "valija doctor".',
   },
 
   /** SECRET-WARN: the refusal in words — kind and lines, never the secret (D-H, D-O). */

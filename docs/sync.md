@@ -145,9 +145,11 @@ leaked secret to the copies that existed before the change; it does not undo pas
 
 **The rekey backup.** Before re-encrypting, valija writes `vault.db.pre-rekey.bak` beside `vault.db` —
 a ciphertext copy under the **previous** key — and deletes it once a fresh connection has verified the
-new file. You should never see it. If you do, the change was interrupted (a crash or power loss):
-`valija status`, `valija doctor`, and the desktop Sync panel and Diagnostics flag it as "encrypted with
-your PREVIOUS passphrase/key", and while it sits there the folder counts as unsettled, so another
+new file. You should rarely see it. If you do, either the change was interrupted (a crash or power
+loss), or it finished but the system would not let valija delete the file (on Windows, an antivirus
+scan or a sync client can hold it open); the passphrase change itself still succeeded in that case.
+Either way, `valija status`, `valija doctor`, and the desktop Sync panel and Diagnostics flag it as
+"encrypted with your PREVIOUS passphrase/key", and while it sits there the folder counts as unsettled, so another
 passphrase change or a move is refused.
 - If `valija unlock` works with your **current** passphrase (old or new, whichever opens it), your
   vault is fine: delete the `.bak`. In a synced folder, delete it on one device and let that sync.

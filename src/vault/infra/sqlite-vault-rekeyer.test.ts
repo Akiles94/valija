@@ -8,7 +8,9 @@ import { openVaultDb } from "../../shared/infra/sqlite.js";
 import { setStoredSchemaVersion, snapshotVaultFiles } from "../../testing/schema-skew.js";
 import { makeUnlockedVault, type TestVault } from "../../testing/test-vault.js";
 import { contentChecksum, seedVaultContent } from "../../testing/vault-content.js";
+import { RekeyUnresolvedError } from "../domain/errors.js";
 import { createDeviceId } from "../domain/values/device-id.js";
+import { FileVaultFolder } from "./file-vault-folder.js";
 import { SqliteLineageStore } from "./sqlite-lineage-store.js";
 import {
   REKEY_BACKUP_SUFFIX,
@@ -22,6 +24,7 @@ const faults = vi.hoisted(() => ({
   freeBytes: null as number | null,
   failOpenWithKey: null as string | null,
   failRename: false,
+  failBackupRm: false,
 }));
 
 vi.mock("node:fs", async (importOriginal) => {
@@ -40,6 +43,12 @@ vi.mock("node:fs", async (importOriginal) => {
       if (faults.failRename) throw Object.assign(new Error("EPERM"), { code: "EPERM" });
       actual.renameSync(from, to);
     }) as typeof actual.renameSync,
+    rmSync: ((path: string, options?: Parameters<typeof actual.rmSync>[1]) => {
+      if (faults.failBackupRm && String(path).endsWith(".pre-rekey.bak")) {
+        throw Object.assign(new Error("EPERM: operation not permitted"), { code: "EPERM" });
+      }
+      actual.rmSync(path, options);
+    }) as typeof actual.rmSync,
   };
 });
 
@@ -67,6 +76,7 @@ afterEach(() => {
   faults.freeBytes = null;
   faults.failOpenWithKey = null;
   faults.failRename = false;
+  faults.failBackupRm = false;
   rmSync(vault.paths.root, { recursive: true, force: true });
 });
 
@@ -168,6 +178,24 @@ describe("SqliteVaultRekeyer — success", () => {
   });
 });
 
+describe("SqliteVaultRekeyer — after the commit (C1)", () => {
+  it("a backup the OS refuses to delete (EPERM after verify) is kept and flagged; the rekey is still ok", () => {
+    vault = seededVault();
+    const NEW = newKey();
+    faults.failBackupRm = true;
+    const stages: RekeyStage[] = [];
+
+    const result = rekey(vault, NEW, stages);
+
+    expect(result.ok).toBe(true);
+    expect(stages.at(-1)).toBe("verified");
+    expect(opens(vault.paths.db, NEW)).toBe(true);
+    expect(opens(vault.paths.db, vault.keyHex)).toBe("SQLITE_NOTADB");
+    expect(opens(backupOf(vault), vault.keyHex)).toBe(true);
+    expect(new FileVaultFolder(vault.paths).inspect().rekeyBackups).toEqual([backupOf(vault)]);
+  });
+});
+
 describe("SqliteVaultRekeyer — refusals before anything is written", () => {
   it("refuses when free disk space is under three times the database (D-P)", () => {
     vault = seededVault();
@@ -258,6 +286,7 @@ describe("SqliteVaultRekeyer — failures", () => {
 
     expect(!result.ok && result.error.code).toBe("REKEY_FAILED");
     expect(!result.ok && result.error.message).toContain("restored from its backup");
+    expect(!result.ok && result.error).not.toBeInstanceOf(RekeyUnresolvedError);
     expect(!result.ok && result.error.message).not.toMatch(HEX_RUN);
     faults.failOpenWithKey = null;
     expect(opens(vault.paths.db, vault.keyHex)).toBe(true);
@@ -277,6 +306,7 @@ describe("SqliteVaultRekeyer — failures", () => {
 
     expect(!result.ok && result.error.code).toBe("REKEY_FAILED");
     expect(!result.ok && result.error.message).toContain(backupOf(vault));
+    expect(!result.ok && result.error).toBeInstanceOf(RekeyUnresolvedError);
     expect(existsSync(backupOf(vault))).toBe(true);
     expect(opens(backupOf(vault), vault.keyHex)).toBe(true);
     expect(contentChecksum(backupOf(vault), vault.keyHex)).toBe(before);

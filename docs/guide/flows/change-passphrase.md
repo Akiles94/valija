@@ -54,7 +54,12 @@ re-encrypting the whole vault under a new key, without exporting or losing anyth
 - Not enough free disk space, or another Valija process held the vault for more than 5 s
   ([`STORAGE_ERROR`](../reference/errors.md#err-storage-error)); nothing changed.
 - Re-encrypting fails or does not verify ([`REKEY_FAILED`](../reference/errors.md#err-rekey-failed)); the vault still opens with the
-  current passphrase, restored from its backup if needed.
+  current passphrase, restored from its backup if needed. In the rare case the restore itself fails,
+  the CLI names the kept backup and the manual step, and the desktop says to check Sync & safety or
+  run `valija doctor` instead of saying nothing changed.
+- Once re-encrypting has verified, the change always completes: if the backup cannot be deleted it
+  is kept and flagged by `status`, `doctor` and Sync, and a failed device-state write never keeps
+  the new key out of the keychain or the new kit from being shown.
 
 ## How it works
 
@@ -105,4 +110,4 @@ sequenceDiagram
 - [`VAULT_SCHEMA_TOO_NEW`](../reference/errors.md#err-vault-schema-too-new) — a newer Valija upgraded the vault.
 - [`PASSPHRASE_UNCHANGED`](../reference/errors.md#err-passphrase-unchanged) — the new passphrase derives the current key.
 - [`STORAGE_ERROR`](../reference/errors.md#err-storage-error) — not enough disk space, or the vault was busy.
-- [`REKEY_FAILED`](../reference/errors.md#err-rekey-failed) — re-encrypting failed or did not verify; the current passphrase still works.
+- [`REKEY_FAILED`](../reference/errors.md#err-rekey-failed) — re-encrypting failed or did not verify; the current passphrase still works, unless the restore failed too (then the kept backup is named, and `valija doctor` explains it).

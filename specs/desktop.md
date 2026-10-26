@@ -51,7 +51,8 @@ the module-level bridge singleton every screen used to reach directly.
   (`{ vaultVersion, supportedVersion }`). `toIpcResult` fills it **only** for a
   `VaultSchemaTooNewError` (the typed `VAULT_SCHEMA_TOO_NEW` every producer builds through
   `schemaTooNewErr`); every other error still crosses as exactly `{ code }`, and no message ever
-  crosses (P-21).
+  crosses (P-21). (REKEY W4) The one other optional field is `unresolved?: true`, set only for a
+  `RekeyUnresolvedError` (`REKEY_FAILED` the rekeyer could not confirm undone).
 - `VaultStatusResponse.schemaTooNew?` carries the same two numbers when status finds a newer vault
   behind a valid key.
 - `withLockDetection(bridge, onLocked, onSchemaTooNew = () => {})` also routes any
@@ -136,7 +137,13 @@ both reduce to this one call (D-U(b): a skipped tour never nags again).
   The dialog reads `sync.status().looksLikeCloud` once (read-only) to show the confirmation
   checkbox, gates Submit on a non-empty credential, `validateNewPassphrase(...) === null` and the
   checkbox when cloud, calls only `vault.changePassphrase`, shows errors as `errorCopy(code)` inline,
-  and clears its secret fields after every submit and on cancel. On success `app.tsx`'s
+  and clears its secret fields after every submit and on cancel. (REKEY W2/W4) A rejected
+  `sync.status` makes the cloud state "unknown": the `changePassphrase.cloudUnknown` warning and the
+  checkbox are shown and required (fail safe). A rejected `vault.changePassphrase` resets the busy
+  state, clears the secrets, keeps Cancel usable and shows `changePassphrase.unexpected`. A
+  `REKEY_FAILED` with `unresolved: true` (`toIpcResult` sets it only for a `RekeyUnresolvedError`,
+  never the message) shows `changePassphrase.failedUnresolved`, which points to Sync & safety,
+  Check my setup and `valija doctor` instead of `errors.REKEY_FAILED`'s "Nothing changed". On success `app.tsx`'s
   `passphraseChanged` closes the overlay, calls `resetWorkspaceView()` (the C2 rule), then sets
   `afterPassphraseChanged(...)`, so the Router shows the existing `RecoveryKitScreen`, which reads the
   new kit from the one-shot slot. `errors.WRONG_PASSPHRASE` now ends with the D-O hint ("If you
