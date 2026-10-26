@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const APP = readFileSync(join(import.meta.dirname, "app.tsx"), "utf8");
 const BASE_CSS = readFileSync(join(import.meta.dirname, "styles/base.css"), "utf8");
+const SETTINGS = readFileSync(join(import.meta.dirname, "screens/settings.tsx"), "utf8");
 const NAV_BAR_PATH = join(import.meta.dirname, "components/nav-bar.tsx");
 
 /**
@@ -63,6 +64,16 @@ describe("the change-passphrase overlay (REKEY)", () => {
     const next = body.indexOf("setState(afterPassphraseChanged(");
     expect(reset).toBeGreaterThan(-1);
     expect(next).toBeGreaterThan(reset);
+  });
+
+  it("Settings offers Change passphrase… in both lock states and app.tsx wires it (D-F)", () => {
+    const vaultPanel = SETTINGS.slice(SETTINGS.indexOf('active === "vaultAndSync"'));
+    const lockedBranchEnd = vaultPanel.indexOf('t("settings.vaultAndSyncLocked")');
+    const button = vaultPanel.indexOf('t("settings.changePassphrase")');
+    expect(lockedBranchEnd).toBeGreaterThan(-1);
+    expect(button).toBeGreaterThan(lockedBranchEnd); // after the unlocked ? … : … ternary, so in both
+    expect(vaultPanel.slice(lockedBranchEnd, button)).toContain(")}");
+    expect(APP).toContain("onOpenChangePassphrase={() => setOverlayState(openChangePassphrase())}");
   });
 
   it("acknowledging the kit honours lockedAfterKit (D-H)", () => {
