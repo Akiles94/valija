@@ -14,6 +14,7 @@ Local-first, end-to-end encrypted (SQLCipher + Argon2id) AI-context vault, expos
 - Architecture, components, data stores: `.context/overview.md`
 - Invariants and traps: `.context/gotchas.md` (before changing code, read "Repo-wide" + the areas you touch)
 - Flows (read only the one matching the task):
+  - change-passphrase: CLI `valija change-passphrase` / desktop `vault:changePassphrase` → every refusal before any write → `SqliteVaultRekeyer` (backup, salt-preserving raw-key rekey, verify) → new key into the keychain → new recovery kit once. → `.context/flows/change-passphrase.md`
   - context-pack: MCP `get_context` / `valija export` / desktop `content:pack` → `GetContextPack` → budgeted section assembly → Markdown pack → `.context/flows/context-pack.md`
   - desktop-ipc-call: screen → `ValijaBridge` → preload `ipcRenderer.invoke` → zod-validated channel → handler → container use case → `IpcResult` (`{ error: { code } }`) → catalog error copy → `.context/flows/desktop-ipc-call.md`
   - import-chat-history: export file (.json/.zip) → read + autodetect parser → normalized conversations → select → chunk → `ImportItems` upserts deterministic-id `imported` items in one write tx. → `.context/flows/import-chat-history.md`

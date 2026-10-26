@@ -6,6 +6,23 @@ All notable changes to valija. Format: [Keep a Changelog](https://keepachangelog
 
 ### Added
 
+- **Change the passphrase** (`advances/REKEY/`): `valija change-passphrase [--recovery-key <hex>]
+  [--yes]` and the desktop app's **Settings → Vault & sync → Change passphrase…** re-encrypt the
+  whole `vault.db` in place under the key the new passphrase derives (same salt and KDF parameters,
+  so `vault.json` never changes), with a ciphertext backup, a fresh-connection verify, and crash
+  safety: a crash leaves a vault the old or the new credential opens, or a backup the old one opens.
+  Both always ask for the current credential — the recovery key resets a forgotten passphrase — and,
+  in a synced folder, a confirmation that other devices are locked and synced. This device stays
+  unlocked with the new key, and the new recovery kit is shown once. MCP and the SDK cannot change a
+  passphrase. After a change elsewhere, `valija unlock`'s `WRONG_PASSPHRASE` (and the desktop copy)
+  hints to use the new passphrase. New error codes: `PASSPHRASE_UNCHANGED`,
+  `VAULT_FOLDER_UNSETTLED`, `REKEY_FAILED`.
+- The recovery kit now says when its key was issued (**Key issued**) and that it replaces any
+  earlier kit for the vault.
+- A leftover rekey backup (`vault.db.pre-rekey.bak`, encrypted with the PREVIOUS passphrase/key) is
+  flagged by `valija status`, `valija doctor`, and the desktop Sync panel and Diagnostics, and counts
+  as an unsettled folder for relocation.
+
 - Context for AI coding agents: an [`AGENTS.md`](AGENTS.md) index plus [`.context/`](.context/) flows and gotchas, maintained with [easy-repo-context](https://github.com/Akiles94/easy-repo-context) and checked in CI by `npm run context:check`. No runtime behavior changed.
 - A generated developer guide ([`docs/guide/`](docs/guide/README.md)) — business flows with sequence diagrams, the code map and reference tables — checked in CI by `npm run docs:check`, which also requires TSDoc on every exported symbol. No runtime behavior changed.
 - **`valija/sdk`: embed Valija in your product** (`advances/SDK/`, experimental `0.x`). A Node 22

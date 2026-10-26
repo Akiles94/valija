@@ -58,6 +58,7 @@ own data, and housekeeping.
 valija status                     # where the vault is, lock state, sync/idle info
 valija unlock                     # unlock for this session (asks for your passphrase)
 valija lock                       # lock again (drops the key from the OS keychain)
+valija change-passphrase          # change your passphrase: re-encrypts the vault, prints a new recovery kit
 valija projects                   # list projects with item counts and last activity
 valija show my-project            # print a project's items (--type to filter; omit the name inside a linked folder)
 valija search "auth"              # full-text search (-p to scope to one project)
@@ -148,6 +149,14 @@ export VALIJA_AUTOLOCK_MINUTES=off   # disable it (0 also works)
 ```
 
 `valija status` shows the effective TTL and how long the vault has been idle.
+
+**Change your passphrase:** `valija change-passphrase` (or **Settings → Vault & sync → Change
+passphrase…** in the desktop app) asks for your current passphrase — or `--recovery-key <hex>` if
+you forgot it — and the new one twice, re-encrypts the whole vault under the new key, and prints a
+**new** recovery kit once. Your old passphrase and old kit stop opening this vault; copies made
+before (sync history, backups) still open with them. On a synced vault, lock your other devices and
+let sync finish first, then unlock them with the new passphrase — see
+[docs/sync.md](docs/sync.md#changing-your-passphrase-on-a-synced-vault).
 
 ## Where your vault lives
 
@@ -318,7 +327,8 @@ a product that asks for the passphrase is trusted with.
   included. The only plaintext file is `vault.json` (salt + KDF params + vault id) — no context, and
   no sync/device metadata, ever.
 - Passphrase → Argon2id → key. Losing the passphrase **and** the recovery kit means the data is gone,
-  by design.
+  by design. Changing the passphrase re-encrypts the vault and replaces the kit; copies made before
+  the change keep the old secret.
 - Any MCP client you connect receives plaintext of the context you ask it to load. Encryption
   protects data *at rest*.
 - No telemetry, no network calls at runtime, no daemon.

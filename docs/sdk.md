@@ -159,6 +159,10 @@ const p = await openVault({ client: "acme-notes", passphrase });        // or { 
   sets `vault.forkNotice` (`{ generation, message }`, the wording `valija unlock` prints). Nothing
   was deleted or merged; point the user at `valija doctor`.
 - Passing both `passphrase` and `recoveryKey` is `INVALID_INPUT`.
+- After a passphrase change (`valija change-passphrase` or the desktop app), a Mode P handle gets
+  `VAULT_LOCKED` on its next call: the key it holds no longer opens the vault. Mode K follows the OS
+  keychain, so it keeps working on the device where the change ran. The SDK cannot change a
+  passphrase (by design).
 
 **Prefer Mode K.** Mode P hands your product the vault's master secret (see
 [the limits](#what-valija-guarantees-and-what-it-cannot)).
@@ -292,9 +296,11 @@ This release supports **schema 4**.
   does with it — LLM calls, your UI, your own storage, your logs — is your responsibility, not
   Valija's.
 - **In Mode P your product receives the passphrase or the recovery key: the vault's permanent master
-  secret.** Valija has no passphrase change or re-key, so a passphrase that leaks from your product
-  (a keylogged dialog, a logged kit, a crash dump, a "helpful" sync) compromises that vault and every
-  synced or backed-up copy of it, for good. Only trusted products should ever ask for it, and users
+  secret.** A passphrase that leaks from your product (a keylogged dialog, a logged kit, a crash dump,
+  a "helpful" sync) compromises that vault. The user can change the passphrase with
+  `valija change-passphrase` or the desktop app, which makes the leaked secret useless for the vault
+  from then on — but every synced or backed-up copy made before the change still opens with it, for
+  good. Only trusted products should ever ask for it, and users
   should type it only into products they trust. **Prefer Mode K.**
 - **JavaScript cannot reliably erase a string from memory.** While a Mode P vault is open, the key
   is in your process's memory, and may end up in swap or a crash dump. Dropping it is best effort.

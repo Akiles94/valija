@@ -25,4 +25,4 @@ Purpose: Local-first, end-to-end encrypted (SQLCipher + Argon2id) AI-context vau
 - CLI, MCP and desktop IPC all call use cases from one `Container`; desktop main imports root `src/` by relative path.
 - Renderer ↔ main: only `window.valija` methods from the preload; errors as `code` only; paths as opaque handles; the passphrase goes in, the recovery kit comes out once.
 - MCP surface is deliberately narrower than CLI/desktop (SPEC §7), and so is the SDK (MCP's five operations plus lock/close; no curation, export or status). Nothing networks: no telemetry, no HTTP transport, no auto-update.
-- Traced flows: `flows/unlock-vault.md`, `flows/save-context.md`, `flows/multi-device-sync.md`, `flows/import-chat-history.md`, `flows/context-pack.md`, `flows/desktop-ipc-call.md`.
+- Traced flows: `flows/unlock-vault.md`, `flows/save-context.md`, `flows/multi-device-sync.md`, `flows/import-chat-history.md`, `flows/context-pack.md`, `flows/desktop-ipc-call.md`, `flows/change-passphrase.md`.

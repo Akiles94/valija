@@ -102,6 +102,60 @@ still sitting in the folder, the upgrade didn't finish cleanly: your current `va
 `valija doctor` points out a lingering one. If your vault is in a synced folder, delete it on one
 device and let that deletion sync, like any other change.
 
+## Changing your passphrase on a synced vault
+
+> How it works: [Change the passphrase](guide/flows/change-passphrase.md)
+
+`valija change-passphrase` (or **Settings → Vault & sync → Change passphrase…** in the desktop app)
+re-encrypts the whole `vault.db` under a new key. `vault.json` does not change. The re-encryption is
+itself a write, so it bumps the generation like any other. Do it as part of the ritual:
+
+1. On every **other** device: `valija lock`, then wait for your sync client to show "up to date".
+2. On this device: `valija change-passphrase`. In a synced folder it asks you to confirm step 1
+   (`[y/N]`, or `--yes`); it always asks for your current passphrase (or `--recovery-key`) and the
+   new one twice, then prints your **new** recovery kit once. This device stays unlocked.
+3. Wait for the sync client to upload the new `vault.db`.
+4. On each other device: `valija unlock` with the **new** passphrase. It fast-forwards to the new
+   generation as usual.
+
+**What another device sees.** If it was still unlocked, its next command or MCP call gets
+`VAULT_LOCKED`: the old key no longer opens the file, so valija drops it from that device's keychain.
+`valija unlock` with the old passphrase gives `error [WRONG_PASSPHRASE]` plus a hint that the
+passphrase may have been changed on another device; the old recovery kit fails the same way. SDK
+products that opened the vault with a passphrase (Mode P) also get `VAULT_LOCKED` on their next call.
+
+**If you skipped step 1: a reverted change.** Say device B was not synced and wrote offline under the
+old key while you changed the passphrase on A. Your sync client keeps one `vault.db` and makes a
+conflicted copy of the other. If **B's** file wins, the change is silently undone for the folder: your
+new passphrase gives `WRONG_PASSPHRASE` and the old one opens the vault again. Lineage tells you this
+happened: unlocking on A with the old passphrase reports a fork (`VAULT_FORK_DETECTED`), because A
+remembers the generation its re-encryption wrote and the file now holds a different write at that
+generation. To fix it, resolve the fork as above (the conflicted copy is the one under the **new**
+key), then change the passphrase again.
+
+**Old copies keep the old secret.** A passphrase change protects the vault file from now on. It does
+not touch copies made before: conflicted copies, OneDrive's `vault-<hostname>.db`, `*.pre-NNN.bak`
+migration backups, your sync client's **version history**, OS backups (Time Machine and the like), and
+any copy someone already took. All of those still open with the old passphrase and the old recovery
+kit. If you believe the old passphrase leaked, also purge the vault's version history in your sync
+client where the vendor allows it, and delete the leftover copies once you've resolved them — valija
+never deletes them for you. Deleting a file is not secure erase: on SSDs and in cloud storage the old
+bytes may survive, so treat the old secret as burned. In one sentence: **a passphrase change limits a
+leaked secret to the copies that existed before the change; it does not undo past exposure.**
+
+**The rekey backup.** Before re-encrypting, valija writes `vault.db.pre-rekey.bak` beside `vault.db` —
+a ciphertext copy under the **previous** key — and deletes it once a fresh connection has verified the
+new file. You should never see it. If you do, the change was interrupted (a crash or power loss):
+`valija status`, `valija doctor`, and the desktop Sync panel and Diagnostics flag it as "encrypted with
+your PREVIOUS passphrase/key", and while it sits there the folder counts as unsettled, so another
+passphrase change or a move is refused.
+- If `valija unlock` works with your **current** passphrase (old or new, whichever opens it), your
+  vault is fine: delete the `.bak`. In a synced folder, delete it on one device and let that sync.
+- If neither passphrase opens `vault.db`, restore the backup, which opens with the **old** passphrase:
+  with valija closed everywhere, delete `vault.db-journal` if it exists, then rename
+  `vault.db.pre-rekey.bak` to `vault.db` (replacing it), and `valija unlock` with the old passphrase.
+  Delete the journal **first**: a journal left beside the restored file would be rolled into it.
+
 ## Idle auto-lock
 
 > How it works: [Idle auto-lock](guide/flows/idle-auto-lock.md)
