@@ -23,6 +23,8 @@ open. Everything else in Valija needs a vault first.
   the cost parameters are written in plain text, never the key.
 - The raw key is shown exactly once, as a printable **recovery kit**. Valija never stores it. Losing
   both the passphrase and the kit means the data is gone; there is no reset.
+- The kit shows when its key was issued (for a new vault, its creation time) and says it replaces
+  any earlier kit for the vault, so a kit issued after a passphrase change is easy to tell apart.
 - A new vault starts **unlocked**, and its idle auto-lock clock starts at once.
 
 ## What can go wrong
