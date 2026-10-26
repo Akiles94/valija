@@ -1,7 +1,7 @@
 # Overview
 Purpose: Local-first, end-to-end encrypted (SQLCipher + Argon2id) AI-context vault, exposed through a CLI, a local stdio MCP server and an Electron desktop app. Product spec: `docs/SPEC.md`; process: `CLAUDE.md`, `CONTRIBUTING.md`; generated developer guide: `docs/guide/README.md`; on-disk format: `docs/vault-format.md`; sync: `docs/sync.md`; GUI: `docs/gui.md`.
 ## Components
-- `src/vault` — key lifecycle: create/unlock/lock/status/relocate, lineage + fork detection, idle auto-lock; `src/vault/application/use-cases/unlock-vault.use-case.ts:UnlockVault`.
+- `src/vault` — key lifecycle: create/unlock/lock/status/relocate/change passphrase (in-place re-encryption, `src/vault/infra/sqlite-vault-rekeyer.ts:SqliteVaultRekeyer`), lineage + fork detection, idle auto-lock; `src/vault/application/use-cases/unlock-vault.use-case.ts:UnlockVault`.
 - `src/context` — projects and items, save, search (FTS5), context packs; reaches the DB only via `src/context/infra/vault-sessions.ts:SqliteVaultSessions`.
 - `src/importers` — ChatGPT/Claude/generic export parsing and chunking, written via context's `ImportItems`; `src/importers/application/use-cases/import-conversations.use-case.ts`.
 - `src/shared` — `Result`, `UseCase`, SQLite open + migrations, vault/state paths; `src/shared/infra/sqlite.ts:openVaultDb()`.

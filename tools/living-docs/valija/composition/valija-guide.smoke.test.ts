@@ -49,7 +49,7 @@ describe("Valija extractors over the real repository", () => {
       expect(keys).toContain(`mcp:${tool}`);
     }
     expect([...keys].filter((k) => k.startsWith("ipc:"))).toHaveLength(37);
-    expect([...keys].filter((k) => k.startsWith("symbol:"))).toHaveLength(20);
+    expect([...keys].filter((k) => k.startsWith("symbol:"))).toHaveLength(21);
     expect([...keys].filter((k) => k.startsWith("err:"))).toHaveLength(53);
 
     const composition = facts.graphs.find((g) => g.id === "composition");

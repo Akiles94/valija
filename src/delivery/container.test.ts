@@ -6,6 +6,7 @@ import { LATEST_SCHEMA_VERSION } from "../shared/infra/migrations.js";
 import { makePassphraseVault } from "../testing/passphrase-vault.js";
 import { RecordingKeychain } from "../testing/recording-keychain.js";
 import { setStoredSchemaVersion } from "../testing/schema-skew.js";
+import { ChangePassphrase } from "../vault/application/use-cases/change-passphrase.use-case.js";
 import { FileDeviceIdentity } from "../vault/infra/file-device-identity.js";
 import { InMemoryActivityDeviceIdentity } from "../vault/infra/in-memory-activity-device-identity.js";
 import { InMemoryKeychain } from "../vault/infra/in-memory-keychain.js";
@@ -54,6 +55,26 @@ describe("buildContainer — default wiring (CLI, MCP, desktop)", () => {
     setStoredSchemaVersion(vault.paths.db, vault.keyHex, LATEST_SCHEMA_VERSION - 1);
     RecordingKeychain.store.set(vault.vaultId, vault.keyHex);
     const c = buildContainer({ vaultRoot: vault.paths.root });
+    expect(c.listProjects.execute().ok).toBe(true);
+  });
+});
+
+describe("buildContainer — changePassphrase (REKEY)", () => {
+  it("is wired to the real adapters and stores the new key in the OS keychain (mocked)", async () => {
+    const vault = await makePassphraseVault(freshRoot());
+    RecordingKeychain.store.set(vault.vaultId, vault.keyHex);
+    const c = buildContainer({ vaultRoot: vault.paths.root });
+    expect(c.changePassphrase).toBeInstanceOf(ChangePassphrase);
+
+    const result = await c.changePassphrase.execute({
+      current: { passphrase: vault.passphrase },
+      newPassphrase: "a different test phrase",
+      otherDevicesConfirmed: false,
+    });
+
+    expect(result.ok && result.value.unlockedOnThisDevice).toBe(true);
+    expect(RecordingKeychain.constructions).toBe(1);
+    expect(RecordingKeychain.store.get(vault.vaultId)).toBe(result.ok ? result.value.keyHex : "?");
     expect(c.listProjects.execute().ok).toBe(true);
   });
 });

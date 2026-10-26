@@ -45,6 +45,8 @@ Each flow page opens with the business view: who, why, the rules, what can go wr
 
 ### Vault lifecycle
 
+- [Change the passphrase](flows/change-passphrase.md) — To make the old passphrase and the old recovery kit useless for the vault from now on, by
+re-encrypting the whole vault under a new key, without exporting or losing anything.
 - [Check vault status](flows/check-vault-status.md) — One glance answers "can my AI tools use the vault right now?" and "is it safe to switch devices?",
 without opening or changing any context.
 - [Create a vault](flows/create-vault.md) — To get an encrypted place for AI context that only their passphrase (or their recovery kit) can

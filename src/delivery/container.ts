@@ -25,6 +25,7 @@ import type { DeviceIdentity } from "../vault/application/ports/device-identity.
 import type { KeychainPort } from "../vault/application/ports/keychain.js";
 import type { VaultFolder } from "../vault/application/ports/vault-folder.js";
 import type { VaultMover } from "../vault/application/ports/vault-mover.js";
+import { ChangePassphrase } from "../vault/application/use-cases/change-passphrase.use-case.js";
 import { CheckVaultUpgrade } from "../vault/application/use-cases/check-vault-upgrade.use-case.js";
 import { CreateVault } from "../vault/application/use-cases/create-vault.use-case.js";
 import { LockVault } from "../vault/application/use-cases/lock-vault.use-case.js";
@@ -39,6 +40,7 @@ import { FileVaultMover } from "../vault/infra/file-vault-mover.js";
 import { FileVaultStore } from "../vault/infra/file-vault-store.js";
 import { InMemoryActivityDeviceIdentity } from "../vault/infra/in-memory-activity-device-identity.js";
 import { OsKeychain } from "../vault/infra/keyring.js";
+import { SqliteVaultRekeyer } from "../vault/infra/sqlite-vault-rekeyer.js";
 
 const systemClock: Clock = { now: () => new Date() };
 const ulidIds: IdGenerator = { next: () => ulid() };
@@ -55,6 +57,8 @@ export interface Container {
   checkVaultUpgrade: CheckVaultUpgrade;
   lockVault: LockVault;
   relocateVault: RelocateVault;
+  /** REKEY: re-encrypts the vault under a new passphrase (CLI and desktop only — never MCP or the SDK facade, D-N). */
+  changePassphrase: ChangePassphrase;
   vaultStatus: VaultStatus;
   saveContext: SaveContext;
   listProjects: ListProjects;
@@ -99,6 +103,7 @@ export function buildContainer(options: ContainerOptions = {}): Container {
   const keychain = options.keychain ?? new OsKeychain();
   const folder = new FileVaultFolder(paths);
   const mover = new FileVaultMover();
+  const rekeyer = new SqliteVaultRekeyer(paths, ulidIds, systemClock);
   const sharedIdentity = new FileDeviceIdentity(resolveStatePaths(), ulidIds);
   const deviceIdentity = options.keepActivityInMemory
     ? new InMemoryActivityDeviceIdentity(sharedIdentity)
@@ -126,6 +131,15 @@ export function buildContainer(options: ContainerOptions = {}): Container {
     checkVaultUpgrade: new CheckVaultUpgrade(store, crypto),
     lockVault: new LockVault(store, keychain, folder, deviceIdentity),
     relocateVault: new RelocateVault(store, keychain, mover, folder, paths),
+    changePassphrase: new ChangePassphrase(
+      store,
+      crypto,
+      keychain,
+      folder,
+      deviceIdentity,
+      rekeyer,
+      systemClock,
+    ),
     vaultStatus: new VaultStatus(store, keychain, deviceIdentity, folder, systemClock, ttlMinutes),
     saveContext: new SaveContext(sessions, systemClock, ulidIds),
     listProjects: new ListProjects(sessions),

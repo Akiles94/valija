@@ -52,6 +52,7 @@ Read from `buildContainer` in `src/delivery/container.ts`. Each arrow goes from 
 ```mermaid
 flowchart LR
   n_Argon2VaultCrypto["Argon2VaultCrypto"]
+  n_ChangePassphrase["ChangePassphrase"]
   n_CheckVaultUpgrade["CheckVaultUpgrade"]
   n_CreateVault["CreateVault"]
   n_EditItem["EditItem"]
@@ -74,6 +75,7 @@ flowchart LR
   n_SetItemArchived["SetItemArchived"]
   n_SetItemPinned["SetItemPinned"]
   n_ShowProject["ShowProject"]
+  n_SqliteVaultRekeyer["SqliteVaultRekeyer"]
   n_SqliteVaultSessions["SqliteVaultSessions"]
   n_UnlinkWorkspace["UnlinkWorkspace"]
   n_UnlockVault["UnlockVault"]
@@ -85,6 +87,13 @@ flowchart LR
   n_systemClock["systemClock"]
   n_ttlMinutes["ttlMinutes"]
   n_ulidIds["ulidIds"]
+  n_ChangePassphrase -->|VaultCrypto| n_Argon2VaultCrypto
+  n_ChangePassphrase -->|VaultFolder| n_FileVaultFolder
+  n_ChangePassphrase -->|VaultStore| n_FileVaultStore
+  n_ChangePassphrase -->|VaultRekeyer| n_SqliteVaultRekeyer
+  n_ChangePassphrase -->|DeviceIdentity| n_deviceIdentity
+  n_ChangePassphrase -->|KeychainPort| n_keychain
+  n_ChangePassphrase -->|Clock| n_systemClock
   n_CheckVaultUpgrade -->|VaultCrypto| n_Argon2VaultCrypto
   n_CheckVaultUpgrade -->|VaultStore| n_FileVaultStore
   n_CreateVault -->|VaultCrypto| n_Argon2VaultCrypto

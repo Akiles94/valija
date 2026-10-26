@@ -21,6 +21,7 @@ import { parserRegistry } from "../../importers/infra/parser-registry.js";
 import { ok } from "../../shared/domain/result.js";
 import { FakeWorkspaceProbe } from "../../testing/fake-workspace-probe.js";
 import { FixedClock, makeUnlockedVault, SeqIds } from "../../testing/test-vault.js";
+import { ChangePassphrase } from "../../vault/application/use-cases/change-passphrase.use-case.js";
 import { CheckVaultUpgrade } from "../../vault/application/use-cases/check-vault-upgrade.use-case.js";
 import { CreateVault } from "../../vault/application/use-cases/create-vault.use-case.js";
 import { LockVault } from "../../vault/application/use-cases/lock-vault.use-case.js";
@@ -30,6 +31,7 @@ import { VaultStatus } from "../../vault/application/use-cases/vault-status.use-
 import { Argon2VaultCrypto } from "../../vault/infra/argon2.js";
 import { FileVaultFolder } from "../../vault/infra/file-vault-folder.js";
 import { FileVaultMover } from "../../vault/infra/file-vault-mover.js";
+import { SqliteVaultRekeyer } from "../../vault/infra/sqlite-vault-rekeyer.js";
 import type { Container } from "../container.js";
 import { buildMcpServer } from "./server.js";
 
@@ -58,6 +60,15 @@ const container: Container = {
   checkVaultUpgrade: new CheckVaultUpgrade(vault.store, crypto),
   lockVault: new LockVault(vault.store, vault.keychain, folder, vault.deviceIdentity),
   relocateVault: new RelocateVault(vault.store, vault.keychain, mover, folder, vault.paths),
+  changePassphrase: new ChangePassphrase(
+    vault.store,
+    crypto,
+    vault.keychain,
+    folder,
+    vault.deviceIdentity,
+    new SqliteVaultRekeyer(vault.paths, ids, clock),
+    clock,
+  ),
   vaultStatus: new VaultStatus(
     vault.store,
     vault.keychain,

@@ -153,7 +153,7 @@ docs:
       tsup.config.ts: 235c103285a7bb07
       vitest.config.ts: 0c9f375fdc8c77a5
   .context/overview.md:
-    commit: 7dc30d267121
+    commit: 9618aa6652be
     stamped: 2026-10-26
     sources:
       desktop/package.json: 8efa41413b32f579
@@ -166,7 +166,7 @@ docs:
       src/delivery/cli/build-program.ts: 9d00c627af36c000
       src/delivery/cli/installer.ts: 02eb131eb59a5cce
       src/delivery/cli/program.ts: 842c50e131a53b10
-      src/delivery/container.ts: b82764f5a88910be
+      src/delivery/container.ts: c2a93686a45b061d
       src/delivery/mcp/server.ts: 5ec5ee56a450be1d
       src/delivery/sdk/index.ts: 8334bcfdef32cbe0
       src/importers/application/use-cases/import-conversations.use-case.ts: 4b99672771b22a49
@@ -177,6 +177,7 @@ docs:
       src/vault/application/use-cases/unlock-vault.use-case.ts: 0d4600bbad50ec81
       src/vault/infra/file-device-identity.ts: 76f56ede0f8e77cc
       src/vault/infra/keyring.ts: c5659f598b6bdfcb
+      src/vault/infra/sqlite-vault-rekeyer.ts: ff70fed8fbc8a7ec
       src/vault/infra/vault-header.ts: 4c4d223a05df9a58
       tools/living-docs/valija/composition/main.ts: f9fd0742c72441d4
       tools/living-docs/valija/composition/valija-guide.ts: 78b7d2ac05d6e3f6

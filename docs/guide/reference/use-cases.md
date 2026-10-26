@@ -8,6 +8,7 @@ Every business action is one use-case class: one actor intent, one entry point. 
 
 | Use case | Module | What it does | Cited by |
 |---|---|---|---|
+| <a id="symbol-changepassphrase"></a>[ChangePassphrase](../../../src/vault/application/use-cases/change-passphrase.use-case.ts) | vault | Changes the passphrase by re-encrypting the whole vault under the key the new passphrase derives (same salt and KDF, so `vault.json` never changes). | [Change the passphrase](../flows/change-passphrase.md) |
 | <a id="symbol-checkvaultupgrade"></a>[CheckVaultUpgrade](../../../src/vault/application/use-cases/check-vault-upgrade.use-case.ts) | vault | Describes a pending schema upgrade so a GUI confirmation screen can name it before running `migrate` — called only after `UnlockVault` has refused with `VAULT_UPGRADE_REQUIRED`. | [Upgrade the vault on unlock](../flows/upgrade-vault-on-unlock.md) |
 | <a id="symbol-createvault"></a>[CreateVault](../../../src/vault/application/use-cases/create-vault.use-case.ts) | vault | Creates the encrypted vault from a passphrase: mints its id and salt, derives the key, writes the header and database, and leaves it unlocked. | [Create a vault](../flows/create-vault.md) |
 | <a id="symbol-edititem"></a>[EditItem](../../../src/context/application/use-cases/edit-item.use-case.ts) | context | Edit in place: same id, createdAt kept, updatedAt stamped, FTS re-indexed by the storage trigger. | [Edit an item](../flows/edit-item.md) |
