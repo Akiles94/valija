@@ -1,5 +1,18 @@
 Approved: Oscar 2026-10-22 — all Decisions to confirm (P-1 … P-21) at their recommended defaults (a)
 
+> **Amendment after Slice 0 (Oscar 2026-10-26):** the spike (`spike.md`) was NO-GO for D-E 1 as
+> written — a kill in the commit window could leave a vault no key opens (new cipher salt on page 1
+> before the hot journal rolls back), and a write failure mid-rekey rolled back under the new key.
+> Oscar chose **D-E 1′**: the same in-place recipe with (1) the salt-preserving form
+> `PRAGMA rekey="x'<64-hex new key><32-hex current cipher_salt>'"` and (2) `PRAGMA cache_spill = OFF`
+> before the rekey, plus the backup. Slice 3 adopts it, together with the spike's other findings:
+> restore deletes `vault.db-journal` before renaming the backup over `vault.db`; `assertKeyHex` on
+> the new key first; the leftover cold-journal fix (`locking_mode = NORMAL` + one read + close, and a
+> `journal_mode = PERSIST` → `DELETE` toggle after the first read); the in-rekey write-failure test
+> uses the POSIX `ulimit -f` child; the source-scan test allows the 96-hex form; vault-format §5
+> records that the cipher salt is preserved. Accepted cost: the whole database is held in RAM during
+> the rekey (~1.3× its size). Residual risk: an EIO during the commit's own writes, covered by the backup.
+
 # REKEY — Change the passphrase and re-encrypt the vault · Implementation Plan
 
 **Spec:** `advances/REKEY/refined.md`. Oscar approved it at Gate R on 2026-10-22. Every decision
