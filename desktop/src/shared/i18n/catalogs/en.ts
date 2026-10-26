@@ -351,6 +351,11 @@ export const en = {
       one: "1 leftover upgrade backup found",
       other: "{count} leftover upgrade backups found",
     } satisfies PluralForm,
+    rekeyBackupsFound: {
+      one: "1 backup from a passphrase change found — it is encrypted with your previous passphrase",
+      other:
+        "{count} backups from a passphrase change found — they are encrypted with your previous passphrase",
+    } satisfies PluralForm,
     fileState: "File state",
     atRest: "At rest — no pending writes",
     notAtRest: "Not at rest — a write is in progress or was interrupted",
@@ -530,6 +535,11 @@ export const en = {
     RELOCATION_ROLLBACK_FAILED:
       "Valija couldn't finish undoing a failed move. Both {sourcePath} and {destinationPath} may hold a copy — keep only one.",
     VAULT_MUST_BE_LOCKED: "Lock your vault before moving it.",
+    PASSPHRASE_UNCHANGED: "That is your current passphrase. Choose a different one.",
+    VAULT_FOLDER_UNSETTLED:
+      "Your vault folder has leftover files (a conflicted copy, a backup or an unfinished write). Resolve them first — nothing was changed.",
+    REKEY_FAILED:
+      "Re-encrypting the vault failed. Nothing changed: your current passphrase still works.",
     generic: "Something went wrong ({code}).",
   },
 };

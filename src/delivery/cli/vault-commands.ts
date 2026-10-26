@@ -109,6 +109,11 @@ export function statusCommand(c: Container): void {
   console.log(
     `journal:  ${s.journalMode}${s.sidecars.length > 0 ? ` (stray: ${s.sidecars.join(", ")})` : " (single file at rest)"}`,
   );
+  for (const backup of c.folder.inspect().rekeyBackups) {
+    console.log(
+      `backup:   ${backup} — pre-rekey backup, encrypted with your PREVIOUS passphrase/key (see "valija doctor")`,
+    );
+  }
   if (s.generation !== undefined) {
     console.log(
       `lineage:  generation ${s.generation}, last written by ${writerLabel(s.lastWriter, s.lastWriterIsThisDevice)}`,

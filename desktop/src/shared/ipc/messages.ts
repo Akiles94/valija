@@ -408,6 +408,8 @@ export interface RelocationPointAtExistingResponse {
 export interface SyncStatusResponse {
   conflictedCopies: string[];
   staleBackups: string[];
+  /** Leftover "vault.db.pre-rekey.bak" copies — still encrypted with the PREVIOUS passphrase/key. */
+  rekeyBackups: string[];
   looksLikeCloud: boolean;
   resolvedStateHome: string;
 }

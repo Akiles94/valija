@@ -12,6 +12,7 @@ interface SyncData {
   looksLikeCloud: boolean;
   conflictedCopiesCount: number;
   staleBackupsCount: number;
+  rekeyBackupsCount: number;
   resolvedStateHome: string;
 }
 
@@ -56,6 +57,7 @@ export function SyncScreen({
         looksLikeCloud: sync.looksLikeCloud,
         conflictedCopiesCount: sync.conflictedCopies.length,
         staleBackupsCount: sync.staleBackups.length,
+        rekeyBackupsCount: sync.rekeyBackups.length,
         resolvedStateHome: sync.resolvedStateHome,
       });
     });
@@ -96,7 +98,9 @@ export function SyncScreen({
         </div>
       </div>
 
-      {(data.conflictedCopiesCount > 0 || data.staleBackupsCount > 0) && (
+      {(data.conflictedCopiesCount > 0 ||
+        data.staleBackupsCount > 0 ||
+        data.rekeyBackupsCount > 0) && (
         <div className="sync-banner">
           {data.conflictedCopiesCount > 0 && (
             <p className="warning">
@@ -106,6 +110,11 @@ export function SyncScreen({
           {data.staleBackupsCount > 0 && (
             <p className="warning">
               {t("sync.staleBackupsFound", { count: data.staleBackupsCount })}
+            </p>
+          )}
+          {data.rekeyBackupsCount > 0 && (
+            <p className="warning">
+              {t("sync.rekeyBackupsFound", { count: data.rekeyBackupsCount })}
             </p>
           )}
           <p className="explainer">{t("sync.conflictGuidance")}</p>

@@ -16,8 +16,8 @@ docs:
       src/delivery/context-pack-markdown.ts: 111aebd49c06b1a9
       src/delivery/mcp/server.ts: 5ec5ee56a450be1d
   .context/flows/desktop-ipc-call.md:
-    commit: a093863bc9cf
-    stamped: 2026-10-22
+    commit: 2649da335e4c
+    stamped: 2026-10-26
     sources:
       desktop/src/main/index.ts: 65bf9dfa97254290
       desktop/src/main/infra/electron-file-picker.ts: 164992f7fdc0742e
@@ -30,11 +30,11 @@ docs:
       desktop/src/renderer/state/bridge.ts: fae6864d90c14dc2
       desktop/src/renderer/state/lock-aware-bridge.ts: 6559552d8451dc83
       desktop/src/renderer/state/workspace-nav.ts: 8a2f447b5ae1234e
-      desktop/src/shared/i18n/catalogs/en.ts: e68e5e4a9203568f
-      desktop/src/shared/i18n/catalogs/es.ts: 5f60bf9df42acf1b
+      desktop/src/shared/i18n/catalogs/en.ts: f0a557872670fabd
+      desktop/src/shared/i18n/catalogs/es.ts: 56be799feffd9bd2
       desktop/src/shared/i18n/error-copy.ts: 660ee9ec510806b0
       desktop/src/shared/ipc/channels.ts: bf72bfcda0c24122
-      desktop/src/shared/ipc/messages.ts: d5205bd28a028e25
+      desktop/src/shared/ipc/messages.ts: f8b56e5eccf4dbf4
       tools/living-docs/valija/composition/valija-guide.ts: 78b7d2ac05d6e3f6
       tools/living-docs/valija/surfaces/ipc-surface.ts: a26b2d3bbe1e5bdd
   .context/flows/import-chat-history.md:
@@ -55,23 +55,23 @@ docs:
       src/importers/infra/file-export-reader.ts: 536b8859f2b139a3
       src/importers/infra/parser-registry.ts: 4a0c8bcb2798d600
   .context/flows/multi-device-sync.md:
-    commit: a093863bc9cf
-    stamped: 2026-10-22
+    commit: 2649da335e4c
+    stamped: 2026-10-26
     sources:
-      desktop/src/main/ipc/handlers/sync-handlers.ts: 38ea7c8c48a6b7ff
+      desktop/src/main/ipc/handlers/sync-handlers.ts: 0f9b165ac622a263
       desktop/src/main/ipc/handlers/vault-handlers.ts: 84a5b193cb77bab6
       src/context/application/use-cases/import-items.use-case.ts: e2d71a29472602f4
       src/context/application/use-cases/save-context.use-case.ts: 3b34df073657b668
       src/context/infra/vault-sessions.ts: 639f76651323c449
-      src/delivery/cli/vault-commands.ts: 1fcc6f9d32c8cd5d
-      src/delivery/diagnostics.ts: 27be27f065f6bcf9
+      src/delivery/cli/vault-commands.ts: 2acd728551be1f4b
+      src/delivery/diagnostics.ts: f45f7a5e6fd24bb7
       src/shared/infra/sqlite.ts: 7d8466b48e9374f2
       src/shared/infra/state-paths.ts: 455da3732559d1f8
       src/vault/application/use-cases/unlock-vault.use-case.ts: 0d4600bbad50ec81
       src/vault/domain/services/vault-lineage.ts: 1c78db599fd33bd3
       src/vault/domain/values/write-stamp.ts: b7e105c7edd54228
       src/vault/infra/file-device-identity.ts: 76f56ede0f8e77cc
-      src/vault/infra/file-vault-folder.ts: 88f9b0175659a195
+      src/vault/infra/file-vault-folder.ts: 81b301a9951afb4d
       src/vault/infra/file-vault-store.ts: 1cf62929741603f0
       src/vault/infra/sqlite-lineage-store.ts: 55c3b97c8283f00e
   .context/flows/save-context.md:
@@ -87,8 +87,8 @@ docs:
       src/vault/application/policies/session-guard.ts: b99568ee81764405
       src/vault/infra/sqlite-lineage-store.ts: 55c3b97c8283f00e
   .context/flows/unlock-vault.md:
-    commit: a093863bc9cf
-    stamped: 2026-10-22
+    commit: 2649da335e4c
+    stamped: 2026-10-26
     sources:
       desktop/src/main/ipc/handlers/vault-handlers.ts: 84a5b193cb77bab6
       desktop/src/main/ipc/register-handlers.ts: 7068da57b0dec1c9
@@ -97,7 +97,7 @@ docs:
       desktop/src/renderer/screens/migration-confirm.tsx: 279cc64d589036e2
       desktop/src/renderer/state/unlock-outcome.ts: 83297421da576197
       src/delivery/cli/build-program.ts: 9d00c627af36c000
-      src/delivery/cli/vault-commands.ts: 1fcc6f9d32c8cd5d
+      src/delivery/cli/vault-commands.ts: 2acd728551be1f4b
       src/shared/domain/services/schema-compatibility.ts: d8c023954feabacb
       src/shared/infra/migrations.ts: 048e15a640e5a00c
       src/shared/infra/sqlite.ts: 7d8466b48e9374f2
@@ -109,8 +109,8 @@ docs:
       src/vault/infra/file-vault-store.ts: 1cf62929741603f0
       src/vault/infra/keyring.ts: c5659f598b6bdfcb
   .context/gotchas.md:
-    commit: a093863bc9cf
-    stamped: 2026-10-22
+    commit: 2649da335e4c
+    stamped: 2026-10-26
     sources:
       .claude/hooks/guard-git-ops.sh: 59294a42c694999c
       .claude/hooks/guard-implementation.sh: 4ac0bd7f739e821b
@@ -146,7 +146,7 @@ docs:
       src/vault/application/use-cases/relocate-vault.use-case.ts: 2216bebb4fea8e64
       src/vault/application/use-cases/unlock-vault.use-case.ts: 0d4600bbad50ec81
       src/vault/domain/services/vault-lineage.ts: 1c78db599fd33bd3
-      src/vault/domain/services/vault-relocation.ts: ad9a5a5aba4e6427
+      src/vault/domain/services/vault-relocation.ts: cf4c77fba249fc15
       src/vault/infra/file-vault-store.ts: 1cf62929741603f0
       tools/living-docs/valija/composition/valija-guide.ts: 78b7d2ac05d6e3f6
       tools/living-docs/valija/surfaces/inert-container.ts: 9d6aa62567d81daf

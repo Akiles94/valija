@@ -56,7 +56,16 @@ export type VaultErrorCode =
    */
   | "RELOCATION_ROLLBACK_FAILED"
   /** The vault must be locked for this operation (relocation never handles the key). */
-  | "VAULT_MUST_BE_LOCKED";
+  | "VAULT_MUST_BE_LOCKED"
+  /** The new passphrase derives the key the vault already has, so nothing changed. */
+  | "PASSPHRASE_UNCHANGED"
+  /**
+   * The vault folder has sidecar files, conflicted copies or leftover backups — settle it before
+   * re-encrypting (nothing changed).
+   */
+  | "VAULT_FOLDER_UNSETTLED"
+  /** Re-encrypting the vault failed or did not verify — the vault still opens with the current passphrase. */
+  | "REKEY_FAILED";
 
 /** A VAULT DomainError whose code is checked against VaultErrorCode. */
 export const vaultError = (code: VaultErrorCode, message: string): DomainError =>

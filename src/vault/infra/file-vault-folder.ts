@@ -23,6 +23,10 @@ const CONFLICTED_COPY_PATTERNS = [/conflicted[ -]?copy/i, /\.sync-conflict-/i];
 // folder is not a single file at rest, so doctor should point it out.
 const STALE_BACKUP_PATTERN = /\.pre-\d+\.bak$/i;
 
+// The ciphertext copy a passphrase change takes before re-encrypting: "vault.db.pre-rekey.bak".
+// Deleted on success. A leftover one is still encrypted with the PREVIOUS key (§5.4).
+const REKEY_BACKUP_PATTERN = /\.pre-rekey\.bak$/i;
+
 /** Filesystem-backed VaultFolder — inspects the vault root, never opens the database. */
 export class FileVaultFolder implements VaultFolder {
   constructor(private readonly paths: VaultPaths) {}
@@ -33,6 +37,7 @@ export class FileVaultFolder implements VaultFolder {
       sidecars: this.sidecars(),
       conflictedCopies: this.matching(entries, CONFLICTED_COPY_PATTERNS),
       staleBackups: this.matching(entries, [STALE_BACKUP_PATTERN]),
+      rekeyBackups: this.matching(entries, [REKEY_BACKUP_PATTERN]),
       looksLikeCloud: this.looksLikeCloud(entries),
     };
   }

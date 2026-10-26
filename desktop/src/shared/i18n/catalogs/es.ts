@@ -350,6 +350,11 @@ export const es: Catalog = {
       one: "Se encontró 1 copia de seguridad de actualización sobrante",
       other: "Se encontraron {count} copias de seguridad de actualización sobrantes",
     },
+    rekeyBackupsFound: {
+      one: "Se encontró 1 copia de seguridad de un cambio de frase de contraseña; está cifrada con tu frase de contraseña anterior",
+      other:
+        "Se encontraron {count} copias de seguridad de un cambio de frase de contraseña; están cifradas con tu frase de contraseña anterior",
+    },
     fileState: "Estado del archivo",
     atRest: "En reposo: sin escrituras pendientes",
     notAtRest: "No está en reposo: hay una escritura en curso o se interrumpió",
@@ -534,6 +539,11 @@ export const es: Catalog = {
     RELOCATION_ROLLBACK_FAILED:
       "Valija no pudo terminar de deshacer un movimiento fallido. Tanto {sourcePath} como {destinationPath} podrían tener una copia; conserva solo una.",
     VAULT_MUST_BE_LOCKED: "Bloquea tu bóveda antes de moverla.",
+    PASSPHRASE_UNCHANGED: "Esa es tu frase de contraseña actual. Elige una diferente.",
+    VAULT_FOLDER_UNSETTLED:
+      "La carpeta de tu bóveda tiene archivos sobrantes (una copia en conflicto, una copia de seguridad o una escritura sin terminar). Resuélvelos primero; no se cambió nada.",
+    REKEY_FAILED:
+      "No se pudo volver a cifrar la bóveda. No cambió nada: tu frase de contraseña actual sigue funcionando.",
     generic: "Algo salió mal ({code}).",
   },
 };

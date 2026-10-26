@@ -17,6 +17,7 @@ const CLEAN_SOURCE_INSPECTION: VaultFolderInspection = {
   sidecars: [],
   conflictedCopies: [],
   staleBackups: [],
+  rekeyBackups: [],
   looksLikeCloud: false,
 };
 

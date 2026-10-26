@@ -25,6 +25,9 @@ vault, sync safety, lineage, auto-lock, and whether each AI tool is connected.
 - The terminal and the desktop app run the same checks and reach the same verdicts.
 - The desktop app runs the checks only when the user asks, and can copy a report built from the rows
   already on screen, without running the keychain probe a second time.
+- A leftover backup from a passphrase change (`vault.db.pre-rekey.bak`) is flagged on the sync row
+  as encrypted with the **previous** passphrase or key: delete it once the vault opens with the
+  current passphrase, otherwise restore it. The row is a warning, never fatal.
 - Checks never read or change context.
 
 ## What can go wrong

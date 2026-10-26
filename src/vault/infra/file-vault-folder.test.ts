@@ -97,6 +97,34 @@ describe("FileVaultFolder.inspect", () => {
     });
   });
 
+  describe("rekeyBackups", () => {
+    it("reports a leftover pre-rekey backup as an absolute path, and only there", () => {
+      const inspection = folderWith("rekey", ["vault.db", "vault.db.pre-rekey.bak"]).inspect();
+      expect(inspection.rekeyBackups).toHaveLength(1);
+      expect(inspection.rekeyBackups[0]?.endsWith("vault.db.pre-rekey.bak")).toBe(true);
+      expect(inspection.rekeyBackups[0]?.startsWith(tmp)).toBe(true);
+      expect(inspection.staleBackups).toEqual([]);
+      expect(inspection.conflictedCopies).toEqual([]);
+    });
+
+    it("does not treat a migration backup as a rekey backup", () => {
+      const inspection = folderWith("rekey-vs-migration", [
+        "vault.db",
+        "vault.db.pre-003.bak",
+      ]).inspect();
+      expect(inspection.rekeyBackups).toEqual([]);
+      expect(inspection.staleBackups).toHaveLength(1);
+    });
+
+    it("matches case-insensitively", () => {
+      const { rekeyBackups } = folderWith("rekey-case", [
+        "vault.db",
+        "vault.db.PRE-REKEY.BAK",
+      ]).inspect();
+      expect(rekeyBackups).toHaveLength(1);
+    });
+  });
+
   describe("looksLikeCloud", () => {
     it("recognizes a cloud path case-insensitively (path need not exist)", () => {
       const lower = new FileVaultFolder(resolveVaultPaths(join(tmp, "home", "dropbox", "valija")));

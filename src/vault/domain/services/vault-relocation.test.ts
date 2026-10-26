@@ -7,6 +7,7 @@ const CLEAN_SOURCE: VaultFolderInspection = {
   sidecars: [],
   conflictedCopies: [],
   staleBackups: [],
+  rekeyBackups: [],
   looksLikeCloud: false,
 };
 
@@ -133,6 +134,18 @@ describe("refuseUnsafeRelocation", () => {
         sourceInspection: {
           ...CLEAN_SOURCE,
           staleBackups: ["/home/oscar/.valija/vault.db.pre-003.bak"],
+        },
+      }),
+    );
+    expect(result?.code).toBe("RELOCATION_SOURCE_UNSETTLED");
+  });
+
+  it("refuses a source folder with a leftover passphrase-change (pre-rekey) backup", () => {
+    const result = refuseUnsafeRelocation(
+      request({
+        sourceInspection: {
+          ...CLEAN_SOURCE,
+          rekeyBackups: ["/home/oscar/.valija/vault.db.pre-rekey.bak"],
         },
       }),
     );

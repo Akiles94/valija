@@ -103,7 +103,15 @@ function checkJournal(status: StatusResult): DiagnosticCheck {
   };
 }
 
-function checkSyncFolder(inspection: VaultFolderInspection): DiagnosticCheck {
+/** §5.4: what to do with a leftover pre-rekey backup — delete it when the vault opens, else restore it. */
+function rekeyBackupAdvice(status: StatusResult): string {
+  if (status.ok && status.value.unlocked) {
+    return "the vault opens with your current key — delete it";
+  }
+  return 'if "valija unlock" works with your current passphrase, delete it; if it does not, restore it (see docs/sync.md, "Changing your passphrase on a synced vault")';
+}
+
+function checkSyncFolder(inspection: VaultFolderInspection, status: StatusResult): DiagnosticCheck {
   const problems: string[] = [];
   if (inspection.conflictedCopies.length > 0) {
     problems.push(
@@ -113,6 +121,11 @@ function checkSyncFolder(inspection: VaultFolderInspection): DiagnosticCheck {
   if (inspection.staleBackups.length > 0) {
     problems.push(
       `leftover upgrade backup(s): ${inspection.staleBackups.join(", ")} — a prior upgrade did not finish cleanly; delete once you've confirmed the vault opens`,
+    );
+  }
+  if (inspection.rekeyBackups.length > 0) {
+    problems.push(
+      `pre-rekey backup(s) encrypted with your PREVIOUS passphrase/key: ${inspection.rekeyBackups.join(", ")} — ${rekeyBackupAdvice(status)}`,
     );
   }
   if (problems.length > 0) return { name: "sync", ok: false, detail: problems.join("; ") };
@@ -210,7 +223,7 @@ export async function runDiagnostics(c: Container): Promise<DiagnosticCheck[]> {
     checkKeychain(),
     checkVault(status),
     checkJournal(status),
-    checkSyncFolder(inspection),
+    checkSyncFolder(inspection, status),
     checkLineage(status),
     checkAutoLock(status),
     ...CLIENTS.map(checkClient),

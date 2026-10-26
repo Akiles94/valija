@@ -45,10 +45,14 @@ export function refuseUnsafeRelocation(
     );
   }
 
-  if (sourceInspection.conflictedCopies.length > 0 || sourceInspection.staleBackups.length > 0) {
+  if (
+    sourceInspection.conflictedCopies.length > 0 ||
+    sourceInspection.staleBackups.length > 0 ||
+    sourceInspection.rekeyBackups.length > 0
+  ) {
     return vaultError(
       "RELOCATION_SOURCE_UNSETTLED",
-      `${sourceRoot} has an unresolved conflicted copy or leftover upgrade backup. Resolve it before moving the vault.`,
+      `${sourceRoot} has an unresolved conflicted copy or a leftover upgrade or passphrase-change backup. Resolve it before moving the vault.`,
     );
   }
 

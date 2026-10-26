@@ -16,6 +16,8 @@ without opening or changing any context.
 - Auto-lock state (timeout, idle time, expired) is reported but never acted on here.
 - The desktop app reads the sync-safety half separately: conflicted copies, leftover backups,
   whether the folder looks cloud-synced, and where this device keeps its own state.
+- A leftover backup from a passphrase change gets one `backup:` line in the terminal and its own
+  warning on the desktop Sync screen: it is still encrypted with the previous passphrase.
 
 ## What can go wrong
 - There is no vault: status reports "not initialized" instead of failing.

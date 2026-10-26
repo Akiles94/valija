@@ -138,6 +138,50 @@ describe("runDiagnostics", () => {
     expect(lineageCheck?.detail).toContain("generation");
   });
 
+  it("flags a leftover pre-rekey backup on the sync row — not fatal — with the locked-vault advice", async () => {
+    root = mkdtempSync(join(tmpdir(), "valija-diagnostics-rekey-"));
+    copyGoldenVaultTo(root);
+    const backup = join(root, "vault.db.pre-rekey.bak");
+    writeFileSync(backup, "x");
+
+    const checks = await runDiagnostics(containerOver(root));
+
+    const sync = checks.find((c) => c.name === "sync");
+    expect(sync?.ok).toBe(false);
+    expect(sync?.fatal).toBeUndefined();
+    expect(sync?.detail).toContain("PREVIOUS");
+    expect(sync?.detail).toContain(backup);
+    expect(sync?.detail).toContain('if "valija unlock" works with your current passphrase');
+    expect(checks.map((c) => c.name)).toEqual(EXPECTED_NAMES);
+  });
+
+  it("shortens the pre-rekey advice to 'delete it' when the vault is unlocked", async () => {
+    root = mkdtempSync(join(tmpdir(), "valija-diagnostics-rekey-unlocked-"));
+    const manifest = readGoldenVaultManifest();
+    copyGoldenVaultTo(root);
+    writeFileSync(join(root, "vault.db.pre-rekey.bak"), "x");
+    const paths = resolveVaultPaths(root);
+    const keychain = new FakeKeychain();
+    keychain.setKey(manifest.vaultId, manifest.keyHex);
+    const folder = new FileVaultFolder(paths);
+    const vaultStatus = new VaultStatus(
+      new FileVaultStore(paths, new SeqIds(), new FixedClock()),
+      keychain,
+      new FakeDeviceIdentity(new SeqIds()),
+      folder,
+      new FixedClock(new Date(manifest.generatedAt)),
+      parseAutoLockTtl(undefined),
+    );
+
+    const checks = await runDiagnostics({ paths, folder, vaultStatus } as unknown as Container);
+
+    const sync = checks.find((c) => c.name === "sync");
+    expect(sync?.ok).toBe(false);
+    expect(sync?.detail).toContain("PREVIOUS");
+    expect(sync?.detail).toContain("the vault opens with your current key — delete it");
+    expect(sync?.detail).not.toContain("restore it");
+  });
+
   it("carries the DomainError code alongside the message when VaultStatus fails, on every status-derived check", async () => {
     root = mkdtempSync(join(tmpdir(), "valija-diagnostics-corrupt-"));
     const paths = resolveVaultPaths(root);

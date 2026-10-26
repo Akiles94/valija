@@ -25,6 +25,7 @@ describe("sync-handlers — the read-only half of the Sync panel vault:status do
 
     expect(response.conflictedCopies).toEqual([]);
     expect(response.staleBackups).toEqual([]);
+    expect(response.rekeyBackups).toEqual([]);
     expect(typeof response.resolvedStateHome).toBe("string");
     expect(response.resolvedStateHome.length).toBeGreaterThan(0);
   });
@@ -35,6 +36,7 @@ describe("sync-handlers — the read-only half of the Sync panel vault:status do
     writeFileSync(paths.db, "not a real db");
     writeFileSync(join(root, "vault (conflicted copy).db"), "conflict");
     writeFileSync(join(root, "vault.db.pre-002.bak"), "stale backup");
+    writeFileSync(join(root, "vault.db.pre-rekey.bak"), "rekey backup");
 
     // biome-ignore lint/suspicious/noExplicitAny: only folder is exercised here
     const container = { folder: new FileVaultFolder(paths) } as any as Container;
@@ -43,6 +45,7 @@ describe("sync-handlers — the read-only half of the Sync panel vault:status do
 
     expect(response.conflictedCopies.length).toBe(1);
     expect(response.staleBackups.length).toBe(1);
+    expect(response.rekeyBackups).toEqual([join(root, "vault.db.pre-rekey.bak")]);
   });
 
   it("resolves VALIJA_STATE_HOME the same way the CLI does, honoring an override", () => {

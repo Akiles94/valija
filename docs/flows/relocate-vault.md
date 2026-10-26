@@ -15,7 +15,8 @@ and re-importing anything, and without breaking the AI tools that already use it
 - The vault must be locked first; the move never handles the key.
 - The destination is checked before anything is written: it must exist, be writable, hold no vault,
   and not be inside the current vault folder. The current folder must be settled (no conflicted
-  copies, leftover backups or sidecar files).
+  copies, leftover backups or sidecar files). A leftover backup includes one from an unfinished
+  upgrade and one from a passphrase change (`vault.db.pre-rekey.bak`).
 - Files are copied, verified byte for byte, and only then is the original removed. Never "delete,
   then copy".
 - If removing the original fails, the copy is discarded so there is never two openable vaults. If
