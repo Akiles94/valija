@@ -9,6 +9,7 @@ The CLI and the desktop app are symmetric (CLAUDE.md, Surface parity). Rows pair
 | CLI | Desktop channels | Why |
 |---|---|---|
 | [valija archive](cli.md#cli-archive) | [content:setArchived](ipc.md#ipc-content-setarchived) | Same use case: setItemArchived |
+| [valija change-passphrase](cli.md#cli-change-passphrase) | [vault:changePassphrase](ipc.md#ipc-vault-changepassphrase), [vault:readRecoveryKit](ipc.md#ipc-vault-readrecoverykit) | Declared: the CLI prints the new recovery kit; the desktop app reads it once over IPC |
 | [valija doctor](cli.md#cli-doctor) | [diagnostics:copyReport](ipc.md#ipc-diagnostics-copyreport), [diagnostics:run](ipc.md#ipc-diagnostics-run) | Declared: both run and report the same diagnostics |
 | [valija edit](cli.md#cli-edit) | [content:edit](ipc.md#ipc-content-edit) | Same use case: editItem |
 | [valija export](cli.md#cli-export) | [content:copy](ipc.md#ipc-content-copy), [content:export](ipc.md#ipc-content-export), [content:pack](ipc.md#ipc-content-pack) | Declared: the CLI prints or writes the pack; the desktop app shows, saves or copies it |

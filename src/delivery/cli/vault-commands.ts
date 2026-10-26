@@ -30,6 +30,10 @@ export async function initCommand(c: Container): Promise<void> {
   console.log('Next: run "valija install claude-code" (or claude-desktop, cursor).');
 }
 
+/** D-O: after a passphrase change on another device, the old passphrase fails here — say why. */
+const CHANGED_ELSEWHERE_HINT =
+  '(If you changed your passphrase on another device, use the new one — run "valija unlock" again.)';
+
 /**
  * `valija unlock`: unlocks with a passphrase (or `--recovery-key`), upgrading the schema silently,
  * and reports a multi-device fork.
@@ -43,7 +47,12 @@ export async function unlockCommand(
       ? { recoveryKeyHex: options.recoveryKey, upgradeConfirmed: true }
       : { passphrase: await promptHidden("Passphrase: "), upgradeConfirmed: true };
   const result = await c.unlockVault.execute(input);
-  if (!result.ok) fail(result.error);
+  if (!result.ok) {
+    fail(
+      result.error,
+      result.error.code === "WRONG_PASSPHRASE" ? CHANGED_ELSEWHERE_HINT : undefined,
+    );
+  }
   console.log("Vault unlocked. MCP tools can now read and write context.");
   console.log('Lock it again with "valija lock".');
   if (result.value.fork !== undefined) {

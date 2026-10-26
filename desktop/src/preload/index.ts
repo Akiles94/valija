@@ -46,6 +46,8 @@ import type {
   ToolsConnectRequest,
   ToolsConnectResponse,
   ToolsStatusEntry,
+  VaultChangePassphraseRequest,
+  VaultChangePassphraseResponse,
   VaultInitRequest,
   VaultInitResponse,
   VaultLockResponse,
@@ -78,6 +80,10 @@ contextBridge.exposeInMainWorld("valija", {
     status: (): Promise<IpcResult<VaultStatusResponse>> => ipcRenderer.invoke("vault:status"),
     upgradeCheck: (req: VaultUpgradeCheckRequest): Promise<IpcResult<VaultUpgradeCheckResponse>> =>
       ipcRenderer.invoke("vault:upgradeCheck", req),
+    changePassphrase: (
+      req: VaultChangePassphraseRequest,
+    ): Promise<IpcResult<VaultChangePassphraseResponse>> =>
+      ipcRenderer.invoke("vault:changePassphrase", req),
   },
   content: {
     projects: (): Promise<IpcResult<ProjectListEntryMessage[]>> =>

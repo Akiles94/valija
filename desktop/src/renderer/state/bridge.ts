@@ -45,6 +45,8 @@ import type {
   ToolsConnectRequest,
   ToolsConnectResponse,
   ToolsStatusEntry,
+  VaultChangePassphraseRequest,
+  VaultChangePassphraseResponse,
   VaultInitRequest,
   VaultInitResponse,
   VaultLockResponse,
@@ -69,6 +71,9 @@ export interface ValijaBridge {
     lock(): Promise<IpcResult<VaultLockResponse>>;
     status(): Promise<IpcResult<VaultStatusResponse>>;
     upgradeCheck(req: VaultUpgradeCheckRequest): Promise<IpcResult<VaultUpgradeCheckResponse>>;
+    changePassphrase(
+      req: VaultChangePassphraseRequest,
+    ): Promise<IpcResult<VaultChangePassphraseResponse>>;
   };
   content: {
     projects(): Promise<IpcResult<ProjectListEntryMessage[]>>;

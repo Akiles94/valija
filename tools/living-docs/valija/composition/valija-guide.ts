@@ -61,6 +61,10 @@ export const VALIJA_PARITY: readonly ParityDeclaration[] = [
     reason: "the CLI prints the recovery kit; the desktop app reads it once over IPC",
   },
   {
+    pair: { cli: "change-passphrase", ipc: ["vault:changePassphrase", "vault:readRecoveryKit"] },
+    reason: "the CLI prints the new recovery kit; the desktop app reads it once over IPC",
+  },
+  {
     pair: { cli: "unlock", ipc: ["vault:unlock", "vault:upgradeCheck"] },
     reason: "the CLI upgrades the schema silently on unlock; the desktop app asks first",
   },

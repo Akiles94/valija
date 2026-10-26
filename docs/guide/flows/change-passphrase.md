@@ -60,38 +60,41 @@ re-encrypting the whole vault under a new key, without exporting or losing anyth
 
 ### Entry points
 
-- CLI: added with the `valija change-passphrase` command in the next slice of this advance
-- Desktop: added with its IPC channel in the next slice of this advance
+- CLI: [`valija change-passphrase`](../reference/cli.md#cli-change-passphrase) (current passphrase prompt, or `--recovery-key`; `--yes` answers the cloud-folder question)
+- Desktop: [`vault:changePassphrase`](../reference/ipc.md#ipc-vault-changepassphrase), then [`vault:readRecoveryKit`](../reference/ipc.md#ipc-vault-readrecoverykit) for the new kit, once
 
 ### Sequence
 
 ```mermaid
 sequenceDiagram
   participant P1 as User
-  participant P2 as ChangePassphrase
-  participant P3 as VaultFolder
-  participant P4 as Argon2id
-  participant P5 as VaultStore
-  participant P6 as VaultRekeyer
-  participant P7 as OS keychain
-  P1->>P2: 1. Gives the current credential, the new passphrase and, for a cloud folder, the confirmation
-  P2->>P3: 2. Refuses an unsettled folder, naming its files
-  P2->>P4: 3. Derives the current and the new key with the vault's salt
-  P2->>P5: 4. Proves the current key and reads the schema, read-only
-  P2->>P6: 5. Checks free space, locks, bumps the lineage, backs up, re-encrypts, verifies, deletes the backup
-  P2->>P7: 6. Replaces the old key with the new one, or leaves none
-  P2->>P1: 7. Returns the new key once, for the new recovery kit
+  participant P2 as CLI
+  participant P3 as ChangePassphrase
+  participant P4 as VaultFolder
+  participant P5 as Argon2id
+  participant P6 as VaultStore
+  participant P7 as VaultRekeyer
+  participant P8 as OS keychain
+  P1->>P2: 1. Runs valija change-passphrase, reads what changes, confirms other devices are locked and synced (cloud folder only), types the current and the new passphrase — changePassphraseCommand (on the desktop, Settings → Vault & sync → Change passphrase asks the same and sends it over the channel)
+  P2->>P3: 2. Gives the current credential, the new passphrase and the confirmation
+  P3->>P4: 3. Refuses an unsettled folder, naming its files
+  P3->>P5: 4. Derives the current and the new key with the vault's salt
+  P3->>P6: 5. Proves the current key and reads the schema, read-only
+  P3->>P7: 6. Checks free space, locks, bumps the lineage, backs up, re-encrypts, verifies, deletes the backup
+  P3->>P8: 7. Replaces the old key with the new one, or leaves none
+  P3->>P2: 8. Returns the new key once#59; the CLI prints the new recovery kit and never writes it to a file — renderRecoveryKit (on the desktop, the main process keeps the rendered kit for one read and returns no key#59; the recovery-kit screen shows it)
 ```
 
 ### Steps
 
-1. **User → ChangePassphrase:** Gives the current credential, the new passphrase and, for a cloud folder, the confirmation — [`ChangePassphrase`](../../../src/vault/application/use-cases/change-passphrase.use-case.ts)
-2. **ChangePassphrase → VaultFolder:** Refuses an unsettled folder, naming its files — [`refuseUnsettledFolder`](../../../src/vault/domain/services/folder-settlement.ts)
-3. **ChangePassphrase → Argon2id:** Derives the current and the new key with the vault's salt — [`resolveUnlockKey`](../../../src/vault/application/services/resolve-unlock-key.ts)
-4. **ChangePassphrase → VaultStore:** Proves the current key and reads the schema, read-only
-5. **ChangePassphrase → VaultRekeyer:** Checks free space, locks, bumps the lineage, backs up, re-encrypts, verifies, deletes the backup — [`SqliteVaultRekeyer`](../../../src/vault/infra/sqlite-vault-rekeyer.ts)
-6. **ChangePassphrase → OS keychain:** Replaces the old key with the new one, or leaves none
-7. **ChangePassphrase → User:** Returns the new key once, for the new recovery kit — [`renderRecoveryKit`](../../../src/vault/infra/recovery-kit.ts)
+1. **User → CLI:** Runs `valija change-passphrase`, reads what changes, confirms other devices are locked and synced (cloud folder only), types the current and the new passphrase — [`changePassphraseCommand`](../../../src/delivery/cli/change-passphrase-command.ts) (on the desktop, Settings → Vault & sync → Change passphrase asks the same and sends it over the channel)
+2. **CLI → ChangePassphrase:** Gives the current credential, the new passphrase and the confirmation — [`ChangePassphrase`](../../../src/vault/application/use-cases/change-passphrase.use-case.ts)
+3. **ChangePassphrase → VaultFolder:** Refuses an unsettled folder, naming its files — [`refuseUnsettledFolder`](../../../src/vault/domain/services/folder-settlement.ts)
+4. **ChangePassphrase → Argon2id:** Derives the current and the new key with the vault's salt — [`resolveUnlockKey`](../../../src/vault/application/services/resolve-unlock-key.ts)
+5. **ChangePassphrase → VaultStore:** Proves the current key and reads the schema, read-only
+6. **ChangePassphrase → VaultRekeyer:** Checks free space, locks, bumps the lineage, backs up, re-encrypts, verifies, deletes the backup — [`SqliteVaultRekeyer`](../../../src/vault/infra/sqlite-vault-rekeyer.ts)
+7. **ChangePassphrase → OS keychain:** Replaces the old key with the new one, or leaves none
+8. **ChangePassphrase → CLI:** Returns the new key once; the CLI prints the new recovery kit and never writes it to a file — [`renderRecoveryKit`](../../../src/vault/infra/recovery-kit.ts) (on the desktop, the main process keeps the rendered kit for one read and returns no key; the recovery-kit screen shows it)
 
 ## Errors
 

@@ -45,6 +45,8 @@ import type {
   ToolsConnectRequest,
   ToolsConnectResponse,
   ToolsStatusEntry,
+  VaultChangePassphraseRequest,
+  VaultChangePassphraseResponse,
   VaultInitRequest,
   VaultInitResponse,
   VaultLockResponse,
@@ -69,6 +71,7 @@ export const CHANNELS = [
   "vault:lock",
   "vault:status",
   "vault:upgradeCheck",
+  "vault:changePassphrase",
   "content:projects",
   "content:show",
   "content:search",
@@ -121,6 +124,11 @@ export interface ChannelMap {
   "vault:upgradeCheck": {
     request: VaultUpgradeCheckRequest;
     response: IpcResult<VaultUpgradeCheckResponse>;
+  };
+  /** Re-encrypts the vault under a new passphrase and keeps the new recovery kit pending for one read. */
+  "vault:changePassphrase": {
+    request: VaultChangePassphraseRequest;
+    response: IpcResult<VaultChangePassphraseResponse>;
   };
   /** Lists projects with item counts and last activity. */
   "content:projects": { request: undefined; response: IpcResult<ProjectListEntryMessage[]> };

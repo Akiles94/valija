@@ -106,3 +106,48 @@ describe("statusCommand — a leftover pre-rekey backup (§5.4, P-16)", () => {
     expect(lines.some((line) => line.startsWith("backup:"))).toBe(false);
   });
 });
+
+describe("unlockCommand — a wrong passphrase hints at a change elsewhere (D-O)", () => {
+  class Exit extends Error {}
+  const HINT = "If you changed your passphrase on another device, use the new one";
+
+  async function unlockErrors(removeHeader: boolean): Promise<string> {
+    const vault = makeUnlockedVault();
+    if (removeHeader) rmSync(vault.paths.header);
+    const unlockVault = new UnlockVault(
+      vault.store,
+      new Argon2VaultCrypto(),
+      vault.keychain,
+      vault.deviceIdentity,
+      vault.clock,
+    );
+    const container = { paths: vault.paths, unlockVault } as unknown as Container;
+    const errors: string[] = [];
+    const error = vi.spyOn(console, "error").mockImplementation((line: string) => {
+      errors.push(line);
+    });
+    const exit = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Exit();
+    });
+    try {
+      await expect(unlockCommand(container, { recoveryKey: "0".repeat(64) })).rejects.toThrow(Exit);
+      return errors.join("\n");
+    } finally {
+      error.mockRestore();
+      exit.mockRestore();
+      rmSync(vault.paths.root, { recursive: true, force: true });
+    }
+  }
+
+  it("adds the hint after error [WRONG_PASSPHRASE]", async () => {
+    const stderr = await unlockErrors(false);
+    expect(stderr).toContain("error [WRONG_PASSPHRASE]");
+    expect(stderr).toContain(HINT);
+  });
+
+  it("adds no hint to another error", async () => {
+    const stderr = await unlockErrors(true);
+    expect(stderr).toContain("error [VAULT_NOT_FOUND]");
+    expect(stderr).not.toContain(HINT);
+  });
+});

@@ -9,7 +9,7 @@ surface below; the renderer never imports `src/` directly (`contextIsolation: tr
 
 ## The IPC surface (`shared/ipc/channels.ts`, `main/ipc/schemas.ts`, `main/ipc/handlers/`)
 
-A **closed, enumerated set** — 37 channels across ten areas (still 37 after SECRET-WARN, which only widened two request schemas and one outcome), each with a zod schema in the same
+A **closed, enumerated set** — 38 channels across ten areas (still 37 after SECRET-WARN, which only widened two request schemas and one outcome; REKEY adds `vault:changePassphrase`), each with a zod schema in the same
 idiom `src/delivery/mcp/server.ts` uses. `register-handlers.test.ts` asserts the registered channel
 set **equals** the tuple: no extra channel, no missing one, no generic `invoke("run", …)` escape
 hatch. Every handler is four lines — validate, call the use case, map `Result` to a wire shape,
@@ -19,7 +19,7 @@ outlives an action).
 
 | Area | Channels | Notes |
 |---|---|---|
-| `vault:*` | `init · readRecoveryKit · unlock · lock · status · upgradeCheck` | `readRecoveryKit` is single-shot — a nonce consumed on first read, `null` on a second call |
+| `vault:*` | `init · readRecoveryKit · unlock · lock · status · upgradeCheck · changePassphrase` | `readRecoveryKit` is single-shot — a nonce consumed on first read, `null` on a second call. (REKEY) `changePassphrase` takes `VaultChangePassphraseRequest { current: { passphrase? , recoveryKeyHex? }, newPassphrase, otherDevicesConfirmed }` and calls `ChangePassphrase` directly (no session, like `vault:unlock`); on success it puts the **new** kit (`renderRecoveryKit(vaultId, keyHex, createdAt, issuedAt)`) into the same one-shot slot `vault:init` fills, and returns `VaultChangePassphraseResponse { vaultId, issuedAt, generation, unlockedOnThisDevice }` — deliberately no `keyHex`. A failure crosses as `{ code }` and leaves the slot empty. The renderer gates the cloud confirmation itself before calling (D-M) |
 | `content:*` | `projects · show · search · pack · export · copy · setPinned · setArchived · edit` | Same use cases the CLI calls; `pack`/`export` are byte-identical to `valija export`. `show` takes `includeArchived`. (CURATION) `setPinned`/`setArchived` write through the same use cases as the CLI — one lineage bump per real change, none on a no-op — and return only `{ changed }`; (A1) `edit { id, content?, tags?, type? }` goes through `EditItem` and returns only `{ changed, changedFields }`. Its zod caps are abuse limits set well above the domain's (100 tags × 256 chars, 1 MB), so an over-limit edit reaches `EditItem` and comes back as its real code (`TOO_MANY_TAGS`, `INVALID_TAG`, `CONTENT_TOO_LARGE`). (SECRET-WARN) `edit` also takes `allowSecrets?: boolean` (strict, optional — **Save anyway**); without it, content that looks like a secret comes back as `{ code: "POSSIBLE_SECRET" }` only. The schema field is load-bearing: `z.object` strips unknown keys, so without it the flag would be dropped and Save anyway would loop |
 | `sync:*` | `status` | Pure read, never a write — `sync-panel.no-write.test.ts` asserts no keychain/file change |
 | `diagnostics:*` | `run · copyReport` | `run` calls `src/delivery/diagnostics.ts`'s `runDiagnostics`, never re-derives a check; `copyReport` never re-runs the checks, it takes the rows the renderer already has |

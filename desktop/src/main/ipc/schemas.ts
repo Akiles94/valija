@@ -22,6 +22,14 @@ export const SCHEMAS = {
     passphrase: z.string().optional(),
     recoveryKeyHex: z.string().optional(),
   }),
+  "vault:changePassphrase": z.object({
+    current: z.object({
+      passphrase: z.string().optional(),
+      recoveryKeyHex: z.string().optional(),
+    }),
+    newPassphrase: z.string(),
+    otherDevicesConfirmed: z.boolean(),
+  }),
   "content:projects": z.void(),
   "content:show": z.object({
     project: z.string(),

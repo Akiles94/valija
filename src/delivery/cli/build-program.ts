@@ -10,6 +10,10 @@ import {
   unlinkCommand,
   whichCommand,
 } from "./binding-commands.js";
+import {
+  type ChangePassphraseOptions,
+  changePassphraseCommand,
+} from "./change-passphrase-command.js";
 import { exportCommand, projectsCommand, searchCommand, showCommand } from "./content-commands.js";
 import {
   archiveCommand,
@@ -57,6 +61,16 @@ export function buildProgram(container: Container): Command {
     .command("status")
     .description("Show vault location and lock state.")
     .action(() => statusCommand(container));
+
+  program
+    .command("change-passphrase")
+    .description("Change the passphrase: re-encrypts the vault and shows a new recovery kit.")
+    .option(
+      "--recovery-key <hex>",
+      "prove it is you with your recovery kit instead of the current passphrase",
+    )
+    .option("--yes", "confirm other devices are locked and synced (vaults in a cloud folder)")
+    .action((options: ChangePassphraseOptions) => changePassphraseCommand(container, options));
 
   program
     .command("projects")

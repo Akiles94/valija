@@ -143,6 +143,7 @@ Full descriptions live in the tool source — they are the product's real prompt
 
 ```
 valija init | unlock | lock | status
+valija change-passphrase [--recovery-key <hex>] [--yes]
 valija projects
 valija show [project] [--type] [--archived]
 valija pin | unpin | archive | unarchive <id>
@@ -180,6 +181,16 @@ the number `--list` shows and `--pick` reads, and the title is hidden when it is
 `error [VAULT_SCHEMA_TOO_NEW]` (both schema numbers, "update valija") and exit 1, before anything is
 written; `status` adds a `schema:` line and `doctor` a failing, non-fatal `vault` row, and `lock`
 still drops the session key.
+
+**Changing the passphrase (REKEY).** `change-passphrase` always asks for the current credential — the
+passphrase, or `--recovery-key <hex>` to reset a forgotten one — even when the vault is unlocked, then
+the new passphrase twice. In a cloud-synced folder it first asks whether every other device is locked
+and synced (`--yes` answers that question only). It re-encrypts the whole `vault.db` under the key the
+new passphrase derives with the same salt and parameters (`vault.json` never changes), keeps this
+device unlocked with the new key, and prints the new recovery kit once; the old passphrase and the old
+kit stop opening this file. After a passphrase change on another device, `unlock`'s
+`WRONG_PASSPHRASE` adds a hint to use the new one. The desktop app offers the same in Settings → Vault
+& sync; MCP and the SDK cannot change a passphrase.
 
 ---
 

@@ -2,6 +2,8 @@ import type { Container } from "../../../../../src/delivery/container.js";
 import { renderRecoveryKit } from "../../../../../src/vault/infra/recovery-kit.js";
 import type {
   RecoveryKitResponse,
+  VaultChangePassphraseRequest,
+  VaultChangePassphraseResponse,
   VaultInitRequest,
   VaultInitResponse,
   VaultLockResponse,
@@ -41,6 +43,24 @@ export function createVaultHandlers(getContainer: () => Container) {
         (v): VaultInitResponse => ({
           vaultId: v.vaultId,
           createdAt: v.createdAt,
+        }),
+      );
+    },
+
+    // Same one-shot slot as vault:init: the new kit crosses once, and the response carries no key.
+    "vault:changePassphrase": async (req: VaultChangePassphraseRequest) => {
+      const result = await getContainer().changePassphrase.execute(req);
+      if (result.ok) {
+        const { vaultId, keyHex, createdAt, issuedAt } = result.value;
+        pendingKitText = renderRecoveryKit(vaultId, keyHex, createdAt, issuedAt);
+      }
+      return toIpcResult(
+        result,
+        (v): VaultChangePassphraseResponse => ({
+          vaultId: v.vaultId,
+          issuedAt: v.issuedAt,
+          generation: v.generation,
+          unlockedOnThisDevice: v.unlockedOnThisDevice,
         }),
       );
     },

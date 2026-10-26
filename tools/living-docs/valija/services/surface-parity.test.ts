@@ -52,6 +52,41 @@ describe("pairSurfaces", () => {
     ]);
   });
 
+  it("pairs a channel declared in two pairs on both rows, with no orphan (REKEY)", () => {
+    const declarations: ParityDeclaration[] = [
+      { pair: { cli: "init", ipc: ["vault:init", "vault:readRecoveryKit"] }, reason: "kit once" },
+      {
+        pair: {
+          cli: "change-passphrase",
+          ipc: ["vault:changePassphrase", "vault:readRecoveryKit"],
+        },
+        reason: "new kit once",
+      },
+    ];
+    const { catalogue, findings } = pairSurfaces(
+      [
+        { name: "init", reaches: ["createVault"] },
+        { name: "change-passphrase", reaches: ["changePassphrase"] },
+      ],
+      [
+        { name: "vault:init", reaches: ["createVault"] },
+        { name: "vault:readRecoveryKit", reaches: [] },
+        { name: "vault:changePassphrase", reaches: ["changePassphrase"] },
+      ],
+      declarations,
+      where,
+    );
+    expect(findings).toEqual([]);
+    expect(catalogue.rows.map(cells)).toEqual([
+      [
+        "valija change-passphrase",
+        "vault:changePassphrase,vault:readRecoveryKit",
+        "Declared: new kit once",
+      ],
+      ["valija init", "vault:init,vault:readRecoveryKit", "Declared: kit once"],
+    ]);
+  });
+
   it("requires a reason on every declaration", () => {
     // @ts-expect-error — `reason` is mandatory (D-12)
     const missing: ParityDeclaration = { surfaceSpecific: ["mcp"] };

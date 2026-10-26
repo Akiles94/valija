@@ -29,7 +29,7 @@ so the CLI, the desktop app and every connected AI tool can use it.
 
 ## What can go wrong
 
-- Wrong passphrase or malformed recovery key ([`WRONG_PASSPHRASE`](../reference/errors.md#err-wrong-passphrase)).
+- Wrong passphrase or malformed recovery key ([`WRONG_PASSPHRASE`](../reference/errors.md#err-wrong-passphrase)) If the passphrase was changed on another device, the old one no longer works: the CLI adds a hint to use the new one, and the desktop copy says the same.
 - No vault in this folder ([`VAULT_NOT_FOUND`](../reference/errors.md#err-vault-not-found)).
 - The vault was upgraded by a newer Valija ([`VAULT_SCHEMA_TOO_NEW`](../reference/errors.md#err-vault-schema-too-new)).
 - Another device wrote independently ([`VAULT_FORK_DETECTED`](../reference/errors.md#err-vault-fork-detected) is shown as a notice, not a failure).

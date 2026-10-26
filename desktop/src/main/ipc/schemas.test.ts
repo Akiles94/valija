@@ -36,6 +36,21 @@ describe("schema rejection", () => {
     ).toBe(false);
   });
 
+  it("vault:changePassphrase needs the credential object, the new passphrase and a boolean confirmation (REKEY)", () => {
+    const schema = SCHEMAS["vault:changePassphrase"];
+    const valid = {
+      current: { passphrase: "a test phrase" },
+      newPassphrase: "a different test phrase",
+      otherDevicesConfirmed: false,
+    };
+    expect(schema.safeParse(valid).success).toBe(true);
+    expect(schema.safeParse({ ...valid, current: { recoveryKeyHex: "ab" } }).success).toBe(true);
+    expect(schema.safeParse({ ...valid, current: undefined }).success).toBe(false);
+    expect(schema.safeParse({ ...valid, newPassphrase: undefined }).success).toBe(false);
+    expect(schema.safeParse({ ...valid, otherDevicesConfirmed: "yes" }).success).toBe(false);
+    expect(schema.safeParse({ ...valid, current: { passphrase: 1 } }).success).toBe(false);
+  });
+
   it("void channels reject a non-undefined payload", () => {
     expect(SCHEMAS["vault:lock"].safeParse({ anything: true }).success).toBe(false);
     expect(SCHEMAS["vault:lock"].safeParse(undefined).success).toBe(true);

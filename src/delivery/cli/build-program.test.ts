@@ -15,8 +15,8 @@ const inertContainer = new Proxy(
 // Captured from `node dist/program.js <cmd> --help` before buildProgram was extracted, so these
 // are the pre-refactor truth, not whatever the new code prints. Commands and options added by later
 // advances (CURATION: pin, unpin, archive, unarchive, edit, show --archived; PROJECT-DETECT: which,
-// link, unlink, links, optional project on show/export; SECRET-WARN: edit and import --allow-secrets)
-// are recorded the same way.
+// link, unlink, links, optional project on show/export; SECRET-WARN: edit and import --allow-secrets;
+// REKEY: change-passphrase) are recorded the same way.
 const ROOT_HELP = `Usage: valija [options] [command]
 
 Encrypted context vault for developers who use several AI tools.
@@ -33,6 +33,8 @@ Commands:
   lock                           Lock the vault (remove the key from the OS
                                  keychain).
   status                         Show vault location and lock state.
+  change-passphrase [options]    Change the passphrase: re-encrypts the vault
+                                 and shows a new recovery kit.
   projects                       List projects with item counts and last
                                  activity.
   show [options] [project]       Print the items of a project.
@@ -95,6 +97,17 @@ Show vault location and lock state.
 
 Options:
   -h, --help  display help for command
+`,
+  "change-passphrase": `Usage: valija change-passphrase [options]
+
+Change the passphrase: re-encrypts the vault and shows a new recovery kit.
+
+Options:
+  --recovery-key <hex>  prove it is you with your recovery kit instead of the
+                        current passphrase
+  --yes                 confirm other devices are locked and synced (vaults in a
+                        cloud folder)
+  -h, --help            display help for command
 `,
   projects: `Usage: valija projects [options]
 

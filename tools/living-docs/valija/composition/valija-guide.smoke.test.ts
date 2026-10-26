@@ -48,7 +48,7 @@ describe("Valija extractors over the real repository", () => {
     ]) {
       expect(keys).toContain(`mcp:${tool}`);
     }
-    expect([...keys].filter((k) => k.startsWith("ipc:"))).toHaveLength(37);
+    expect([...keys].filter((k) => k.startsWith("ipc:"))).toHaveLength(38);
     expect([...keys].filter((k) => k.startsWith("symbol:"))).toHaveLength(21);
     expect([...keys].filter((k) => k.startsWith("err:"))).toHaveLength(53);
 

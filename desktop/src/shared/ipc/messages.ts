@@ -39,6 +39,24 @@ export interface VaultInitResponse {
   createdAt: string;
 }
 
+/** Current credential (passphrase or recovery key), the new passphrase, and the cloud-folder confirmation (D-M). */
+export interface VaultChangePassphraseRequest {
+  current: { passphrase?: string; recoveryKeyHex?: string };
+  newPassphrase: string;
+  otherDevicesConfirmed: boolean;
+}
+/**
+ * Deliberately no `keyHex` — like `VaultInitResponse`, the new kit crosses once, as rendered text,
+ * through `vault:readRecoveryKit`. `unlockedOnThisDevice` is false when the OS keychain refused the
+ * new key: the vault is then locked here (D-H).
+ */
+export interface VaultChangePassphraseResponse {
+  vaultId: string;
+  issuedAt: string;
+  generation: number;
+  unlockedOnThisDevice: boolean;
+}
+
 /** `null` once the kit has already been read once this session — it cannot be re-requested (§8.2). */
 export interface RecoveryKitResponse {
   text: string;

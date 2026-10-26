@@ -22,7 +22,7 @@ so the CLI, the desktop app and every connected AI tool can use it.
 - Unlocking resets the idle auto-lock clock.
 
 ## What can go wrong
-- Wrong passphrase or malformed recovery key ({{err:WRONG_PASSPHRASE}}).
+- Wrong passphrase or malformed recovery key ({{err:WRONG_PASSPHRASE}}) If the passphrase was changed on another device, the old one no longer works: the CLI adds a hint to use the new one, and the desktop copy says the same.
 - No vault in this folder ({{err:VAULT_NOT_FOUND}}).
 - The vault was upgraded by a newer Valija ({{err:VAULT_SCHEMA_TOO_NEW}}).
 - Another device wrote independently ({{err:VAULT_FORK_DETECTED}} is shown as a notice, not a failure).

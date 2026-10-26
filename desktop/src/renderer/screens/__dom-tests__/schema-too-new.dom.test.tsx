@@ -13,7 +13,15 @@ import { SchemaTooNewScreen } from "../schema-too-new.js";
 type FakeBridge = Record<string, Record<string, Mock>>;
 
 const NAMESPACES: Record<string, string[]> = {
-  vault: ["init", "readRecoveryKit", "unlock", "lock", "status", "upgradeCheck"],
+  vault: [
+    "init",
+    "readRecoveryKit",
+    "unlock",
+    "lock",
+    "status",
+    "upgradeCheck",
+    "changePassphrase",
+  ],
   content: [
     "projects",
     "show",

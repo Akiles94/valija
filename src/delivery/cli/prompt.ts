@@ -60,3 +60,19 @@ export function promptHidden(question: string): Promise<string> {
   process.stdout.write(question);
   return process.stdin.isTTY === true ? readHiddenTtyLine() : readPipedLine();
 }
+
+function readVisibleTtyLine(): Promise<string> {
+  return new Promise((resolve) => {
+    const once = createInterface({ input: process.stdin });
+    once.once("line", (line) => {
+      once.close(); // releases stdin, so a later hidden prompt owns it alone
+      resolve(line);
+    });
+  });
+}
+
+/** Prompt for a visible answer (a yes/no). Reads one line; shares the piped-stdin reader with `promptHidden`. */
+export function promptLine(question: string): Promise<string> {
+  process.stdout.write(question);
+  return process.stdin.isTTY === true ? readVisibleTtyLine() : readPipedLine();
+}

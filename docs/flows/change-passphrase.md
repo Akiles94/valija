@@ -50,17 +50,18 @@ re-encrypting the whole vault under a new key, without exporting or losing anyth
   current passphrase, restored from its backup if needed.
 
 ## Entry points
-- CLI: added with the `valija change-passphrase` command in the next slice of this advance
-- Desktop: added with its IPC channel in the next slice of this advance
+- CLI: {{cli:change-passphrase}} (current passphrase prompt, or `--recovery-key`; `--yes` answers the cloud-folder question)
+- Desktop: {{ipc:vault:changePassphrase}}, then {{ipc:vault:readRecoveryKit}} for the new kit, once
 
 ## Steps
-1. [User → ChangePassphrase] Gives the current credential, the new passphrase and, for a cloud folder, the confirmation — {{ChangePassphrase}}
-2. [ChangePassphrase → VaultFolder] Refuses an unsettled folder, naming its files — {{refuseUnsettledFolder}}
-3. [ChangePassphrase → Argon2id] Derives the current and the new key with the vault's salt — {{resolveUnlockKey}}
-4. [ChangePassphrase → VaultStore] Proves the current key and reads the schema, read-only
-5. [ChangePassphrase → VaultRekeyer] Checks free space, locks, bumps the lineage, backs up, re-encrypts, verifies, deletes the backup — {{SqliteVaultRekeyer}}
-6. [ChangePassphrase → OS keychain] Replaces the old key with the new one, or leaves none
-7. [ChangePassphrase → User] Returns the new key once, for the new recovery kit — {{renderRecoveryKit}}
+1. [User → CLI] Runs `valija change-passphrase`, reads what changes, confirms other devices are locked and synced (cloud folder only), types the current and the new passphrase — {{changePassphraseCommand}} (on the desktop, Settings → Vault & sync → Change passphrase asks the same and sends it over the channel)
+2. [CLI → ChangePassphrase] Gives the current credential, the new passphrase and the confirmation — {{ChangePassphrase}}
+3. [ChangePassphrase → VaultFolder] Refuses an unsettled folder, naming its files — {{refuseUnsettledFolder}}
+4. [ChangePassphrase → Argon2id] Derives the current and the new key with the vault's salt — {{resolveUnlockKey}}
+5. [ChangePassphrase → VaultStore] Proves the current key and reads the schema, read-only
+6. [ChangePassphrase → VaultRekeyer] Checks free space, locks, bumps the lineage, backs up, re-encrypts, verifies, deletes the backup — {{SqliteVaultRekeyer}}
+7. [ChangePassphrase → OS keychain] Replaces the old key with the new one, or leaves none
+8. [ChangePassphrase → CLI] Returns the new key once; the CLI prints the new recovery kit and never writes it to a file — {{renderRecoveryKit}} (on the desktop, the main process keeps the rendered kit for one read and returns no key; the recovery-kit screen shows it)
 
 ## Errors
 - {{err:VAULT_NOT_FOUND}} — there is no vault header.
